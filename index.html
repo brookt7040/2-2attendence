@@ -676,7 +676,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="chip" id="statPresent">⭐ 출석 0</div>
       <div class="chip" id="statLate">💤 지각 0</div>
       <div class="chip" id="statDungeon">🏠 쉬는 날 0</div>
-      <div class="chip" id="statExp">✨ 오늘 EXP 0</div>
+      <div class="chip" id="statExp" style="display:none;"></div>
       <button type="button" class="btn btn-mint" id="openVillageBtn">🏘️ 마을</button>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
@@ -5585,7 +5585,7 @@ function openVillage(opts){
    ========================================================= */
 function bindEvents(){
   $('mascotWrap').addEventListener('click', petMascot);
-  $('openStatsBtn').addEventListener('click', openStatsUI);
+  $('openStatsBtn').addEventListener('click', () => requirePin(openStatsUI));
   $('openAdminBtn').addEventListener('click', () => requirePin(openAdminUI));
   $('openGmBtn').addEventListener('click', () => requirePin(openGm));
   $('pinOkBtn').addEventListener('click', checkPin);
