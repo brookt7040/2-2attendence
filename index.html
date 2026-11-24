@@ -149,6 +149,13 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .notice-area.big .notice-text{font-size:2.1rem;line-height:1.5;}
 .notice-area.big .notice-mark{width:38px;height:38px;font-size:1.2rem;margin-top:8px;}
 .notice-area.big .notice-empty{font-size:1.4rem;}
+/* 📝 공책 줄에 글자 맞추기: 한 줄 = 64px, 줄은 각 칸 맨 아래 */
+.notice-area.big{padding:36px 26px 18px;background-image:repeating-linear-gradient(transparent 0 62px, rgba(245,183,10,.28) 62px 64px);background-position:0 36px;}
+.notice-area.big .notice-item{padding:0 2px;min-height:64px;align-items:flex-start;}
+.notice-area.big .notice-text{line-height:64px;}
+.notice-area.big .notice-mark{margin-top:13px;}
+.notice-area.big .ack-badge{margin-top:17px;align-self:flex-start;}
+.notice-area.big .notice-empty{line-height:64px;padding:0 2px;}
 #menuOverlay .menu-board{box-shadow:none;border:none;padding:24px 4px 4px;}
 .cv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
 .cv-item b{white-space:nowrap;} .cv-item{border:2px solid var(--ink);border-radius:12px;padding:8px 10px;background:#FFFDF6;display:flex;justify-content:space-between;gap:6px;font-size:1.05rem;}
