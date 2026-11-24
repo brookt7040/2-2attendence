@@ -67,7 +67,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .bubble.pop{animation:bubblePop .35s cubic-bezier(.2,1.6,.4,1);}
 @keyframes bubblePop{0%{transform:scale(.7)}100%{transform:scale(1)}}
 
-/* ===== 알립니다 (메모지) ===== */
+/* ===== 종례 (메모지) ===== */
 .notice-area{
   position:relative;margin-top:34px;max-width:720px;
   background-color:#FFFBE3;
@@ -92,7 +92,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .notice-item.done .notice-text{color:#B8A391;text-decoration:line-through;}
 .notice-empty{font-size:1.15rem;color:var(--ink-soft);padding:4px 2px;}
 
-/* ===== 보드 (알립니다 + 메뉴판) ===== */
+/* ===== 보드 (종례 + EXP 리스트) ===== */
 .boards{display:flex;gap:22px;align-items:stretch;margin-top:34px;flex-wrap:wrap;}
 .boards .notice-area{margin-top:0;flex:1 1 340px;max-width:none;}
 .menu-board{
@@ -423,7 +423,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <canvas id="fx"></canvas>
 <div id="toast"></div>
 
-<!-- EXP 메뉴판 지급 -->
+<!-- EXP 리스트 지급 -->
 <div class="overlay" id="giveOverlay">
   <div class="modal modal-small">
     <h2 id="giveTitle">🎁 EXP 주기</h2>
@@ -438,7 +438,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <button type="button" class="btn btn-y" id="giveBtn">✨ 지급하기</button>
     </div>
     <div class="section">
-      <div class="section-title">📜 오늘 메뉴판 내역 <small style="color:var(--ink-soft);">(잘못 줬으면 ↩)</small></div>
+      <div class="section-title">📜 오늘 EXP 리스트 내역 <small style="color:var(--ink-soft);">(잘못 줬으면 ↩)</small></div>
       <div class="bonus-log" id="bonusLog"></div>
     </div>
   </div>
@@ -516,7 +516,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <input type="text" id="mainTitleInput" placeholder="예: 노랑반 냥냥 출석 아일랜드">
       </div>
       <div class="form-group">
-        <label>📢 알립니다 (한 줄에 하나씩)</label>
+        <label>📝 종례 (한 줄에 하나씩)</label>
         <textarea id="noticeInput" style="height:84px;" placeholder="예: 오늘은 도서관 대출일입니다&#10;예: 6교시 후 사물함 정리"></textarea>
         <div class="form-hint">메모지에 순서대로 나타나요. 터치하면 체크 표시가 돼요. (4줄 이하 권장)</div>
       </div>
@@ -543,9 +543,9 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     </div>
 
     <div class="section">
-      <div class="section-title">🍽️ EXP 메뉴판</div>
+      <div class="section-title">📋 EXP 리스트</div>
       <textarea id="menuInput" style="height:170px;"></textarea>
-      <div class="form-hint">한 줄에 하나씩 <b>이름, 점수</b>로 적어요. 예) 숙제 완료, 30 / 수업 중 떠들기, -10<br>지각한 친구는 자동으로 '🧹 청소 당번'이 돼요. 청소를 마치면 메뉴판 아래 이름을 눌러 체크하세요.</div>
+      <div class="form-hint">한 줄에 하나씩 <b>이름, 점수</b>로 적어요. 예) 숙제 완료, 30 / 수업 중 떠들기, -10<br>출석 EXP와 EXP 리스트 점수를 더한 <b>오늘 EXP가 마이너스</b>인 친구는 자동으로 '🧹 청소 당번'이 돼요. 플러스로 만회하면 명단에서 빠져요. 청소를 마치면 EXP 리스트 아래 이름을 눌러 체크하세요.</div>
     </div>
 
     <div class="section">
@@ -1040,14 +1040,14 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, silhouetteColors());
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<div class="qmark">?</div><div class="student-name">${esc(name)}</div><div class="touch-text">▼ 터치해서 출석 ▼</div>`);
+      card.insertAdjacentHTML('beforeend', `<div class="qmark">?</div><div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
     } else {
       const tk = recTier(rec), meta = TIER_META[tk];
       card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
       const streak = tk === 'absent' ? 0 : streakOf(name);
       card.innerHTML =
-        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${meta.sleepy ? ' 🧹' : ''}</div>` +
+        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` +
         (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
         (medalOf(rec) ? `<div class="card-first" title="오늘의 ${medalOf(rec)}등">${MEDALS[medalOf(rec)]}</div>` : '') +
         (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
@@ -1143,7 +1143,7 @@ function showReveal(name, rec, ds, done){
     st.classList.add(...stampClass(streak).split(' ').filter(Boolean));
   }
   const md = medalOf(rec);
-  $('revFirst').textContent = [md ? `${MEDALS[md]} 오늘의 ${md}등 도착!` : '', meta.sleepy && name !== '미리보기' ? '🧹 오늘의 청소 당번이 되었어요' : (meta.sleepy ? '🧹 지각하면 청소 당번!' : '')].filter(Boolean).join('  ');
+  $('revFirst').textContent = [md ? `${MEDALS[md]} 오늘의 ${md}등 도착!` : '', (name !== '미리보기' ? dayTotal(name) < 0 : meta.sleepy) ? '🧹 오늘 EXP가 마이너스예요! EXP 리스트로 만회해 보자' : ''].filter(Boolean).join('  ');
   $('revExp').textContent = '';
   ov.style.display = 'flex';
   let canClose = false;
@@ -1193,13 +1193,14 @@ function demoReveal(tierKey){
 function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, rare:t.e2Exp, normal:t.e3Exp, yawn:t.l1Exp, nod:t.l2Exp, sleep:t.l3Exp, burrito:t.l4Exp }[k]; }
 
 /* =========================================================
-   🥇 메달 · 🍽️ 메뉴판 · 🧹 청소 당번
+   🥇 메달 · 📋 EXP 리스트 · 🧹 청소 당번
    ========================================================= */
 const MEDALS = { 1:'🥇', 2:'🥈', 3:'🥉' };
 function medalOf(rec){ return rec.rank || (rec.first ? 1 : 0); }
 function todayBonus(){ return db.bonus[getTodayStr()] || []; }
 function bonusSum(name){ return todayBonus().filter(b => b.who === name).reduce((s, b) => s + b.exp, 0); }
-function bonusPill(name){ const v = bonusSum(name); return todayBonus().some(b => b.who === name) ? `<span class="exp-pill bonus" title="메뉴판 EXP">🎁${fmtExp(v)}</span>` : ''; }
+function bonusPill(name){ const v = bonusSum(name); return todayBonus().some(b => b.who === name) ? `<span class="exp-pill bonus" title="EXP 리스트">🎁${fmtExp(v)}</span>` : ''; }
+function dayTotal(name){ const r = todayData()[name]; return (r ? Number(r.exp) || 0 : 0) + bonusSum(name); }
 function bonusCell(name){ const list = todayBonus().filter(b => b.who === name); return list.length ? `${fmtExp(bonusSum(name))} <small style="color:var(--ink-soft);">(${list.length}건)</small>` : '-'; }
 
 function renderMenuBoard(){
@@ -1207,15 +1208,15 @@ function renderMenuBoard(){
   const plus = db.menu.map((m, i) => ({ ...m, i })).filter(m => m.exp >= 0);
   const minus = db.menu.map((m, i) => ({ ...m, i })).filter(m => m.exp < 0);
   const item = m => `<button type="button" class="menu-item" data-mi="${m.i}"><span>${esc(m.name)}</span><span class="dots"></span><span class="pts ${m.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(m.exp)}</span></button>`;
-  let html = '<div class="menu-header">🍽️ EXP 메뉴판</div><div class="menu-cols">';
+  let html = '<div class="menu-header">📋 EXP 리스트</div><div class="menu-cols">';
   html += `<div><div class="menu-col-title">✨ 얻을 수 있어요</div>${plus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += '</div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
-  const cleaners = db.students.filter(n => day[n] && day[n].status === 'late');
+  const cleaners = db.students.filter(n => dayTotal(n) < 0);
   html += `<div class="clean-row"><span>🧹 오늘의 청소 당번</span>${cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
-    : '<span class="clean-empty">없어요! 다들 부지런하다냥 ✨</span>'}</div>`;
+    : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
   box.innerHTML = html;
 }
 function toggleClean(name){
@@ -1482,13 +1483,13 @@ function scheduleBlink(){
 }
 
 /* =========================================================
-   📢 알립니다
+   📝 종례
    ========================================================= */
 function renderNotices(){
   const area = $('noticeArea');
-  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 알립니다</div>';
+  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📝 종례</div>';
   const list = (db.notices || []).filter(t => t && t.trim() !== '');
-  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">⚙️ 설정에서 오늘의 안내를 적어 주세요</div>'); return; }
+  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">⚙️ 설정에서 오늘의 종례 내용을 적어 주세요</div>'); return; }
   list.forEach((text, idx) => {
     const item = document.createElement('div');
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
@@ -1540,7 +1541,7 @@ function loadStats(period){
   if (period === 'today'){
     const day = todayData();
     let html = isWeekend ? '<div class="weekend-note">※ 오늘은 주말이라 주·월·올해 누적에는 합산되지 않아요.</div>' : '';
-    html += '<table><thead><tr><th>이름</th><th>냥이</th><th>상태</th><th>시간</th><th>출석 EXP</th><th>🍽️ 메뉴판</th><th>관리</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>이름</th><th>냥이</th><th>상태</th><th>시간</th><th>출석 EXP</th><th>📋 EXP 리스트</th><th>관리</th></tr></thead><tbody>';
     db.students.forEach(name => {
       const rec = day[name];
       if (!rec){
@@ -1564,7 +1565,7 @@ function loadStats(period){
 
   const map = periodStats(period);
   let html = '<div class="weekend-note">주말 기록은 누적에서 빠져요.</div>';
-  html += '<table><thead><tr><th>이름</th><th>⭐ 출석</th><th>💤 지각</th><th>🏠 결석</th><th>👑 레전드</th><th>🍽️ 메뉴판</th><th>누적 EXP</th></tr></thead><tbody>';
+  html += '<table><thead><tr><th>이름</th><th>⭐ 출석</th><th>💤 지각</th><th>🏠 결석</th><th>👑 레전드</th><th>📋 EXP 리스트</th><th>누적 EXP</th></tr></thead><tbody>';
   db.students.forEach(name => {
     const s = map[name];
     html += `<tr><td>${esc(name)}</td><td>${s.p}</td><td>${s.l}</td><td>${s.d}</td><td>${s.leg}</td><td>${fmtExp(s.bonus)}</td><td>${expPill(s.exp)}</td></tr>`;
