@@ -195,9 +195,14 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .student-name{font-size:1.7rem;margin-top:4px;line-height:1.2;}
 .touch-text{font-size:1rem;margin-top:6px;color:var(--ink-soft);animation:blink 1.4s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.card-tag{position:absolute;top:10px;left:10px;font-size:.82rem;padding:2px 8px;border:2px solid var(--ink);border-radius:999px;background:#fff;}
-.card-streak{position:absolute;top:9px;right:10px;font-size:1.05rem;}
-.card-first{position:absolute;top:-16px;right:-10px;font-size:2.1rem;transform:rotate(12deg);filter:drop-shadow(0 3px 0 rgba(91,70,54,.35));}
+.card-tag{position:absolute;top:10px;left:22px;font-size:.82rem;padding:2px 8px;border:2px solid var(--ink);border-radius:999px;background:#fff;}
+.card-streak{position:absolute;top:8px;right:8px;width:48px;height:48px;border-radius:50%;border:3px double #E8577D;color:#E8577D;
+  background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:.66rem;line-height:1.05;transform:rotate(-14deg);}
+.card-streak b{font-size:1.05rem;font-weight:normal;}
+.card-streak.gold{border-color:#F5A400;color:#C98000;background:#FFF6CC;}
+.card-streak.rainbow{border-color:#8C74F0;color:#7A5FE0;background:linear-gradient(135deg,#FFE3EE,#FFF6CC,#DFF7EE,#E3EDFF);}
+.card-first{position:absolute;top:-18px;left:-12px;font-size:2.1rem;transform:rotate(-12deg);filter:drop-shadow(0 3px 0 rgba(91,70,54,.35));}
 .card-meta{display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap;margin-top:6px;font-size:.98rem;white-space:nowrap;}
 .card-meta .exp-pill{padding:1px 6px;}
 .exp-pill{border:2px solid var(--ink);border-radius:999px;padding:1px 9px;background:#fff;}
@@ -298,7 +303,16 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .rev-rarity{display:inline-block;font-size:1.5rem;padding:4px 20px;border:3px solid var(--ink);border-radius:999px;background:var(--y);}
 .rev-cat{width:184px;height:184px;margin:8px auto 0;display:block;animation:bob 1.6s ease-in-out infinite;}
 .rev-charname{font-size:1.7rem;}
-.rev-msg{font-size:1.4rem;margin-top:8px;color:var(--ink-soft);word-break:keep-all;}
+.rev-hello{font-size:2rem;margin-top:10px;color:var(--ink);}
+.rev-stamp{position:absolute;top:-28px;right:-38px;width:116px;height:116px;border-radius:50%;border:6px double #E8577D;color:#E8577D;
+  background:rgba(255,255,255,.95);display:none;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;
+  font-size:1rem;transform:rotate(-14deg);box-shadow:0 4px 0 rgba(91,70,54,.25);}
+.rev-stamp b{font-size:2.3rem;font-weight:normal;}
+.rev-stamp.show{display:flex;animation:stampIn .32s cubic-bezier(.3,1.6,.5,1);}
+.rev-stamp.gold{border-color:#F5A400;color:#C98000;background:#FFF6CC;}
+.rev-stamp.rainbow{border-color:#8C74F0;color:#7A5FE0;background:linear-gradient(135deg,#FFE3EE,#FFF6CC,#DFF7EE,#E3EDFF);}
+@keyframes stampIn{0%{transform:scale(2.8) rotate(-35deg);opacity:0}100%{transform:scale(1) rotate(-14deg);opacity:1}}
+.rev-msg{font-size:1.4rem;margin-top:6px;color:var(--ink-soft);word-break:keep-all;max-width:440px;margin-left:auto;margin-right:auto;}
 .rev-first{font-size:1.25rem;margin-top:4px;color:#E0861B;min-height:0;}
 .rev-exp{font-size:3.4rem;margin-top:4px;}
 .rev-exp.plus{color:#1F8A5F;} .rev-exp.minus{color:#D6456E;}
@@ -436,9 +450,11 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <div class="rays"></div>
     <div class="capsule" id="capsule"><div class="cap-top"></div><div class="cap-bottom"></div></div>
     <div class="reveal-card">
+      <div class="rev-stamp" id="revStamp"></div>
       <div class="rev-rarity" id="revRarity">NORMAL</div>
       <canvas id="revCanvas" class="pix rev-cat" width="16" height="16"></canvas>
       <div class="rev-charname" id="revCharName"></div>
+      <div class="rev-hello" id="revHello"></div>
       <div class="rev-msg" id="revMsg"></div>
       <div class="rev-first" id="revFirst"></div>
       <div class="rev-exp" id="revExp"></div>
@@ -1004,7 +1020,7 @@ function streakOf(name){
     const ds = getTodayStr(d), wd = d.getDay(), day = db.records[ds];
     if (wd !== 0 && wd !== 6 && day && Object.keys(day).length){
       const r = day[name];
-      if (r && r.status === 'present') n++;
+      if (r && (r.status === 'present' || r.status === 'late')) n++;
       else if (!(i === 0 && !r)) break;
     }
     d.setDate(d.getDate() - 1);
@@ -1029,12 +1045,12 @@ function renderGrid(){
     } else {
       const tk = recTier(rec), meta = TIER_META[tk];
       card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
-      const streak = rec.status === 'present' ? streakOf(name) : 0;
+      const streak = tk === 'absent' ? 0 : streakOf(name);
       card.innerHTML =
-        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}</div>` +
-        (streak >= 2 ? `<div class="card-streak" title="연속 제시간 출석">🔥${streak}</div>` : '') +
+        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${meta.sleepy ? ' 🧹' : ''}</div>` +
+        (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
         (medalOf(rec) ? `<div class="card-first" title="오늘의 ${medalOf(rec)}등">${MEDALS[medalOf(rec)]}</div>` : '') +
-        (meta.sleepy ? `<div class="zzz">z<small>z</small></div><div class="card-clean" title="오늘의 청소 당번">🧹</div>` : '');
+        (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
       drawColors(cv, recColors(rec, name, ds));
       card.append(cv);
       card.insertAdjacentHTML('beforeend',
@@ -1117,7 +1133,15 @@ function showReveal(name, rec, ds, done){
   $('revRarity').style.background = meta.color;
   drawColors($('revCanvas'), recColors(rec, name, ds));
   $('revCharName').textContent = recCharName(rec, name, ds);
-  $('revMsg').textContent = meta.msg(name);
+  const demo = name === '미리보기';
+  $('revHello').textContent = `${demo ? '하나' : callName(name)} 왔어? 👋`;
+  $('revMsg').textContent = pickGreeting();
+  const streak = demo ? 3 : streakOf(name);
+  const st = $('revStamp'); st.className = 'rev-stamp'; st.innerHTML = '';
+  if (streak >= 2){
+    st.innerHTML = `<b>${streak}</b>일 연속<br>출석!`;
+    st.classList.add(...stampClass(streak).split(' ').filter(Boolean));
+  }
   const md = medalOf(rec);
   $('revFirst').textContent = [md ? `${MEDALS[md]} 오늘의 ${md}등 도착!` : '', meta.sleepy && name !== '미리보기' ? '🧹 오늘의 청소 당번이 되었어요' : (meta.sleepy ? '🧹 지각하면 청소 당번!' : '')].filter(Boolean).join('  ');
   $('revExp').textContent = '';
@@ -1139,9 +1163,13 @@ function showReveal(name, rec, ds, done){
     if (rec.tier === 'legend') setTimeout(() => { burst('legend', innerWidth*.2, innerHeight*.35); burst('legend', innerWidth*.8, innerHeight*.35); }, 350);
     countExp(Number(rec.exp) || 0);
     mascotReact(rec.tier);
+    if (streak >= 2) setTimeout(() => {
+      st.classList.add('show'); sfx('stamp');
+      if (STREAK_MILESTONES.includes(streak)){ burst('party', innerWidth*.72, innerHeight*.3); setBubble(`우와! ${streak}일 연속 출석 달성이다냥!! 🔥`, 4500); }
+    }, 420);
     canClose = true;
   }, 300);
-  revealCloseTimer = setTimeout(finish, rec.tier === 'legend' ? 3800 : 2900);
+  revealCloseTimer = setTimeout(finish, rec.tier === 'legend' ? 4300 : 3600);
   ov.onclick = () => { if (canClose) finish(); };
 }
 function countExp(target){
@@ -1249,6 +1277,40 @@ function parseMenu(text){
   return out;
 }
 
+/* =========================================================
+   👋 인사말 · 🔥 연속 출석 스탬프
+   ========================================================= */
+const GREETINGS = [
+  '오늘도 만나서 반가워!', '오늘 하루도 신나게 보내자!', '네가 와서 교실이 환해졌어 ☀️', '오늘도 멋진 하루가 될 거야!',
+  '아침밥은 맛있게 먹었어?', '기다리고 있었어! 💛', '오늘 기분은 어때?', '너의 미소가 최고야 😊',
+  '오늘도 힘차게 출발!', '하나가 꼬리 흔들며 반기고 있어 🐾', '오늘도 너를 응원해!', '같이 즐거운 하루 만들자!',
+  '어제 푹 잤어?', '오늘도 반짝반짝 빛나는 하루!', '네가 있어서 우리 반이 완성돼!', '하이파이브! ✋',
+  '오늘도 새로운 걸 배워 보자!', '천천히 숨 한번 쉬고 시작하자 🌿', '오늘의 주인공은 바로 너!', '좋은 일이 생길 것 같은 날이야 🍀',
+  '실수해도 괜찮아, 같이 해 보자!', '오늘도 친구들에게 다정하게 💕', '네 덕분에 아침이 즐거워!', '오늘도 행복 가득 충전 완료! 🔋',
+  '반가워서 하나가 골골송 불러 😽', '오늘은 어떤 재밌는 일이 있을까?', '우리 오늘도 화이팅하자! 💪', '네 얼굴 보니까 힘이 나!',
+  '오늘도 웃는 얼굴로 시작해 볼까?', '어서 와, 자리에서 편하게 쉬어!', '오늘도 한 뼘 더 자라는 날 🌱', '너는 할 수 있어!',
+  '오늘도 너라서 좋아 💛', '가방 내려놓고 기지개 쭉~', '오늘도 너의 하루를 응원할게 📣', '오는 길 조심히 잘 왔지?',
+  '오늘도 즐겁게 배워 보자 📚', '너를 보니 기분이 좋아져!', '행운 냥이가 오늘 너를 지켜 줄 거야 🍀', '마음 따뜻한 하루 보내자 🧣',
+  '오늘은 무슨 이야기를 들려줄 거야?', '우리 반 보물 도착! 💎', '오늘도 서로 칭찬 많이 하자!', '작은 도전 하나 해 보는 날!',
+  '손 깨끗이 씻고 시작하자 🧼', '물 한 잔 마시고 시작해 볼까? 💧', '오늘도 웃음 한 스푼 추가! 😆', '어제보다 더 멋진 오늘!',
+  '네가 와서 하나가 신났어 🐱', '오늘도 같이 있어서 든든해!'
+];
+let recentGreetings = [];
+function pickGreeting(){
+  const pool = GREETINGS.filter(g => !recentGreetings.includes(g));
+  const g = rand(pool.length ? pool : GREETINGS);
+  recentGreetings.push(g); if (recentGreetings.length > 15) recentGreetings.shift();
+  return g;
+}
+// 받침이 있으면 '아', 없으면 '야' (지훈아 / 원이야)
+function callName(name){
+  const code = name.charCodeAt(name.length - 1);
+  if (code >= 0xAC00 && code <= 0xD7A3) return name + (((code - 0xAC00) % 28) ? '아' : '야');
+  return name + '야';
+}
+const STREAK_MILESTONES = [5, 10, 15, 20, 30, 40, 50, 60, 80, 100, 150, 200];
+function stampClass(n){ return n >= 10 ? 'rainbow' : (n >= 5 ? 'gold' : ''); }
+
 /* 🎉 모두 모이면 파티 */
 function partyMap(){ try { return JSON.parse(localStorage.getItem(PARTY_KEY)) || {}; } catch(e){ return {}; } }
 function checkParty(){
@@ -1354,6 +1416,7 @@ function sfx(kind){
     case 'normal': seq([784,1047], .1, 'triangle', .3); break;
     case 'late': seq([523,440,349,392], .17, 'sine', .45, .16); break;
     case 'party': seq([523,523,523,659,784,659,784,1047], .13, 'square', .2, .08); seq([262,262,262,330,392,330,392,523], .13, 'triangle', .25, .1); break;
+    case 'stamp': note(150, t, .16, 'square', .1); note(95, t + .01, .3, 'sine', .25); break;
     case 'meow': meow(); break;
   }
 }
