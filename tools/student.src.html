@@ -209,7 +209,10 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .checkin.done{background:#DFF7EE;font-size:1.05rem;}
 .checkin.wait{background:#E4F3FF;font-size:1.05rem;}
 @keyframes ckb{50%{transform:translateY(-3px)}}
-.cs-row{display:flex;gap:8px;justify-content:space-between;margin-top:6px;}
+.cs-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+.cs-imp{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;border:2px dashed #F0B400;border-radius:12px;background:#FFF8D6;font-weight:700;cursor:pointer;}
+.cs-imp input{width:20px;height:20px;accent-color:#F0B400;}
+.cs-imp small{font-weight:400;color:#8a7a5a;}
 .btn-urgent{background:#FF5C7A;color:#fff;}
 .btn-lav{background:#D9CCFF;}
 .my-ask.urg{border-color:#E0334F;background:#FFE3E8;}
@@ -378,7 +381,7 @@ async function pull(force){
     const prevNotice = JSON.stringify([st.notices, st.closing]);
     st.notices = j.notices || []; st.closing = j.closing || [];
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
-    megaNow = j.mega || [];
+    megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0);
     special = { banners: j.banners || [], butler: j.butler || '' };
     if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
     if (j.pub){
@@ -392,6 +395,10 @@ async function pull(force){
   } catch(e){ $('status').textContent = '⚠️ 연결 안 됨'; }
   finally { busy = false; }
 }
+/* NEW 표시: 한 번 열어 본 친구는 다시 꾸미기 전까지 NEW가 안 떠요 */
+function seenMap(){ try { return JSON.parse(localStorage.getItem('nyangSeenLook') || '{}') || {}; } catch(e){ return {}; } }
+function seenLook(n){ return Number(seenMap()[n] || 0); }
+function markSeen(s){ if (!s || !s.lookAt) return; const m = seenMap(); m[s.name] = s.lookAt; try { localStorage.setItem('nyangSeenLook', JSON.stringify(m)); } catch(e){} }
 async function studentCall(op, extra){
   const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
   return api(API, { method:'POST', body: JSON.stringify(body) });
@@ -456,7 +463,7 @@ async function enterVillage(){
     call: (op, extra) => studentCall(op, extra),
     sendChat: async (text, to) => {
       const j = await studentCall('chatSend', { to: to || '', text, after: chat.last });
-      if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요' }[j.error] || '보내지 못했어요') : ''; }
+      if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요', hallmute:'🔇 회의 중이라 잠시 조용히 해야 해요' }[j.error] || '보내지 못했어요') : ''; }
       return '다시 로그인해 주세요';
     },
     hud: () => me && me.info ? { lv: me.info.lv, lvName: me.info.lvName, exp: me.info.exp, coins: coin ? coinText() : '…' } : null,
@@ -471,7 +478,7 @@ async function enterVillage(){
   villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
   if (!me) toast('로그인하면 내 고양이로 걸어 다닐 수 있어요');
 }
-let villageChatTimer = 0, hanaLookNow = {}, megaNow = [], special = { banners: [], butler: '' };
+let villageChatTimer = 0, hanaLookNow = {}, megaNow = [], tickerClear = 0, special = { banners: [], butler: '' };
 /* 🐱 머리 위 하나: 눌러서 말 시키기 + 꾸민 모습 */
 function drawHeaderHana(){ const w = $('hanaWear'); if (w) w.innerHTML = hanaWearHTML(hanaLookNow, null); }
 function hanaTalk(){
@@ -517,7 +524,7 @@ function render(){
   $('cleanMe').innerHTML = (me && fresh && me.info && me.info.clean) ? '<div class="clean-me">🧹 오늘 청소 당번이에요! 오늘 EXP가 마이너스라서 그래요. 내일은 플러스로 만들어 보자 💪</div>' : '';
 
   // 마을
-  const now = Date.now(), recent = pub.students.filter(s => s.lookAt && now - s.lookAt < 3600000).sort((a, b) => b.lookAt - a.lookAt);
+  const now = Date.now(), recent = pub.students.filter(s => s.lookAt && s.lookAt > tickerClear && now - s.lookAt < 3600000).sort((a, b) => b.lookAt - a.lookAt);
   $('megaTicker').style.display = megaNow.length ? 'block' : 'none';
   $('megaText').textContent = megaNow.map(m => `📢 ${m.n} : ${m.text}`).join('      ');
   $('ticker').style.display = recent.length ? 'block' : 'none';
@@ -525,7 +532,7 @@ function render(){
   $('village').innerHTML = pub.students.map((s, i) => {
     const deco = LEVELS[s.lv - 1] ? LEVELS[s.lv - 1].deco : '';
     return `<div class="vcat lv-${s.lv} ${me && me.name === s.name ? 'mine' : ''}" data-cat="${i}"><div class="lv-frame"></div>${deco ? `<div class="lv-deco">${deco}</div>` : ''}
-      ${s.lookAt && now - s.lookAt < 86400000 ? '<div class="new">NEW</div>' : ''}
+      ${s.lookAt && now - s.lookAt < 86400000 && s.lookAt > tickerClear && seenLook(s.name) < s.lookAt && !(me && me.name === s.name) ? '<div class="new">NEW</div>' : ''}
       <canvas class="pix" width="16" height="16"></canvas><div class="vname">${esc(s.name)}</div><div class="vlv">Lv.${s.lv} ${esc(s.lvName || '')}</div></div>`;
   }).join('') || '<div class="empty">아직 고양이가 없어요</div>';
   document.querySelectorAll('#village .vcat').forEach(el => {
@@ -751,7 +758,7 @@ function renderAsk(){
     ${qa.length ? qa.map(a => `<div class="my-ask"><div class="meta">${a.kind === '건의' ? '💡 건의' : '❓ 질문'} · ${esc(a.t)}${a.anon ? ' · 🙈 익명' : ''}</div>
       <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : '<div class="wait">⏳ 답변을 기다리는 중</div>'}</div>`).join('') : '<div class="empty">아직 보낸 질문이 없어요</div>'}`;
 }
-/* 💬 상담 · 🚨 긴급 */
+/* 💬 상담 · ⭐ 중요 */
 function renderCounsel(){
   const box = $('counselBox'); if (!box) return;
   if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 상담을 신청할 수 있어요</div>'; return; }
@@ -762,26 +769,24 @@ function renderCounsel(){
   const draft = $('csText') ? $('csText').value : '';
   box.innerHTML = `<div class="hint" style="margin-bottom:6px;">🔒 선생님만 볼 수 있어요. 고민, 친구 문제, 아픈 곳… 뭐든 괜찮아요.</div>
     <textarea id="csText" rows="3" maxlength="300" placeholder="선생님께 하고 싶은 이야기를 적어 주세요">${esc(draft)}</textarea>
-    <div class="cs-row"><button type="button" class="btn btn-urgent" id="csUrgent">🚨 긴급</button><button type="button" class="btn btn-lav" id="csSend">💬 상담 신청</button></div>
-    <div class="hint" style="margin:2px 0 8px;">🚨 긴급은 지금 바로 도움이 필요할 때만! 선생님 화면이 빨갛게 바뀌어요.</div>
-    ${mine.length ? mine.map(a => `<div class="my-ask ${a.kind === '긴급' ? 'urg' : ''}"><div class="meta">${a.kind === '긴급' ? '🚨 긴급' : '💬 상담'} · ${esc(a.t)}</div>
+    <label class="cs-imp"><input type="checkbox" id="csImp"${box.dataset.imp === '1' ? ' checked' : ''}> ⭐ 꽤 중요한 상담이에요 <small>(선생님이 먼저 확인해요)</small></label>
+    <div class="cs-row"><button type="button" class="btn btn-lav" id="csSend">💬 상담 신청</button></div>
+    ${mine.length ? mine.map(a => `<div class="my-ask ${a.kind === '긴급' ? 'urg' : ''}"><div class="meta">${a.kind === '긴급' ? '⭐ 중요 상담' : '💬 상담'} · ${esc(a.t)}</div>
       <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : a.done ? '<div class="rep">✔ 선생님이 확인했어요. 곧 이야기해요!</div>' : '<div class="wait">⏳ 선생님이 확인하기 전이에요</div>'}</div>`).join('') : ''}`;
 }
 function counselNotice(urgent){
   $('csNoteBody').innerHTML = urgent
-    ? `🚨 <b>긴급으로 선생님께 전달했어요.</b><br><br>그래도 선생님이 바로 못 볼 수도 있어요.<br><b>지금 바로</b> 교무실이나 가까운 선생님께 <b>직접 찾아가서 말해 주세요.</b><br>위험하거나 많이 아프면 망설이지 말고 어른에게 먼저 알려요! 💛`
+    ? `⭐ <b>중요 상담으로 선생님께 전달했어요.</b><br><br>선생님이 먼저 확인하고 따로 불러서 이야기할게요.<br>그래도 <b>오늘 안에</b> 연락이 없으면 꼭 <b>직접 말로</b> 알려 주세요.<br>위험하거나 많이 아프면 기다리지 말고 가까운 어른께 바로 알려요! 💛`
     : `💌 <b>선생님께 잘 전달됐어요.</b><br><br>선생님이 <b>오늘 안에</b> 따로 부르지 않으면,<br><b>내일까지</b> 꼭 선생님께 <b>직접 말로</b> 한 번 더 이야기해 주세요.<br>글로만 남기면 놓칠 수도 있거든요. 기다리고 있을게요 🐾`;
   $('csNoteOv').style.display = 'flex';
 }
 async function counselSend(urgent){
   let text = ($('csText').value || '').trim();
-  if (urgent){
-    if (!confirm('🚨 선생님께 긴급 상담을 보낼까요?\n선생님 화면에 바로 빨갛게 알려져요.')) return;
-    if (!text) text = '🚨 지금 선생님 도움이 필요해요!';
-  } else if (!text){ toast('내용을 적어 주세요'); return; }
+  if (urgent == null) urgent = !!($('csImp') && $('csImp').checked);
+  if (!text){ toast('내용을 적어 주세요'); return; }
   try {
     const j = await studentCall('askSend', { kind: urgent ? '긴급' : '상담', text });
-    if (j.ok && !j.error){ $('csText').value = ''; counselNotice(urgent); }
+    if (j.ok && !j.error){ $('csText').value = ''; $('counselBox').dataset.imp = ''; counselNotice(urgent); }
     else toast(j.error === 'slow' ? '조금 있다가 다시 보내 주세요' : '보내지 못했어요');
     if (j.ok){ asks = j.asks || []; renderAsk(); renderCounsel(); }
   } catch(e){ toast('연결이 안 돼서 보내지 못했어요'); }
@@ -950,7 +955,7 @@ async function tLoad(){
   tRender();
 }
 function tRender(){
-  const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'🚨 긴급' };
+  const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담' };
   if (tTab === 'ask'){
     const open = a => !a.reply && !a.done;
     const list = (tData.asks || []).filter(a => !a.del).reverse().sort((a, b) => (b.kind === '긴급' && open(b)) - (a.kind === '긴급' && open(a)));
@@ -1019,7 +1024,8 @@ function tRender(){
   if (tTab === 'eng'){ box.innerHTML = '<div id="tEngBox"></div>'; mountEngAdmin($('tEngBox'), tCall, toast); return; }
   if (tTab === 'show'){
     const d = tData.today || {}, inv = (tData.coins || {}).inv || {};
-    box.innerHTML = `<div class="box"><div class="box-head">📢 확성기</div>${(d.mega || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="megaDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
+    box.innerHTML = `<div class="box"><div class="box-head">🧹 냥이 마을 공지 지우기</div><div class="hint">마을 위쪽에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><div class="t-row"><button type="button" class="btn btn-y" data-tdel="tickerClear">🧹 마을 공지 모두 지우기</button></div></div>
+      <div class="box"><div class="box-head">📢 확성기</div>${(d.mega || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="megaDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head pink">🎊 축하 배너</div>${(d.banners || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="bannerDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head mint">🏷️ 칭호</div>${Object.entries(inv).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="t-line"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="btn btn-gray" data-ttitle="${esc(n)}">지우기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head lav">🐱 하나</div><div>오늘의 집사: <b>${esc(d.butler || '없음')}</b></div><div class="t-row">${d.butler ? '<button type="button" class="btn btn-gray" data-tdel="butlerDel">집사 취소</button>' : ''}<button type="button" class="btn btn-gray" data-tdel="hanaReset">하나 꾸미기 초기화</button></div></div>
@@ -1034,7 +1040,7 @@ function tDot(){ $('dotAdmin').classList.toggle('on', tUrgent > 0); }
 async function tPoll(){
   if ((!tKey && !tAuthByLogin) || document.hidden) return;
   try { const j = await tCall({ action:'asks' }); const n = (j.asks || []).filter(a => a.kind === '긴급' && !a.reply && !a.done && !a.del).length;
-    if (n > tUrgent){ toast(`🚨 긴급 상담 ${n}건!`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e){} }
+    if (n > tUrgent){ toast(`⭐ 중요 상담 ${n}건!`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e){} }
     tUrgent = n; tDot(); if (current === 'admin' && tTab === 'ask'){ tData.asks = j.asks || []; tRender(); }
     if (current === 'admin') document.querySelectorAll('[data-ttab="ask"]').forEach(b => b.textContent = '🚨 상담·질문' + (tUrgent ? ' 🔴' : ''));
   } catch(e){}
@@ -1099,7 +1105,7 @@ document.addEventListener('click', e => {
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2')){ openLogin(); return; }
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
-  const cat = t.closest('[data-cat]'); if (cat){ openCat(st.pub.students[+cat.dataset.cat]); return; }
+  const cat = t.closest('[data-cat]'); if (cat){ const cs = st.pub.students[+cat.dataset.cat]; markSeen(cs); const nb = cat.querySelector('.new'); if (nb) nb.remove(); openCat(cs); return; }
   const ack = t.closest('[data-ack]');
   if (ack && me && !ack.classList.contains('done')){
     ack.textContent = '…';
@@ -1132,8 +1138,8 @@ document.addEventListener('click', e => {
   if (t.closest('#checkinBtn')){ openOath(); return; }
   if (t.closest('#pfSave')){ saveProfile(); return; }
   if (t.closest('#hanaBtn')){ hanaTalk(); return; }
-  if (t.closest('#csSend')){ counselSend(false); return; }
-  if (t.closest('#csUrgent')){ counselSend(true); return; }
+  if (t.closest('#csSend')){ counselSend(); return; }
+  if (t.closest('#csImp')){ $('counselBox').dataset.imp = t.checked ? '1' : ''; }
   if (t.closest('#oathGo')){ doCheckin(); return; }
 });
 $('loginBtn').addEventListener('click', doLogin);

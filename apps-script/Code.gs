@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v10 · 중요공지 시트·마을 지도·영어 학원·미션 고르기·ID 카드·안전 기능)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v11 · 하나 하루 5번·회의 단상·마을 공지 지우기·중요공지 시트·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -27,14 +27,14 @@ const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나�
 const CLOSING_SHEET = '종례';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 10;
+const API_VERSION = 11;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
 // 🪑 앉을 수 있는 자리 수 — 마을 화면(index.html의 V_OBJS · HALL_TABLES)과 같아야 해요
 const SEAT_CAP = {
   out: { fountain: 4, bench1: 2, bench2: 2, longbench: 4, tower: 3, scratch: 1, hammock: 1, box1: 1, box2: 1, sun: 3, pond: 2, churu: 1, swing: 2, cushions: 3, yarn: 1, photo: 6, slide: 1 },
-  hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5 },
+  hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5, PRES: 1, VICE: 1 },
   west: { umb1: 2, umb2: 2, umb3: 2, boat: 3, rock: 2, castle: 2, surf: 1 },
   east: { camp: 5, logs: 3, mush: 3, swing2: 1, stump: 1 },
   south: { park: 3, sandbox: 2 },
@@ -42,6 +42,7 @@ const SEAT_CAP = {
 };
 const HOUSE_ORDER = ['h_box', 'h_tent', 'h_cabin', 'h_cottage', 'h_castle'];
 const HANA_LV = [0, 20, 60, 120, 200, 320];
+const HANA_DAILY = 5;          // 🐱 하나와는 하루에 5번까지 놀 수 있어요
 const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람', '받는 사람(빈칸=전체)', '내용', '상태'];
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
 // 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 ♡로 바뀌어요
@@ -208,6 +209,7 @@ function publicGet_(p) {
   const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
+  res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
   return res;
 }
 
@@ -323,6 +325,7 @@ function handlePost_(body, auth) {
         case 'songDone': props_().setProperty('songs', JSON.stringify(todayList_('songs').map(function (x) { if (x.id === Number(o.id)) x.done = true; return x; }))); break;
         case 'bannerDel': props_().setProperty('banners', JSON.stringify(todayList_('banners').filter(function (x) { return x.ts !== Number(o.ts); }))); break;
         case 'butlerDel': props_().deleteProperty('butler'); break;
+        case 'tickerClear': props_().setProperty('tickerClear', String(Date.now())); props_().setProperty('mega', '[]'); break;
         case 'chatReset': archiveSheet_(CHAT_SHEET, CHAT_HEADER); cacheDrop_(['v:chat']); break;
         case 'askReset': archiveSheet_(ASK_SHEET, ASK_HEADER); break;
         case 'lockdown': props_().setProperty('lockdown', o.on ? '1' : '0'); if (o.on) props_().setProperty('free', '{}'); break;
@@ -423,6 +426,7 @@ function handleStudent_(body) {
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (body.op === 'move' || body.op === 'emote') return studentVillage_(name, body);
+  if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
@@ -558,6 +562,7 @@ function studentChat_(name, body, pub) {
     const last = Number(props_().getProperty('chatLast:' + name) || 0);
     if (!open) error = 'closed';
     else if (muted) error = 'muted';
+    else if (hallMuted_(name)) error = 'hallmute';
     else if (!text) error = 'empty';
     else if (Date.now() - last < 3000) error = 'slow';
     else if (to && to.charAt(0) === '#' && myTable_(name) !== to.slice(1)) error = 'group';
@@ -637,7 +642,7 @@ function villageState_() {
     pos: cacheGet_('v:pos', {}), inv: inv,
     emo: cacheGet_('v:emo', []).filter(function (x) { return x.ts > cut; }),
     chat: cacheGet_('v:chat', []).filter(function (x) { return x.ts > cut; }),
-    hanaLook: hanaLook_(), mega: megaList_(), butler: butlerToday_(), banners: todayList_('banners'),
+    hanaLook: hanaLook_(), mega: megaList_(), butler: butlerToday_(), banners: todayList_('banners'), hallMute: Object.keys(hallMuteList_()),
     now: Date.now()
   };
 }
@@ -665,6 +670,7 @@ function studentVillage_(name, body) {
       pos[name] = p; cachePut_('v:pos', pos);
     } else {
       if ((cfg.muted || []).indexOf(name) >= 0) return { ok: true, error: 'muted' };
+      if (hallMuted_(name)) return { ok: true, error: 'hallmute' };
       const e = String(body.e || '');
       if (EMOTES.indexOf(e) < 0) return { ok: true, error: 'bad' };
       const last = Number(props_().getProperty('emoLast:' + name) || 0);
@@ -677,6 +683,24 @@ function studentVillage_(name, body) {
 }
 
 /* ---------------- 🏘️ 마을: 모둠 자리 · 집 · 하나 · 확성기 ---------------- */
+/* 🎤 학급회의 진행자(회장석·부회장석)는 회의실 친구의 말을 잠깐 막을 수 있어요 (30분 · 회의실 안에서만) */
+function chairOf_(name) {
+  const p = cacheGet_('v:pos', {})[name];
+  return !!(p && p.sc === 'hall' && (p.s === 'PRES' || p.s === 'VICE') && Date.now() - p.ts < 600000);
+}
+function hallMuteList_() { const now = Date.now(), m = cacheGet_('hall:mute', {}); Object.keys(m).forEach(function (k) { if (m[k] < now) delete m[k]; }); return m; }
+function hallMuted_(name) {
+  const m = hallMuteList_(); if (!m[name]) return false;
+  const p = cacheGet_('v:pos', {})[name];
+  return !!(p && p.sc === 'hall' && Date.now() - p.ts < 600000);
+}
+function hallMute_(name, body) {
+  if (!chairOf_(name) && !isTeacherName_(name)) return { ok: true, error: 'notchair' };
+  const m = hallMuteList_(), who = String(body.who || '');
+  if (who && who !== name) { if (body.on) m[who] = Date.now() + 1800000; else delete m[who]; }
+  cachePut_('hall:mute', m);
+  return { ok: true, muted: Object.keys(m) };
+}
 function myTable_(name) {
   const p = cacheGet_('v:pos', {})[name];
   return (p && p.sc === 'hall' && p.s && Date.now() - p.ts < 600000) ? p.s : '';
@@ -762,6 +786,7 @@ function studentHana_(name, body) {
       if (!a) error = 'bad';
       else if (hanaLvOf_(st.p) < (a.need || 0) && !T) error = 'locked';
       else if ((st.c[a.id] || 0) >= (a.day || 1) && !T) error = 'limit';
+      else if (!T && Object.keys(st.c).reduce(function (n, k) { return n + (st.c[k] || 0); }, 0) >= HANA_DAILY) error = 'daylimit';
       else {
         if (a.cost && !T) {
           const rows = readCoins_();

@@ -763,7 +763,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <!-- 비밀번호 -->
 <div class="overlay" id="pinOverlay" style="z-index:10002;">
   <div class="modal pin-box">
-    <h2>🔒 선생님 확인</h2>
+    <h2 id="pinTitle">🔒 선생님 확인</h2>
     <div class="form-hint" id="pinHint">관리자 비밀번호를 입력해 주세요</div>
     <input type="password" inputmode="numeric" class="pin-input" id="pinInput" maxlength="12" autocomplete="off">
     <div class="modal-btns"><button type="button" class="btn btn-gray" id="pinCancelBtn">취소</button><button type="button" class="btn btn-y" id="pinOkBtn">확인</button></div>
@@ -852,7 +852,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <button type="button" class="modal-x" id="aaXBtn" title="닫기">✕</button>
     <h2>📮 질문 · 건의 · 상담</h2>
     <div class="tabs"><button type="button" class="tab active" data-af="open">답변 기다림</button><button type="button" class="tab" data-af="counsel">💬 상담만</button><button type="button" class="tab" data-af="all">전체</button></div>
-    <div class="form-hint" style="margin-bottom:8px;">💬 상담·🚨 긴급은 이름이 꼭 보이고, 보낸 학생만 볼 수 있어요. 긴급은 맨 위에 빨갛게 떠요.</div>
+    <div class="form-hint" style="margin-bottom:8px;">💬 상담·⭐ 중요 상담은 이름이 꼭 보이고, 보낸 학생만 볼 수 있어요. 중요 상담은 맨 위에 빨갛게 떠요.</div>
     <div id="askList" style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 </div>
@@ -1822,7 +1822,7 @@ function renderGrid(){
     card.classList.add('lv-' + li.lv);
     card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
     card.insertAdjacentHTML('beforeend', `<div class="lv-row" title="Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP ${li.exp}${li.next ? ` · 다음 레벨까지 ${li.need}` : ''}"><span class="lv-badge">Lv.${li.lv}</span><div class="lv-track"><div class="lv-fill" style="width:${Math.round(li.pct*100)}%"></div></div>${li.lv === 10 ? '<span class="lv-badge">MAX</span>' : ''}<button type="button" class="closet-btn" title="꾸미기 방">🎨</button></div>`);
-    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); openCloset(name); });
+    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); requireKidPin(name, () => openCloset(name)); });
     grid.append(card);
   });
   lastNew = null;
@@ -2461,7 +2461,7 @@ function showNextLevelUp(){
   setTimeout(() => { ov.onclick = e => { if (e.target.closest('#lvClosetBtn')) return; close(); }; }, 400);
   $('lvClosetBtn').onclick = () => {
     if (closed) return; closed = true; clearTimeout(tm); ov.style.display = 'none'; ov.onclick = null;
-    openCloset(it.name, items.map(x => x.id), () => { lvShowing = false; showNextLevelUp(); });
+    requireKidPin(it.name, () => openCloset(it.name, items.map(x => x.id), () => { lvShowing = false; showNextLevelUp(); }), () => { lvShowing = false; showNextLevelUp(); });
   };
 }
 function renderLevelTab(box){
@@ -2545,12 +2545,39 @@ function renderClosing(){
    🔒 비밀번호 · 👑 관리자 모드
    ========================================================= */
 let pinUntil = 0, pinNext = null;
+let kidPin = null;   // 🎨 꾸미기 방: 그 학생의 로그인 비밀번호(또는 관리자 비밀번호)
+function requireKidPin(name, fn, onCancel){
+  kidPin = { name, fn, onCancel }; pinNext = null;
+  $('pinTitle').textContent = `🎨 ${name}의 꾸미기 방`;
+  $('pinInput').value = ''; $('pinHint').textContent = '학생 페이지 로그인 비밀번호(숫자 4자리)를 넣어 주세요';
+  $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
+}
+async function checkKidPin(){
+  const k = kidPin, v = $('pinInput').value.trim(); if (!k) return;
+  const ok = () => { kidPin = null; $('pinOverlay').style.display = 'none'; k.fn(); };
+  if (db.adminPin && v === db.adminPin) return ok();
+  if (!/^\d{4}$/.test(v)){ $('pinHint').textContent = '숫자 4자리를 넣어 주세요'; return; }
+  if (!sync.url){ $('pinHint').textContent = '서버 연결이 없어서 확인할 수 없어요 (관리자 비밀번호로 열 수 있어요)'; return; }
+  $('pinHint').textContent = '확인 중…';
+  try {
+    const r = await fetch(sync.url, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: k.name, pin: v, op:'login' }) });
+    const j = await r.json();
+    if (kidPin !== k) return;
+    if (j.ok) return ok();
+    $('pinHint').textContent = j.error === 'locked' ? '너무 많이 틀려서 잠시 잠겼어요. 조금 있다가 해 주세요'
+      : j.error === 'nopin' ? '아직 로그인 비밀번호가 없어요 (관리자 비밀번호로 열 수 있어요)'
+      : j.error === 'wrong' ? `❌ 비밀번호가 달라요${j.left ? ` (남은 기회 ${j.left}번)` : ''}` : '다시 해 주세요';
+    $('pinInput').value = ''; $('pinInput').focus();
+  } catch(e){ $('pinHint').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
+}
 function requirePin(fn){
   if (!db.adminPin || Date.now() < pinUntil){ fn(); return; }
+  kidPin = null; $('pinTitle').textContent = '🔒 선생님 확인';
   pinNext = fn; $('pinInput').value = ''; $('pinHint').textContent = '관리자 비밀번호를 입력해 주세요';
   $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
 }
 function checkPin(){
+  if (kidPin) return checkKidPin();
   if ($('pinInput').value === db.adminPin){
     pinUntil = Date.now() + 60 * 60 * 1000;      // 1시간 동안 다시 묻지 않아요
     $('pinOverlay').style.display = 'none';
@@ -3571,11 +3598,11 @@ function showAcks(text){
 function updateGmDot(){
   $('gmDot').style.display = (serverAsksOpen + serverReqOpen) > 0 ? 'block' : 'none';
   $('openGmBtn').classList.toggle('urgent', serverUrgent > 0);
-  $('openGmBtn').title = serverUrgent > 0 ? `🚨 긴급 상담 ${serverUrgent}건! 관리자 모드 → 질문·건의·상담` : '관리자 모드';
+  $('openGmBtn').title = serverUrgent > 0 ? `⭐ 중요 상담 ${serverUrgent}건! 관리자 모드 → 질문·건의·상담` : '관리자 모드';
   const rc = $('gmReqCount'); if (rc) rc.textContent = serverReqOpen > 0 ? `(${serverReqOpen})` : '';
   const c = $('gmAskCount'); if (c) c.textContent = serverAsksOpen > 0 ? `(${serverAsksOpen})` : '';
   const ab = $('gmAskBtn'); if (ab) ab.classList.toggle('urgent', serverUrgent > 0);
-  if (serverUrgent > lastUrgentAlert){ showToast(`🚨 긴급 상담 ${serverUrgent}건이 왔어요!`); try { sfx('late'); } catch(e){} }
+  if (serverUrgent > lastUrgentAlert){ showToast(`⭐ 중요 상담 ${serverUrgent}건이 왔어요!`); try { sfx('late'); } catch(e){} }
   lastUrgentAlert = serverUrgent;
 }
 function teacherName(){ return db.students.find(isTeacherName) || '선생님'; }
@@ -3691,7 +3718,7 @@ async function loadAskAdmin(){
   const isCounsel = a => a.kind === '상담' || a.kind === '긴급';
   let list = askFilter === 'open' ? askCache.filter(isOpen) : askFilter === 'counsel' ? askCache.filter(isCounsel) : askCache;
   list = list.slice().sort((a, b) => (b.kind === '긴급' && isOpen(b)) - (a.kind === '긴급' && isOpen(a)));
-  const KIND = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'🚨 긴급 상담' };
+  const KIND = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담' };
   $('askList').innerHTML = list.length ? list.map(a => `<div class="ask-card ${isOpen(a) ? '' : 'done'} ${a.kind === '긴급' && isOpen(a) ? 'urgent' : ''} ${isCounsel(a) ? 'counsel' : ''}">
       <div class="ask-meta">${KIND[a.kind] || '❓ 질문'} · ${a.anon ? '🙈 익명' : '🐱 ' + esc(a.from)} · ${esc(a.t)}${a.done && !a.reply ? ' · ✔ 확인함' : ''}</div>
       <div class="ask-text">${esc(a.text)}</div>
@@ -3774,6 +3801,7 @@ function renderCoinAdmin(){
         <div class="bonus-entry"><span>${r.type === '미션' ? '✅ 미션' : '🎟 쿠폰'} · <b>${esc(r.name)}</b> · ${esc(r.item)} · ${r.type === '미션' ? '+' : ''}${r.coins}🐾 <small>${esc(r.t)}</small></span>
         <span><button type="button" class="act-btn" style="background:var(--mint);" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button>
         <button type="button" class="act-btn cancel" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="clean-empty">확인할 게 없어요 ✨</div>'}</div>
+      <div class="section"><div class="section-title">🧹 냥이 마을 공지 지우기</div><div class="form-hint">마을에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><button type="button" class="act-btn cancel" data-tickerclear="1">🧹 마을 공지 모두 지우기</button></div>
       <div class="section"><div class="section-title">📢 지금 떠 있는 확성기 (1시간)</div>${megaNow.length ? megaNow.map(m => `<div class="bonus-entry"><span><b>${esc(m.n)}</b>: ${esc(m.text)} <small>${new Date(m.ts).toTimeString().slice(0, 5)}</small></span><button type="button" class="act-btn cancel" data-megadel="${m.ts}">내리기</button></div>`).join('') : '<div class="clean-empty">없어요</div>'}
         <div class="row" style="justify-content:flex-end;"><button type="button" class="mini-btn" id="hanaResetBtn">🐱 하나 꾸미기 초기화</button>${butlerNow ? `<button type="button" class="mini-btn" id="butlerDelBtn">🐱 오늘 집사(${esc(butlerNow)}) 취소</button>` : ''}</div></div>
       <div class="section"><div class="section-title">🏷️ 학생 칭호</div>${Object.entries(d.inv || {}).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="bonus-entry"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="act-btn cancel" data-titledel="${esc(n)}">지우기</button></div>`).join('') || '<div class="clean-empty">아직 없어요</div>'}</div>
@@ -3853,6 +3881,7 @@ function saveCoinSettings(){
 async function onCoinAdmClick(e){
   const t = e.target;
   const tb = t.closest('[data-co]'); if (tb){ coTab = tb.dataset.co; renderCoinAdmin(); return; }
+  if (t.closest('[data-tickerclear]')){ if (!confirm('마을 공지(확성기·새로 꾸몄어요)를 모두 지울까요?')) return; try { await teacherCall({ ops:[{ op:'tickerClear' }] }); megaNow = []; setMega([]); renderCoinAdmin(); showToast('🧹 마을 공지를 지웠어요'); } catch(e){ showToast('지우지 못했어요'); } return; }
   const md = t.closest('[data-megadel]'); if (md){ await teacherCall({ ops:[{ op:'megaDel', ts: Number(md.dataset.megadel) }] }); megaNow = megaNow.filter(m => m.ts !== Number(md.dataset.megadel)); setMega(megaNow); renderCoinAdmin(); showToast('📢 확성기를 내렸어요'); return; }
   const td = t.closest('[data-titledel]'); if (td){ if (!confirm(`${td.dataset.titledel}의 칭호를 지울까요?`)) return; await teacherCall({ ops:[{ op:'titleDel', name: td.dataset.titledel }] }); showToast('🏷️ 칭호를 지웠어요'); loadCoinAdmin(); return; }
   if (t.closest('#butlerDelBtn')){ if (!confirm('오늘의 하나 집사를 취소할까요? (코인은 냥코인 관리에서 돌려주세요)')) return; await teacherCall({ ops:[{ op:'butlerDel' }] }); butlerNow = ''; setSpecials({ banners: bannersNow, songs: songsNow, butler: '' }); renderCoinAdmin(); return; }
@@ -4101,6 +4130,9 @@ const HALL_TABLES = [
   { id:'T1', x:330,  y:520, n:4 }, { id:'T2', x:800,  y:520, n:4 }, { id:'T3', x:1270, y:520, n:4 },
   { id:'T4', x:330,  y:800, n:4 }, { id:'T5', x:800,  y:800, n:4 }, { id:'T6', x:1270, y:800, n:5 }
 ];
+/* 👑 회장석·부회장석 (누구든 서약하고 오를 수 있어요) — Code.gs SEAT_CAP.hall.PRES/VICE */
+const HALL_PODIUMS = [{ id:'PRES', x:620, tag:'👑 회장석' }, { id:'VICE', x:980, tag:'🎖 부회장석' }];
+const isChairSeat = s => s === 'PRES' || s === 'VICE';
 function hallSeats(t){
   const s = [[-120, -38], [120, -38], [-120, 46], [120, 46]];
   if (t.n === 5) s.push([0, 108]);
@@ -4580,6 +4612,7 @@ function openVillage(opts){
   function seatPos(sc, sit, t){
     if (isMap(sc)){ const o = V_OBJS.find(x => x.id === sit); if (o && o.seats[t]) return { x: o.x + o.seats[t][0], y: o.y + o.seats[t][1] }; }
     if (sc === 'eng'){ const d = ENG_DESKS.find(x => x.id === sit); if (d) return { x: d.x, y: d.y + 40 }; }
+    if (sc === 'hall' && isChairSeat(sit)){ const pd = HALL_PODIUMS.find(x => x.id === sit); return { x: pd.x, y: 272 }; }
     if (sc === 'hall'){ const tb = HALL_TABLES.find(x => x.id === sit); if (tb){ const s = hallSeats(tb)[t]; if (s) return { x: tb.x + s[0], y: tb.y + s[1] }; } }
     return null;
   }
@@ -4629,14 +4662,14 @@ function openVillage(opts){
   function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   function box(x, y, w, h, fill, r){ ctx.fillStyle = fill; ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; roundRect(x, y, w, h, r || 8); ctx.fill(); ctx.stroke(); }
   function emoji(e, x, y, size){ ctx.font = `${size}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000'; ctx.fillText(e, x, y); }
-  function bubble(text, x, y, big){
-    ctx.font = `${big ? 30 : 15}px NeoDunggeunmo, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const w = Math.min(280, ctx.measureText(text).width + 18), h = big ? 42 : 30;
-    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 2.5;
+  function bubble(text, x, y, big, chair){
+    ctx.font = `${big ? 30 : chair ? 24 : 15}px NeoDunggeunmo, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const mw = chair ? 520 : 280, w = Math.min(mw, ctx.measureText(text).width + (chair ? 30 : 18)), h = big ? 42 : chair ? 48 : 30, bg = chair ? '#FFE066' : '#fff';
+    ctx.fillStyle = bg; ctx.strokeStyle = '#5B4636'; ctx.lineWidth = chair ? 3.5 : 2.5;
     roundRect(x - w / 2, y - h, w, h, 12); ctx.fill(); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x - 6, y - 1); ctx.lineTo(x, y + 8); ctx.lineTo(x + 6, y - 1); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.fillRect(x - 5, y - 3, 10, 3);
-    ctx.fillStyle = '#5B4636'; ctx.fillText(text, x, y - h / 2 + 1, 270);
+    ctx.fillStyle = bg; ctx.fillRect(x - 5, y - 3, 10, 3);
+    ctx.fillStyle = '#5B4636'; ctx.fillText(text, x, y - h / 2 + 1, mw - 10);
   }
   function hanaImg(){
     if (!hana.img){ hana.img = document.createElement('canvas'); drawColors(hana.img, catColors(MASCOT, null, {})); }
@@ -4862,13 +4895,10 @@ function openVillage(opts){
     ctx.fillText('📝 오늘의 안건', 800, 80);
     ctx.font = '28px NeoDunggeunmo, sans-serif'; ctx.fillStyle = '#FFE066'; ctx.fillText(((eco.meeting || {}).agenda || '자유 토론 · 하고 싶은 말 다 해 보자냥!').slice(0, 30), 800, 130, 600);
     box(700, 230, 200, 60, '#A86E4A', 8); emoji('🎤', 800, 222, 26);
-    const m = eco.meeting || {};
-    [['pres', 620, '👑 회장'], ['vice', 980, '🎖 부회장']].forEach(([k, x, tag]) => {
-      const n = m[k]; const s = n && kidList().find(q => q.name === n);
-      box(x - 60, 270, 120, 30, '#C98B5A', 6);
-      if (s){ const c = ensureCat(s); ctx.imageSmoothingEnabled = false; ctx.drawImage(c.img, x - 32, 200, 64, 64); label(`${tag} ${n}`, x, 312, 13, '#FFE58A');
-        if (c.bubble && c.bubble.until > Date.now()) bubble(c.bubble.text, x, 196, false); if (c.emo && c.emo.until > Date.now()) bubble(c.emo.e, x, 196, true); }
-      else label(`${tag} (선생님이 정해요)`, x, 312, 12, '#FFFFFF');
+    HALL_PODIUMS.forEach(pd => {
+      const who = Object.values(cats).find(c => c.sc === 'hall' && c.sit && c.sit.s === pd.id);
+      box(pd.x - 60, 270, 120, 30, who ? '#E0A040' : '#C98B5A', 6);
+      if (!who) label(pd.tag, pd.x, 312, 12, '#FFFFFF');
     });
     HALL_TABLES.forEach((tb, i) => {
       box(tb.x - 90, tb.y - 40, 180, 90, '#E8C9A0', 14); ctx.fillStyle = '#D4AE80'; ctx.fillRect(tb.x - 80, tb.y - 30, 160, 6);
@@ -4987,9 +5017,10 @@ function openVillage(opts){
     if (pose === 'drink' && Math.floor(t / 600) % 3 === 0) emoji('💧', c.x, c.y - 56, 14);
     if (pose === 'yarn') emoji('🧶', c.x + 26 + Math.sin(t / 250) * 8, c.y - 8, 18);
     const ttl = state && state.inv && state.inv[c.name] && state.inv[c.name].title;
-    label((ttl ? `«${ttl}» ` : '') + c.name, c.x, c.y + 16, 12, c.name === meName ? '#FFE58A' : '#FFFFFF');
+    const chair = c.sc === 'hall' && c.sit && isChairSeat(c.sit.s), hm = c.sc === 'hall' && state && (state.hallMute || []).includes(c.name);
+    label((chair ? (c.sit.s === 'PRES' ? '👑 ' : '🎖 ') : '') + (hm ? '🔇 ' : '') + (ttl ? `«${ttl}» ` : '') + c.name, c.x, c.y + (chair ? 40 : 16), chair ? 14 : 12, chair || c.name === meName ? '#FFE58A' : '#FFFFFF');
     if (c.emo && c.emo.until > now) bubble(c.emo.e, c.x, c.y - 56 - bob, true);
-    else if (c.bubble && c.bubble.until > now) bubble(c.bubble.text, c.x, c.y - 56 - bob, false);
+    else if (c.bubble && c.bubble.until > now) bubble(c.bubble.text, c.x, c.y - 56 - bob, false, chair);
   }
   function stepCat(c, dt, now){
     if (c.sc === 'out' && c.tx == null && c.name !== meName && !c.sit && now > c.wanderAt){
@@ -5039,9 +5070,8 @@ function openVillage(opts){
     ctx.setTransform(scale, 0, 0, scale, ox, oy);
     if (scene === 'out') drawOut(t); else if (scene === 'west') drawWest(t); else if (scene === 'east') drawEast(t); else if (scene === 'south') drawSouth(t);
     else if (scene === 'hall') drawHall(t); else if (scene === 'arcade') drawArcade(t); else if (scene === 'hana') drawHanaHome(t); else if (scene === 'eng') drawEng(t); else drawRoom(t);
-    const m = (eco.meeting || {});
     const here = Object.values(cats).filter(c => c.sc === scene || (scene === 'out' && !c.sc));
-    const list = here.filter(c => !(scene === 'hall' && (c.name === m.pres || c.name === m.vice))).sort((a, b) => a.y - b.y);
+    const list = here.slice().sort((a, b) => a.y - b.y);
     let hanaDrawn = scene !== 'out';
     list.forEach(c => {
       stepCat(c, dt, now);
@@ -5056,9 +5086,38 @@ function openVillage(opts){
       if (h >= 18 || h < 6){ ctx.fillStyle = 'rgba(40,40,100,.28)'; ctx.fillRect(0, 0, VW, VH); }
       else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
     }
+    drawPaws(t);
     if (state && !state.open && !opts.viewOnly) label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF');
     if (scene === 'hall') renderGroup();
     raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------- 🐾 눌러서 상호작용할 수 있는 곳 표시 ---------- */
+  // 각 발바닥은 { x, y: 표시 위치, tx, ty: 누르면 대신 누르는 곳 }
+  function pawSpots(){
+    const out = [], add = (x, y, tx, ty) => out.push({ x, y, tx: tx == null ? x : tx, ty: ty == null ? y : ty });
+    if (isMap(scene)){
+      V_BUILDINGS.filter(b => b.map === scene).forEach(b => add(b.x + b.w - 18, b.y + 18, b.x + b.w / 2, b.y + b.h / 2));
+      objsOf(scene).forEach(o => add(o.x + o.r * .55, o.y - o.r - 14, o.x, o.y));
+      (V_SIGNS[scene] || []).forEach(g => add(Math.max(40, Math.min(VW - 40, g.x + 44)), g.y - 84, g.x, g.y - 40));
+      if (scene === 'out') add(hana.x + 30, hana.y - 78, hana.x, hana.y - 25);
+      if (scene === 'south') PLOTS.forEach(pl => add(pl.x + 100, pl.y - 98, pl.x, pl.y - 50));
+    } else if (scene === 'hall'){
+      HALL_PODIUMS.forEach(pd => add(pd.x + 58, 262, pd.x, 285));
+      HALL_TABLES.forEach(tb => add(tb.x + 78, tb.y - 44, tb.x, tb.y));
+    } else if (scene === 'arcade') ARCADE_MACHINES.forEach(m => add(m.x + 62, m.y - 108, m.x, m.y));
+    else if (scene === 'hana') add(860, 410, 800, 500);
+    else if (scene === 'eng') ENG_DESKS.forEach(d => add(d.x + 62, d.y - 34, d.x, d.y));
+    return out;
+  }
+  function drawPaws(t){
+    if (editing) return;
+    pawSpots().forEach((p, i) => {
+      const y = p.y + Math.sin(t / 380 + i) * 3;
+      ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = '#E58BAA'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(p.x, y, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      emoji('🐾', p.x, y + 1, 16);
+    });
   }
 
   /* ---------- 내 고양이 이동 · 자리 ---------- */
@@ -5080,6 +5139,7 @@ function openVillage(opts){
         const o = V_OBJS.find(x => x.id === g.sit);
         if (o){ emote(o.emo, true); showActs(o); }
         else if (scene === 'eng'){ showActs({ id: '', act: 'study', label: '📚 문제 풀기' }); openEngPanel(); }
+        else if (scene === 'hall' && isChairSeat(g.sit)){ showActs({ hall: true, chair: true }); say('👑 단상에 올랐어요! 내 말풍선이 크고 노랗게 보여요 · 🔇 로 친구 말을 잠시 막을 수 있어요', 4200); toGroup = false; updateTo(); }
         else if (scene === 'hall'){ showActs({ hall: true, table: g.sit }); say(`🤫 ${g.sit.slice(1)}모둠 자리에 앉았어요! 모둠끼리 대화할 수 있어요`, 3200); toGroup = true; updateTo(); }
       });
       return;
@@ -5105,7 +5165,8 @@ function openVillage(opts){
   function showActs(o){
     if (!o){ actsEl.style.display = 'none'; actsEl.innerHTML = ''; return; }
     const btns = [];
-    if (o.hall){ btns.push(`<button type="button" data-act="stand" class="alt">🙋 일어나기</button>`); }
+    if (o.hall && o.chair){ btns.push(`<button type="button" data-act="chair">🔇 조용히 시키기</button>`, `<button type="button" data-act="stand" class="alt">⬇ 내려오기</button>`); }
+    else if (o.hall){ btns.push(`<button type="button" data-act="stand" class="alt">🙋 일어나기</button>`); }
     else {
       if (o.act === 'photo') btns.push(`<button type="button" data-act="photo">📸 찰칵! 사진 찍기</button>`);
       else if (o.act === 'fish') btns.push(`<button type="button" data-act="fish">🎣 낚싯대 던지기</button>`);
@@ -5124,6 +5185,7 @@ function openVillage(opts){
     const b = e.target.closest('[data-act]'); if (!b) return;
     const a = b.dataset.act, c = me(); if (!c) return;
     if (a === 'stand'){ c.sit = null; showActs(null); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 40); if (scene === 'hall'){ c.ty = c.y + 60; toGroup = false; updateTo(); } sendMove(Object.assign({}, c, { y: c.ty })); return; }
+    if (a === 'chair'){ openChairPanel(); return; }
     if (a === 'photo'){ takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
     if (a === 'camp'){ const f = ['🍡 노릇노릇 완벽해!', '🔥 앗 탔다…', '🍡 말랑말랑 맛있다냥', '✨ 황금빛 마시멜로!'][Math.floor(Math.random() * 4)]; c.bubble = { text: f, until: Date.now() + 4000 }; say(f); emote('🔥'); return; }
@@ -5180,7 +5242,7 @@ function openVillage(opts){
     if (scene.startsWith('house:') && room.owner === meName && !opts.viewOnly) showActs({ id: '', act: 'edit', label: '' }), actsEl.innerHTML = `<button type="button" id="vgEdit">🛠 우리 집 꾸미기</button>`;
     if (scene === 'hana') say('하나를 눌러서 같이 놀아요! 💛', 3000);
     if (scene === 'arcade') say('오락기를 눌러 보세요! 🎮', 2500);
-    if (scene === 'hall') say('빈 자리를 눌러 모둠 테이블에 앉아요 🪑', 3000);
+    if (scene === 'hall') say('🐾 를 눌러 모둠 테이블에 앉거나, 단상(👑)에 올라 회의를 진행해요', 3200);
   }
   actsEl.addEventListener('click', e => { if (e.target.closest('#vgEdit')) editStart(); });
   $q('.vg-out').addEventListener('click', () => {
@@ -5193,11 +5255,14 @@ function openVillage(opts){
   /* ---------- 탭 처리 ---------- */
   function toWorld(e){ const r = cv.getBoundingClientRect(), dpr = cv.width / r.width; return { x: ((e.clientX - r.left) * dpr - ox) / scale, y: ((e.clientY - r.top) * dpr - oy) / scale }; }
   cv.addEventListener('pointerdown', e => {
-    const p = toWorld(e), c = me();
+    let p = toWorld(e); const c = me();
     if (editing){ editTap(p); return; }
+    const paw = pawSpots().find(q => Math.hypot(q.x - p.x, q.y - p.y) < 22);
+    if (paw) p = { x: paw.tx, y: paw.ty };
+    const viaPaw = !!paw;
     // 🪪 친구 고양이를 누르면 ID 카드
     const hitCat = Object.values(cats).filter(q => q.sc === scene || (scene === 'out' && !q.sc)).find(q => Math.abs(q.x - p.x) < 26 && p.y < q.y + 8 && p.y > q.y - 52);
-    if (hitCat && !(c && c === hitCat && !e.shiftKey && false)){ openCard(hitCat.name); return; }
+    if (hitCat && !viaPaw){ openCard(hitCat.name); return; }
     // 🪧 표지판 → 옆 지도
     const sg = isMap(scene) && (V_SIGNS[scene] || []).find(g => Math.abs(p.x - g.x) < 64 && p.y > g.y - 80 && p.y < g.y + 10);
     if (sg){ if (opts.viewOnly || !c) return enter(sg.to); walkTo(sg.x + (sg.x < 100 ? 30 : sg.x > 1500 ? -30 : 0), sg.y + (sg.y < 400 ? 20 : -10), { type: 'sign', to: sg.to }); return; }
@@ -5241,8 +5306,13 @@ function openVillage(opts){
       const s = freeSpot(p.x, p.y, 'out'); walkTo(s.x, s.y); return;
     }
     if (scene === 'hall'){
-      const m = eco.meeting || {};
-      if (meName === m.pres || meName === m.vice){ say('회장·부회장은 앞자리에 있어요 👑'); return; }
+      const pd = HALL_PODIUMS.find(q => Math.abs(p.x - q.x) < 70 && p.y > 190 && p.y < 310);
+      if (pd){
+        if (c.sit && c.sit.s === pd.id){ openChairPanel(); return; }
+        const who = Object.values(cats).find(q => q !== c && q.sc === 'hall' && q.sit && q.sit.s === pd.id);
+        if (who){ say(`${pd.tag}에는 ${who.name}이(가) 있어요`); return; }
+        openOathPanel(pd); return;
+      }
       for (const tb of HALL_TABLES){
         const seats = hallSeats(tb);
         for (let i = 0; i < seats.length; i++){
@@ -5290,6 +5360,44 @@ function openVillage(opts){
       else { say('🚧 공사 시작! 내일이면 새 집이 완성돼요', 3500); emote('🎉'); pull(); }
     } catch(e){ say('연결이 안 돼요'); }
   }
+  /* 👑 단상 서약 · 🔇 조용히 시키기 */
+  function openOathPanel(pd){
+    const isP = pd.id === 'PRES', role = isP ? '회장' : '부회장';
+    panel.style.display = 'block';
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>${pd.tag}에 오르기</h3>
+      <div style="line-height:1.6;">🤔 <b>진짜 ${role}인가요?</b><br>아니라면, <b>오늘 회의를 진행하는 대리인</b>인가요?</div>
+      <div class="hint" style="margin-top:6px;">단상에 오르면 내 말풍선이 크고 노랗게 보이고, 떠드는 친구를 30분 동안 🔇 조용히 시킬 수 있어요.</div>
+      <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:8px 10px;border:2px dashed #E0A040;border-radius:12px;background:#FFF8D6;cursor:pointer;"><input type="checkbox" id="vgOath" style="width:20px;height:20px;margin-top:2px;flex:none;">
+        <span>✋ 저는 ${role}(또는 회의 진행 대리인)이 맞아요. 회의를 공정하게 진행하고, 🔇 조용히 시키기는 장난으로 쓰지 않을게요.</span></label>
+      <div style="text-align:center;margin-top:10px;"><button type="button" class="vg-cardgo" id="vgOathGo" data-pd="${pd.id}" disabled>📜 서약하고 오르기</button></div>`;
+  }
+  function openChairPanel(){
+    const c = me(); if (!c || !(c.sit && isChairSeat(c.sit.s))){ closePanel(); return; }
+    const muted = new Set((state && state.hallMute) || []);
+    const others = Object.values(cats).filter(q => q !== c && q.sc === 'hall').map(q => q.name).sort((a, b) => a.localeCompare(b, 'ko'));
+    panel.style.display = 'block';
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>🔇 조용히 시키기</h3>
+      <div class="hint">누르면 그 친구는 30분 동안 회의실 안에서 말하기·이모트를 못 해요. 다시 누르면 바로 풀려요.</div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr));margin-top:8px;">${others.map(n => `<button type="button" data-hmute="${escV(n)}" class="${muted.has(n) ? 'on' : ''}">${muted.has(n) ? '🔇' : '🔈'} ${escV(n)}</button>`).join('') || '<div class="hint">회의실에 다른 친구가 없어요</div>'}</div>`;
+  }
+  panel.addEventListener('change', e => { if (e.target.id === 'vgOath'){ const b = panel.querySelector('#vgOathGo'); if (b) b.disabled = !e.target.checked; } });
+  panel.addEventListener('click', async e => {
+    const go = e.target.closest('#vgOathGo');
+    if (go && !go.disabled){
+      const pd = HALL_PODIUMS.find(q => q.id === go.dataset.pd); closePanel();
+      walkTo(pd.x, 272, { type: 'seat', sit: pd.id, t: 0, act: 'chair' }); return;
+    }
+    const mb = e.target.closest('[data-hmute]');
+    if (mb){
+      const who = mb.dataset.hmute, on = !mb.classList.contains('on'); mb.disabled = true;
+      try {
+        const j = await opts.call('hallMute', { who, on });
+        if (j && j.error) say({ notchair:'단상에 있어야 조용히 시킬 수 있어요', closed:'지금은 마을 쉬는 시간이에요' }[j.error] || '다시 해 주세요');
+        else if (j && j.muted){ if (state) state.hallMute = j.muted; say(on ? `🔇 ${who}을(를) 잠시 조용히 시켰어요` : `🔈 ${who}의 말하기를 풀었어요`); }
+      } catch(err){ say('연결이 안 돼요'); }
+      openChairPanel();
+    }
+  });
   /* 🪪 ID 카드 */
   async function openCard(name){
     panel.style.display = 'block';
@@ -5375,8 +5483,10 @@ function openVillage(opts){
     let body = '';
     if (!opts.me || opts.viewOnly) body = `<div class="hint" style="text-align:center;">학생 페이지에서 로그인하면 하나와 놀 수 있어요</div>`;
     else if (hanaTab === 'play'){
-      body = `<div>💛 친밀도 <b>${H.aff || 0}</b> · <b>${hanaLvName(lv)}</b>${nx ? ` <span class="hint">(다음 단계까지 ${nx - (H.aff || 0)})</span>` : ' 🏆'}</div><div class="bar"><i style="width:${pct}%"></i></div>
-        <div class="grid">${(HANA.acts || []).map(a => { const TT = /(쌤|샘|선생님)$/.test(meName || ''), used = (H.counts || {})[a.id] || 0, lock = lv < (a.need || 0) && !TT, done = used >= (a.day || 1) && !TT;
+      const TT0 = /(쌤|샘|선생님)$/.test(meName || ''), dayUsed = Object.values(H.counts || {}).reduce((n, v) => n + (v || 0), 0), dayMax = H.dayMax || 5, dayFull = dayUsed >= dayMax && !TT0;
+      body = `<div class="hint" style="text-align:center;margin-bottom:4px;">🐾 오늘 하나랑 논 횟수 <b>${Math.min(dayUsed, dayMax)}/${dayMax}</b>${TT0 ? ' (선생님은 무제한)' : dayFull ? ' · 내일 또 놀아요!' : ''}</div>
+        <div>💛 친밀도 <b>${H.aff || 0}</b> · <b>${hanaLvName(lv)}</b>${nx ? ` <span class="hint">(다음 단계까지 ${nx - (H.aff || 0)})</span>` : ' 🏆'}</div><div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="grid">${(HANA.acts || []).map(a => { const TT = /(쌤|샘|선생님)$/.test(meName || ''), used = (H.counts || {})[a.id] || 0, lock = lv < (a.need || 0) && !TT, done = (used >= (a.day || 1) || dayFull) && !TT;
           return `<button type="button" data-hact="${a.id}" class="${lock || done ? 'lock' : ''}">${lock ? '🔒 ' : ''}${escV(a.name)}<br><small>${lock ? `${hanaLvName(a.need)}부터` : `+${a.aff}💛 · 오늘 ${used}/${a.day || 1}`}</small></button>`; }).join('')}</div>
         <div class="hint">📊 하나 집사 랭킹: ${rank}</div>`;
     } else {
@@ -5402,7 +5512,7 @@ function openVillage(opts){
       try {
         const j = await opts.call('hana', { act: a.id });
         if (j && j.ok){
-          if (j.error){ say({ locked:'아직 잠겨 있어요', limit:'오늘은 충분히 했어요! 내일 또 와요', poor:'냥코인이 모자라요 🐾' }[j.error] || '다시 해 주세요'); }
+          if (j.error){ say({ locked:'아직 잠겨 있어요', limit:'오늘은 충분히 했어요! 내일 또 와요', daylimit:'오늘은 하나랑 5번 다 놀았어요! 내일 또 와요 💛', poor:'냥코인이 모자라요 🐾' }[j.error] || '다시 해 주세요'); }
           else {
             const before = (hanaInfo || {}).lv || 0; hanaInfo = j;
             const lines = HANA_REPLY[a.id] || ['냥!']; const line = lines[Math.floor(Math.random() * lines.length)];
@@ -5574,7 +5684,7 @@ function openVillage(opts){
     root.querySelectorAll('[data-e]').forEach(b => b.addEventListener('click', async () => {
       if (!isOpen()){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
       const c = me(); if (c) c.emo = { e: b.dataset.e, until: Date.now() + 3500 };
-      try { const j = await opts.call('emote', { e: b.dataset.e }); if (j && j.error === 'muted') say('🔇 선생님이 잠시 막아 두었어요'); if (j && j.error === 'slow') say('천천히! 🐢'); } catch(e){}
+      try { const j = await opts.call('emote', { e: b.dataset.e }); if (j && j.error === 'muted') say('🔇 선생님이 잠시 막아 두었어요'); if (j && j.error === 'hallmute') say('🔇 회의 중이라 잠시 조용히 해야 해요'); if (j && j.error === 'slow') say('천천히! 🐢'); } catch(e){}
     }));
     const talk = async () => {
       const text = input.value.trim(); if (!text) return;
@@ -5609,7 +5719,7 @@ function bindEvents(){
   $('openGmBtn').addEventListener('click', () => requirePin(openGm));
   $('pinOkBtn').addEventListener('click', checkPin);
   $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
-  $('pinCancelBtn').addEventListener('click', () => { $('pinOverlay').style.display = 'none'; pinNext = null; });
+  $('pinCancelBtn').addEventListener('click', () => { $('pinOverlay').style.display = 'none'; pinNext = null; const k = kidPin; kidPin = null; if (k && k.onCancel) k.onCancel(); });
   $('gmOverlay').addEventListener('click', onGmClick);
   $('rsGoBtn').addEventListener('click', fullReset);
   $('coinAdmOverlay').addEventListener('click', onCoinAdmClick);
