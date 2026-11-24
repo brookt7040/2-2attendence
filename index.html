@@ -1308,14 +1308,16 @@ const SPECIAL_ITEMS = [
 ];
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 4) return false;
+  if ((e.ver || 1) >= 5) return false;
+  if ((e.ver || 1) === 4){ e.locked = { missions: true, shop: true }; e.ver = 5; return true; }
   const v4 = () => {
     // 🎯 미션은 학생이 직접 고르기 (매일 2개 · 매주 3개) · 특별 미션 없앰 · 미션도 EXP를 줘요 (코인의 절반)
     e.missions = (e.missions || []).filter(m => m.cat !== 'all').map(m => Object.assign({}, m, { exp: m.exp != null ? m.exp : Math.round(m.coins / 2) }));
     e.pickLimit = e.pickLimit || { daily: 2, weekly: 3 };
     e.engReward = e.engReward || { coins: 20, exp: 20 };
     db.menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
-    e.ver = 4;
+    e.locked = { missions: true, shop: true };     // 처음엔 미션·상점을 잠가 둬요 (코인은 모여요)
+    e.ver = 5;
   };
   if ((e.ver || 1) >= 3){ v4(); return true; }
   e.shop = e.shop || [];
@@ -3779,6 +3781,9 @@ function renderCoinAdmin(){
     const ml = eco.missions.map(m => `${{ daily:'매일', weekly:'매주', all:'특별' }[m.cat] || '매일'}, ${m.name}, ${m.coins}, ${m.req ? 'O' : 'X'}${m.auto ? ', 자동' : ''}`).join('\n');
     const cl = eco.shop.filter(x => x.cat === 'coupon').map(x => `${x.name}, ${x.price}${x.stock ? ', ' + x.stock : ''}`).join('\n');
     box.innerHTML = `
+      <div class="section"><div class="section-title">🔒 학생 페이지 잠그기 (코인은 계속 모여요)</div>
+        <div class="row" style="justify-content:flex-start;gap:18px;"><label><input type="checkbox" id="coLockM" ${(eco.locked || {}).missions ? 'checked' : ''}> 🎯 미션 잠그기</label><label><input type="checkbox" id="coLockS" ${(eco.locked || {}).shop ? 'checked' : ''}> 🛒 상점 잠그기 (마을 가구 사기 포함)</label></div>
+        <div class="form-hint">잠그면 학생 화면에 "아직 사용할 수 없어요"가 떠요. 출석·영어·도감 코인은 그대로 쌓여요.</div></div>
       <div class="section"><div class="section-title">🏛️ 학급회의 (마을 시청)</div>
         <div class="row" style="justify-content:flex-start;gap:14px;">
           <span>👑 회장 <select id="coPres"><option value="">(없음)</option>${kids().map(n => `<option ${(eco.meeting || {}).pres === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></span>
@@ -3826,6 +3831,7 @@ function saveCoinSettings(){
   });
   const hours = {}; [1,2,3,4,5].forEach(i => { const a = document.querySelector(`[data-gh0="${i}"]`).value, b = document.querySelector(`[data-gh1="${i}"]`).value; if (a && b) hours[i] = [a, b]; });
   db.economy = { ...eco, missions, shop: coupons.concat(village),
+    locked: { missions: !!($('coLockM') && $('coLockM').checked), shop: !!($('coLockS') && $('coLockS').checked) },
     meeting: { pres: $('coPres') ? $('coPres').value : '', vice: $('coVice') ? $('coVice').value : '', agenda: $('coAgenda') ? $('coAgenda').value.trim() : '' },
     game: { on: $('coGameOn').checked, maxBet: Math.max(1, parseInt($('coMaxBet').value, 10) || 30), daily: Math.max(1, parseInt($('coDaily').value, 10) || 5), hours } };
   saveDB(); syncOp({ op:'config', data: configOf() });
@@ -5505,7 +5511,7 @@ function openVillage(opts){
   async function buyFurn(id){
     try {
       const j = await opts.call('buyFurn', { item: id });
-      if (j && j.error) say({ poor:'냥코인이 모자라요 🐾', owned:'이미 있어요', noitem:'살 수 없어요' }[j.error] || '사지 못했어요');
+      if (j && j.error) say({ locked:'🔒 상점은 아직 사용할 수 없어요', poor:'냥코인이 모자라요 🐾', owned:'이미 있어요', noitem:'살 수 없어요' }[j.error] || '사지 못했어요');
       if (j && opts.onCoins) opts.onCoins(j);
       return j;
     } catch(e){ say('연결이 안 돼요'); return null; }

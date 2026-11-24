@@ -195,6 +195,9 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .sp-banner{background:linear-gradient(90deg,#FFD3E4,#FFF2BF,#D9F2FF);border:3px solid var(--ink);border-radius:16px;padding:10px 14px;margin-bottom:10px;font-size:1.2rem;text-align:center;box-shadow:0 3px 0 var(--ink);}
 .sp-banner small{color:var(--ink-soft);font-size:.85rem;}
 .sp-butler{background:#FFE3EE;border:2px solid var(--ink);border-radius:999px;padding:4px 14px;margin-bottom:10px;text-align:center;}
+.lockbox{position:relative;} .lockbox > *:not(.box-head):not(.lock-note){opacity:.35;pointer-events:none;filter:grayscale(.6);}
+.lock-note{text-align:center;font-size:1.25rem;background:#FFF2BF;border:2px dashed var(--ink);border-radius:14px;padding:10px;margin:6px 0 10px;}
+.lock-note small{display:block;font-size:.85rem;color:var(--ink-soft);margin-top:2px;}
 .ms.picked{background:#FFF6DA;border-radius:10px;} .ms.dim{opacity:.45;} .ms-group small{font-size:.8rem;color:var(--ink-soft);}
 .pick-btn{background:#E3D9FF!important;}
 .pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 10px;}
@@ -797,7 +800,7 @@ async function coinCall(op, extra){
   if (!me) return null;
   try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
-const ERR = { nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
+const ERR = { locked:'🔒 아직 사용할 수 없어요', nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
   closed:'지금은 게임 시간이 아니에요', limit:'오늘은 게임을 다 했어요. 내일 또 만나요!', bet:'걸 수 있는 코인을 확인해 주세요', bad:'다시 해 주세요' };
 function weekStartS(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return todayStr(x); }
 function periodS(limit){ const P = (coin && coin.periods) || {}; return limit === 'day' ? (P.day || todayStr()) : limit === 'week' ? (P.week || weekStartS()) : limit === 'once' ? 'all' : null; }
@@ -842,14 +845,15 @@ function renderCoin(){
       : `<button type="button" data-buy="${it.id}" ${(!coin.unlimited && coin.balance < it.price) || left === 0 ? 'disabled' : ''}>${left === 0 ? '품절' : '사기'}</button>`;
     return `<div class="shop-item ${owned ? 'owned' : ''}">${['house', 'decor'].includes(it.cat) ? `<span data-spr="${it.id}"></span>` : ''}<div>${esc(it.name)}</div><div class="pr">${it.price} 🐾${left != null ? ` · 남은 ${Math.max(0, left)}개` : ''}</div>${btn}</div>`;
   }).join('') || '<div class="empty">상품이 없어요</div>';
-  const g = eco.game;
+  const g = eco.game, LK = eco.locked || {}, TT = coin.unlimited, LKm = LK.missions && !TT, LKs = LK.shop && !TT;
+  const lockNote = '<div class="lock-note">🔒 아직 사용할 수 없어요<small>준비 중이에요! 냥코인은 출석·영어 등으로 계속 모을 수 있어요 🐾</small></div>';
   box.innerHTML = `
     <div class="box"><div class="box-head">🐾 내 냥코인</div>
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box"><div class="box-head pink">📋 미션</div>${msHtml}<div class="hint" style="margin-top:6px;">🎯 하고 싶은 미션을 골라요 (한 번 고르면 바꿀 수 없어요!). 다 했으면 '완료했어요!' → 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
-    <div class="box"><div class="box-head mint">🛒 상점</div>
+    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 하고 싶은 미션을 골라요 (한 번 고르면 바꿀 수 없어요!). 다 했으면 '완료했어요!' → 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
+    <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button><button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button><button type="button" data-stab="special" class="${shopTab === 'special' ? 'on' : ''}">✨ 특별</button></div>
       ${shopTab === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}
       ${shopTab === 'mega' ? '<div class="hint" style="margin-bottom:6px;">📢 확성기를 사면 내가 쓴 한 줄이 마을·교실 화면 맨 위에 <b>1시간</b> 동안 떠요! (나쁜 말은 ♡로 바뀌고, 선생님이 내릴 수 있어요)</div>' : ''}

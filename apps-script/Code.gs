@@ -1019,8 +1019,11 @@ function studentCoins_(name, body) {
     let error = '', result = null;
     const T = isTeacherName_(name);
     const bal = function () { return T ? 1e9 : balanceOf_(rows, name); };
+    const LK = eco.locked || {};                    // 🔒 선생님이 잠가 둔 기능 (코인 모으기는 계속 돼요)
+    const lockedOp = !T && ((LK.shop && ['buy', 'buyFurn'].indexOf(body.op) >= 0) || (LK.missions && ['missionPick', 'missionReq'].indexOf(body.op) >= 0));
     const ds = todayStr_();
-    if (body.op === 'buy') {
+    if (lockedOp) error = 'locked';
+    else if (body.op === 'buy') {
       const it = (eco.shop || []).filter(function (x) { return x.id === body.item; })[0];
       if (!it || it.off) error = 'noitem';
       else if (bal() < it.price) error = 'poor';
@@ -1161,7 +1164,7 @@ function studentCoins_(name, body) {
       ledger: rows.filter(function (r) { return r.name === name; }).slice(-30).reverse().map(function (r) { return { t: r.t, amt: r.amt, why: r.why }; }),
       inv: inv, reqs: reqs, sold: sold,
       economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on, open: gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} },
-        furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {} },
+        furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {}, locked: eco.locked || {} },
       playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),
       picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }
