@@ -267,6 +267,52 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .lv-table-bar{display:inline-block;width:160px;height:12px;border:2px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;vertical-align:middle;}
 .lv-table-bar i{display:block;height:100%;background:linear-gradient(90deg,#FFD84D,#FF9EC4);}
 
+/* ===== 🎨 꾸미기 방 ===== */
+.closet-btn{border:2px solid var(--ink);border-radius:999px;background:#fff;font-size:.8rem;padding:0 6px;cursor:pointer;line-height:1.45;}
+.closet-btn:hover{background:var(--y-soft);}
+.closet-body{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;}
+.closet-side{flex:0 0 230px;text-align:center;}
+.closet-frame{position:relative;width:200px;height:200px;margin:14px auto 10px;background:#FFFDF6;border:3px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;}
+#closetCanvas{width:164px;height:164px;animation:bob 2.2s ease-in-out infinite;}
+.closet-lv{font-size:1.4rem;}
+.closet-next{font-size:.95rem;color:var(--ink-soft);margin-top:6px;line-height:1.45;}
+.closet-items{flex:1;min-width:280px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+.ci{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 11px 10px;}
+.ci.locked{background:#F3EEE6;color:#A8978A;border-style:dashed;}
+.ci.new{animation:glowNew 1.2s ease-in-out 3;}
+@keyframes glowNew{0%,100%{box-shadow:0 0 0 0 rgba(255,127,166,0)}50%{box-shadow:0 0 0 6px rgba(255,127,166,.55)}}
+.ci-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:1.15rem;}
+.ci-head small{font-size:.8rem;color:var(--ink-soft);white-space:nowrap;}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center;}
+.sw{width:36px;height:36px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--ink);padding:0;}
+.sw:hover{transform:translateY(-2px);}
+.sw.on{outline:3px solid var(--pink-deep);outline-offset:2px;transform:scale(1.12);}
+.sw-off{border:2px solid var(--ink);border-radius:999px;padding:3px 10px;font-size:.85rem;background:#EEE6DA;cursor:pointer;}
+.ci-lock{margin-top:8px;font-size:.95rem;}
+.ci-on{font-size:.85rem;color:#C0506F;margin-top:5px;min-height:1em;}
+#lvClosetBtn{margin-top:14px;font-size:1.4rem;padding:12px 26px;}
+
+/* ===== 📋 종례 ===== */
+.closing-overlay{z-index:9998;background:rgba(70,52,40,.78);}
+.closing-box{
+  width:94vw;max-width:1500px;max-height:94vh;overflow-y:auto;padding:28px 46px 30px;
+  background:linear-gradient(180deg,#FFFCF0 0%,#FFF3C4 100%);border:6px solid var(--ink);border-radius:36px;box-shadow:0 12px 0 var(--ink);
+  animation:popIn .3s cubic-bezier(.2,1.5,.4,1);display:flex;flex-direction:column;gap:16px;
+}
+.closing-top{display:flex;align-items:center;gap:20px;border-bottom:4px dashed #EAD49A;padding-bottom:12px;}
+#closingMascot{width:120px;height:120px;animation:bob 2s ease-in-out infinite;flex:none;}
+.closing-title{font-size:3.4rem;color:var(--y);text-shadow:3px 0 var(--ink),-3px 0 var(--ink),0 3px var(--ink),0 -3px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 7px var(--ink);}
+.closing-date{font-size:1.6rem;margin-top:6px;}
+.closing-list{display:flex;flex-direction:column;gap:12px;}
+.closing-item{display:flex;gap:18px;align-items:flex-start;font-size:3rem;line-height:1.35;cursor:pointer;user-select:none;word-break:keep-all;}
+.closing-num{flex:none;width:68px;height:68px;border:4px solid var(--ink);border-radius:20px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:2.2rem;box-shadow:0 4px 0 var(--ink);margin-top:2px;}
+.closing-item.done .closing-num{background:var(--mint);}
+.closing-item.done .closing-text{color:#B8A391;text-decoration:line-through;}
+.closing-empty{font-size:1.6rem;color:var(--ink-soft);}
+.closing-extra{display:flex;flex-wrap:wrap;gap:12px;font-size:1.5rem;}
+.closing-extra span{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 18px;box-shadow:0 4px 0 var(--ink);}
+.closing-foot{display:flex;justify-content:center;}
+
 /* ===== 오버레이 · 모달 ===== */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
@@ -455,6 +501,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="chip" id="statLate">💤 지각 0</div>
       <div class="chip" id="statDungeon">🏠 쉬는 날 0</div>
       <div class="chip" id="statExp">✨ 오늘 EXP 0</div>
+      <button type="button" class="btn btn-pink" id="openClosingBtn">📋 종례하기</button>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
     </div>
@@ -516,7 +563,37 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <div class="lvup-name" id="lvName"></div>
     <div class="lvup-gift" id="lvGift"></div>
     <div class="lvup-sub" id="lvSub"></div>
-    <div class="rev-hint">화면을 터치하면 닫혀요</div>
+    <button type="button" class="btn btn-y" id="lvClosetBtn">🎨 지금 꾸미러 가기</button>
+    <div class="rev-hint">바깥을 터치하면 닫혀요</div>
+  </div>
+</div>
+
+<!-- 꾸미기 방 -->
+<div class="overlay" id="closetOverlay">
+  <div class="modal modal-large">
+    <h2 id="closetTitle">🎨 꾸미기 방</h2>
+    <div class="closet-body">
+      <div class="closet-side">
+        <div class="closet-frame" id="closetFrame"><div class="lv-frame"></div><canvas id="closetCanvas" class="pix" width="16" height="16"></canvas></div>
+        <div class="closet-lv" id="closetLv"></div>
+        <div class="closet-next" id="closetNext"></div>
+      </div>
+      <div class="closet-items" id="closetItems"></div>
+    </div>
+    <div class="modal-btns"><div class="form-hint">색을 누르면 바로 입혀져요. 같은 자리(머리 위·귀)는 하나만 쓸 수 있어요.</div><button type="button" class="btn btn-y" id="closetDoneBtn">✔ 다 꾸몄어요</button></div>
+  </div>
+</div>
+
+<!-- 종례 -->
+<div class="overlay closing-overlay" id="closingOverlay">
+  <div class="closing-box">
+    <div class="closing-top">
+      <canvas id="closingMascot" class="pix" width="16" height="16"></canvas>
+      <div><div class="closing-title">📋 오늘의 종례</div><div class="closing-date" id="closingDate"></div></div>
+    </div>
+    <div class="closing-list" id="closingList"></div>
+    <div class="closing-extra" id="closingExtra"></div>
+    <div class="closing-foot"><button type="button" class="btn-alarm-close" id="closingCloseBtn">👋 내일 또 만나요!</button></div>
   </div>
 </div>
 
@@ -572,6 +649,10 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="form-group">
         <label>타이틀</label>
         <input type="text" id="mainTitleInput" placeholder="예: 노랑반 냥냥 출석 아일랜드">
+      </div>
+      <div class="form-group">
+        <label>📋 종례 (한 줄에 하나씩 · '종례하기'를 누르면 화면 가득 떠요)</label>
+        <textarea id="closingInput" style="height:84px;" placeholder="예: 내일 체육복 챙기기&#10;예: 가정통신문 부모님께 드리기"></textarea>
       </div>
       <div class="form-group">
         <label>📢 오늘의 알림 (한 줄에 하나씩)</label>
@@ -718,17 +799,48 @@ const DEFAULT_MENU = [
 
 const DEFAULT_LEVEL = { start:'2026-11-24', max:2200, curve:1.5 };
 const LEVELS = [
-  { name:'아기냥',   deco:'',   acc:[],                                  fill:'#FFF0BF', line:'#E6CB7A', gift:'' },
-  { name:'새싹냥',   deco:'',   acc:['sprout'],                          fill:'#FFF0BF', line:'#E6CB7A', gift:'🌱 머리에 새싹이 돋았어요' },
-  { name:'리본냥',   deco:'',   acc:['sprout','bow'],                    fill:'#FFF0BF', line:'#E6CB7A', gift:'🎀 분홍 리본 + 분홍 액자' },
-  { name:'목도리냥', deco:'',   acc:['bow','scarf'],                     fill:'#FFF3CC', line:'#DDBD62', gift:'🧣 노랑반 목도리 + 노란 액자' },
-  { name:'꽃핀냥',   deco:'🌸', acc:['flower','bow','scarf'],            fill:'#FFF8E6', line:'#D9B864', gift:'🌸 꽃핀 + 꽃 액자' },
-  { name:'별빛냥',   deco:'⭐', acc:['starclip','flower','scarf'],       fill:'#FFF8E6', line:'#D2AE55', gift:'⭐ 별핀 + 반짝이는 하늘 액자' },
-  { name:'천사냥',   deco:'💫', acc:['halo','wings','scarf'],            fill:'#FFFFFF', line:'#C9A54B', gift:'😇 천사 링과 날개' },
-  { name:'왕관냥',   deco:'👑', acc:['crown','wings','scarf'],           fill:'#FFF3C4', line:'#C99A2E', gift:'👑 왕관 + 황금 액자' },
-  { name:'마법사냥', deco:'🔮', acc:['wizard','wings','scarf','sparkles'], fill:'#F3EEFF', line:'#9C86E8', gift:'🔮 마법 모자 + 보랏빛 오라' },
-  { name:'전설냥',   deco:'🏆', acc:['crown','wings','scarf','sparkles'], fill:'#FFE98A', line:'#B98A10', gift:'🏆 무지개 액자 · 전설의 냥이!' }
+  { name:'아기냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
+  { name:'새싹냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
+  { name:'리본냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
+  { name:'목도리냥', deco:'',   fill:'#FFF3CC', line:'#DDBD62' },
+  { name:'꽃핀냥',   deco:'🌸', fill:'#FFF8E6', line:'#D9B864' },
+  { name:'별빛냥',   deco:'⭐', fill:'#FFF8E6', line:'#D2AE55' },
+  { name:'천사냥',   deco:'💫', fill:'#FFFFFF', line:'#C9A54B' },
+  { name:'왕관냥',   deco:'👑', fill:'#FFF3C4', line:'#C99A2E' },
+  { name:'마법사냥', deco:'🔮', fill:'#F3EEFF', line:'#9C86E8' },
+  { name:'전설냥',   deco:'🏆', fill:'#FFE98A', line:'#B98A10' }
 ];
+/* 🎨 레벨마다 열리는 꾸미기 아이템 (색깔은 학생이 직접 골라요) */
+const SLOT_ORDER = ['back','neck','earL','earR','top'];
+const SLOT_LABEL = { top:'머리 위', earR:'오른쪽 귀', earL:'왼쪽 귀', neck:'목', back:'등', fur:'털빛' };
+const ITEMS = [
+  { id:'sprout', lv:2, icon:'🌱', name:'새싹', slot:'top', acc:'sprout', colors:[
+    { n:'초록', pal:{G:'#7ED99B',s:'#4FB06D'} }, { n:'연두', pal:{G:'#C8EE7E',s:'#8DBF3A'} }, { n:'벚꽃', pal:{G:'#FFB3CF',s:'#E8679A'} },
+    { n:'하늘', pal:{G:'#A8D8FF',s:'#5FAEF5'} }, { n:'노랑', pal:{G:'#FFE066',s:'#E0A800'} }, { n:'보라', pal:{G:'#CDB8FF',s:'#8C74F0'} } ] },
+  { id:'bow', lv:3, icon:'🎀', name:'리본', slot:'earR', acc:'bow', colors:[
+    { n:'분홍', pal:{P:'#FF9EC4',p:'#E8679A',k:'#C9507F'} }, { n:'노랑', pal:{P:'#FFD84D',p:'#F2B705',k:'#D99A00'} }, { n:'하늘', pal:{P:'#A8D8FF',p:'#5FAEF5',k:'#3D8BD6'} },
+    { n:'보라', pal:{P:'#CDB8FF',p:'#9F86FF',k:'#7A5FE0'} }, { n:'빨강', pal:{P:'#FF8A8A',p:'#E84A5F',k:'#B8323F'} }, { n:'민트', pal:{P:'#A8EED3',p:'#3DBE8B',k:'#2A9A6E'} } ] },
+  { id:'scarf', lv:4, icon:'🧣', name:'목도리', slot:'neck', acc:'scarf', colors:[
+    { n:'노랑', pal:{y:'#FFD84D',Y:'#F2B705'} }, { n:'분홍', pal:{y:'#FF9EC4',Y:'#E8679A'} }, { n:'하늘', pal:{y:'#A8D8FF',Y:'#5FAEF5'} },
+    { n:'민트', pal:{y:'#A8EED3',Y:'#3DBE8B'} }, { n:'보라', pal:{y:'#CDB8FF',Y:'#9F86FF'} }, { n:'빨강', pal:{y:'#FF8A8A',Y:'#E84A5F'} } ] },
+  { id:'flower', lv:5, icon:'🌸', name:'꽃핀', slot:'earL', acc:'flower', colors:[
+    { n:'분홍', pal:{P:'#FF9EC4',y:'#FFD84D'} }, { n:'노랑', pal:{P:'#FFD84D',y:'#FF9E40'} }, { n:'하늘', pal:{P:'#8CC8FF',y:'#FFD84D'} },
+    { n:'보라', pal:{P:'#B9A6FF',y:'#FFD84D'} }, { n:'빨강', pal:{P:'#FF6F8E',y:'#FFE066'} } ] },
+  { id:'starclip', lv:6, icon:'⭐', name:'별핀', slot:'earR', acc:'starclip', colors:[
+    { n:'금별', pal:{Y:'#FFC21A'} }, { n:'분홍', pal:{Y:'#FF8FB8'} }, { n:'하늘', pal:{Y:'#6FB8FF'} }, { n:'민트', pal:{Y:'#3DBE8B'} }, { n:'보라', pal:{Y:'#9F86FF'} } ] },
+  { id:'wings', lv:7, icon:'😇', name:'천사 날개', slot:'back', acc:'wings', colors:[
+    { n:'하늘', pal:{W:'#BFE0FF'} }, { n:'분홍', pal:{W:'#FFC7DD'} }, { n:'노랑', pal:{W:'#FFE89A'} }, { n:'보라', pal:{W:'#D9CCFF'} }, { n:'민트', pal:{W:'#BDF0DA'} } ] },
+  { id:'crown', lv:8, icon:'👑', name:'왕관', slot:'top', acc:'crown', colors:[
+    { n:'황금', pal:{y:'#FFC21A',r:'#FF6F9C'} }, { n:'은빛', pal:{y:'#D3DAE3',r:'#6FB8FF'} }, { n:'분홍', pal:{y:'#FF9EC4',r:'#FFE066'} },
+    { n:'하늘', pal:{y:'#8CC8FF',r:'#FFE066'} }, { n:'보라', pal:{y:'#B9A6FF',r:'#FFE066'} } ] },
+  { id:'wizard', lv:9, icon:'🔮', name:'마법 모자', slot:'top', acc:'wizard', colors:[
+    { n:'보라', pal:{V:'#9F86FF',Y:'#FFD84D'} }, { n:'분홍', pal:{V:'#FF8FB8',Y:'#FFF3B0'} }, { n:'밤하늘', pal:{V:'#5B6BD6',Y:'#FFD84D'} },
+    { n:'민트', pal:{V:'#3DBE8B',Y:'#FFF3B0'} }, { n:'빨강', pal:{V:'#E84A5F',Y:'#FFD84D'} } ] },
+  { id:'fur', lv:10, icon:'🌈', name:'전설의 털빛', slot:'fur', colors:[
+    { n:'황금', fill:'#FFE98A', line:'#B98A10' }, { n:'무지개', rainbow:true, line:'#8C74F0' }, { n:'벚꽃', fill:'#FFD3E4', line:'#D2588C' },
+    { n:'민트', fill:'#C9F5E3', line:'#2F9A72' }, { n:'하늘', fill:'#CDE8FF', line:'#3F86CF' }, { n:'우주', fill:'#B9A6FF', line:'#4B3AA8', stars:true } ] }
+];
+const ITEM_BY_ID = Object.fromEntries(ITEMS.map(it => [it.id, it]));
 
 let db = {
   mainTitle: DEFAULT_TITLE,
@@ -740,6 +852,8 @@ let db = {
   alarmConfig: { ...DEFAULT_ALARM },
   menu: DEFAULT_MENU.map(m => ({ ...m })),
   level: { ...DEFAULT_LEVEL },
+  looks: {},
+  closing: [],
   bonus: {},
   cleanDone: {},
   records: {}
@@ -932,15 +1046,16 @@ function catColors(def, furKey, opts = {}){
   (def.acc || []).forEach(k => applyAcc(col, k));
   return col;
 }
-function applyAcc(g, key){
+function applyAcc(g, key, palOverride){
   const a = ACC[key]; if (!a) return;
   if (a.fn){ a.fn(g); return; }
+  const pal = palOverride ? Object.assign({}, a.pal, palOverride) : a.pal;
   const [r0, c0] = a.at;
   a.rows.forEach((row, dr) => [...row].forEach((ch, dc) => {
     if (ch === '.') return;
     const r = r0 + dr, c = c0 + dc;
     if (r < 0 || r > 15 || c < 0 || c > 15) return;
-    g[r][c] = a.pal[ch];
+    g[r][c] = pal[ch];
   }));
 }
 function houseColors(){ return HOUSE.map(r => [...r].map(ch => ch === '.' ? null : HOUSE_PAL[ch])); }
@@ -1014,6 +1129,8 @@ function mergeInto(parsed){
   if (parsed.bonus && typeof parsed.bonus === 'object') db.bonus = parsed.bonus;
   if (parsed.cleanDone && typeof parsed.cleanDone === 'object') db.cleanDone = parsed.cleanDone;
   if (parsed.level && typeof parsed.level === 'object') db.level = Object.assign({}, DEFAULT_LEVEL, parsed.level);
+  if (parsed.looks && typeof parsed.looks === 'object') db.looks = parsed.looks;
+  if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
 }
 function loadDB(){
   let saved = localStorage.getItem(DB_KEY), migrated = false;
@@ -1057,7 +1174,7 @@ function importBackupFile(event){
       if (!confirm('백업을 불러오면 지금의 명단·출결·설정이 백업 내용으로 바뀌어요. 계속할까요?')) return;
       mergeInto(next);
       saveDB();
-      if (sync.url){ syncOp({ op:'import', state: serverStateOf(), notices: db.notices.slice() }); flushSync(); }
+      if (sync.url){ syncOp({ op:'import', state: serverStateOf(), notices: db.notices.slice(), closing: (db.closing || []).slice() }); flushSync(); }
       localStorage.setItem(FIRED_KEY, JSON.stringify(payload.fired && typeof payload.fired === 'object' ? payload.fired : {}));
     } catch(e){ alert(`백업을 불러오지 못했어요.\n${e.message}`); return; }
     location.reload();
@@ -1150,7 +1267,7 @@ function renderGrid(){
     const li = levelInfo(sm[name] || 0);
     if (!rec){
       card.className = 'card waiting';
-      drawColors(cv, levelSilhouette(li.lv));
+      drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
       card.insertAdjacentHTML('beforeend', `<div class="qmark">?</div><div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
@@ -1172,7 +1289,8 @@ function renderGrid(){
     }
     card.classList.add('lv-' + li.lv);
     card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
-    card.insertAdjacentHTML('beforeend', `<div class="lv-row" title="Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP ${li.exp}${li.next ? ` · 다음 레벨까지 ${li.need}` : ''}"><span class="lv-badge">Lv.${li.lv}</span><div class="lv-track"><div class="lv-fill" style="width:${Math.round(li.pct*100)}%"></div></div>${li.lv === 10 ? '<span class="lv-badge">MAX</span>' : ''}</div>`);
+    card.insertAdjacentHTML('beforeend', `<div class="lv-row" title="Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP ${li.exp}${li.next ? ` · 다음 레벨까지 ${li.need}` : ''}"><span class="lv-badge">Lv.${li.lv}</span><div class="lv-track"><div class="lv-fill" style="width:${Math.round(li.pct*100)}%"></div></div>${li.lv === 10 ? '<span class="lv-badge">MAX</span>' : ''}<button type="button" class="closet-btn" title="꾸미기 방">🎨</button></div>`);
+    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); openCloset(name); });
     grid.append(card);
   });
   lastNew = null;
@@ -1455,16 +1573,103 @@ function levelInfo(exp){
   return { lv, exp, cur, next, need: next ? next - exp : 0, pct: next ? Math.max(0, Math.min(1, (exp - cur) / (next - cur))) : 1 };
 }
 function levelsNow(){ const m = seasonExpMap(), o = {}; for (const n in m) o[n] = levelInfo(m[n]).lv; return o; }
-function levelSilhouette(lv){
-  const L = LEVELS[lv - 1];
-  const col = CAT_BASE.map(r => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? L.line : L.fill)));
-  L.acc.forEach(k => applyAcc(col, k));
+function defaultLook(lv){
+  const look = {};
+  ITEMS.filter(it => it.lv <= lv).forEach(it => { look[it.slot] = it.id + ':0'; });
+  return look;
+}
+function lookOf(name, lv){
+  const raw = (db.looks && db.looks[name]) || defaultLook(lv), out = {};
+  for (const [slot, v] of Object.entries(raw)){
+    if (!v) continue;
+    const [id, ci] = String(v).split(':'); const it = ITEM_BY_ID[id];
+    if (it && it.lv <= lv && it.colors[+ci]) out[slot] = { it, c: it.colors[+ci], ci: +ci };
+  }
+  return out;
+}
+function lookColors(name, lv){
+  const L = LEVELS[lv - 1], look = lookOf(name, lv);
+  let fill = L.fill, line = L.line, rainbow = false;
+  if (look.fur){ const c = look.fur.c; fill = c.fill || fill; line = c.line || line; rainbow = !!c.rainbow; }
+  const col = CAT_BASE.map((r, ri) => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? line : (rainbow ? RAINBOW[(ri + 4) % 7] : fill))));
+  if (look.fur && look.fur.c.stars) applyAcc(col, 'stars');
+  SLOT_ORDER.forEach(sl => { const e = look[sl]; if (e) applyAcc(col, e.it.acc, e.c.pal); });
+  if (lv >= 10) applyAcc(col, 'sparkles');
   return col;
+}
+function setLook(name, slot, val){
+  const lv = levelInfo(seasonExpMap()[name] || 0).lv;
+  db.looks = db.looks || {};
+  const look = Object.assign({}, db.looks[name] || defaultLook(lv));
+  look[slot] = val; db.looks[name] = look;
+  saveDB(); syncOp({ op:'config', data: configOf() });
+}
+
+/* 🎨 꾸미기 방 */
+let closetName = null, closetNew = [], closetOnClose = null;
+function openCloset(name, newIds, onClose){
+  closetName = name; closetNew = newIds || []; closetOnClose = onClose || null;
+  renderCloset(); $('closetOverlay').style.display = 'flex';
+}
+function closeCloset(){
+  $('closetOverlay').style.display = 'none'; closetName = null; renderGrid();
+  const f = closetOnClose; closetOnClose = null; f && f();
+}
+function swatchBg(c){
+  if (c.rainbow) return 'conic-gradient(#FFB3BA,#FFD6A5,#FDFFB6,#CAFFBF,#9BF6FF,#BDB2FF,#FFC6FF,#FFB3BA)';
+  const v = c.pal ? Object.values(c.pal) : [c.fill, c.line];
+  return v.length > 1 ? `linear-gradient(135deg, ${v[0]} 0 58%, ${v[1]} 58% 100%)` : v[0];
+}
+function renderCloset(){
+  const name = closetName; if (!name) return;
+  const th = lvThresholds(), exp = seasonExpMap()[name] || 0, li = levelInfo(exp), lv = li.lv, look = lookOf(name, lv);
+  $('closetTitle').textContent = `🎨 ${name}의 꾸미기 방`;
+  drawColors($('closetCanvas'), lookColors(name, lv));
+  $('closetFrame').className = 'closet-frame lv-' + lv;
+  $('closetLv').textContent = `Lv.${lv} ${LEVELS[lv - 1].name}`;
+  const next = ITEMS.find(it => it.lv > lv);
+  $('closetNext').innerHTML = next
+    ? `다음 아이템 ${next.icon} <b>${next.name}</b><br>Lv.${next.lv}까지 ${Math.max(0, th[next.lv - 1] - exp)} EXP 남았어요`
+    : '모든 아이템을 모았어요! 🏆';
+  $('closetItems').innerHTML = ITEMS.map(it => {
+    const locked = it.lv > lv;
+    const eq = look[it.slot] && look[it.slot].it.id === it.id ? look[it.slot].ci : -1;
+    const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot]} · Lv.${it.lv}</small></div>`;
+    if (locked) return `<div class="ci locked">${head}<div class="ci-lock">🔒 Lv.${it.lv}가 되면 열려요</div></div>`;
+    return `<div class="ci ${closetNew.includes(it.id) ? 'new' : ''}">${head}<div class="swatches">` +
+      it.colors.map((c, i) => `<button type="button" class="sw ${eq === i ? 'on' : ''}" data-it="${it.id}" data-ci="${i}" title="${c.n}" style="background:${swatchBg(c)}"></button>`).join('') +
+      (eq >= 0 ? `<button type="button" class="sw-off" data-off="${it.slot}">빼기</button>` : '') +
+      `</div><div class="ci-on">${eq >= 0 ? `✔ ${it.colors[eq].n} 착용 중` : ''}</div></div>`;
+  }).join('');
+}
+function onClosetClick(e){
+  const sw = e.target.closest('[data-it]'), off = e.target.closest('[data-off]');
+  if (!closetName || (!sw && !off)) return;
+  unlockAudio(false);
+  if (sw){
+    const it = ITEM_BY_ID[sw.dataset.it];
+    setLook(closetName, it.slot, `${it.id}:${sw.dataset.ci}`);
+    sfx('normal');
+    const r = sw.getBoundingClientRect(); burst('normal', r.left + r.width/2, r.top);
+  } else { setLook(closetName, off.dataset.off, ''); }
+  renderCloset();
 }
 let lvQueue = [], lvShowing = false, lvAfter = null;
 function queueLevelUps(before, after){
   const now = levelsNow();
-  for (const n in now) if (before[n] !== undefined && now[n] > before[n]) lvQueue.push({ name:n, lv:now[n] });
+  let equipped = false;
+  for (const n in now){
+    if (before[n] === undefined || now[n] <= before[n]) continue;
+    const items = ITEMS.filter(it => it.lv > before[n] && it.lv <= now[n]);
+    if (items.length){
+      db.looks = db.looks || {};
+      const look = Object.assign({}, db.looks[n] || defaultLook(before[n]));
+      items.forEach(it => { look[it.slot] = it.id + ':0'; });
+      db.looks[n] = look; equipped = true;
+    }
+    lvQueue.push({ name:n, lv:now[n], items });
+  }
+  if (equipped){ saveDB(); syncOp({ op:'config', data: configOf() }); renderGrid(); }
   if (after) lvAfter = after;
   showNextLevelUp();
 }
@@ -1474,29 +1679,39 @@ function showNextLevelUp(){
   if (!it){ const f = lvAfter; lvAfter = null; f && f(); return; }
   lvShowing = true;
   const L = LEVELS[it.lv - 1], info = levelInfo(seasonExpMap()[it.name] || 0);
-  drawColors($('lvCanvas'), levelSilhouette(it.lv));
+  drawColors($('lvCanvas'), lookColors(it.name, it.lv));
   $('lvName').textContent = `${it.name} · Lv.${it.lv} ${L.name}`;
-  $('lvGift').textContent = L.gift ? `새로 얻었어요: ${L.gift}` : '';
-  $('lvSub').textContent = it.lv < 10 ? `다음 레벨까지 ${info.need} EXP` : '최고 레벨 달성! 정말 대단하다냥!!';
+  const items = it.items || [];
+  $('lvGift').innerHTML = items.length
+    ? `🔓 꾸미기 아이템 ${items.map(x => `<b>[${x.icon} ${x.name}]</b>`).join(' ')} 잠금 해제!`
+    : '';
+  $('lvSub').textContent = (items.length ? `${items[items.length-1].colors.length}가지 색 중에 마음에 드는 걸 골라 보자냥 🎨  ` : '')
+    + (it.lv < 10 ? `· 다음 레벨까지 ${info.need} EXP` : '· 최고 레벨 달성! 정말 대단하다냥!!');
+  $('lvClosetBtn').style.display = items.length ? 'inline-block' : 'none';
   const ov = $('levelOverlay'); ov.style.display = 'flex';
   unlockAudio(false); sfx('levelup');
   [0, 300, 650].forEach((t, i) => setTimeout(() => burst('party', innerWidth * (0.3 + 0.2*i), innerHeight * 0.35), t));
-  setBubble(`${it.name} 레벨 업! Lv.${it.lv} ${L.name}이다냥 🎉`, 4500); mascotJump();
+  setBubble(items.length ? `${it.name} 레벨 업! 새 꾸미기 [${items[items.length-1].name}] 열렸다냥 🎉` : `${it.name} 레벨 업! Lv.${it.lv}이다냥 🎉`, 4500); mascotJump();
   let closed = false;
-  const close = () => { if (closed) return; closed = true; ov.style.display = 'none'; ov.onclick = null; lvShowing = false; showNextLevelUp(); };
-  setTimeout(() => { ov.onclick = close; }, 400);
-  setTimeout(close, it.lv === 10 ? 6000 : 4200);
+  const close = () => { if (closed) return; closed = true; clearTimeout(tm); ov.style.display = 'none'; ov.onclick = null; lvShowing = false; showNextLevelUp(); };
+  const tm = setTimeout(close, items.length ? 8000 : 4500);
+  setTimeout(() => { ov.onclick = e => { if (e.target.closest('#lvClosetBtn')) return; close(); }; }, 400);
+  $('lvClosetBtn').onclick = () => {
+    if (closed) return; closed = true; clearTimeout(tm); ov.style.display = 'none'; ov.onclick = null;
+    openCloset(it.name, items.map(x => x.id), () => { lvShowing = false; showNextLevelUp(); });
+  };
 }
 function renderLevelTab(box){
   const sm = seasonExpMap(), th = lvThresholds();
   const [y, m, d] = (db.level.start || '').split('-').map(Number);
   let html = `<div class="dex-head">시즌 시작 ${m || '?'}월 ${d || '?'}일부터 · Lv.10 = ${db.level.max} EXP</div>`;
   html += `<div class="form-hint" style="text-align:center;">${th.slice(1).map((v, i) => `Lv.${i+2} ${v}`).join(' · ')}</div>`;
-  html += '<table><thead><tr><th>이름</th><th>레벨</th><th>시즌 EXP</th><th>진행도</th><th>다음 레벨까지</th></tr></thead><tbody>';
+  html += '<table><thead><tr><th>이름</th><th>레벨</th><th>시즌 EXP</th><th>진행도</th><th>다음 레벨까지</th><th></th></tr></thead><tbody>';
   db.students.forEach(n => {
     const li = levelInfo(sm[n] || 0), L = LEVELS[li.lv - 1];
     html += `<tr><td>${esc(n)}</td><td>Lv.${li.lv} ${L.name} ${L.deco}</td><td>${fmtExp(li.exp)}</td>
-      <td><span class="lv-table-bar"><i style="width:${Math.round(li.pct*100)}%"></i></span></td><td>${li.next ? li.need : 'MAX 🏆'}</td></tr>`;
+      <td><span class="lv-table-bar"><i style="width:${Math.round(li.pct*100)}%"></i></span></td><td>${li.next ? li.need : 'MAX 🏆'}</td>
+      <td><button type="button" class="act-btn" style="background:var(--y-soft);" data-closet="${esc(n)}">🎨 꾸미기</button></td></tr>`;
   });
   box.innerHTML = html + '</tbody></table>';
 }
@@ -1506,6 +1721,30 @@ function updateLvPreview(){
   const save = db.level; db.level = Object.assign({}, save, { max });
   const th = lvThresholds(); db.level = save;
   $('lvPreview').innerHTML = th.slice(1).map((v, i) => `Lv.${i+2} <b>${v}</b>`).join(' · ') + `<br>단계별 필요 EXP: ${th.slice(1).map((v, i) => v - th[i]).join(' → ')}`;
+}
+
+/* 📋 종례하기 */
+let closingChecked = {};
+function openClosing(){
+  unlockAudio(false); sfx('rare');
+  closingChecked = {};
+  renderClosing();
+  $('closingOverlay').style.display = 'flex';
+  setBubble('오늘도 수고 많았다냥! 종례 시간이야 📋', 4000);
+}
+function renderClosing(){
+  const now = new Date(), days = ['일','월','화','수','목','금','토'];
+  drawColors($('closingMascot'), catColors(MASCOT));
+  $('closingDate').textContent = `${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
+  const list = (db.closing || []).filter(t => t && t.trim());
+  $('closingList').innerHTML = list.length
+    ? list.map((t, i) => `<div class="closing-item ${closingChecked[i] ? 'done' : ''}" data-ci="${i}"><div class="closing-num">${closingChecked[i] ? '✔' : i + 1}</div><div class="closing-text">${esc(t)}</div></div>`).join('')
+    : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>';
+  const cleaners = db.students.filter(n => dayTotal(n) < 0);
+  let exp = 0; db.students.forEach(n => exp += dayTotal(n));
+  const extra = [`✨ 오늘 우리 반 EXP ${fmtExp(exp)}`];
+  if (cleaners.length) extra.push(`🧹 청소 당번: ${cleaners.map(esc).join(', ')}`);
+  $('closingExtra').innerHTML = extra.map(x => `<span>${x}</span>`).join('');
 }
 
 /* 🎉 모두 모이면 파티 */
@@ -1839,12 +2078,13 @@ function cancelRecord(name){
 /* =========================================================
    ⚙️ 설정
    ========================================================= */
-let noticesAtOpen = '';
+let noticesAtOpen = '', closingAtOpen = '';
 const TIER_FIELDS = ['e1','e1Exp','e2','e2Exp','e3Exp','l1','l1Exp','l2','l2Exp','l3','l3Exp','l4Exp'];
 function openAdminUI(){
   $('mainTitleInput').value = db.mainTitle || '';
   $('noticeInput').value = (db.notices || []).join('\n');
   noticesAtOpen = $('noticeInput').value;
+  $('closingInput').value = (db.closing || []).join('\n'); closingAtOpen = $('closingInput').value;
   $('studentNamesInput').value = db.students.join('\n');
   $('lateTimeInput').value = db.lateTimeSetting;
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
@@ -1906,6 +2146,7 @@ async function saveAdminData(){
 
   db.mainTitle = $('mainTitleInput').value.trim() || DEFAULT_TITLE;
   db.notices = $('noticeInput').value.split('\n').map(t => t.trim()).filter(Boolean);
+  db.closing = $('closingInput').value.split('\n').map(t => t.trim()).filter(Boolean);
   noticeChecked = {};
   db.students = students;
   db.lateTimeSetting = late;
@@ -1931,6 +2172,7 @@ async function saveAdminData(){
   saveDB();
   syncOp({ op:'config', data: configOf() });
   if ($('noticeInput').value !== noticesAtOpen) syncOp({ op:'notices', list: db.notices.slice() });
+  if ($('closingInput').value !== closingAtOpen) syncOp({ op:'closing', list: db.closing.slice() });
   applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
   $('adminOverlay').style.display = 'none';
   setBubble('설정 저장 완료다냥! 💾', 3000);
@@ -2050,7 +2292,7 @@ function closeAlarmOverlay(stopSound){
    ☁️ 구글 시트 동기화
    ========================================================= */
 const SYNC_KEY = 'nyangSync_v1';
-let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'' };
+let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null };
 let syncBusy = false;
 function loadSync(){ try { Object.assign(sync, JSON.parse(localStorage.getItem(SYNC_KEY)) || {}); } catch(e){} sync.ok = null; }
 function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last })); }
@@ -2058,7 +2300,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level) };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice() };
 }
 function serverStateOf(){
   const days = {};
@@ -2091,6 +2333,8 @@ function applyConfig(c){
   if (Array.isArray(c.menu)) db.menu = c.menu;
   if (c.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, c.alarmConfig, keepAudio);
   if (c.level) db.level = Object.assign({}, DEFAULT_LEVEL, c.level);
+  if (c.looks && typeof c.looks === 'object') db.looks = c.looks;
+  if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
 }
 function applyServerState(st){
   if (st.config) applyConfig(st.config);
@@ -2132,6 +2376,10 @@ async function pullSync(force){
     const j = await syncFetch(`${sync.url}?since=${force ? -1 : sync.v}&t=${Date.now()}`);
     let changed = false;
     if (j.state){ applyServerState(j.state); sync.v = j.v; changed = true; }
+    if (Array.isArray(j.closing)){
+      sync.hasClosing = true;
+      if (JSON.stringify(j.closing) !== JSON.stringify(db.closing) && !sync.queue.some(o => o.op === 'closing')){ db.closing = j.closing; changed = true; }
+    } else sync.hasClosing = false;
     const nl = (j.notices || []);
     if (JSON.stringify(nl) !== JSON.stringify(db.notices) && !sync.queue.some(o => o.op === 'notices')){ db.notices = nl; noticeChecked = {}; changed = true; }
     sync.ok = true; sync.err = ''; sync.last = Date.now(); saveSync();
@@ -2144,6 +2392,8 @@ function refreshAfterRemote(){
   applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
   if ($('statsOverlay').style.display === 'flex') loadStats(statsPeriod);
   if ($('giveOverlay').style.display === 'flex') renderBonusLog();
+  if ($('closingOverlay').style.display === 'flex') renderClosing();
+  if ($('closetOverlay').style.display === 'flex') renderCloset();
 }
 function updateSyncUI(){
   const pill = $('syncPill'), st = $('syncStatusText');
@@ -2158,7 +2408,7 @@ function updateSyncUI(){
   } else {
     pill.className = '';
     pill.textContent = sync.queue.length ? `🔄 올리는 중 (${sync.queue.length})` : `☁️ 동기화됨${agoTxt ? ' · ' + agoTxt : ''}`;
-    st.textContent = `✅ 구글 시트와 연결됨${agoTxt ? ` · 마지막 동기화 ${agoTxt}` : ''}`;
+    st.innerHTML = `✅ 구글 시트와 연결됨${agoTxt ? ` · 마지막 동기화 ${agoTxt}` : ''}` + (sync.hasClosing === false ? '<br>⚠️ 구글 시트에서 종례를 쓰려면 Apps Script 코드를 새 버전으로 업데이트해 주세요 (설정 안내 참고). 지금은 출석부 설정에서 쓴 종례만 공유돼요.' : '');
   }
 }
 let syncCandidate = null;
@@ -2187,10 +2437,11 @@ async function adoptSync(mode){
   if (mode === 'pull'){
     downloadLocalSafetyBackup();
     applyServerState(syncCandidate.j.state); db.notices = syncCandidate.j.notices || []; noticeChecked = {};
+    if (Array.isArray(syncCandidate.j.closing) && syncCandidate.j.closing.length) db.closing = syncCandidate.j.closing;
     sync.v = syncCandidate.j.v; sync.ok = true; sync.last = Date.now();
     saveDB(); saveSync(); refreshAfterRemote();
   } else {
-    sync.queue = [{ op:'import', state: serverStateOf(), notices: db.notices.slice() }]; saveSync();
+    sync.queue = [{ op:'import', state: serverStateOf(), notices: db.notices.slice(), closing: (db.closing || []).slice() }]; saveSync();
     await flushSync();
   }
   syncCandidate = null; $('syncChoice').style.display = 'none';
@@ -2217,12 +2468,18 @@ function bindEvents(){
   $('openAdminBtn').addEventListener('click', openAdminUI);
   $('statsTabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) loadStats(b.dataset.period); });
   $('statsContent').addEventListener('click', e => {
+    const cl = e.target.closest('[data-closet]'); if (cl){ openCloset(cl.dataset.closet); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
     if (b.dataset.act === 'absent') sendToDungeon(b.dataset.name); else cancelRecord(b.dataset.name);
   });
   document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $(b.dataset.close).style.display = 'none'));
   document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => demoReveal(b.dataset.demo)));
   $('saveAdminBtn').addEventListener('click', saveAdminData);
+  $('closetItems').addEventListener('click', onClosetClick);
+  $('closetDoneBtn').addEventListener('click', closeCloset);
+  $('openClosingBtn').addEventListener('click', openClosing);
+  $('closingCloseBtn').addEventListener('click', () => { $('closingOverlay').style.display = 'none'; });
+  $('closingList').addEventListener('click', e => { const it = e.target.closest('[data-ci]'); if (!it) return; closingChecked[it.dataset.ci] = !closingChecked[it.dataset.ci]; renderClosing(); });
   $('lvMaxInput').addEventListener('input', updateLvPreview);
   $('syncConnectBtn').addEventListener('click', connectSync);
   $('syncNowBtn').addEventListener('click', () => pullSync(true));

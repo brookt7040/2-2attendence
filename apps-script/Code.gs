@@ -7,11 +7,15 @@
  *
  * 시트 구성 (자동으로 만들어져요)
  *  - 알림 : A2칸부터 한 줄에 하나씩 적으면 모든 화면의 '오늘의 알림'에 떠요.
+ *  - 종례 : A2칸부터 한 줄에 하나씩 적으면 '종례하기' 화면에 떠요.
  *  - data : 출석부 데이터 저장용이에요. 직접 고치지 마세요.
  */
 const DATA_SHEET = 'data';
 const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
+const CLOSING_SHEET = '종례';
+const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
+const API_VERSION = 2;
 
 function doGet(e) {
   try { return out_(handleGet_((e && e.parameter) || {})); }
@@ -46,8 +50,11 @@ function sheet_(name, header) {
   return sh;
 }
 
-function readNotices_() {
-  const sh = sheet_(NOTICE_SHEET, [NOTICE_HEADER]);
+function readNotices_() { return readList_(NOTICE_SHEET, NOTICE_HEADER); }
+function writeNotices_(list) { writeList_(NOTICE_SHEET, NOTICE_HEADER, list); }
+
+function readList_(name, header) {
+  const sh = sheet_(name, [header]);
   const n = sh.getLastRow();
   if (n < 2) return [];
   return sh.getRange(2, 1, n - 1, 1).getDisplayValues()
@@ -55,8 +62,8 @@ function readNotices_() {
     .filter(function (t) { return t; });
 }
 
-function writeNotices_(list) {
-  const sh = sheet_(NOTICE_SHEET, [NOTICE_HEADER]);
+function writeList_(name, header, list) {
+  const sh = sheet_(name, [header]);
   const n = sh.getLastRow();
   if (n >= 2) sh.getRange(2, 1, n - 1, 1).clearContent();
   if (list.length) sh.getRange(2, 1, list.length, 1).setValues(list.map(function (t) { return [String(t)]; }));
@@ -84,7 +91,7 @@ function stateFrom_(map) {
 
 function handleGet_(p) {
   const v = version_();
-  const res = { ok: true, v: v, notices: readNotices_() };
+  const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.state = stateFrom_(readRows_().map);
   return res;
 }
@@ -109,6 +116,7 @@ function handlePost_(body) {
       switch (o.op) {
         case 'config': map.config = o.data; dirty.config = true; break;
         case 'notices': writeNotices_(o.list || []); break;
+        case 'closing': writeList_(CLOSING_SHEET, CLOSING_HEADER, o.list || []); break;
         case 'rec': {
           const d = day(o.ds);
           if (o.rec) d.records[o.name] = o.rec; else delete d.records[o.name];
@@ -134,6 +142,7 @@ function handlePost_(body) {
           if (o.state.config) map.config = o.state.config;
           Object.keys(o.state.days || {}).forEach(function (ds) { map['day:' + ds] = o.state.days[ds]; });
           if (o.notices) writeNotices_(o.notices);
+          if (o.closing) writeList_(CLOSING_SHEET, CLOSING_HEADER, o.closing);
           replaced = true;
           break;
         }
