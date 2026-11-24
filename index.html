@@ -4066,6 +4066,102 @@ async function engKeyText(files, onMsg, onlyLast){
   }
   return text;
 }
+/* 🔴 빨간색으로 표시된 정답 찾기
+   - 정답지 쪽을 그림으로 그려서 빨간 점을 찾고, 글자(PDF 글자 또는 OCR 낱말) 위치와 맞춰요
+   - 선지 번호(①~⑩)에 빨간 동그라미 → 그 번호, 빨간 글자 → 그 단어/어구
+   - 어느 문제인지는 같은 단(왼쪽/오른쪽)에서 바로 위에 있는 "N." 번호로 정해요 */
+function redMask(canvas){
+  const g = canvas.getContext('2d'), { width: W, height: H } = canvas, d = g.getImageData(0, 0, W, H).data;
+  const m = new Uint8Array(W * H);
+  for (let i = 0, p = 0; p < m.length; i += 4, p++){ const r = d[i], gg = d[i + 1], b = d[i + 2]; if (r > 170 && gg < 120 && b < 120 && r - gg > 70) m[p] = 1; }
+  return { m, W, H, frac(x0, y0, x1, y1){ x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0)); x1 = Math.min(W - 1, Math.ceil(x1)); y1 = Math.min(H - 1, Math.ceil(y1)); let n = 0, t = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++){ t++; n += m[y * W + x]; } return t ? n / t : 0; } };
+}
+function answersFromTokens(tokens, mask){
+  const CIRC = '①②③④⑤⑥⑦⑧⑨⑩';
+  // 문제 번호 찾기: "1." "10." 으로 시작하는 글자
+  const anchors = [];
+  tokens.forEach(t => { const m = t.s.match(/^\s*(\d{1,2})\s*[.)]/); if (m && +m[1] >= 1 && +m[1] <= 10) anchors.push({ n: +m[1], x: t.x0, y: t.y0 }); });
+  const best = {}; anchors.forEach(a => { if (!best[a.n] || a.y < best[a.n].y) best[a.n] = a; });
+  const A = Object.values(best);
+  if (!A.length) return null;
+  const pageW = mask.W;
+  const qOf = (x, y) => {
+    let pick = null, dy = 1e9;
+    A.forEach(a => { if (a.y - 4 <= y && x >= a.x - 30 && x - a.x < pageW * 0.48 && y - a.y < dy){ dy = y - a.y; pick = a; } });
+    return pick ? pick.n : 0;
+  };
+  const out = Array(10).fill(''), choice = {}, words = {};
+  tokens.forEach(t => {
+    const h = Math.max(6, t.y1 - t.y0), q = qOf(t.x0, t.y0);
+    if (!q) return;
+    if (/^\s*\d{1,2}\s*[.)]/.test(t.s) && best[q] && best[q].y === t.y0) return;   // 문제 줄은 빼요
+    const ci = CIRC.indexOf(t.s.trim().charAt(0));
+    if (ci >= 0){
+      // 선지 번호 둘레에 빨간 동그라미가 있나?
+      const pad = h * 0.55, f = mask.frac(t.x0 - pad, t.y0 - pad, t.x0 + h + pad, t.y1 + pad);
+      if (f > 0.04 && (!choice[q] || f > choice[q].f)){
+        // 선지 글자도 같이 저장해요 → 학생이 번호 대신 단어를 써도 정답
+        const line = tokens.filter(o => o !== t && Math.abs(o.y0 - t.y0) < h * 0.5 && o.x0 >= t.x0 && o.x0 < t.x0 + pageW * 0.4).sort((a, b) => a.x0 - b.x0);
+        let txt = t.s.trim().slice(1), lx = t.x1;
+        line.forEach(o => { txt += (o.x0 - lx > h * 0.15 ? ' ' : '') + o.s; lx = o.x1; });
+        choice[q] = { n: ci + 1, f, txt: txt.replace(/\s+/g, ' ').trim() };
+      }
+      return;
+    }
+    if (mask.frac(t.x0, t.y0, t.x1, t.y1) > 0.06) (words[q] = words[q] || []).push(t);
+  });
+  for (let q = 1; q <= 10; q++){
+    if (choice[q]) { out[q - 1] = String(choice[q].n) + (choice[q].txt ? '/' + choice[q].txt.slice(0, 40) : ''); continue; }
+    const ws = (words[q] || []).sort((a, b) => (a.y0 - b.y0) || (a.x0 - b.x0));
+    if (!ws.length) continue;
+    // 가까운 글자는 이어 붙이고, 멀리 떨어진 건 "또는(/)"으로 나눠요
+    const parts = []; let cur = null;
+    ws.forEach(w => {
+      const h = Math.max(6, w.y1 - w.y0);
+      const gap = cur ? w.x0 - cur.x1 : 0;
+      if (cur && Math.abs(w.y0 - cur.y0) < h * 0.6 && gap < h * 3){ cur.s += (gap > h * 0.65 ? '   ' : gap > h * 0.15 ? ' ' : '') + w.s; cur.x1 = w.x1; }
+      else { cur = { s: w.s, x1: w.x1, y0: w.y0 }; parts.push(cur); }
+    });
+    out[q - 1] = parts.map(p => p.s.trim()).join('   ').split(/\s{3,}/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean).join('/').slice(0, 60);
+  }
+  return out;
+}
+async function engRedKey(files, onMsg, onlyLast){
+  const merged = Array(10).fill('');
+  const mergeIn = a => { if (a) a.forEach((v, i) => { if (v && !merged[i]) merged[i] = v; }); };
+  const ocrTokens = async (canvas) => {
+    if (!window.Tesseract){ onMsg && onMsg('글자 인식 도구를 불러오는 중…'); await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'); }
+    const r = await window.Tesseract.recognize(canvas, 'eng+kor', { logger: m => { if (m.status === 'recognizing text') onMsg && onMsg(`정답지 읽는 중… ${Math.round(m.progress * 100)}%`); } });
+    return (r.data.words || []).map(w => ({ s: w.text, x0: w.bbox.x0, y0: w.bbox.y0, x1: w.bbox.x1, y1: w.bbox.y1 }));
+  };
+  for (const f of files){
+    if (/pdf$/i.test(f.type) || /\.pdf$/i.test(f.name)){
+      if (!window.pdfjsLib){ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+      const pdf = await window.pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+      const pages = onlyLast ? [pdf.numPages] : Array.from({ length: Math.min(pdf.numPages, 6) }, (_, k) => k + 1);
+      for (const i of pages){
+        onMsg && onMsg(`정답지 ${i}쪽에서 빨간 답 찾는 중…`);
+        const page = await pdf.getPage(i), vp = page.getViewport({ scale: 2 }), c = document.createElement('canvas');
+        c.width = vp.width; c.height = vp.height; await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+        const tc = await page.getTextContent();
+        let tokens = tc.items.filter(it => it.str && it.str.trim()).map(it => {
+          const h = Math.abs(it.transform[3]) || it.height || 10, x = it.transform[4], y = it.transform[5];
+          const [x0, y0, x1, y1] = vp.convertToViewportRectangle([x, y - h * 0.2, x + (it.width || h), y + h * 0.9]);
+          return { s: it.str, x0: Math.min(x0, x1), y0: Math.min(y0, y1), x1: Math.max(x0, x1), y1: Math.max(y0, y1) };
+        });
+        // 선지 줄("① gather")은 번호 글자 위치가 맨 앞이라 그대로 써요
+        if (tokens.length < 5) tokens = await ocrTokens(c);          // 글자가 없는 스캔 PDF
+        mergeIn(answersFromTokens(tokens, redMask(c)));
+      }
+    } else if (/^image\//.test(f.type)){
+      const img = await new Promise((ok, no) => { const im = new Image(); im.onload = () => ok(im); im.onerror = no; im.src = URL.createObjectURL(f); });
+      const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
+      mergeIn(answersFromTokens(await ocrTokens(c), redMask(c)));
+    }
+  }
+  return merged;
+}
+
 function parseEngKey(text){
   const circ = '①②③④⑤⑥⑦⑧⑨⑩', out = Array(10).fill('');
   // 객관식: "1 ②  2 ④" 처럼 번호 바로 뒤 동그라미 숫자
@@ -4094,7 +4190,7 @@ function mountEngAdmin(el, tcall, toastFn){
           <div class="ea-hint">PDF나 캡쳐 이미지(여러 장 가능)를 고르고, 정답 10개를 적어요. <b>주관식도 정답지대로 채점해요</b> (대소문자·띄어쓰기·마침표는 무시). 정답이 여러 개면 <b>/</b>로 나눠요 (예: color/colour). 학생이 억울하면 선생님을 불러 비밀번호로 통과시켜 줄 수 있어요. 칸을 비우면 그 문제는 채점하지 않아요.</div>
           <input type="text" class="ea-title" maxlength="40" placeholder="제목 (예: 3과 단어 테스트)" value="${E(set.title || '')}">
           <label class="ea-lab">📄 시험지 <small>(학생에게 보여요)</small><input type="file" class="ea-file" accept="image/*,application/pdf" multiple></label>
-          <label class="ea-split"><input type="checkbox" class="ea-splitchk" checked> 📎 PDF <b>마지막 쪽은 정답지</b>예요 (예: 1쪽 문제 + 2쪽 정답) — 학생에겐 안 보이고 정답만 읽어요</label>
+          <label class="ea-split"><input type="checkbox" class="ea-splitchk" checked> 📎 PDF <b>마지막 쪽은 정답지</b>예요 (1쪽 문제 + 2쪽 정답지) — 학생에겐 안 보이고, <b>빨간색으로 표시된 선지·단어</b>를 찾아 정답 칸을 채워요</label>
           <div class="ea-prev"></div>
           <label class="ea-lab">🔑 정답지 <small>(선택 · 학생에게 안 보여요 · 읽어서 아래 칸을 채워요)</small><input type="file" class="ea-keyfile" accept="image/*,application/pdf" multiple></label>
           <div class="ea-keymsg ea-hint"></div>
@@ -4117,7 +4213,9 @@ function mountEngAdmin(el, tcall, toastFn){
           imgs = imgs.slice(0, -1);
           const km = el.querySelector('.ea-keymsg'); km.textContent = '마지막 쪽(정답지) 읽는 중…';
           try {
-            const ans = parseEngKey(await engKeyText(files, t => km.textContent = t, true)), got = ans.filter(Boolean).length;
+            let ans = await engRedKey(files, t => km.textContent = t, true);
+            if (ans.filter(Boolean).length < 3) ans = parseEngKey(await engKeyText(files, t => km.textContent = t, true));
+            const got = ans.filter(Boolean).length;
             el.querySelectorAll('[data-k]').forEach((inp, i) => { if (ans[i]){ inp.value = ans[i]; inp.classList.add('ea-auto'); } });
             km.innerHTML = got ? `✅ 마지막 쪽 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 확인</b>해 주세요.${got < 10 ? `<br>못 읽은 번호: ${ans.map((a, i) => a ? '' : i + 1).filter(Boolean).join(', ')}` : ''}` : '😿 마지막 쪽에서 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
           } catch(err){ km.textContent = '정답지 쪽을 읽지 못했어요 — 직접 적어 주세요'; }
@@ -4130,7 +4228,9 @@ function mountEngAdmin(el, tcall, toastFn){
     el.querySelector('.ea-keyfile').onchange = async e => {
       const km = el.querySelector('.ea-keymsg'); km.textContent = '정답지 읽는 중…';
       try {
-        const txt = await engKeyText([...e.target.files], t => km.textContent = t), ans = parseEngKey(txt), got = ans.filter(Boolean).length;
+        let ans = await engRedKey([...e.target.files], t => km.textContent = t);
+        if (ans.filter(Boolean).length < 3) ans = parseEngKey(await engKeyText([...e.target.files], t => km.textContent = t));
+        const got = ans.filter(Boolean).length;
         el.querySelectorAll('[data-k]').forEach((inp, i) => { if (ans[i]){ inp.value = ans[i]; inp.classList.add('ea-auto'); } });
         km.innerHTML = got ? `✅ 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 꼭 한 번 확인</b>해 주세요. (정답지 파일은 저장하지 않아요)` : '😿 번호와 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
         if (got < 10 && got) km.innerHTML += `<br>못 읽은 번호: ${ans.map((a, i) => a ? '' : i + 1).filter(Boolean).join(', ')}`;
