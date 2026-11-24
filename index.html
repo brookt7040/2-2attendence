@@ -67,7 +67,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .bubble.pop{animation:bubblePop .35s cubic-bezier(.2,1.6,.4,1);}
 @keyframes bubblePop{0%{transform:scale(.7)}100%{transform:scale(1)}}
 
-/* ===== 종례 (메모지) ===== */
+/* ===== 오늘의 알림 (메모지) ===== */
 .notice-area{
   position:relative;margin-top:34px;max-width:720px;
   background-color:#FFFBE3;
@@ -92,7 +92,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .notice-item.done .notice-text{color:#B8A391;text-decoration:line-through;}
 .notice-empty{font-size:1.15rem;color:var(--ink-soft);padding:4px 2px;}
 
-/* ===== 보드 (종례 + EXP 리스트) ===== */
+/* ===== 보드 (오늘의 알림 + EXP 리스트) ===== */
 .boards{display:flex;gap:22px;align-items:stretch;margin-top:34px;flex-wrap:wrap;}
 .boards .notice-area{margin-top:0;flex:1 1 340px;max-width:none;}
 .menu-board{
@@ -117,8 +117,8 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .pick.on{background:var(--y);transform:translateY(-2px);}
 .bonus-log{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;}
 .bonus-entry{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:1rem;padding:3px 6px;border-bottom:2px dashed #F0E2BC;}
-#toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-140%);z-index:10001;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:10px 24px;font-size:1.35rem;box-shadow:0 5px 0 var(--ink);transition:transform .35s cubic-bezier(.2,1.5,.4,1);pointer-events:none;white-space:nowrap;}
-#toast.show{transform:translate(-50%,0);}
+#toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-140%);z-index:10001;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:10px 24px;font-size:1.35rem;box-shadow:0 5px 0 var(--ink);transition:transform .35s cubic-bezier(.2,1.5,.4,1),opacity .2s;opacity:0;pointer-events:none;white-space:nowrap;}
+#toast.show{transform:translate(-50%,0);opacity:1;}
 .card-clean{position:absolute;top:8px;right:10px;font-size:1.2rem;}
 .exp-pill.bonus{background:#FFF0B8;color:#A0700A;font-size:.92rem;}
 
@@ -138,6 +138,16 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 @keyframes flipDown{0%{transform:rotateX(-88deg);opacity:.35}60%{transform:rotateX(12deg);opacity:1}100%{transform:rotateX(0);opacity:1}}
 .flip-colon{display:flex;flex-direction:column;gap:12px;}
 .flip-colon span{width:11px;height:11px;border-radius:50%;background:var(--pink-deep);border:2px solid var(--ink);}
+
+.mini-clock{
+  position:fixed;top:12px;right:16px;z-index:60;display:flex;align-items:center;gap:10px;
+  background:#fff;border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);
+  padding:4px 14px 6px;transform:translateY(-160%);transition:transform .3s cubic-bezier(.2,1.3,.4,1);pointer-events:none;
+}
+.mini-clock.show{transform:translateY(0);}
+#mcTime{font-size:2.3rem;letter-spacing:2px;}
+#mcTime small{font-size:1.5rem;color:var(--pink-deep);}
+#mcTier{font-size:1rem;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;white-space:nowrap;}
 
 /* ===== 지금 보상 패널 ===== */
 .reward-panel{
@@ -422,6 +432,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
 <canvas id="fx"></canvas>
 <div id="toast"></div>
+<div class="mini-clock" id="miniClock"><span id="mcTime">00:00</span><span id="mcTier"></span></div>
 
 <!-- EXP 리스트 지급 -->
 <div class="overlay" id="giveOverlay">
@@ -516,7 +527,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <input type="text" id="mainTitleInput" placeholder="예: 노랑반 냥냥 출석 아일랜드">
       </div>
       <div class="form-group">
-        <label>📝 종례 (한 줄에 하나씩)</label>
+        <label>📢 오늘의 알림 (한 줄에 하나씩)</label>
         <textarea id="noticeInput" style="height:84px;" placeholder="예: 오늘은 도서관 대출일입니다&#10;예: 6교시 후 사물함 정리"></textarea>
         <div class="form-hint">메모지에 순서대로 나타나요. 터치하면 체크 표시가 돼요. (4줄 이하 권장)</div>
       </div>
@@ -1483,13 +1494,13 @@ function scheduleBlink(){
 }
 
 /* =========================================================
-   📝 종례
+   📢 오늘의 알림
    ========================================================= */
 function renderNotices(){
   const area = $('noticeArea');
-  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📝 종례</div>';
+  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 오늘의 알림</div>';
   const list = (db.notices || []).filter(t => t && t.trim() !== '');
-  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">⚙️ 설정에서 오늘의 종례 내용을 적어 주세요</div>'); return; }
+  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">⚙️ 설정에서 오늘의 알림을 적어 주세요</div>'); return; }
   list.forEach((text, idx) => {
     const item = document.createElement('div');
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
@@ -1524,6 +1535,8 @@ function tick(){
   }
   updateReward(now);
   updateMascotBubble(now);
+  $('mcTime').innerHTML = `${pad(now.getHours())}:${pad(now.getMinutes())}<small>:${pad(now.getSeconds())}</small>`;
+  { const t = getTier(now), m = TIER_META[t.key]; $('mcTier').textContent = `${m.icon} ${fmtExp(t.exp)}`; $('mcTier').style.background = m.color; }
   try { checkAlarms(); } catch(e){ console.error('알람 확인 에러:', e); }
 }
 
@@ -1884,6 +1897,10 @@ function init(){
     renderLadder();
     tick();
     setInterval(tick, 1000);
+    if ('IntersectionObserver' in window){
+      new IntersectionObserver(([e]) => $('miniClock').classList.toggle('show', !e.isIntersecting), { threshold: 0.2 })
+        .observe(document.querySelector('.clock-panel'));
+    }
     updateSoundStatusText();
   } catch(e){ console.error('초기화 에러:', e); }
 }
