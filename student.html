@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>냥냥 마을 · 학생용</title>
+<style>
+@font-face{font-family:'NeoDunggeunmo';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');font-weight:normal;font-style:normal;}
+:root{
+  --ink:#5B4636; --ink-soft:#8A7060; --y:#FFD84D; --y-deep:#F5B70A; --y-soft:#FFF2BF; --cream:#FFFCF3;
+  --pink:#FFC2D4; --pink-deep:#FF7FA6; --mint:#C4F0DD; --sky:#CDE8FF; --lav:#E2D8FF;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  font-family:'NeoDunggeunmo',sans-serif;color:var(--ink);min-height:100vh;padding:14px 14px 40px;
+  background-color:#FFF5D1;
+  background-image:radial-gradient(rgba(255,207,51,.30) 3px, transparent 3.6px),radial-gradient(rgba(255,170,198,.26) 3px, transparent 3.6px);
+  background-size:40px 40px,40px 40px;background-position:0 0,20px 20px;background-attachment:fixed;
+}
+button,input,select{font-family:inherit;color:var(--ink);}
+.pix{image-rendering:pixelated;image-rendering:crisp-edges;}
+.wrap{max-width:1100px;margin:0 auto;}
+
+/* 헤더 */
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+#mascot{width:72px;height:72px;animation:bob 2.4s ease-in-out infinite;flex:none;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.title{font-size:1.9rem;color:var(--y);line-height:1.2;
+  text-shadow:2px 0 var(--ink),-2px 0 var(--ink),0 2px var(--ink),0 -2px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 5px var(--ink);}
+.sub{font-size:1rem;color:var(--ink-soft);margin-top:4px;}
+.me-bar{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.btn{border:3px solid var(--ink);border-radius:14px;padding:8px 14px;font-size:1.05rem;cursor:pointer;box-shadow:0 4px 0 var(--ink);background:#fff;}
+.btn:active{transform:translateY(4px);box-shadow:none;}
+.btn-y{background:var(--y);} .btn-pink{background:var(--pink);} .btn-gray{background:#EEE6DA;} .btn-mint{background:var(--mint);}
+.chip{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 14px;font-size:1rem;box-shadow:0 3px 0 var(--ink);}
+
+/* 탭 */
+.tabs{display:flex;gap:8px;margin:16px 0 14px;flex-wrap:wrap;}
+.tab{flex:1;min-width:110px;border:3px solid var(--ink);border-radius:16px;padding:10px 6px;font-size:1.15rem;cursor:pointer;background:#fff;box-shadow:0 4px 0 var(--ink);position:relative;}
+.tab.active{background:var(--y);transform:translateY(-2px);box-shadow:0 6px 0 var(--ink);}
+.dot{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--pink-deep);border:2px solid var(--ink);display:none;}
+.dot.on{display:block;}
+.panel{display:none;} .panel.on{display:block;}
+
+.box{position:relative;background:#FFFDF6;border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);padding:26px 16px 14px;margin:24px 0 14px;}
+.box-head{position:absolute;top:-17px;left:16px;background:var(--y);border:3px solid var(--ink);border-radius:999px;padding:3px 16px;font-size:1.15rem;box-shadow:0 3px 0 var(--ink);white-space:nowrap;}
+.box-head.pink{background:var(--pink);} .box-head.lav{background:var(--lav);} .box-head.mint{background:var(--mint);}
+.empty{color:var(--ink-soft);font-size:1rem;}
+.n-item{display:flex;gap:10px;align-items:flex-start;padding:7px 2px;border-bottom:2px dashed #F0E2BC;font-size:1.3rem;line-height:1.45;word-break:keep-all;}
+.n-item:last-child{border-bottom:none;}
+.n-text{flex:1;}
+.ack{flex:none;border:2px solid var(--ink);border-radius:999px;padding:3px 10px;font-size:.95rem;background:#fff;cursor:pointer;box-shadow:0 2px 0 var(--ink);white-space:nowrap;}
+.ack.done{background:var(--mint);cursor:default;}
+.num{flex:none;width:34px;height:34px;border:3px solid var(--ink);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
+.clean-me{background:#FFE0E7;border:3px solid var(--ink);border-radius:14px;padding:10px 14px;font-size:1.2rem;margin-bottom:10px;}
+.clean-list{display:flex;flex-wrap:wrap;gap:6px;}
+.clean-list span{border:2px solid var(--ink);border-radius:999px;padding:2px 12px;background:var(--lav);}
+
+/* 마을 */
+.ticker{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 16px;font-size:1.05rem;margin-bottom:14px;overflow:hidden;white-space:nowrap;box-shadow:0 3px 0 var(--ink);}
+.ticker span{display:inline-block;padding-left:100%;animation:tick 18s linear infinite;}
+@keyframes tick{to{transform:translateX(-100%)}}
+.village{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:18px;}
+.vcat{position:relative;background:#fff;border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);padding:12px 6px 10px;text-align:center;cursor:pointer;}
+.vcat.mine{background:var(--y-soft);}
+.vcat canvas{width:84px;height:84px;}
+.vname{font-size:1.2rem;margin-top:2px;}
+.vlv{font-size:.85rem;color:var(--ink-soft);}
+.new{position:absolute;top:-12px;right:-8px;background:var(--pink-deep);color:#fff;border:2px solid var(--ink);border-radius:999px;font-size:.8rem;padding:1px 8px;animation:bob 1.2s ease-in-out infinite;}
+.lv-deco{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:1.3rem;pointer-events:none;}
+.lv-frame{position:absolute;inset:-8px;border-radius:27px;pointer-events:none;border:4px solid transparent;}
+.lv-2 .lv-frame{border-color:#BDEFD9;}
+.lv-3 .lv-frame{border-color:#FFC2D4;}
+.lv-4 .lv-frame{border-color:#FFD84D;}
+.lv-5 .lv-frame{border:4px dashed #FF9EC4;}
+.lv-6 .lv-frame{border-color:#9FD3FF;box-shadow:0 0 12px 2px rgba(140,200,255,.7);}
+.lv-7 .lv-frame{border-color:#FFFFFF;box-shadow:0 0 16px 5px rgba(170,215,255,.95);}
+.lv-8 .lv-frame{border:6px double #F5B70A;box-shadow:0 0 14px 3px rgba(255,200,40,.6);}
+.lv-9 .lv-frame{border-color:#A996FF;box-shadow:0 0 18px 5px rgba(169,150,255,.75);animation:glowPulse 2s ease-in-out infinite;}
+.lv-10 .lv-frame{border:6px solid transparent;background:conic-gradient(#FF9AAE,#FFD84D,#7FD8BE,#8CC8FF,#A996FF,#FF9AAE) border-box;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:hueSpin 3s linear infinite;}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 10px 2px rgba(169,150,255,.5)}50%{box-shadow:0 0 22px 7px rgba(169,150,255,.95)}}
+@keyframes hueSpin{to{filter:hue-rotate(360deg)}}
+
+/* 내 고양이 */
+.me-card{display:flex;gap:18px;align-items:center;flex-wrap:wrap;}
+.frame{position:relative;width:170px;height:170px;background:#FFFDF6;border:3px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);display:flex;align-items:center;justify-content:center;flex:none;margin:8px;}
+.frame canvas{width:140px;height:140px;animation:bob 2.2s ease-in-out infinite;}
+.me-info{flex:1;min-width:220px;font-size:1.15rem;line-height:1.7;}
+.me-lv{font-size:1.7rem;}
+.bar{height:16px;border:3px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;margin:4px 0;}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#FFD84D,#FF9EC4);}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
+.ci{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:8px 11px 10px;}
+.ci.locked{background:#F3EEE6;color:#A8978A;border-style:dashed;}
+.ci-head{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:1.1rem;}
+.ci-head small{font-size:.8rem;color:var(--ink-soft);white-space:nowrap;}
+.swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center;}
+.sw{width:36px;height:36px;border-radius:50%;border:3px solid var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--ink);padding:0;}
+.sw.on{outline:3px solid var(--pink-deep);outline-offset:2px;transform:scale(1.12);}
+.sw-off{border:2px solid var(--ink);border-radius:999px;padding:3px 10px;font-size:.85rem;background:#EEE6DA;cursor:pointer;}
+.ci-on{font-size:.85rem;color:#C0506F;margin-top:5px;min-height:1em;}
+.ci-lock{margin-top:8px;font-size:.95rem;}
+
+/* 창 */
+.overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:100;padding:12px;}
+.modal{position:relative;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--cream);border:4px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px;animation:pop .22s ease-out;}
+@keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+.modal h2{margin:0;text-align:center;font-weight:normal;font-size:1.5rem;}
+.x{position:absolute;top:10px;right:10px;width:42px;height:42px;border-radius:12px;border:3px solid var(--ink);background:#FFC9D3;font-size:1.3rem;cursor:pointer;}
+select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1.2rem;border:3px solid var(--ink);border-radius:12px;background:#fff;}
+.pin{font-size:2rem!important;text-align:center;letter-spacing:12px;}
+.err{color:#D6456E;font-size:1rem;min-height:1.2em;text-align:center;}
+.hint{font-size:.9rem;color:var(--ink-soft);}
+#toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,160%);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:8px 20px;font-size:1.1rem;box-shadow:0 4px 0 var(--ink);transition:transform .3s;z-index:200;white-space:nowrap;}
+#toast.show{transform:translate(-50%,0);}
+.status{position:fixed;left:10px;bottom:10px;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;}
+@media (max-width:560px){ .title{font-size:1.4rem;} #mascot{width:56px;height:56px;} .n-item{font-size:1.15rem;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <canvas id="mascot" class="pix" width="16" height="16"></canvas>
+    <div><div class="title" id="title">냥냥 마을</div><div class="sub" id="today"></div></div>
+    <div class="me-bar" id="meBar"></div>
+  </div>
+
+  <div class="tabs">
+    <button type="button" class="tab active" data-tab="notice">📢 알림·종례<span class="dot" id="dotNotice"></span></button>
+    <button type="button" class="tab" data-tab="village">🏘️ 냥이 마을<span class="dot" id="dotVillage"></span></button>
+    <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
+  </div>
+
+  <section class="panel on" id="p-notice">
+    <div id="cleanMe"></div>
+    <div class="box"><div class="box-head">📢 오늘의 알림</div><div id="noticeList"></div></div>
+    <div class="box"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
+    <div class="box"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
+  </section>
+
+  <section class="panel" id="p-village">
+    <div class="ticker" id="ticker" style="display:none;"><span id="tickerText"></span></div>
+    <div class="village" id="village"></div>
+  </section>
+
+  <section class="panel" id="p-me">
+    <div id="meBox"></div>
+  </section>
+</div>
+
+<div class="overlay" id="loginOv">
+  <div class="modal">
+    <button type="button" class="x" data-close="loginOv">✕</button>
+    <h2>🔑 내 고양이 로그인</h2>
+    <select id="loginName"></select>
+    <input type="password" class="pin" id="loginPin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+    <label class="hint"><input type="checkbox" id="loginKeep"> 이 기기에서 로그인 유지 (내 휴대폰일 때만!)</label>
+    <div class="err" id="loginErr"></div>
+    <button type="button" class="btn btn-y" id="loginBtn">들어가기</button>
+    <div class="hint">비밀번호는 선생님께 받아요. 잊어버렸으면 선생님께 말씀드려요.</div>
+  </div>
+</div>
+
+<div class="overlay" id="catOv">
+  <div class="modal" style="align-items:center;text-align:center;">
+    <button type="button" class="x" data-close="catOv">✕</button>
+    <div class="frame" id="catFrame"><div class="lv-frame"></div><canvas id="catCanvas" class="pix" width="16" height="16"></canvas></div>
+    <h2 id="catName"></h2>
+    <div id="catWear" class="hint" style="font-size:1rem;line-height:1.6;"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div class="status" id="status">연결 중…</div>
+
+<script>
+/* 이 파일은 tools/build_student.py 가 index.html의 고양이 그림 코드를 넣어서 student.html로 만들어요. */
+const DEFAULT_LEVEL = { start:'2026-11-24', max:2200, curve:1.5 };
+const LEVELS = [
+  { name:'아기냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
+  { name:'새싹냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
+  { name:'리본냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
+  { name:'목도리냥', deco:'',   fill:'#FFF3CC', line:'#DDBD62' },
+  { name:'꽃핀냥',   deco:'🌸', fill:'#FFF8E6', line:'#D9B864' },
+  { name:'별빛냥',   deco:'⭐', fill:'#FFF8E6', line:'#D2AE55' },
+  { name:'천사냥',   deco:'💫', fill:'#FFFFFF', line:'#C9A54B' },
+  { name:'왕관냥',   deco:'👑', fill:'#FFF3C4', line:'#C99A2E' },
+  { name:'마법사냥', deco:'🔮', fill:'#F3EEFF', line:'#9C86E8' },
+  { name:'전설냥',   deco:'🏆', fill:'#FFE98A', line:'#B98A10' }
+];
+/* 🎨 레벨마다 열리는 꾸미기 아이템 (색깔은 학생이 직접 골라요) */
+const SLOT_ORDER = ['back','neck','earL','earR','top'];
+const SLOT_LABEL = { eye:'얼굴', mouth:'얼굴', top:'머리 위', earR:'오른쪽 귀', earL:'왼쪽 귀', neck:'목', back:'등', fur:'털빛' };
+const ITEMS = [
+  { id:'eye', lv:1, icon:'👀', name:'눈 색', slot:'eye', colors:[
+    { n:'갈색', c:'#9A7440', d:'#4A3523' }, { n:'까망', c:'#5A5A5A', d:'#1E1E1E' }, { n:'하늘', c:'#6FB8FF', d:'#2F6FB0' },
+    { n:'초록', c:'#5CC08A', d:'#2E7A52' }, { n:'호박', c:'#F2B33D', d:'#9A6A10' }, { n:'보라', c:'#A98BF0', d:'#5E45B0' }, { n:'분홍', c:'#FF8FB8', d:'#B8456E' } ] },
+  { id:'mouth', lv:1, icon:'👄', name:'입 색', slot:'mouth', colors:[
+    { n:'분홍', c:'#FF8FAB', d:'#D95C7E' }, { n:'빨강', c:'#F06070', d:'#B03040' }, { n:'코랄', c:'#FFA07A', d:'#C8603A' },
+    { n:'보라', c:'#C3A0F5', d:'#7A55C8' }, { n:'갈색', c:'#C08A6A', d:'#7A5038' } ] },
+  { id:'sprout', lv:2, icon:'🌱', name:'새싹', slot:'top', acc:'sprout', colors:[
+    { n:'초록', pal:{G:'#7ED99B',s:'#4FB06D'} }, { n:'연두', pal:{G:'#C8EE7E',s:'#8DBF3A'} }, { n:'벚꽃', pal:{G:'#FFB3CF',s:'#E8679A'} },
+    { n:'하늘', pal:{G:'#A8D8FF',s:'#5FAEF5'} }, { n:'노랑', pal:{G:'#FFE066',s:'#E0A800'} }, { n:'보라', pal:{G:'#CDB8FF',s:'#8C74F0'} } ] },
+  { id:'bow', lv:3, icon:'🎀', name:'리본', slot:'earR', acc:'bow', colors:[
+    { n:'분홍', pal:{P:'#FF9EC4',p:'#E8679A',k:'#C9507F'} }, { n:'노랑', pal:{P:'#FFD84D',p:'#F2B705',k:'#D99A00'} }, { n:'하늘', pal:{P:'#A8D8FF',p:'#5FAEF5',k:'#3D8BD6'} },
+    { n:'보라', pal:{P:'#CDB8FF',p:'#9F86FF',k:'#7A5FE0'} }, { n:'빨강', pal:{P:'#FF8A8A',p:'#E84A5F',k:'#B8323F'} }, { n:'민트', pal:{P:'#A8EED3',p:'#3DBE8B',k:'#2A9A6E'} } ] },
+  { id:'scarf', lv:4, icon:'🧣', name:'목도리', slot:'neck', acc:'scarf', colors:[
+    { n:'노랑', pal:{y:'#FFD84D',Y:'#F2B705'} }, { n:'분홍', pal:{y:'#FF9EC4',Y:'#E8679A'} }, { n:'하늘', pal:{y:'#A8D8FF',Y:'#5FAEF5'} },
+    { n:'민트', pal:{y:'#A8EED3',Y:'#3DBE8B'} }, { n:'보라', pal:{y:'#CDB8FF',Y:'#9F86FF'} }, { n:'빨강', pal:{y:'#FF8A8A',Y:'#E84A5F'} } ] },
+  { id:'flower', lv:5, icon:'🌸', name:'꽃핀', slot:'earL', acc:'flower', colors:[
+    { n:'분홍', pal:{P:'#FF9EC4',y:'#FFD84D'} }, { n:'노랑', pal:{P:'#FFD84D',y:'#FF9E40'} }, { n:'하늘', pal:{P:'#8CC8FF',y:'#FFD84D'} },
+    { n:'보라', pal:{P:'#B9A6FF',y:'#FFD84D'} }, { n:'빨강', pal:{P:'#FF6F8E',y:'#FFE066'} } ] },
+  { id:'starclip', lv:6, icon:'⭐', name:'별핀', slot:'earR', acc:'starclip', colors:[
+    { n:'금별', pal:{Y:'#FFC21A'} }, { n:'분홍', pal:{Y:'#FF8FB8'} }, { n:'하늘', pal:{Y:'#6FB8FF'} }, { n:'민트', pal:{Y:'#3DBE8B'} }, { n:'보라', pal:{Y:'#9F86FF'} } ] },
+  { id:'wings', lv:7, icon:'😇', name:'천사 날개', slot:'back', acc:'wings', colors:[
+    { n:'하늘', pal:{W:'#BFE0FF'} }, { n:'분홍', pal:{W:'#FFC7DD'} }, { n:'노랑', pal:{W:'#FFE89A'} }, { n:'보라', pal:{W:'#D9CCFF'} }, { n:'민트', pal:{W:'#BDF0DA'} } ] },
+  { id:'crown', lv:8, icon:'👑', name:'왕관', slot:'top', acc:'crown', colors:[
+    { n:'황금', pal:{y:'#FFC21A',r:'#FF6F9C'} }, { n:'은빛', pal:{y:'#D3DAE3',r:'#6FB8FF'} }, { n:'분홍', pal:{y:'#FF9EC4',r:'#FFE066'} },
+    { n:'하늘', pal:{y:'#8CC8FF',r:'#FFE066'} }, { n:'보라', pal:{y:'#B9A6FF',r:'#FFE066'} } ] },
+  { id:'wizard', lv:9, icon:'🔮', name:'마법 모자', slot:'top', acc:'wizard', colors:[
+    { n:'보라', pal:{V:'#9F86FF',Y:'#FFD84D'} }, { n:'분홍', pal:{V:'#FF8FB8',Y:'#FFF3B0'} }, { n:'밤하늘', pal:{V:'#5B6BD6',Y:'#FFD84D'} },
+    { n:'민트', pal:{V:'#3DBE8B',Y:'#FFF3B0'} }, { n:'빨강', pal:{V:'#E84A5F',Y:'#FFD84D'} } ] },
+  { id:'fur', lv:10, icon:'🌈', name:'전설의 털빛', slot:'fur', colors:[
+    { n:'황금', fill:'#FFE98A', line:'#B98A10' }, { n:'무지개', rainbow:true, line:'#8C74F0' }, { n:'벚꽃', fill:'#FFD3E4', line:'#D2588C' },
+    { n:'민트', fill:'#C9F5E3', line:'#2F9A72' }, { n:'하늘', fill:'#CDE8FF', line:'#3F86CF' }, { n:'우주', fill:'#B9A6FF', line:'#4B3AA8', stars:true } ] }
+];
+const ITEM_BY_ID = Object.fromEntries(ITEMS.map(it => [it.id, it]));
+const CAT_BASE = [
+  "................",
+  "..oo........oo..",
+  ".ofio......oifo.",
+  ".offfoooooofffo.",
+  ".offffffffffffo.",
+  ".offffffffffffo.",
+  ".offweffffweffo.",
+  ".offeeffffeeffo.",
+  ".ofccffnnffccfo.",
+  ".offfffoofffffo.",
+  "..offffffffffo..",
+  "...offffffffo...",
+  "..offffffffffo..",
+  "..offffffffffo..",
+  "..offoffffoffo..",
+  "...oo.oooo.oo..."
+];
+const HOUSE = [
+  "................",
+  ".......oo.......",
+  "......oRRo......",
+  ".....oRRRRo.....",
+  "....oRRRRRRo....",
+  "...oRRRRRRRRo...",
+  "..oRRRRRRRRRRo..",
+  ".oooooooooooooo.",
+  "..oWWWWWWWWWWo..",
+  "..oWbbWWWWDDWo..",
+  "..oWbbWWWWDDWo..",
+  "..oWWWWWWWDDWo..",
+  "..oWWWWWWWDDWo..",
+  "..oooooooooooo..",
+  "................",
+  "................"
+];
+const HOUSE_PAL = { o:'#5B4636', R:'#FFB8CB', W:'#FFF6DA', b:'#BFE3FF', D:'#D9A877' };
+
+const PATTERNS = {
+  none:{},
+  tabby:{ p:[[4,7],[4,8],[5,7],[5,8],[4,4],[4,11],[9,3],[9,12],[11,5],[11,10],[12,4],[12,11],[13,4],[13,11]] },
+  eyepatch:{ p:[[4,9],[4,10],[4,11],[4,12],[4,13],[5,10],[5,11],[5,12],[5,13],[6,12],[6,13],[7,12],[7,13],[12,4],[12,5],[13,4],[13,5],[13,6],[12,10]] },
+  calico:{
+    p:[[2,2],[3,2],[3,3],[3,4],[4,2],[4,3],[4,4],[5,2],[5,3],[12,9],[12,10],[12,11],[13,10],[13,11]],
+    q:[[2,13],[3,11],[3,12],[3,13],[4,11],[4,12],[4,13],[5,12],[5,13],[12,3],[13,3]]
+  },
+  tux:{ p:[[8,5],[8,6],[8,9],[8,10],[9,4],[9,5],[9,6],[9,9],[9,10],[9,11],[10,4],[10,5],[10,6],[10,7],[10,8],[10,9],[10,10],[10,11],
+           [11,6],[11,7],[11,8],[11,9],[12,6],[12,7],[12,8],[12,9],[13,6],[13,7],[13,8],[13,9],[14,3],[14,4],[14,11],[14,12]] }
+};
+
+const FURS = {
+  white:  { f:'#FFFFFF', p:'#EFEFEF', pat:'none',     label:'흰' },
+  cheese: { f:'#FFCB8E', p:'#F5A04A', pat:'tabby',    label:'치즈' },
+  cream:  { f:'#FFEDCB', p:'#F3D6A2', pat:'none',     label:'크림' },
+  gray:   { f:'#D3D8E0', p:'#A3ADBA', pat:'none',     label:'회색' },
+  tuxedo: { f:'#5A5470', p:'#FFFFFF', pat:'tux',      label:'턱시도', dark:true },
+  calico: { f:'#FFFFFF', p:'#FFB870', q:'#5A5470', pat:'calico', label:'삼색' },
+  tabby:  { f:'#DCE0E6', p:'#8E98A7', pat:'tabby',    label:'고등어' },
+  cow:    { f:'#FFFFFF', p:'#5A5470', pat:'eyepatch', label:'젖소' },
+  gold:   { f:'#FFE15C', p:'#FFB300', pat:'tabby',    label:'황금' },
+  mint:   { f:'#C9F5E3', p:'#8FE0C0', pat:'none',     label:'민트' },
+  pink:   { f:'#FFD3E4', p:'#FFA3C6', pat:'none',     label:'핑크' },
+  galaxy: { f:'#A08CF5', p:'#7B66E0', pat:'none',     label:'우주', dark:true },
+  rainbow:{ f:'#FFFFFF', p:'#FFFFFF', pat:'none',     label:'무지개', rainbow:true }
+};
+const SLEEPY_FURS = ['white','cheese','cream','gray','tuxedo','calico','tabby','cow'];
+const RAINBOW = ['#FFB3BA','#FFD6A5','#FDFFB6','#CAFFBF','#9BF6FF','#BDB2FF','#FFC6FF'];
+
+const ACC = {
+  bow:       { at:[0,10], rows:["pP.Pp","pPkPp",".p.p."], pal:{P:'#FF9EC4',p:'#E8679A',k:'#C9507F'} },
+  bowY:      { at:[0,10], rows:["pP.Pp","pPkPp",".p.p."], pal:{P:'#FFD84D',p:'#F2B705',k:'#D99A00'} },
+  flower:    { at:[1,1],  rows:[".P.","PyP",".P."], pal:{P:'#FF9EC4',y:'#FFD84D'} },
+  sprout:    { at:[0,5],  rows:["GG.GG",".GsG.","..s.."], pal:{G:'#7ED99B',s:'#4FB06D'} },
+  glasses:   { at:[5,3],  rows:["kkkk..kkkk","k..kkkk..k","k..k..k..k",".kk....kk."], pal:{k:'#E8679A'} },
+  sunglasses:{ at:[6,3],  rows:["kwkkkkkwkk","kkkk..kkkk"], pal:{k:'#2E2A36',w:'#FFFFFF'} },
+  headphones:{ at:[0,0],  rows:["..hhhhhhhhhhhh..",".h............h.","h..............h","h..............h","h..............h","cc............cc","cc............cc","cc............cc",".c............c."], pal:{h:'#7FD8BE',c:'#FF9EC4'} },
+  cherry:    { at:[0,4],  rows:["..g",".g.","R.R"], pal:{g:'#4FB06D',R:'#FF5C7A'} },
+  starclip:  { at:[1,11], rows:[".Y.","YYY",".Y."], pal:{Y:'#FFD84D'} },
+  heart:     { at:[0,5],  rows:["RR.RR","RRRRR",".RRR."], pal:{R:'#FF6F9C'} },
+  crown:     { at:[0,5],  rows:["y.yy.y","yyyyyy","yryyry"], pal:{y:'#FFC21A',r:'#FF6F9C'} },
+  halo:      { at:[0,4],  rows:["..hhhh..",".h....h."], pal:{h:'#FFD84D'} },
+  wings:     { at:[10,0], rows:["WW............WW","WWW..........WWW","WW............WW"], pal:{W:'#CDE8FF'} },
+  strawberry:{ at:[0,4],  rows:["...gg...",".RRRRRR.","RRwRRwRR"], pal:{R:'#FF6F8E',w:'#FFF3B0',g:'#4FB06D'} },
+  wizard:    { at:[0,4],  rows:["...VY...","..VVVV..","VVVVVVVV"], pal:{V:'#9F86FF',Y:'#FFD84D'} },
+  scarf:     { at:[10,3], rows:["yyyyyyyyyy",".......YY."], pal:{y:'#FFD84D',Y:'#F2B705'} },
+  nightcap:  { at:[0,3],  rows:["...bbbbb...",".bbBbbBbbbW","bbbbbbbbbb."], pal:{b:'#A8C8FF',B:'#FFFFFF',W:'#FFFFFF'} },
+  bubble:    { at:[6,13], rows:[".b.","bwb","bbb"], pal:{b:'#BFE6FF',w:'#FFFFFF'} },
+  stars:     { fn:g => { [[4,4],[5,11],[11,6],[12,9],[13,5],[10,11]].forEach(([r,c]) => { if (g[r][c]) g[r][c] = '#FFFFFF'; }); g[0][7] = '#FFE066'; g[1][6] = '#FFE066'; g[1][8] = '#FFE066'; g[1][7] = '#FFF6B0'; g[2][7] = '#FFE066'; } },
+  sparkles:  { fn:g => { [[0,1],[1,0],[1,2],[2,1],[10,14],[11,13],[11,15],[12,14]].forEach(([r,c]) => g[r][c] = '#FFC21A'); g[1][1] = '#FFF6B0'; g[11][14] = '#FFF6B0'; } },
+  blanket:   { fn:g => { for (let r = 10; r <= 15; r++) for (let c = 1; c <= 14; c++) g[r][c] = r === 10 ? '#8C74F0' : (((r + c) % 4 < 2) ? '#CFC2FF' : '#EEE8FF'); } }
+};
+
+const CHARS = [
+  // 🐱 노멀
+  { id:'n_white',  tier:'normal', name:'뽀얀 흰냥',     fur:'white' },
+  { id:'n_cheese', tier:'normal', name:'말랑 치즈냥',   fur:'cheese' },
+  { id:'n_cream',  tier:'normal', name:'포근 크림냥',   fur:'cream' },
+  { id:'n_gray',   tier:'normal', name:'시크 회색냥',   fur:'gray' },
+  { id:'n_tux',    tier:'normal', name:'신사 턱시도냥', fur:'tuxedo' },
+  { id:'n_calico', tier:'normal', name:'알록 삼색냥',   fur:'calico' },
+  { id:'n_tabby',  tier:'normal', name:'줄무늬 고등어냥', fur:'tabby' },
+  { id:'n_cow',    tier:'normal', name:'점박이 젖소냥', fur:'cow' },
+  // 💎 레어
+  { id:'r_ribbon',   tier:'rare', name:'리본냥',      fur:'white',  acc:['bow'] },
+  { id:'r_flower',   tier:'rare', name:'꽃핀냥',      fur:'cream',  acc:['flower'] },
+  { id:'r_sprout',   tier:'rare', name:'새싹냥',      fur:'gray',   acc:['sprout'] },
+  { id:'r_glasses',  tier:'rare', name:'똑똑 안경냥', fur:'tabby',  acc:['glasses'] },
+  { id:'r_headphone',tier:'rare', name:'헤드폰냥',    fur:'tuxedo', acc:['headphones'] },
+  { id:'r_cherry',   tier:'rare', name:'체리냥',      fur:'cheese', acc:['cherry'] },
+  { id:'r_star',     tier:'rare', name:'별핀냥',      fur:'calico', acc:['starclip'] },
+  { id:'r_heart',    tier:'rare', name:'두근 하트냥', fur:'cow',    acc:['heart'], heartCheeks:true },
+  // 👑 레전드
+  // 🦄 유니크
+  { id:'u_sakura',  tier:'unique', name:'벚꽃 요정냥',    fur:'pink',    acc:['flower','sparkles'] },
+  { id:'u_mint',    tier:'unique', name:'민트초코냥',     fur:'mint',    acc:['starclip'] },
+  { id:'u_goldbow', tier:'unique', name:'황금 리본냥',    fur:'gold',    acc:['bow'] },
+  { id:'u_doctor',  tier:'unique', name:'우주 박사냥',    fur:'galaxy',  acc:['glasses'] },
+  { id:'u_sprout',  tier:'unique', name:'무지개 새싹냥',  fur:'rainbow', acc:['sprout'] },
+  { id:'u_prince',  tier:'unique', name:'턱시도 왕자냥',  fur:'tuxedo',  acc:['crown'] },
+  { id:'l_crown',   tier:'legend', name:'왕관 쓴 황금냥', fur:'gold',    acc:['crown'] },
+  { id:'l_angel',   tier:'legend', name:'날개 달린 천사냥', fur:'white', acc:['halo','wings'] },
+  { id:'l_rainbow', tier:'legend', name:'무지개냥',       fur:'rainbow' },
+  { id:'l_galaxy',  tier:'legend', name:'별빛 우주냥',    fur:'galaxy',  acc:['stars'] },
+  { id:'l_cool',    tier:'legend', name:'선글라스 치즈냥', fur:'cheese', acc:['sunglasses'] },
+  { id:'l_berry',   tier:'legend', name:'딸기모자냥',     fur:'pink',    acc:['strawberry'] },
+  { id:'l_wizard',  tier:'legend', name:'꼬마 마법사냥',  fur:'mint',    acc:['wizard'] },
+  { id:'l_mongsil', tier:'legend', name:'전설의 하나',    fur:'white',   eye:'#9A7440', pupil:'#4A3523', acc:['scarf','bowY','sparkles'] },
+  // 💤 잠꾸러기 (지각)
+  { id:'s_yawn',    tier:'yawn',    name:'하품냥',   sleepy:'yawn' },
+  { id:'s_nod',     tier:'nod',     name:'꾸벅냥',   sleepy:'nod',   acc:['nightcap'] },
+  { id:'s_sleep',   tier:'sleep',   name:'쿨쿨냥',   sleepy:'sleep', acc:['nightcap','bubble'] },
+  { id:'s_burrito', tier:'burrito', name:'이불 돌돌냥', sleepy:'sleep', acc:['blanket','nightcap'] }
+];
+const CHAR_BY_ID = Object.fromEntries(CHARS.map(c => [c.id, c]));
+const MASCOT = { name:'하나', fur:'white', eye:'#9A7440', pupil:'#4A3523', acc:['scarf','bowY'] };
+
+const TIER_META = {
+  legend: { label:'★ LEGEND ★', short:'LEGEND', icon:'👑', color:'#FFE36E', cap:'#FFD84D', msg:n => `${n} 등장! 엄청 일찍 왔다냥!` },
+  unique: { label:'✦ UNIQUE ✦', short:'UNIQUE', icon:'🦄', color:'#E6DAFF', cap:'#B9A6FF', msg:n => `${n} 출석! 유니크 냥이다냥!` },
+  rare:   { label:'♦ RARE ♦',   short:'RARE',   icon:'💎', color:'#BDEFD9', cap:'#7FD8BE', msg:n => `${n} 출석! 부지런하다냥~` },
+  normal: { label:'NORMAL',     short:'NORMAL', icon:'🐱', color:'#FFF2BF', cap:'#FFB8CB', msg:n => `${n} 출석! 반가워냥` },
+  safe:   { label:'SAFE',       short:'세이프', icon:'🐾', color:'#FFF8E3', cap:'#FFE58A', pool:'normal', msg:n => `${n} 아슬아슬 세이프냥!` },
+  yawn:   { label:'SLEEPY',     short:'하품',   icon:'🥱', color:'#E7DFFF', cap:'#C4B5FF', sleepy:true, msg:n => `하암~ ${n}, 살짝 늦었다냥` },
+  nod:    { label:'SLEEPY',     short:'꾸벅',   icon:'😪', color:'#DCD2FF', cap:'#B3A1FF', sleepy:true, msg:n => `꾸벅… ${n}, 조금 늦었다냥` },
+  sleep:  { label:'SLEEPY',     short:'쿨쿨',   icon:'💤', color:'#D0D8FF', cap:'#9C8BF0', sleepy:true, msg:n => `쿨쿨… ${n}, 내일은 일찍 오자냥` },
+  burrito:{ label:'SLEEPY',     short:'이불',   icon:'🛌', color:'#C6CDF6', cap:'#8C74F0', sleepy:true, msg:n => `이불 밖은 위험해… ${n}, 내일은 꼭!` },
+  absent: { label:'쉬는 날',    short:'쉬는 날', icon:'🏠', color:'#EFE9E1' }
+};
+const TIER_ORDER = ['legend','unique','rare','normal','safe','yawn','nod','sleep','burrito'];
+
+function catColors(def, furKey, opts = {}){
+  const fur = FURS[furKey || def.fur || 'white'] || FURS.white;
+  const g = CAT_BASE.map(r => r.split(''));
+  const pat = PATTERNS[fur.pat] || {};
+  (pat.p || []).forEach(([r,c]) => { if (g[r][c] === 'f') g[r][c] = 'p'; });
+  (pat.q || []).forEach(([r,c]) => { if (g[r][c] === 'f') g[r][c] = 'q'; });
+  if (def.sleepy || opts.blink){
+    [[6,4],[6,5],[6,10],[6,11]].forEach(([r,c]) => g[r][c] = 'f');
+    [[7,4],[7,5],[7,10],[7,11]].forEach(([r,c]) => g[r][c] = 'o');
+  }
+  if (def.sleepy === 'yawn'){ g[9][7] = 'm'; g[9][8] = 'm'; }
+  if (def.pupil && !(def.sleepy || opts.blink)){ g[6][4] = 'e'; g[6][10] = 'e'; g[7][5] = 'd'; g[7][11] = 'd'; }
+  const pal = {
+    o: fur.dark ? '#2E2A36' : '#5B4636', f: fur.f, p: fur.p, q: fur.q || fur.p,
+    e: def.eye || (fur.dark ? '#FFE066' : '#3B2F2A'), d: def.pupil || def.eye || (fur.dark ? '#FFE066' : '#3B2F2A'), w:'#FFFFFF', n:'#FF8FAB',
+    c: def.heartCheeks ? '#FF6F9C' : '#FFB8CB', i:'#FFB8CB', m:'#E25C7E'
+  };
+  const col = g.map((row, r) => row.map(ch => {
+    if (ch === '.') return null;
+    if (fur.rainbow && ch === 'f') return RAINBOW[(r + 4) % 7];
+    return pal[ch];
+  }));
+  (def.acc || []).forEach(k => applyAcc(col, k));
+  return col;
+}
+function applyAcc(g, key, palOverride){
+  const a = ACC[key]; if (!a) return;
+  if (a.fn){ a.fn(g); return; }
+  const pal = palOverride ? Object.assign({}, a.pal, palOverride) : a.pal;
+  const [r0, c0] = a.at;
+  a.rows.forEach((row, dr) => [...row].forEach((ch, dc) => {
+    if (ch === '.') return;
+    const r = r0 + dr, c = c0 + dc;
+    if (r < 0 || r > 15 || c < 0 || c > 15) return;
+    g[r][c] = pal[ch];
+  }));
+}
+function houseColors(){ return HOUSE.map(r => [...r].map(ch => ch === '.' ? null : HOUSE_PAL[ch])); }
+function silhouetteColors(){ return CAT_BASE.map(r => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? '#E6CB7A' : '#FFF0BF'))); }
+function lockedColors(){ return CAT_BASE.map(r => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? '#B9AC9E' : '#DDD3C6'))); }
+
+function drawColors(canvas, col){
+  canvas.width = 16; canvas.height = 16;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 16, 16);
+  col.forEach((row, r) => row.forEach((c, x) => { if (c){ ctx.fillStyle = c; ctx.fillRect(x, r, 1, 1); } }));
+}
+const urlCache = {};
+function colorsToURL(col, key){
+  if (key && urlCache[key]) return urlCache[key];
+  const c = document.createElement('canvas'); drawColors(c, col);
+  const url = c.toDataURL();
+  if (key) urlCache[key] = url;
+  return url;
+}
+function defaultLook(lv){
+  const look = {};
+  ITEMS.filter(it => it.lv <= lv).forEach(it => { look[it.slot] = it.id + ':0'; });
+  return look;
+}
+function lookOfRaw(raw, lv){
+  raw = raw || defaultLook(lv);
+  const out = {}, free = !!raw._free;
+  for (const [slot, v] of Object.entries(raw)){
+    if (!v || slot === '_free') continue;
+    const [id, ci] = String(v).split(':'); const it = ITEM_BY_ID[id];
+    if (it && (free || it.lv <= lv) && it.colors[+ci]) out[slot] = { it, c: it.colors[+ci], ci: +ci };
+  }
+  return out;
+}
+function lookColorsRaw(raw, lv){
+  const L = LEVELS[lv - 1], look = lookOfRaw(raw, lv);
+  let fill = L.fill, line = L.line, rainbow = false;
+  if (look.fur){ const c = look.fur.c; fill = c.fill || fill; line = c.line || line; rainbow = !!c.rainbow; }
+  const eye = (look.eye || { c: ITEM_BY_ID.eye.colors[0] }).c, mouth = (look.mouth || { c: ITEM_BY_ID.mouth.colors[0] }).c;
+  const col = CAT_BASE.map((r, ri) => [...r].map((ch, ci) => {
+    if (ch === '.') return null;
+    if (ch === 'o') return (ri === 9 && (ci === 7 || ci === 8)) ? mouth.d : line;
+    if (ch === 'e' || ch === 'w') return ((ri === 7 && (ci === 5 || ci === 11))) ? eye.d : eye.c;
+    if (ch === 'n') return mouth.c;
+    if (ch === 'c' || ch === 'i') return '#FFC4D4';
+    return rainbow ? RAINBOW[(ri + 4) % 7] : fill;
+  }));
+  if (look.fur && look.fur.c.stars) applyAcc(col, 'stars');
+  SLOT_ORDER.forEach(sl => { const e = look[sl]; if (e) applyAcc(col, e.it.acc, e.c.pal); });
+  if (lv >= 10) applyAcc(col, 'sparkles');
+  return col;
+}
+function swatchBg(c){
+  if (c.d) return `linear-gradient(135deg, ${c.c} 0 58%, ${c.d} 58% 100%)`;
+  if (c.rainbow) return 'conic-gradient(#FFB3BA,#FFD6A5,#FDFFB6,#CAFFBF,#9BF6FF,#BDB2FF,#FFC6FF,#FFB3BA)';
+  const v = c.pal ? Object.values(c.pal) : [c.fill, c.line];
+  return v.length > 1 ? `linear-gradient(135deg, ${v[0]} 0 58%, ${v[1]} 58% 100%)` : v[0];
+}
+
+/* =========================================================
+   🐾 학생용 냥냥 마을
+   ========================================================= */
+const API = (() => {
+  const q = new URLSearchParams(location.search).get('api');
+  if (q && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(q)){ try { localStorage.setItem('nyangApi', q); } catch(e){} return q; }
+  try { return localStorage.getItem('nyangApi') || ''; } catch(e){ return ''; }
+})();
+const CRED_KEY = 'nyangStudent_v1';
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+function todayStr(d = new Date()){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function givenName(name){
+  const n = String(name).trim();
+  if (!/^[가-힣]+$/.test(n) || n.length < 3) return n;
+  if (n.length >= 4 && ['남궁','황보','제갈','사공','선우','서문','독고','동방'].includes(n.slice(0, 2))) return n.slice(2);
+  return n.slice(1);
+}
+function iga(name){ const c = name.charCodeAt(name.length - 1); return name + ((c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28) ? '이가' : '가'); }
+
+let st = { v:-1, notices:[], closing:[], pub:null };
+let me = null;           // { name, pin, info, look, acked }
+let busy = false;
+
+/* ---------- 서버 ---------- */
+async function api(url, opts){
+  const r = await fetch(url, Object.assign({ redirect:'follow' }, opts || {}));
+  return r.json();
+}
+async function pull(force){
+  if (!API || busy) return;
+  busy = true;
+  try {
+    const j = await api(`${API}?since=${force ? -1 : st.v}&t=${Date.now()}`);
+    if (!j.ok) throw new Error(j.error || 'error');
+    const prevNotice = JSON.stringify([st.notices, st.closing]);
+    st.notices = j.notices || []; st.closing = j.closing || [];
+    if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
+    if (j.pub){
+      const before = st.pub ? JSON.stringify(st.pub.students.map(s => [s.name, s.lookAt])) : '';
+      st.pub = j.pub; st.v = j.v;
+      if (before && before !== JSON.stringify(st.pub.students.map(s => [s.name, s.lookAt])) && current !== 'village') $('dotVillage').classList.add('on');
+      if (me) await refreshMe(true);
+    }
+    $('status').textContent = '☁️ ' + new Date().toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+    render();
+  } catch(e){ $('status').textContent = '⚠️ 연결 안 됨'; }
+  finally { busy = false; }
+}
+async function studentCall(op, extra){
+  const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
+  return api(API, { method:'POST', body: JSON.stringify(body) });
+}
+async function refreshMe(silent){
+  if (!me) return;
+  try {
+    const j = await studentCall('login');
+    if (!j.ok){ if (!silent) alert('다시 로그인해 주세요.'); logout(); return; }
+    me.info = j.me; me.look = j.look; me.acked = j.acked || [];
+  } catch(e){}
+}
+
+/* ---------- 로그인 ---------- */
+function loadCred(){
+  try { return JSON.parse(localStorage.getItem(CRED_KEY) || sessionStorage.getItem(CRED_KEY) || 'null'); } catch(e){ return null; }
+}
+function openLogin(){
+  const names = (st.pub && st.pub.students || []).map(s => s.name);
+  $('loginName').innerHTML = '<option value="">내 이름을 골라요</option>' + names.map(n => `<option>${esc(n)}</option>`).join('');
+  $('loginPin').value = ''; $('loginErr').textContent = '';
+  $('loginOv').style.display = 'flex';
+}
+async function doLogin(){
+  const name = $('loginName').value, pin = $('loginPin').value.trim();
+  if (!name){ $('loginErr').textContent = '이름을 골라 주세요'; return; }
+  if (!/^\d{4}$/.test(pin)){ $('loginErr').textContent = '숫자 4자리를 넣어 주세요'; return; }
+  $('loginErr').textContent = '확인 중…';
+  try {
+    const j = await api(API, { method:'POST', body: JSON.stringify({ action:'student', name, pin, op:'login' }) });
+    if (!j.ok){
+      $('loginErr').textContent =
+        j.error === 'locked' ? `너무 많이 틀렸어요. ${new Date(j.until).toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' })} 이후에 다시 해 주세요` :
+        j.error === 'nopin'  ? '아직 비밀번호가 없어요. 선생님께 받아 주세요' :
+        j.error === 'wrong'  ? (j.until ? '너무 많이 틀려서 10분 동안 잠겼어요' : `비밀번호가 달라요 (남은 기회 ${j.left}번)`) : '잠시 후 다시 해 주세요';
+      return;
+    }
+    me = { name, pin, info: j.me, look: j.look, acked: j.acked || [] };
+    const store = $('loginKeep').checked ? localStorage : sessionStorage;
+    localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY);
+    store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
+    $('loginOv').style.display = 'none';
+    toast(`${givenName(name)}, 어서 와! 🐾`);
+    render(); showTab('me');
+  } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
+}
+function logout(){
+  me = null; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
+}
+
+/* ---------- 화면 ---------- */
+let current = 'notice';
+function showTab(t){
+  current = t;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+  if (t === 'notice') $('dotNotice').classList.remove('on');
+  if (t === 'village') $('dotVillage').classList.remove('on');
+}
+function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
+function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
+function lookFor(s){ return (me && s.name === me.name && me.look) ? me.look : s.look; }
+
+function render(){
+  const pub = st.pub || { students:[], clean:[] }, fresh = pub.ds === todayStr();
+  if (pub.title){ $('title').textContent = pub.title; document.title = pub.title + ' · 학생용'; }
+  const d = new Date(), days = ['일','월','화','수','목','금','토'];
+  $('today').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+  $('meBar').innerHTML = me
+    ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
+    : `<button type="button" class="btn btn-y" id="loginOpenBtn">🔑 로그인</button>`;
+
+  // 알림
+  $('noticeList').innerHTML = st.notices.length ? st.notices.map(t => {
+    const done = me && me.acked.includes(t);
+    const btn = me ? `<button type="button" class="ack ${done ? 'done' : ''}" data-ack="${esc(t)}">${done ? '✔ 확인함' : '확인했어요'}</button>` : '';
+    return `<div class="n-item"><span>🐾</span><span class="n-text">${esc(t)}</span>${btn}</div>`;
+  }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">오늘은 알림이 없어요</div>';
+  $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
+  $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
+    : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span>${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
+  $('cleanMe').innerHTML = (me && fresh && me.info && me.info.clean) ? '<div class="clean-me">🧹 오늘 청소 당번이에요! 오늘 EXP가 마이너스라서 그래요. 내일은 플러스로 만들어 보자 💪</div>' : '';
+
+  // 마을
+  const now = Date.now(), recent = pub.students.filter(s => s.lookAt && now - s.lookAt < 86400000).sort((a, b) => b.lookAt - a.lookAt);
+  $('ticker').style.display = recent.length ? 'block' : 'none';
+  $('tickerText').textContent = recent.map(s => `✨ ${iga(givenName(s.name))} 새로 꾸몄어요!`).join('      ');
+  $('village').innerHTML = pub.students.map((s, i) => {
+    const deco = LEVELS[s.lv - 1] ? LEVELS[s.lv - 1].deco : '';
+    return `<div class="vcat lv-${s.lv} ${me && me.name === s.name ? 'mine' : ''}" data-cat="${i}"><div class="lv-frame"></div>${deco ? `<div class="lv-deco">${deco}</div>` : ''}
+      ${s.lookAt && now - s.lookAt < 86400000 ? '<div class="new">NEW</div>' : ''}
+      <canvas class="pix" width="16" height="16"></canvas><div class="vname">${esc(s.name)}</div><div class="vlv">Lv.${s.lv} ${esc(s.lvName || '')}</div></div>`;
+  }).join('') || '<div class="empty">아직 고양이가 없어요</div>';
+  document.querySelectorAll('#village .vcat').forEach(el => {
+    const s = pub.students[+el.dataset.cat];
+    drawColors(el.querySelector('canvas'), lookColorsRaw(lookFor(s), s.lv));
+  });
+
+  renderMe();
+}
+
+function wearList(raw, lv){
+  const look = lookOfRaw(raw, lv);
+  return ['eye','mouth','top','earR','earL','neck','back','fur'].filter(k => look[k]).map(k => `${look[k].it.icon} ${look[k].c.n} ${look[k].it.name}`).join(' · ');
+}
+function openCat(s){
+  const raw = lookFor(s);
+  $('catFrame').className = 'frame lv-' + s.lv;
+  drawColors($('catCanvas'), lookColorsRaw(raw, s.lv));
+  $('catName').textContent = `${s.name} · Lv.${s.lv} ${s.lvName || ''}`;
+  $('catWear').textContent = wearList(raw, s.lv) || '아직 꾸미지 않았어요';
+  $('catOv').style.display = 'flex';
+}
+
+function renderMe(){
+  const box = $('meBox');
+  if (!me){
+    box.innerHTML = `<div class="box" style="text-align:center;"><div class="box-head">🐱 내 고양이</div>
+      <p style="font-size:1.2rem;">내 이름과 비밀번호로 로그인하면<br>고양이를 꾸밀 수 있어요!</p><button type="button" class="btn btn-y" id="loginOpenBtn2">🔑 로그인</button></div>`;
+    return;
+  }
+  const s = studentOf(me.name), info = me.info || {}, lv = info.lv || (s ? s.lv : 1);
+  const raw = me.look || (s && s.look) || defaultLook(lv), look = lookOfRaw(raw, lv), free = !!raw._free;
+  const t = info.today;
+  const fresh = st.pub && st.pub.ds === todayStr();
+  box.innerHTML = `
+    <div class="box"><div class="box-head">🐱 ${esc(me.name)}의 고양이</div>
+      <div class="me-card">
+        <div class="frame lv-${lv}"><div class="lv-frame"></div><canvas class="pix" id="meCanvas" width="16" height="16"></canvas></div>
+        <div class="me-info">
+          <div class="me-lv">Lv.${lv} ${esc(info.lvName || LEVELS[lv-1].name)} ${LEVELS[lv-1].deco || ''}</div>
+          <div>✨ 시즌 EXP <b>${info.exp >= 0 ? '+' : ''}${info.exp ?? 0}</b></div>
+          <div class="bar"><i style="width:${info.pct ?? 0}%"></i></div>
+          <div>${info.next ? `다음 레벨까지 <b>${info.need}</b> EXP` : '🏆 최고 레벨!'}</div>
+          <div>📅 오늘 출석: ${!fresh ? '아직 출석부가 열리지 않았어요' : (t ? `${t.icon} ${esc(t.label)} · ${esc(t.time)} · ${t.exp >= 0 ? '+' : ''}${t.exp}` : '아직 안 했어요')}</div>
+        </div>
+      </div>
+    </div>
+    <div class="box"><div class="box-head mint">🎨 꾸미기</div>
+      <div class="hint" style="margin-bottom:8px;">색을 누르면 바로 저장돼요. 같은 자리(머리 위·귀)는 하나만 쓸 수 있어요.</div>
+      <div class="items" id="items">${ITEMS.map(it => {
+        const locked = it.lv > lv && !free;
+        const eq = look[it.slot] && look[it.slot].it.id === it.id ? look[it.slot].ci : -1;
+        const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot] || ''} · Lv.${it.lv}</small></div>`;
+        if (locked) return `<div class="ci locked">${head}<div class="ci-lock">🔒 Lv.${it.lv}가 되면 열려요</div></div>`;
+        return `<div class="ci">${head}<div class="swatches">` +
+          it.colors.map((c, i) => `<button type="button" class="sw ${eq === i ? 'on' : ''}" data-it="${it.id}" data-ci="${i}" title="${c.n}" style="background:${swatchBg(c)}"></button>`).join('') +
+          (eq >= 0 && it.slot !== 'eye' && it.slot !== 'mouth' ? `<button type="button" class="sw-off" data-off="${it.slot}">빼기</button>` : '') +
+          `</div><div class="ci-on">${eq >= 0 ? `✔ ${it.colors[eq].n} 착용 중` : ''}</div></div>`;
+      }).join('')}</div>
+    </div>`;
+  drawColors($('meCanvas'), lookColorsRaw(raw, lv));
+}
+
+let saving = Promise.resolve();
+async function changeLook(slot, val){
+  const s = studentOf(me.name), lv = (me.info && me.info.lv) || (s ? s.lv : 1);
+  const raw = Object.assign({}, me.look || (s && s.look) || defaultLook(lv));
+  raw[slot] = val; me.look = raw;
+  render();
+  saving = saving.then(async () => {
+    try {
+      const j = await studentCall('look', { look: raw });
+      if (j.ok){ me.look = j.look; if (s){ s.look = j.look; s.lookAt = Date.now(); } toast('저장했어요 ✨'); }
+      else { toast('저장하지 못했어요. 다시 로그인해 주세요'); }
+      render();
+    } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
+  });
+}
+
+/* ---------- 이벤트 ---------- */
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('.tab')){ showTab(t.closest('.tab').dataset.tab); return; }
+  if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2')){ openLogin(); return; }
+  if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
+  const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
+  const cat = t.closest('[data-cat]'); if (cat){ openCat(st.pub.students[+cat.dataset.cat]); return; }
+  const ack = t.closest('[data-ack]');
+  if (ack && me && !ack.classList.contains('done')){
+    ack.textContent = '…';
+    studentCall('ack', { text: ack.dataset.ack }).then(j => { if (j.ok){ me.acked = j.acked || []; toast('확인했어요 ✔'); } render(); }).catch(() => render());
+    return;
+  }
+  const sw = t.closest('[data-it]'); if (sw && me){ const it = ITEM_BY_ID[sw.dataset.it]; changeLook(it.slot, `${it.id}:${sw.dataset.ci}`); return; }
+  const off = t.closest('[data-off]'); if (off && me){ changeLook(off.dataset.off, ''); return; }
+});
+$('loginBtn').addEventListener('click', doLogin);
+$('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
+
+/* ---------- 시작 ---------- */
+(async function init(){
+  drawColors($('mascot'), catColors(MASCOT));
+  if (!API){ $('status').textContent = '⚠️ 주소 설정이 필요해요'; $('noticeList').innerHTML = '<div class="empty">선생님이 나눠 준 <b>학생 페이지 링크</b>로 한 번 들어와 주세요.</div>'; return; }
+  await pull(true);
+  const c = loadCred();
+  if (c && c.name && c.pin){
+    me = { name: c.name, pin: c.pin, info: null, look: null, acked: [] };
+    await refreshMe(true); render();
+  }
+  setInterval(() => pull(), 20000);
+})();
+</script>
+</body>
+</html>

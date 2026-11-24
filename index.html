@@ -357,6 +357,12 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .icon-btn:hover{background:var(--y-soft);transform:translateY(-2px);}
 .icon-btn:active{transform:translateY(4px);box-shadow:none;}
 
+.ack-badge{flex:none;margin-left:auto;align-self:center;border:2px solid var(--ink);border-radius:999px;background:var(--mint);font-size:.95rem;padding:2px 10px;cursor:pointer;white-space:nowrap;}
+.pin-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.pin-list div{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;font-size:1.2rem;display:flex;justify-content:space-between;}
+.pin-list b{letter-spacing:3px;}
+@media print{ body *{visibility:hidden;} #pinListOverlay, #pinListOverlay *{visibility:visible;} #pinListOverlay{position:absolute;inset:0;background:#fff;} #pinListOverlay .modal-btns, #pinListOverlay .modal-x{display:none;} }
+
 /* ===== 오버레이 · 모달 ===== */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
@@ -631,10 +637,21 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <button type="button" class="modal-x" data-close="gmOverlay" title="닫기">✕</button>
     <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 EXP·레벨·출석·꾸미기를 바꿔요</small></h2>
     <div class="gm-body">
-      <div class="gm-list" id="gmList"></div>
+      <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
     </div>
     <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
+  </div>
+</div>
+
+<!-- 학생 비밀번호 목록 -->
+<div class="overlay" id="pinListOverlay" style="z-index:10003;">
+  <div class="modal modal-small">
+    <button type="button" class="modal-x" data-close="pinListOverlay" title="닫기">✕</button>
+    <h2>🔑 학생 비밀번호</h2>
+    <div class="form-hint">이 목록은 지금 한 번만 보여요. 인쇄하거나 사진으로 남겨 두세요. (잊어버리면 관리자 모드에서 새로 정할 수 있어요)</div>
+    <div class="pin-list" id="pinListBox"></div>
+    <div class="modal-btns"><button type="button" class="btn btn-sky" onclick="window.print()">🖨 인쇄</button><button type="button" class="btn btn-gray" data-close="pinListOverlay">닫기</button></div>
   </div>
 </div>
 
@@ -829,6 +846,8 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <button type="button" class="mini-btn" style="background:var(--mint);" id="syncNowBtn">🔄 지금 동기화</button>
         <button type="button" class="mini-btn" style="background:#FFC9D3;" id="syncOffBtn">연결 끊기</button>
       </div>
+      <div class="row"><span>🔐 교사 열쇠 <small>(선생님 기기에만 · 4글자 이상)</small></span><span><input type="password" id="teacherKeyInput" style="width:150px;" autocomplete="new-password"> <button type="button" class="mini-btn" id="teacherKeyBtn">열쇠 저장</button></span></div>
+      <div class="row"><span>👩‍🎓 학생 페이지 <small>(냥이 마을 · 꾸미기 · 알림)</small></span><button type="button" class="mini-btn" style="background:var(--y);" id="studentLinkBtn">🔗 학생용 링크 복사</button></div>
       <div class="sync-choice" id="syncChoice">
         <div id="syncChoiceText"></div>
         <div class="row" style="justify-content:flex-start;">
@@ -884,6 +903,7 @@ const DEFAULT_MENU = [
   { name:'수업 중 떠들기', exp:-10 }, { name:'준비물 안 챙김', exp:-10 }, { name:'복도에서 뛰기', exp:-10 }
 ];
 
+/*@@SHARED:begin*/
 const DEFAULT_LEVEL = { start:'2026-11-24', max:2200, curve:1.5 };
 const LEVELS = [
   { name:'아기냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
@@ -899,8 +919,14 @@ const LEVELS = [
 ];
 /* 🎨 레벨마다 열리는 꾸미기 아이템 (색깔은 학생이 직접 골라요) */
 const SLOT_ORDER = ['back','neck','earL','earR','top'];
-const SLOT_LABEL = { top:'머리 위', earR:'오른쪽 귀', earL:'왼쪽 귀', neck:'목', back:'등', fur:'털빛' };
+const SLOT_LABEL = { eye:'얼굴', mouth:'얼굴', top:'머리 위', earR:'오른쪽 귀', earL:'왼쪽 귀', neck:'목', back:'등', fur:'털빛' };
 const ITEMS = [
+  { id:'eye', lv:1, icon:'👀', name:'눈 색', slot:'eye', colors:[
+    { n:'갈색', c:'#9A7440', d:'#4A3523' }, { n:'까망', c:'#5A5A5A', d:'#1E1E1E' }, { n:'하늘', c:'#6FB8FF', d:'#2F6FB0' },
+    { n:'초록', c:'#5CC08A', d:'#2E7A52' }, { n:'호박', c:'#F2B33D', d:'#9A6A10' }, { n:'보라', c:'#A98BF0', d:'#5E45B0' }, { n:'분홍', c:'#FF8FB8', d:'#B8456E' } ] },
+  { id:'mouth', lv:1, icon:'👄', name:'입 색', slot:'mouth', colors:[
+    { n:'분홍', c:'#FF8FAB', d:'#D95C7E' }, { n:'빨강', c:'#F06070', d:'#B03040' }, { n:'코랄', c:'#FFA07A', d:'#C8603A' },
+    { n:'보라', c:'#C3A0F5', d:'#7A55C8' }, { n:'갈색', c:'#C08A6A', d:'#7A5038' } ] },
   { id:'sprout', lv:2, icon:'🌱', name:'새싹', slot:'top', acc:'sprout', colors:[
     { n:'초록', pal:{G:'#7ED99B',s:'#4FB06D'} }, { n:'연두', pal:{G:'#C8EE7E',s:'#8DBF3A'} }, { n:'벚꽃', pal:{G:'#FFB3CF',s:'#E8679A'} },
     { n:'하늘', pal:{G:'#A8D8FF',s:'#5FAEF5'} }, { n:'노랑', pal:{G:'#FFE066',s:'#E0A800'} }, { n:'보라', pal:{G:'#CDB8FF',s:'#8C74F0'} } ] },
@@ -928,6 +954,7 @@ const ITEMS = [
     { n:'민트', fill:'#C9F5E3', line:'#2F9A72' }, { n:'하늘', fill:'#CDE8FF', line:'#3F86CF' }, { n:'우주', fill:'#B9A6FF', line:'#4B3AA8', stars:true } ] }
 ];
 const ITEM_BY_ID = Object.fromEntries(ITEMS.map(it => [it.id, it]));
+/*@@SHARED:end*/
 
 let db = {
   mainTitle: DEFAULT_TITLE,
@@ -968,6 +995,7 @@ function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 /* =========================================================
    🎨 픽셀 냥이 공장 (16×16)
    ========================================================= */
+/*@@SHARED:begin*/
 const CAT_BASE = [
   "................",
   "..oo........oo..",
@@ -1174,6 +1202,7 @@ function colorsToURL(col, key){
   return url;
 }
 
+/*@@SHARED:end*/
 /* 기록 → 캐릭터 해석 (이전 버전 기록도 지원) */
 function recTier(rec){
   if (rec.status === 'dungeon') return 'absent';
@@ -1377,7 +1406,7 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<div class="qmark">?</div><div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
+      card.insertAdjacentHTML('beforeend', `<div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
     } else {
       const tk = recTier(rec), meta = TIER_META[tk];
@@ -1691,13 +1720,15 @@ function levelInfo(exp){
   return { lv, exp, cur, next, need: next ? next - exp : 0, pct: next ? Math.max(0, Math.min(1, (exp - cur) / (next - cur))) : 1 };
 }
 function levelsNow(){ const m = seasonExpMap(), o = {}; for (const n in m) o[n] = levelInfo(m[n]).lv; return o; }
+/*@@SHARED:begin*/
 function defaultLook(lv){
   const look = {};
   ITEMS.filter(it => it.lv <= lv).forEach(it => { look[it.slot] = it.id + ':0'; });
   return look;
 }
-function lookOf(name, lv){
-  const raw = (db.looks && db.looks[name]) || defaultLook(lv), out = {}, free = !!raw._free;
+function lookOfRaw(raw, lv){
+  raw = raw || defaultLook(lv);
+  const out = {}, free = !!raw._free;
   for (const [slot, v] of Object.entries(raw)){
     if (!v || slot === '_free') continue;
     const [id, ci] = String(v).split(':'); const it = ITEM_BY_ID[id];
@@ -1705,22 +1736,39 @@ function lookOf(name, lv){
   }
   return out;
 }
-function lookColors(name, lv){
-  const L = LEVELS[lv - 1], look = lookOf(name, lv);
+function lookColorsRaw(raw, lv){
+  const L = LEVELS[lv - 1], look = lookOfRaw(raw, lv);
   let fill = L.fill, line = L.line, rainbow = false;
   if (look.fur){ const c = look.fur.c; fill = c.fill || fill; line = c.line || line; rainbow = !!c.rainbow; }
-  const col = CAT_BASE.map((r, ri) => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? line : (rainbow ? RAINBOW[(ri + 4) % 7] : fill))));
+  const eye = (look.eye || { c: ITEM_BY_ID.eye.colors[0] }).c, mouth = (look.mouth || { c: ITEM_BY_ID.mouth.colors[0] }).c;
+  const col = CAT_BASE.map((r, ri) => [...r].map((ch, ci) => {
+    if (ch === '.') return null;
+    if (ch === 'o') return (ri === 9 && (ci === 7 || ci === 8)) ? mouth.d : line;
+    if (ch === 'e' || ch === 'w') return ((ri === 7 && (ci === 5 || ci === 11))) ? eye.d : eye.c;
+    if (ch === 'n') return mouth.c;
+    if (ch === 'c' || ch === 'i') return '#FFC4D4';
+    return rainbow ? RAINBOW[(ri + 4) % 7] : fill;
+  }));
   if (look.fur && look.fur.c.stars) applyAcc(col, 'stars');
   SLOT_ORDER.forEach(sl => { const e = look[sl]; if (e) applyAcc(col, e.it.acc, e.c.pal); });
   if (lv >= 10) applyAcc(col, 'sparkles');
   return col;
 }
+function swatchBg(c){
+  if (c.d) return `linear-gradient(135deg, ${c.c} 0 58%, ${c.d} 58% 100%)`;
+  if (c.rainbow) return 'conic-gradient(#FFB3BA,#FFD6A5,#FDFFB6,#CAFFBF,#9BF6FF,#BDB2FF,#FFC6FF,#FFB3BA)';
+  const v = c.pal ? Object.values(c.pal) : [c.fill, c.line];
+  return v.length > 1 ? `linear-gradient(135deg, ${v[0]} 0 58%, ${v[1]} 58% 100%)` : v[0];
+}
+/*@@SHARED:end*/
+function lookOf(name, lv){ return lookOfRaw((db.looks && db.looks[name]) || defaultLook(lv), lv); }
+function lookColors(name, lv){ return lookColorsRaw((db.looks && db.looks[name]) || defaultLook(lv), lv); }
 function setLook(name, slot, val){
   const lv = levelInfo(seasonExpMap()[name] || 0).lv;
   db.looks = db.looks || {};
   const look = Object.assign({}, db.looks[name] || defaultLook(lv));
   look[slot] = val; db.looks[name] = look;
-  saveDB(); syncOp({ op:'config', data: configOf() });
+  saveDB(); syncLook(name);
 }
 
 /* 🎨 꾸미기 방 */
@@ -1733,11 +1781,6 @@ function closeCloset(){
   $('closetOverlay').style.display = 'none'; closetName = null; renderGrid();
   if ($('gmOverlay').style.display === 'flex') renderGm();
   const f = closetOnClose; closetOnClose = null; f && f();
-}
-function swatchBg(c){
-  if (c.rainbow) return 'conic-gradient(#FFB3BA,#FFD6A5,#FDFFB6,#CAFFBF,#9BF6FF,#BDB2FF,#FFC6FF,#FFB3BA)';
-  const v = c.pal ? Object.values(c.pal) : [c.fill, c.line];
-  return v.length > 1 ? `linear-gradient(135deg, ${v[0]} 0 58%, ${v[1]} 58% 100%)` : v[0];
 }
 function renderCloset(){
   const name = closetName; if (!name) return;
@@ -1760,7 +1803,7 @@ function renderCloset(){
     if (locked) return `<div class="ci locked">${head}<div class="ci-lock">🔒 Lv.${it.lv}가 되면 열려요</div></div>`;
     return `<div class="ci ${closetNew.includes(it.id) ? 'new' : ''}">${head}<div class="swatches">` +
       it.colors.map((c, i) => `<button type="button" class="sw ${eq === i ? 'on' : ''}" data-it="${it.id}" data-ci="${i}" title="${c.n}" style="background:${swatchBg(c)}"></button>`).join('') +
-      (eq >= 0 ? `<button type="button" class="sw-off" data-off="${it.slot}">빼기</button>` : '') +
+      (eq >= 0 && it.slot !== 'eye' && it.slot !== 'mouth' ? `<button type="button" class="sw-off" data-off="${it.slot}">빼기</button>` : '') +
       `</div><div class="ci-on">${eq >= 0 ? `✔ ${it.colors[eq].n} 착용 중` : ''}</div></div>`;
   }).join('');
 }
@@ -1787,11 +1830,11 @@ function queueLevelUps(before, after, silent){
       db.looks = db.looks || {};
       const look = Object.assign({}, db.looks[n] || defaultLook(before[n]));
       items.forEach(it => { look[it.slot] = it.id + ':0'; });
-      db.looks[n] = look; equipped = true;
+      db.looks[n] = look; equipped = true; syncLook(n);
     }
     if (!silent) lvQueue.push({ name:n, lv:now[n], items });
   }
-  if (equipped){ saveDB(); syncOp({ op:'config', data: configOf() }); renderGrid(); }
+  if (equipped){ saveDB(); renderGrid(); }
   if (silent) return;
   if (after) lvAfter = after;
   showNextLevelUp();
@@ -1881,7 +1924,7 @@ function requirePin(fn){
 }
 function checkPin(){
   if ($('pinInput').value === db.adminPin){
-    pinUntil = Date.now() + 10 * 60 * 1000;      // 10분 동안 다시 묻지 않아요
+    pinUntil = Date.now() + 60 * 60 * 1000;      // 1시간 동안 다시 묻지 않아요
     $('pinOverlay').style.display = 'none';
     const f = pinNext; pinNext = null; f && f();
   } else { $('pinHint').textContent = '❌ 비밀번호가 달라요'; $('pinInput').value = ''; $('pinInput').focus(); }
@@ -1974,6 +2017,13 @@ function renderGm(){
       <div class="gm-btns">${TIER_ORDER.map(k => `<button type="button" data-today="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon} ${TIER_META[k].short} ${fmtExp(getTierExp(k))}</button>`).join('')}
         <button type="button" data-today="absent" style="background:${TIER_META.absent.color}">🏠 결석</button><button type="button" data-today="cancel" style="background:#FFC9D3">↩ 기록 취소</button></div>
     </div>
+    <div class="section"><div class="section-title">🔑 학생 페이지 비밀번호</div>
+      <div class="row" style="justify-content:flex-start;"><span>${serverPinSet.includes(name) ? '✅ 설정됨' : '⚪ 아직 없음'}</span>
+        <input type="text" inputmode="numeric" maxlength="4" id="gmPin" placeholder="숫자 4자리" style="width:120px;">
+        <button type="button" class="mini-btn" id="gmPinBtn">저장</button>
+        ${serverPinSet.includes(name) ? '<button type="button" class="mini-btn" style="background:#FFC9D3;" id="gmPinDelBtn">지우기</button>' : ''}</div>
+      <div class="form-hint">학생 페이지(student.html)에서 이 비밀번호로 로그인해 자기 고양이를 꾸밀 수 있어요.</div>
+    </div>
     <div class="section"><div class="section-title">🎨 꾸미기</div>
       <div class="row" style="justify-content:flex-start;"><button type="button" class="mini-btn" style="background:var(--y);" id="gmClosetBtn">🎨 꾸미기 방 열기 (관리자)</button><span class="form-hint">레벨과 상관없이 모든 아이템을 열어 줄 수도 있어요</span></div>
     </div>
@@ -1994,6 +2044,13 @@ function onGmClick(e){
   const lv = t.closest('[data-lv]'); if (lv){ gmSetLevel(Number(lv.dataset.lv)); return; }
   const td = t.closest('[data-today]'); if (td){ gmSetToday(td.dataset.today); return; }
   if (t.closest('#gmClosetBtn')){ $('gmOverlay').style.display = 'none'; openCloset(gmName, [], () => { $('gmOverlay').style.display = 'flex'; renderGm(); }, true); return; }
+  if (t.closest('#gmPinBtn')){
+    const pin = $('gmPin').value.trim();
+    if (!/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 적어 주세요.'); return; }
+    setStudentPins({ [gmName]: pin }); showToast(`🔑 ${gmName} 비밀번호를 저장했어요`); return;
+  }
+  if (t.closest('#gmPinDelBtn')){ if (confirm(`${gmName}의 비밀번호를 지울까요? 학생 페이지에 로그인할 수 없게 돼요.`)) setStudentPins({ [gmName]: '' }); return; }
+  if (t.closest('#gmPinAllBtn')){ makeAllPins(); return; }
   const u = t.closest('[data-gmundo]'); if (u){ gmUndo(u.dataset.gmundo); }
 }
 
@@ -2185,7 +2242,11 @@ function renderNotices(){
   list.forEach((text, idx) => {
     const item = document.createElement('div');
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
-    item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>`;
+    const acked = ackNames(text);
+    item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>` +
+      (sync.url && sync.api >= 3 ? `<button type="button" class="ack-badge" title="학생 확인 현황">✔ ${acked.length}/${db.students.length}</button>` : '');
+    const badge = item.querySelector('.ack-badge');
+    if (badge) badge.onclick = e => { e.stopPropagation(); showAcks(text); };
     item.onclick = () => { noticeChecked[idx] = !noticeChecked[idx]; renderNotices(); };
     area.append(item);
   });
@@ -2565,10 +2626,11 @@ function closeAlarmOverlay(stopSound){
    ☁️ 구글 시트 동기화
    ========================================================= */
 const SYNC_KEY = 'nyangSync_v1';
-let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null };
+let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null, api:0, key:'', needKey:false, pubHash:'' };
+let serverPinSet = [], serverAcks = {};
 let syncBusy = false;
 function loadSync(){ try { Object.assign(sync, JSON.parse(localStorage.getItem(SYNC_KEY)) || {}); } catch(e){} sync.ok = null; }
-function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last })); }
+function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last, api:sync.api, key:sync.key, pubHash:sync.pubHash })); }
 function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
@@ -2593,6 +2655,7 @@ function applyOpLocal(o){
     case 'clean': D(o.ds); db.cleanDone[o.ds][o.name] = !!o.v; break;
     case 'notices': db.notices = o.list.slice(); break;
     case 'config': applyConfig(o.data); break;
+    case 'look': db.looks = db.looks || {}; if (o.look) db.looks[o.name] = o.look; else delete db.looks[o.name]; break;
   }
 }
 function applyConfig(c){
@@ -2628,7 +2691,7 @@ async function syncFetch(url, opts){
   try {
     const r = await fetch(url, Object.assign({ signal: ctl.signal, redirect:'follow' }, opts || {}));
     const j = await r.json();
-    if (!j.ok) throw new Error(j.error || '서버 오류');
+    if (!j.ok) throw new Error(j.error === 'auth' ? '교사 열쇠가 맞지 않아요' : (j.error || '서버 오류'));
     return j;
   } finally { clearTimeout(tm); }
 }
@@ -2636,7 +2699,7 @@ async function flushSync(){
   if (!sync.url || !sync.queue.length) return;
   const ops = sync.queue.slice();
   try {
-    await syncFetch(sync.url, { method:'POST', body: JSON.stringify({ ops }) });
+    await syncFetch(sync.url, { method:'POST', body: JSON.stringify({ ops, key: sync.key }) });
     sync.queue.splice(0, ops.length); saveSync();
     await pullSync();
   } catch(e){ sync.ok = false; sync.err = e.message; updateSyncUI(); }
@@ -2647,7 +2710,14 @@ async function pullSync(force){
   syncBusy = true;
   try {
     if (sync.queue.length){ syncBusy = false; await flushSync(); return; }
-    const j = await syncFetch(`${sync.url}?since=${force ? -1 : sync.v}&t=${Date.now()}`);
+    const since = force ? -1 : sync.v;
+    const j = sync.api >= 3
+      ? await syncFetch(sync.url, { method:'POST', body: JSON.stringify({ action:'pull', key: sync.key, since }) })
+      : await syncFetch(`${sync.url}?since=${since}&t=${Date.now()}`);
+    if (sync.api < 3 && j.api >= 3){ sync.api = j.api; saveSync(); syncBusy = false; return pullSync(true); }   // 시트 코드가 새 버전으로 바뀌었어요
+    sync.needKey = !!j.needKey;
+    if (j.pinSet) serverPinSet = j.pinSet;
+    if (j.state && j.state.acks) serverAcks = j.state.acks;
     let changed = false;
     if (j.state){ applyServerState(j.state); sync.v = j.v; changed = true; }
     if (Array.isArray(j.closing)){
@@ -2658,8 +2728,86 @@ async function pullSync(force){
     if (JSON.stringify(nl) !== JSON.stringify(db.notices) && !sync.queue.some(o => o.op === 'notices')){ db.notices = nl; noticeChecked = {}; changed = true; }
     sync.ok = true; sync.err = ''; sync.last = Date.now(); saveSync();
     if (changed){ saveDB(); refreshAfterRemote(); }
+    publishPub();
   } catch(e){ sync.ok = false; sync.err = e.message; }
   finally { syncBusy = false; updateSyncUI(); }
+}
+/* 학생 페이지에 보여줄 공개 정보(레벨·꾸미기·청소 당번 등)를 시트에 올려요 */
+function buildPub(){
+  const sm = seasonExpMap(), day = todayData();
+  const priv = {};
+  const students = db.students.map(n => {
+    const li = levelInfo(sm[n] || 0), r = day[n], tk = r ? recTier(r) : null;
+    priv[n] = { lv: li.lv, lvName: LEVELS[li.lv - 1].name, exp: li.exp, need: li.need, next: li.next, pct: Math.round(li.pct * 100),
+      today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0 } : null,
+      total: dayTotal(n), clean: dayTotal(n) < 0 };
+    return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
+  });
+  return { title: db.mainTitle, ds: getTodayStr(), clean: db.students.filter(n => dayTotal(n) < 0), students, priv };
+}
+function publishPub(){
+  if (!sync.url || sync.api < 3) return;
+  const p = buildPub(), h = JSON.stringify(p);
+  if (h === sync.pubHash) return;
+  sync.pubHash = h; saveSync(); syncOp({ op:'pub', data: p });
+}
+function syncLook(name){
+  if (sync.api >= 3) syncOp({ op:'look', name, look: (db.looks && db.looks[name]) || null });
+  else syncOp({ op:'config', data: configOf() });
+}
+function ackNames(text){ return ((serverAcks[getTodayStr()] || {})[text] || []).filter(n => db.students.includes(n)); }
+function showAcks(text){
+  const yes = ackNames(text), no = db.students.filter(n => !yes.includes(n));
+  alert(`📢 ${text}\n\n✔ 확인함 (${yes.length}명): ${yes.join(', ') || '-'}\n\n⏳ 아직 (${no.length}명): ${no.join(', ') || '-'}`);
+}
+function setStudentPins(pins){
+  if (!sync.url || sync.api < 3){ alert('학생 비밀번호는 구글 시트 동기화(새 버전 코드)가 연결되어 있어야 쓸 수 있어요.'); return false; }
+  syncOp({ op:'setPins', pins });
+  Object.entries(pins).forEach(([n, p]) => { if (p){ if (!serverPinSet.includes(n)) serverPinSet.push(n); } else serverPinSet = serverPinSet.filter(x => x !== n); });
+  renderGm(); return true;
+}
+function makeAllPins(){
+  const missing = db.students.filter(n => !serverPinSet.includes(n));
+  let targets = missing;
+  if (!missing.length){
+    if (!confirm('모든 학생에게 이미 비밀번호가 있어요. 전부 새로 만들까요? (예전 비밀번호는 못 쓰게 돼요)')) return;
+    targets = db.students.slice();
+  } else if (!confirm(`비밀번호가 없는 ${missing.length}명에게 4자리 비밀번호를 만들까요?`)) return;
+  const pins = {};
+  targets.forEach(n => { pins[n] = String(Math.floor(1000 + Math.random() * 9000)); });
+  if (!setStudentPins(pins)) return;
+  $('pinListBox').innerHTML = targets.map(n => `<div><span>${esc(n)}</span><b>${pins[n]}</b></div>`).join('');
+  $('pinListOverlay').style.display = 'flex';
+}
+function studentLink(){
+  const base = location.protocol.startsWith('http') ? location.href.replace(/[^/]*([?#].*)?$/, '') : 'https://brookt7040.github.io/2-2attendence/';
+  return `${base}student.html?api=${encodeURIComponent(sync.url)}`;
+}
+async function copyStudentLink(){
+  if (!sync.url || sync.api < 3){ alert('학생 페이지는 구글 시트 동기화(새 버전 코드)가 연결되어 있어야 써요.'); return; }
+  if (sync.needKey){ alert('먼저 교사 열쇠를 정해 주세요! 열쇠 없이 링크를 나눠 주면 학생도 출석부를 바꿀 수 있어요.'); return; }
+  const link = studentLink();
+  try { await navigator.clipboard.writeText(link); alert('학생용 링크를 복사했어요! 반 단체방이나 클래스룸에 붙여넣어 주세요.\n\n' + link); }
+  catch(e){ prompt('아래 링크를 복사해서 학생들에게 보내 주세요', link); }
+}
+async function saveTeacherKey(){
+  const k = $('teacherKeyInput').value.trim();
+  if (k.length < 4){ alert('교사 열쇠는 4글자 이상으로 정해 주세요.'); return; }
+  if (sync.url && sync.api >= 3){
+    if (sync.needKey){
+      if (!confirm('이 열쇠를 우리 반 교사 열쇠로 정할까요?\n다른 선생님 기기(교무실 컴퓨터 등)에도 같은 열쇠를 넣어야 해요.')) return;
+      sync.key = k; sync.queue.push({ op:'setKey', newKey:k }); saveSync(); await flushSync();
+    } else if (sync.key && sync.key !== k && sync.ok){
+      if (confirm('교사 열쇠를 이 새 열쇠로 바꿀까요? (아니오를 누르면 이 기기의 열쇠만 바꿔요)')){
+        try { await syncFetch(sync.url, { method:'POST', body: JSON.stringify({ key: sync.key, ops:[{ op:'setKey', newKey:k }] }) }); }
+        catch(e){ alert('열쇠를 바꾸지 못했어요: ' + e.message); return; }
+      }
+      sync.key = k; saveSync();
+    } else { sync.key = k; saveSync(); }
+  } else { sync.key = k; saveSync(); }
+  $('teacherKeyInput').value = '';
+  await pullSync(true); updateSyncUI();
+  if (sync.ok) setBubble('교사 열쇠를 저장했다냥 🔐', 3500);
 }
 function refreshAfterRemote(){
   if (revealing){ pendingRemoteRender = true; return; }
@@ -2683,7 +2831,10 @@ function updateSyncUI(){
   } else {
     pill.className = '';
     pill.textContent = sync.queue.length ? `🔄 올리는 중 (${sync.queue.length})` : `☁️ 동기화됨${agoTxt ? ' · ' + agoTxt : ''}`;
-    st.innerHTML = `✅ 구글 시트와 연결됨${agoTxt ? ` · 마지막 동기화 ${agoTxt}` : ''}` + (sync.hasClosing === false ? '<br>⚠️ 구글 시트에서 종례를 쓰려면 Apps Script 코드를 새 버전으로 업데이트해 주세요 (설정 안내 참고). 지금은 출석부 설정에서 쓴 종례만 공유돼요.' : '');
+    st.innerHTML = `✅ 구글 시트와 연결됨${agoTxt ? ` · 마지막 동기화 ${agoTxt}` : ''}`
+      + (sync.api >= 3 ? (sync.needKey ? '<br>🔐 <b>아직 교사 열쇠가 없어요.</b> 학생 페이지를 나눠 주기 전에 아래에서 꼭 정해 주세요.' : (sync.key ? '<br>🔐 교사 열쇠 확인됨' : ''))
+         : '<br>ℹ️ 학생 페이지를 쓰려면 Apps Script 코드를 최신(v3)으로 업데이트해 주세요.')
+      + (sync.hasClosing === false ? '<br>⚠️ 구글 시트에서 종례를 쓰려면 Apps Script 코드를 새 버전으로 업데이트해 주세요 (설정 안내 참고). 지금은 출석부 설정에서 쓴 종례만 공유돼요.' : '');
   }
 }
 let syncCandidate = null;
@@ -2692,10 +2843,18 @@ async function connectSync(){
   if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url) && !/^http:\/\/localhost/.test(url)){ alert('구글 Apps Script 웹 앱 주소(https://script.google.com/…/exec)를 붙여넣어 주세요.'); return; }
   $('syncStatusText').textContent = '🔄 연결 확인 중…';
   try {
-    const j = await syncFetch(`${url}?since=-1&t=${Date.now()}`);
+    let j = await syncFetch(`${url}?since=-1&t=${Date.now()}`);
+    const api = j.api || 2;
+    if (api >= 3){
+      const key = $('teacherKeyInput').value.trim() || sync.key;
+      try { j = await syncFetch(url, { method:'POST', body: JSON.stringify({ action:'pull', key, since:-1 }) }); }
+      catch(e){ $('syncStatusText').innerHTML = '🔐 이 시트에는 교사 열쇠가 걸려 있어요. 아래 <b>교사 열쇠</b> 칸에 열쇠를 적은 뒤 다시 <b>연결하기</b>를 눌러 주세요.'; return; }
+      if (key) sync.key = key;
+      j.api = api; serverPinSet = j.pinSet || []; serverAcks = (j.state && j.state.acks) || {}; sync.needKey = !!j.needKey;
+    }
     const days = Object.keys((j.state && j.state.days) || {}).length;
     const hasData = !!(j.state && j.state.config) || days > 0;
-    syncCandidate = { url, j };
+    syncCandidate = { url, j, api };
     if (!hasData){ await adoptSync('push'); return; }
     const n = (j.state.config && j.state.config.students || []).length;
     $('syncChoiceText').innerHTML = `시트에 이미 데이터가 있어요 (친구 ${n}명 · 기록 ${days}일).<br>이 컴퓨터를 처음 연결하는 거라면 <b>가져오기</b>를 누르세요.`;
@@ -2708,7 +2867,7 @@ async function connectSync(){
 async function adoptSync(mode){
   if (!syncCandidate) return;
   if (mode === 'push' && syncCandidate.j.state && syncCandidate.j.state.config && !confirm('시트에 있던 데이터를 지우고 이 컴퓨터 데이터로 덮어쓸까요?')) return;
-  sync.url = syncCandidate.url; sync.v = -1; sync.queue = [];
+  sync.url = syncCandidate.url; sync.v = -1; sync.queue = []; sync.api = syncCandidate.api || 2; sync.pubHash = '';
   if (mode === 'pull'){
     downloadLocalSafetyBackup();
     applyServerState(syncCandidate.j.state); db.notices = syncCandidate.j.notices || []; noticeChecked = {};
@@ -2730,7 +2889,7 @@ function downloadLocalSafetyBackup(){
 function disconnectSync(){
   if (!sync.url) return;
   if (!confirm('동기화를 끊을까요? 이 컴퓨터에는 지금까지의 데이터가 남아 있어요.')) return;
-  sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'' }; saveSync();
+  sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null, api:0, key:'', needKey:false, pubHash:'' }; saveSync();
   $('syncUrlInput').value = ''; updateSyncUI();
 }
 
@@ -2751,7 +2910,7 @@ function bindEvents(){
     const lv = levelInfo(seasonExpMap()[closetName] || 0).lv;
     db.looks = db.looks || {};
     db.looks[closetName] = Object.assign({}, db.looks[closetName] || defaultLook(lv), { _free: $('closetFree').checked });
-    saveDB(); syncOp({ op:'config', data: configOf() }); renderCloset();
+    saveDB(); syncLook(closetName); renderCloset();
   });
   $('statsTabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) loadStats(b.dataset.period); });
   $('statsContent').addEventListener('click', e => {
@@ -2772,6 +2931,8 @@ function bindEvents(){
   $('syncConnectBtn').addEventListener('click', connectSync);
   $('syncNowBtn').addEventListener('click', () => pullSync(true));
   $('syncOffBtn').addEventListener('click', disconnectSync);
+  $('teacherKeyBtn').addEventListener('click', saveTeacherKey);
+  $('studentLinkBtn').addEventListener('click', copyStudentLink);
   $('syncPullBtn').addEventListener('click', () => adoptSync('pull'));
   $('syncPushBtn').addEventListener('click', () => adoptSync('push'));
   $('syncPill').addEventListener('click', () => pullSync(true));
