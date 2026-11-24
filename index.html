@@ -195,9 +195,9 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 /* ===== 학생 카드 ===== */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:22px;}
 .card{
-  position:relative;height:228px;background:#fff;border:3px solid var(--ink);border-radius:24px;
+  position:relative;height:250px;background:#fff;border:3px solid var(--ink);border-radius:24px;
   box-shadow:0 6px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:16px 8px 12px;text-align:center;user-select:none;transition:transform .12s;
+  padding:14px 8px 34px;text-align:center;user-select:none;transition:transform .12s;
 }
 .card .cat{width:92px;height:92px;}
 .card.waiting{cursor:pointer;background:var(--cream);border-style:dashed;}
@@ -238,6 +238,35 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .card.t-legend.new{animation:cardPop .65s cubic-bezier(.2,1.7,.4,1),shimmer 5s linear infinite;}
 @keyframes cardPop{0%{transform:scale(.5) rotate(-8deg)}100%{transform:scale(1) rotate(0)}}
 
+/* ===== 🏆 레벨 ===== */
+.lv-row{position:absolute;left:12px;right:12px;bottom:9px;display:flex;align-items:center;gap:6px;}
+.lv-badge{font-size:.8rem;border:2px solid var(--ink);border-radius:999px;padding:0 7px;background:#fff;white-space:nowrap;}
+.lv-track{flex:1;height:10px;border:2px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;}
+.lv-fill{height:100%;background:linear-gradient(90deg,#FFD84D,#FF9EC4);border-radius:999px;}
+.lv-10 .lv-fill{background:linear-gradient(90deg,#FF9AAE,#FFD84D,#7FD8BE,#8CC8FF,#A996FF);}
+.lv-deco{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:1.55rem;pointer-events:none;filter:drop-shadow(0 2px 0 rgba(91,70,54,.35));}
+.lv-frame{position:absolute;inset:-9px;border-radius:31px;pointer-events:none;border:4px solid transparent;}
+.lv-2 .lv-frame{border-color:#BDEFD9;}
+.lv-3 .lv-frame{border-color:#FFC2D4;}
+.lv-4 .lv-frame{border-color:#FFD84D;}
+.lv-5 .lv-frame{border:4px dashed #FF9EC4;}
+.lv-6 .lv-frame{border-color:#9FD3FF;box-shadow:0 0 12px 2px rgba(140,200,255,.7);}
+.lv-7 .lv-frame{border-color:#FFFFFF;box-shadow:0 0 16px 5px rgba(170,215,255,.95);}
+.lv-8 .lv-frame{border:6px double #F5B70A;box-shadow:0 0 14px 3px rgba(255,200,40,.6);}
+.lv-9 .lv-frame{border-color:#A996FF;box-shadow:0 0 18px 5px rgba(169,150,255,.75);animation:glowPulse 2s ease-in-out infinite;}
+.lv-10 .lv-frame{border:6px solid transparent;background:conic-gradient(#FF9AAE,#FFD84D,#7FD8BE,#8CC8FF,#A996FF,#FF9AAE) border-box;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:hueSpin 3s linear infinite;}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 10px 2px rgba(169,150,255,.5)}50%{box-shadow:0 0 22px 7px rgba(169,150,255,.95)}}
+@keyframes hueSpin{to{filter:hue-rotate(360deg)}}
+.level-box{background:radial-gradient(circle at 50% 40%,#FFFBE6 0%,#FFF0B8 60%,#FFD6E4 100%);}
+.lvup-title{font-size:3.8rem;color:var(--y);letter-spacing:3px;text-shadow:3px 0 var(--ink),-3px 0 var(--ink),0 3px var(--ink),0 -3px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 7px var(--ink);animation:bob 1.2s ease-in-out infinite;}
+#lvCanvas{width:190px;height:190px;margin:6px auto;display:block;animation:jump .7s ease-out infinite;}
+.lvup-name{font-size:2.2rem;}
+.lvup-gift{font-size:1.3rem;margin-top:8px;color:#C0506F;}
+.lvup-sub{font-size:1.25rem;margin-top:6px;color:var(--ink-soft);}
+.lv-table-bar{display:inline-block;width:160px;height:12px;border:2px solid var(--ink);border-radius:999px;background:#fff;overflow:hidden;vertical-align:middle;}
+.lv-table-bar i{display:block;height:100%;background:linear-gradient(90deg,#FFD84D,#FF9EC4);}
+
 /* ===== 오버레이 · 모달 ===== */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
@@ -248,7 +277,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .section-title{font-size:1.25rem;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group label{font-size:1.05rem;}
-input[type=text],input[type=number],input[type=time],textarea{padding:7px 10px;font-size:1.05rem;border:2px solid var(--ink);border-radius:10px;background:#FFFDF6;}
+input[type=text],input[type=number],input[type=time],input[type=date],textarea{padding:7px 10px;font-size:1.05rem;border:2px solid var(--ink);border-radius:10px;background:#FFFDF6;}
 textarea{resize:vertical;}
 .form-hint{font-size:.9rem;color:var(--ink-soft);line-height:1.4;}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -479,6 +508,18 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
   </div>
 </div>
 
+<!-- 레벨 업 -->
+<div class="overlay" id="levelOverlay">
+  <div class="party-box level-box">
+    <div class="lvup-title">LEVEL UP!</div>
+    <canvas id="lvCanvas" class="pix" width="16" height="16"></canvas>
+    <div class="lvup-name" id="lvName"></div>
+    <div class="lvup-gift" id="lvGift"></div>
+    <div class="lvup-sub" id="lvSub"></div>
+    <div class="rev-hint">화면을 터치하면 닫혀요</div>
+  </div>
+</div>
+
 <!-- 파티 -->
 <div class="overlay" id="partyOverlay">
   <div class="party-box">
@@ -498,6 +539,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <button type="button" class="tab" data-period="week">이번 주</button>
       <button type="button" class="tab" data-period="month">이번 달</button>
       <button type="button" class="tab" data-period="year">올해</button>
+      <button type="button" class="tab" data-period="level">🏆 레벨</button>
       <button type="button" class="tab" data-period="dex">🐾 냥이 도감</button>
     </div>
     <div id="statsContent"></div>
@@ -562,6 +604,14 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="section-title">📋 EXP 리스트</div>
       <textarea id="menuInput" style="height:170px;"></textarea>
       <div class="form-hint">한 줄에 하나씩 <b>이름, 점수</b>로 적어요. 예) 숙제 완료, 30 / 수업 중 떠들기, -10<br>출석 EXP와 EXP 리스트 점수를 더한 <b>오늘 EXP가 마이너스</b>인 친구는 자동으로 '🧹 청소 당번'이 돼요. 플러스로 만회하면 명단에서 빠져요. 청소를 마치면 EXP 리스트 아래 이름을 눌러 체크하세요.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🏆 레벨 (시즌)</div>
+      <div class="row"><span>시즌 시작일</span><input type="date" id="seasonStartInput"></div>
+      <div class="row"><span>Lv.10까지 필요한 총 EXP</span><input type="number" id="lvMaxInput" min="100" step="50" style="width:100px;"></div>
+      <div class="sound-status" id="lvPreview"></div>
+      <div class="form-hint">시즌 시작일부터 모은 EXP(출석 + EXP 리스트)로 레벨이 정해져요. 위 레벨일수록 더 많은 EXP가 필요해요.<br>새 시즌을 시작하려면 시작일을 그날로 바꾸면 돼요. 지난 기록은 지워지지 않아요.</div>
     </div>
 
     <div class="section">
@@ -666,6 +716,20 @@ const DEFAULT_MENU = [
   { name:'수업 중 떠들기', exp:-10 }, { name:'준비물 안 챙김', exp:-10 }, { name:'복도에서 뛰기', exp:-10 }
 ];
 
+const DEFAULT_LEVEL = { start:'2026-11-24', max:2200, curve:1.5 };
+const LEVELS = [
+  { name:'아기냥',   deco:'',   acc:[],                                  fill:'#FFF0BF', line:'#E6CB7A', gift:'' },
+  { name:'새싹냥',   deco:'',   acc:['sprout'],                          fill:'#FFF0BF', line:'#E6CB7A', gift:'🌱 머리에 새싹이 돋았어요' },
+  { name:'리본냥',   deco:'',   acc:['sprout','bow'],                    fill:'#FFF0BF', line:'#E6CB7A', gift:'🎀 분홍 리본 + 분홍 액자' },
+  { name:'목도리냥', deco:'',   acc:['bow','scarf'],                     fill:'#FFF3CC', line:'#DDBD62', gift:'🧣 노랑반 목도리 + 노란 액자' },
+  { name:'꽃핀냥',   deco:'🌸', acc:['flower','bow','scarf'],            fill:'#FFF8E6', line:'#D9B864', gift:'🌸 꽃핀 + 꽃 액자' },
+  { name:'별빛냥',   deco:'⭐', acc:['starclip','flower','scarf'],       fill:'#FFF8E6', line:'#D2AE55', gift:'⭐ 별핀 + 반짝이는 하늘 액자' },
+  { name:'천사냥',   deco:'💫', acc:['halo','wings','scarf'],            fill:'#FFFFFF', line:'#C9A54B', gift:'😇 천사 링과 날개' },
+  { name:'왕관냥',   deco:'👑', acc:['crown','wings','scarf'],           fill:'#FFF3C4', line:'#C99A2E', gift:'👑 왕관 + 황금 액자' },
+  { name:'마법사냥', deco:'🔮', acc:['wizard','wings','scarf','sparkles'], fill:'#F3EEFF', line:'#9C86E8', gift:'🔮 마법 모자 + 보랏빛 오라' },
+  { name:'전설냥',   deco:'🏆', acc:['crown','wings','scarf','sparkles'], fill:'#FFE98A', line:'#B98A10', gift:'🏆 무지개 액자 · 전설의 냥이!' }
+];
+
 let db = {
   mainTitle: DEFAULT_TITLE,
   notices: [],
@@ -675,6 +739,7 @@ let db = {
   sfx: true,
   alarmConfig: { ...DEFAULT_ALARM },
   menu: DEFAULT_MENU.map(m => ({ ...m })),
+  level: { ...DEFAULT_LEVEL },
   bonus: {},
   cleanDone: {},
   records: {}
@@ -948,6 +1013,7 @@ function mergeInto(parsed){
   if (Array.isArray(parsed.menu)) db.menu = parsed.menu.filter(m => m && m.name && Number.isFinite(Number(m.exp))).map(m => ({ name:String(m.name), exp:Number(m.exp) }));
   if (parsed.bonus && typeof parsed.bonus === 'object') db.bonus = parsed.bonus;
   if (parsed.cleanDone && typeof parsed.cleanDone === 'object') db.cleanDone = parsed.cleanDone;
+  if (parsed.level && typeof parsed.level === 'object') db.level = Object.assign({}, DEFAULT_LEVEL, parsed.level);
 }
 function loadDB(){
   let saved = localStorage.getItem(DB_KEY), migrated = false;
@@ -1076,14 +1142,15 @@ function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus'
 
 function renderGrid(){
   const grid = $('studentGrid'); grid.innerHTML = '';
-  const ds = getTodayStr(), day = todayData();
+  const ds = getTodayStr(), day = todayData(), sm = seasonExpMap();
   db.students.forEach(name => {
     const rec = day[name];
     const card = document.createElement('div');
     const cv = document.createElement('canvas'); cv.className = 'pix cat';
+    const li = levelInfo(sm[name] || 0);
     if (!rec){
       card.className = 'card waiting';
-      drawColors(cv, silhouetteColors());
+      drawColors(cv, levelSilhouette(li.lv));
       card.append(cv);
       card.insertAdjacentHTML('beforeend', `<div class="qmark">?</div><div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
@@ -1103,6 +1170,9 @@ function renderGrid(){
         `<div class="card-meta"><span>${esc(rec.time || '')}</span>${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
       card.title = recCharName(rec, name, ds);
     }
+    card.classList.add('lv-' + li.lv);
+    card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
+    card.insertAdjacentHTML('beforeend', `<div class="lv-row" title="Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP ${li.exp}${li.next ? ` · 다음 레벨까지 ${li.need}` : ''}"><span class="lv-badge">Lv.${li.lv}</span><div class="lv-track"><div class="lv-fill" style="width:${Math.round(li.pct*100)}%"></div></div>${li.lv === 10 ? '<span class="lv-badge">MAX</span>' : ''}</div>`);
     grid.append(card);
   });
   lastNew = null;
@@ -1152,6 +1222,7 @@ function handleTouch(name){
   const day = db.records[ds];
   if (day[name]) return;
   const tier = getTier(now);
+  const lvBefore = levelsNow();
   const ch = pickChar(tier.key, day);
   const rec = {
     status: tier.late ? 'late' : 'present', tier: tier.key,
@@ -1164,7 +1235,7 @@ function handleTouch(name){
   day[name] = rec;
   saveDB(); syncOp({ op:'rec', ds, name, rec });
   lastNew = name;
-  showReveal(name, rec, ds, () => { renderGrid(); updateStatsBoard(); checkParty(); });
+  showReveal(name, rec, ds, () => { renderGrid(); updateStatsBoard(); queueLevelUps(lvBefore, checkParty); });
 }
 
 let revealCloseTimer = null;
@@ -1292,6 +1363,7 @@ function giveBonus(){
   const m = db.menu[giveIdx]; if (!m) return;
   const who = [...document.querySelectorAll('#pickGrid .pick.on')].map(b => b.dataset.pick);
   if (!who.length){ alert('받을 친구를 골라 주세요.'); return; }
+  const lvBefore = levelsNow();
   const ds = getTodayStr(), now = new Date(), t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   db.bonus[ds] = db.bonus[ds] || [];
   who.forEach(n => {
@@ -1306,6 +1378,7 @@ function giveBonus(){
   unlockAudio(false);
   if (m.exp >= 0){ sfx('rare'); burst('rare', innerWidth/2, innerHeight*.35); setBubble(`${m.name}! 멋지다냥 ${fmtExp(m.exp)} ✨`, 3500); mascotJump(); }
   else { sfx('late'); setBubble(`앗… ${m.name} ${fmtExp(m.exp)}. 다음엔 조심하자냥`, 3500); }
+  setTimeout(() => queueLevelUps(lvBefore), 900);
 }
 function undoBonus(id){
   const ds = getTodayStr(), list = db.bonus[ds] || [];
@@ -1360,6 +1433,80 @@ function callName(name){
 }
 const STREAK_MILESTONES = [5, 10, 15, 20, 30, 40, 50, 60, 80, 100, 150, 200];
 function stampClass(n){ return n >= 10 ? 'rainbow' : (n >= 5 ? 'gold' : ''); }
+
+/* =========================================================
+   🏆 레벨 (시즌 EXP)
+   ========================================================= */
+function lvThresholds(){
+  const L = db.level;
+  return LEVELS.map((_, i) => i === 0 ? 0 : Math.max(i, Math.round(L.max * Math.pow(i / 9, L.curve || 1.5) / 10) * 10));
+}
+function seasonExpMap(){
+  const m = {}; db.students.forEach(n => m[n] = 0);
+  const st = db.level.start || '0000';
+  for (const [ds, day] of Object.entries(db.records)) if (ds >= st) for (const [n, r] of Object.entries(day)) if (n in m) m[n] += Number(r.exp) || 0;
+  for (const [ds, list] of Object.entries(db.bonus)) if (ds >= st) (list || []).forEach(b => { if (b.who in m) m[b.who] += Number(b.exp) || 0; });
+  return m;
+}
+function levelInfo(exp){
+  const th = lvThresholds(); let lv = 1;
+  for (let i = 1; i < 10; i++) if (exp >= th[i]) lv = i + 1;
+  const cur = th[lv - 1], next = lv < 10 ? th[lv] : null;
+  return { lv, exp, cur, next, need: next ? next - exp : 0, pct: next ? Math.max(0, Math.min(1, (exp - cur) / (next - cur))) : 1 };
+}
+function levelsNow(){ const m = seasonExpMap(), o = {}; for (const n in m) o[n] = levelInfo(m[n]).lv; return o; }
+function levelSilhouette(lv){
+  const L = LEVELS[lv - 1];
+  const col = CAT_BASE.map(r => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? L.line : L.fill)));
+  L.acc.forEach(k => applyAcc(col, k));
+  return col;
+}
+let lvQueue = [], lvShowing = false, lvAfter = null;
+function queueLevelUps(before, after){
+  const now = levelsNow();
+  for (const n in now) if (before[n] !== undefined && now[n] > before[n]) lvQueue.push({ name:n, lv:now[n] });
+  if (after) lvAfter = after;
+  showNextLevelUp();
+}
+function showNextLevelUp(){
+  if (lvShowing || revealing) return;
+  const it = lvQueue.shift();
+  if (!it){ const f = lvAfter; lvAfter = null; f && f(); return; }
+  lvShowing = true;
+  const L = LEVELS[it.lv - 1], info = levelInfo(seasonExpMap()[it.name] || 0);
+  drawColors($('lvCanvas'), levelSilhouette(it.lv));
+  $('lvName').textContent = `${it.name} · Lv.${it.lv} ${L.name}`;
+  $('lvGift').textContent = L.gift ? `새로 얻었어요: ${L.gift}` : '';
+  $('lvSub').textContent = it.lv < 10 ? `다음 레벨까지 ${info.need} EXP` : '최고 레벨 달성! 정말 대단하다냥!!';
+  const ov = $('levelOverlay'); ov.style.display = 'flex';
+  unlockAudio(false); sfx('levelup');
+  [0, 300, 650].forEach((t, i) => setTimeout(() => burst('party', innerWidth * (0.3 + 0.2*i), innerHeight * 0.35), t));
+  setBubble(`${it.name} 레벨 업! Lv.${it.lv} ${L.name}이다냥 🎉`, 4500); mascotJump();
+  let closed = false;
+  const close = () => { if (closed) return; closed = true; ov.style.display = 'none'; ov.onclick = null; lvShowing = false; showNextLevelUp(); };
+  setTimeout(() => { ov.onclick = close; }, 400);
+  setTimeout(close, it.lv === 10 ? 6000 : 4200);
+}
+function renderLevelTab(box){
+  const sm = seasonExpMap(), th = lvThresholds();
+  const [y, m, d] = (db.level.start || '').split('-').map(Number);
+  let html = `<div class="dex-head">시즌 시작 ${m || '?'}월 ${d || '?'}일부터 · Lv.10 = ${db.level.max} EXP</div>`;
+  html += `<div class="form-hint" style="text-align:center;">${th.slice(1).map((v, i) => `Lv.${i+2} ${v}`).join(' · ')}</div>`;
+  html += '<table><thead><tr><th>이름</th><th>레벨</th><th>시즌 EXP</th><th>진행도</th><th>다음 레벨까지</th></tr></thead><tbody>';
+  db.students.forEach(n => {
+    const li = levelInfo(sm[n] || 0), L = LEVELS[li.lv - 1];
+    html += `<tr><td>${esc(n)}</td><td>Lv.${li.lv} ${L.name} ${L.deco}</td><td>${fmtExp(li.exp)}</td>
+      <td><span class="lv-table-bar"><i style="width:${Math.round(li.pct*100)}%"></i></span></td><td>${li.next ? li.need : 'MAX 🏆'}</td></tr>`;
+  });
+  box.innerHTML = html + '</tbody></table>';
+}
+function updateLvPreview(){
+  const max = parseInt($('lvMaxInput').value, 10);
+  if (!(max >= 100)){ $('lvPreview').textContent = 'Lv.10 EXP는 100 이상으로 적어 주세요'; return; }
+  const save = db.level; db.level = Object.assign({}, save, { max });
+  const th = lvThresholds(); db.level = save;
+  $('lvPreview').innerHTML = th.slice(1).map((v, i) => `Lv.${i+2} <b>${v}</b>`).join(' · ') + `<br>단계별 필요 EXP: ${th.slice(1).map((v, i) => v - th[i]).join(' → ')}`;
+}
 
 /* 🎉 모두 모이면 파티 */
 function partyMap(){ try { return JSON.parse(localStorage.getItem(PARTY_KEY)) || {}; } catch(e){ return {}; } }
@@ -1467,6 +1614,7 @@ function sfx(kind){
     case 'late': seq([523,440,349,392], .17, 'sine', .45, .16); break;
     case 'party': seq([523,523,523,659,784,659,784,1047], .13, 'square', .2, .08); seq([262,262,262,330,392,330,392,523], .13, 'triangle', .25, .1); break;
     case 'stamp': note(150, t, .16, 'square', .1); note(95, t + .01, .3, 'sine', .25); break;
+    case 'levelup': seq([523,659,784,1047,784,1047,1319,1568], .09, 'square', .22, .07); seq([262,330,392,523,392,523,659,784], .09, 'triangle', .3, .1); break;
     case 'meow': meow(); break;
   }
 }
@@ -1613,6 +1761,7 @@ function loadStats(period){
   }
 
   if (period === 'dex'){ renderDex(box); return; }
+  if (period === 'level'){ renderLevelTab(box); return; }
 
   const map = periodStats(period);
   let html = '<div class="weekend-note">주말 기록은 누적에서 빠져요.</div>';
@@ -1715,6 +1864,7 @@ function openAdminUI(){
   $('alarm1FileName').textContent = ac.alarm1AudioName ? `🎵 ${ac.alarm1AudioName} (저장됨)` : '선택된 파일 없음 → 내장 차임음 사용';
   $('alarm2FileName').textContent = ac.alarm2AudioName ? `🎵 ${ac.alarm2AudioName} (저장됨)` : '선택된 파일 없음 → 내장 차임음 사용';
   $('alarm1TimeEcho').textContent = db.lateTimeSetting;
+  $('seasonStartInput').value = db.level.start; $('lvMaxInput').value = db.level.max; updateLvPreview();
   $('syncUrlInput').value = sync.url || ''; $('syncChoice').style.display = 'none';
   updateSoundStatusText(); updateSyncUI();
   $('adminOverlay').style.display = 'flex';
@@ -1744,6 +1894,10 @@ async function saveAdminData(){
   if (!(tiers.e1 > tiers.e2 && tiers.e2 >= 0)){ alert('레전드 기준(분)은 레어 기준보다 커야 해요.'); return; }
   if (!(tiers.l1 > 0 && tiers.l1 < tiers.l2 && tiers.l2 < tiers.l3)){ alert('지각 기준(분)은 하품냥 < 꾸벅냥 < 쿨쿨냥 순서로 커져야 해요.'); return; }
 
+  const lvMax = parseInt($('lvMaxInput').value, 10), lvStart = $('seasonStartInput').value;
+  if (!(lvMax >= 100)){ alert('Lv.10까지 필요한 EXP는 100 이상으로 적어 주세요.'); return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lvStart)){ alert('시즌 시작일을 골라 주세요.'); return; }
+
   let a1, a2;
   try {
     a1 = await readAudioFile($('alarm1FileInput').files[0]);
@@ -1757,6 +1911,7 @@ async function saveAdminData(){
   db.lateTimeSetting = late;
   db.expTiers = tiers;
   db.sfx = $('sfxInput').checked;
+  db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
   let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
   const old = db.alarmConfig || {};
@@ -1903,7 +2058,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level) };
 }
 function serverStateOf(){
   const days = {};
@@ -1935,6 +2090,7 @@ function applyConfig(c){
   if (typeof c.sfx === 'boolean') db.sfx = c.sfx;
   if (Array.isArray(c.menu)) db.menu = c.menu;
   if (c.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, c.alarmConfig, keepAudio);
+  if (c.level) db.level = Object.assign({}, DEFAULT_LEVEL, c.level);
 }
 function applyServerState(st){
   if (st.config) applyConfig(st.config);
@@ -2067,6 +2223,7 @@ function bindEvents(){
   document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $(b.dataset.close).style.display = 'none'));
   document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => demoReveal(b.dataset.demo)));
   $('saveAdminBtn').addEventListener('click', saveAdminData);
+  $('lvMaxInput').addEventListener('input', updateLvPreview);
   $('syncConnectBtn').addEventListener('click', connectSync);
   $('syncNowBtn').addEventListener('click', () => pullSync(true));
   $('syncOffBtn').addEventListener('click', disconnectSync);
