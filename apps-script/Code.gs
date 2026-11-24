@@ -815,6 +815,11 @@ function cardOf_(name) {
 }
 
 /* ---------------- 📚 영어 학원 ---------------- */
+// ▶ 처음 한 번: Apps Script 위쪽 함수 목록에서 '드라이브권한확인'을 고르고 실행 → 권한 허용 → 새 버전으로 배포
+function 드라이브권한확인() {
+  const it = DriveApp.getFoldersByName('냥냥 영어 문제'), folder = it.hasNext() ? it.next() : DriveApp.createFolder('냥냥 영어 문제');
+  Logger.log('✅ 드라이브 권한 OK · 폴더: ' + folder.getName());
+}
 function engKey_(ds) { return 'eng:' + (ds || todayStr_()); }
 function engSet_(ds) { try { return JSON.parse(props_().getProperty(engKey_(ds)) || 'null'); } catch (e) { return null; } }
 function normAns_(v) {

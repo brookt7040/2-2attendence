@@ -3234,11 +3234,12 @@ function syncOp(op){
   sync.queue.push(op); saveSync();
   clearTimeout(syncOp.t); syncOp.t = setTimeout(flushSync, 300);
 }
-async function syncFetch(url, opts){
-  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 25000);
+async function syncFetch(url, opts, ms){
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), ms || 25000);
   try {
     const r = await fetch(url, Object.assign({ signal: ctl.signal, redirect:'follow' }, opts || {}));
-    const j = await r.json();
+    const txt = await r.text(); let j;
+    try { j = JSON.parse(txt); } catch(e){ throw new Error(/<html|<!DOCTYPE/i.test(txt) ? '구글이 권한 승인을 기다리고 있어요 (Apps Script에서 드라이브권한확인 실행)' : '서버 응답을 읽지 못했어요'); }
     if (!j.ok) throw new Error(j.error === 'auth' ? '교사 열쇠가 맞지 않아요' : (j.error || '서버 오류'));
     return j;
   } finally { clearTimeout(tm); }
@@ -3408,7 +3409,7 @@ function updateGmDot(){
 }
 function teacherName(){ return db.students.find(isTeacherName) || '선생님'; }
 async function teacherCall(body){
-  return syncFetch(sync.url, { method:'POST', body: JSON.stringify(Object.assign({ key: sync.key }, body)) });
+  return syncFetch(sync.url, { method:'POST', body: JSON.stringify(Object.assign({ key: sync.key }, body)) }, body && body.action === 'engUpload' ? 180000 : 25000);
 }
 function needApi4(){
   if (!sync.url || sync.api < 4){ alert('대화·건의함은 구글 시트 코드를 최신 버전(v4)으로 업데이트해야 쓸 수 있어요.\n(Apps Script에 새 Code.gs 붙여넣기 → 배포 관리 → 새 버전)'); return true; }
@@ -4074,7 +4075,7 @@ function mountEngAdmin(el, tcall, toastFn){
       try {
         const j = await tcall({ action:'engUpload', title: el.querySelector('.ea-title').value.trim() || '오늘의 영어', images: imgs, answers });
         if (j && j.ok){ toastFn && toastFn('📚 영어 문제를 올렸어요!'); imgs = []; load(); } else msg.textContent = '올리지 못했어요 ' + (j && j.error || '');
-      } catch(e){ msg.textContent = '올리지 못했어요. 서버 코드(v9)와 드라이브 권한을 확인해 주세요'; }
+      } catch(e){ msg.textContent = '올리지 못했어요: ' + (e && e.message || e) + (/permission|권한|DriveApp|승인/i.test(String(e && e.message)) ? ' → Apps Script에서 함수 「드라이브권한확인」을 ▶ 실행해 허용한 뒤, 새 버전으로 다시 배포해 주세요' : ''); }
     };
     const del = el.querySelector('.ea-del');
     if (del) del.onclick = async () => { if (!confirm('오늘 문제를 지울까요?')) return; await tcall({ ops:[{ op:'engDel' }] }); load(); };
