@@ -95,8 +95,17 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 /* ===== 보드 (오늘의 알림 + EXP 리스트) ===== */
 .boards{display:flex;gap:22px;align-items:stretch;margin-top:34px;flex-wrap:wrap;}
 .boards .notice-area{margin-top:0;flex:1 1 340px;max-width:none;}
-.boards{flex-wrap:nowrap;}
-.side-btns{flex:0 0 210px;display:flex;flex-direction:column;gap:14px;}
+/* 📢 오늘의 알림을 화면 정중앙에: 왼쪽·오른쪽 칸 폭을 똑같이 */
+.header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,38%) minmax(0,1fr);gap:24px;align-items:stretch;}
+.header-left{min-width:0;display:flex;flex-direction:column;}
+.header-mid{min-width:0;display:flex;padding-top:22px;}
+.header-mid .notice-area{flex:1;margin:0;max-width:none;}
+.header-right{min-width:0;}
+.header-right .reward-panel,.header-right .closing-big{width:100%;max-width:470px;}
+#mainTitleDisplay{font-size:clamp(1.4rem, 2.1vw, 3.1rem);letter-spacing:1px;}
+.title-row .mascot-wrap,.title-row #mascot{width:clamp(80px,6.5vw,128px);height:clamp(80px,6.5vw,128px);}
+.side-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;}
+.side-btns .side-clean{grid-column:1 / 3;}
 .side-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-family:inherit;font-size:1.35rem;padding:14px 16px;border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);cursor:pointer;text-align:left;}
 .side-btn small{font-size:.85rem;color:var(--ink-soft);}
 .side-btn.exp{background:var(--pink);} .side-btn.coin{background:var(--y);}
@@ -559,7 +568,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 #fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:10000;}
 
 @media (max-width:1100px){
-  .header{flex-direction:column;}
+  .header{display:flex;flex-direction:column;}
   .header-right{align-items:flex-start;}
   #mainTitleDisplay{font-size:2.4rem;}
   .flip-digits{font-size:2.4rem;}
@@ -582,7 +591,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="title-row">
         <div class="mascot-wrap" id="mascotWrap" title="하나를 쓰다듬어 보세요">
           <canvas id="mascot" class="pix" width="16" height="16"></canvas>
-          <div id="hanaWear" style="position:absolute;inset:0;pointer-events:none;font-size:128px;animation:bob 2.4s ease-in-out infinite;"></div>
+          <div id="hanaWear" style="position:absolute;inset:0;pointer-events:none;font-size:clamp(80px,6.5vw,128px);animation:bob 2.4s ease-in-out infinite;"></div>
         </div>
         <div class="title-block">
           <h1 id="mainTitleDisplay">2-2 냥냥 출석 아일랜드</h1>
@@ -590,15 +599,14 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
           <div class="butler-tag" id="butlerTag" style="display:none;"></div>
         </div>
       </div>
-      <div class="boards">
-        <div class="side-btns">
-          <button type="button" class="side-btn exp" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
-          <button type="button" class="side-btn coin" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
-          <div class="side-clean" id="cleanSide"></div>
-        </div>
-        <div class="notice-area big" id="noticeArea"></div>
+      <div class="side-btns">
+        <button type="button" class="side-btn exp" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
+        <button type="button" class="side-btn coin" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
+        <div class="side-clean" id="cleanSide"></div>
       </div>
     </div>
+
+    <div class="header-mid"><div class="notice-area big" id="noticeArea"></div></div>
 
     <div class="header-right">
       <div class="date-row"><button type="button" class="icon-btn" id="openGmBtn" title="관리자 모드">👑<span class="dot-red" id="gmDot"></span></button><div class="date-pill" id="currentDate">날짜 불러오는 중...</div></div>
