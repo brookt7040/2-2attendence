@@ -179,6 +179,7 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 #mascot.hop{animation:hop .5s ease-out;}
 @keyframes hop{40%{transform:translateY(-12px) rotate(-6deg)}}
 .ticker.mega{background:#FFF2BF;}
+.btn-urgent{background:#FF5C7A;color:#fff;}
 .t-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .t-tabs button{font-family:inherit;font-size:.95rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:5px 10px;cursor:pointer;box-shadow:0 2px 0 var(--ink);}
 .t-tabs button.on{background:var(--y);} .t-tabs .off{margin-left:auto;background:#EEE6DA;}
@@ -194,6 +195,11 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .sp-banner{background:linear-gradient(90deg,#FFD3E4,#FFF2BF,#D9F2FF);border:3px solid var(--ink);border-radius:16px;padding:10px 14px;margin-bottom:10px;font-size:1.2rem;text-align:center;box-shadow:0 3px 0 var(--ink);}
 .sp-banner small{color:var(--ink-soft);font-size:.85rem;}
 .sp-butler{background:#FFE3EE;border:2px solid var(--ink);border-radius:999px;padding:4px 14px;margin-bottom:10px;text-align:center;}
+.ms.picked{background:#FFF6DA;border-radius:10px;} .ms.dim{opacity:.45;} .ms-group small{font-size:.8rem;color:var(--ink-soft);}
+.pick-btn{background:#E3D9FF!important;}
+.pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 10px;}
+.pf-grid label{display:flex;flex-direction:column;font-size:.9rem;gap:2px;} .pf-grid input{font-family:inherit;font-size:1rem;padding:6px 8px;border:2px solid var(--ink);border-radius:10px;}
+.dx-row{display:grid;grid-template-columns:80px 1fr 44px auto;gap:6px;align-items:center;margin:4px 0;font-size:.95rem;} .dx-row .bar{margin:0;}
 .checkin{display:block;width:100%;margin-bottom:12px;padding:14px;border:3px solid var(--ink);border-radius:18px;font-family:inherit;font-size:1.3rem;text-align:center;box-shadow:0 4px 0 var(--ink);}
 .checkin.go{background:linear-gradient(135deg,#FFE066,#FFB8CB);cursor:pointer;animation:ckb 1.4s ease-in-out infinite;}
 .checkin.go small{display:block;font-size:.85rem;color:var(--ink-soft);}
@@ -293,6 +299,14 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <div class="frame" id="catFrame"><div class="lv-frame"></div><canvas id="catCanvas" class="pix" width="16" height="16"></canvas></div>
     <h2 id="catName"></h2>
     <div id="catWear" class="hint" style="font-size:1rem;line-height:1.6;"></div>
+  </div>
+</div>
+
+<div class="overlay" id="csNoteOv">
+  <div class="modal" style="text-align:center;">
+    <h2>💬 상담 신청 완료</h2>
+    <div class="oath-text" id="csNoteBody"></div>
+    <button type="button" class="btn btn-y" data-close="csNoteOv">알겠어요!</button>
   </div>
 </div>
 
@@ -424,10 +438,13 @@ async function doLogin(){
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
     $('loginOv').style.display = 'none';
     toast(`${givenName(name)}, 어서 와! 🐾`);
-    chatReset(); coin = null; render(); showTab('me'); chatPull(); askList(); coinCall('coins');
+    chatReset(); coin = null; myProfile = null; render(); showTab('me'); chatPull(); askList(); coinCall('coins');
+    if (/(쌤|샘|선생님|교감|교장)$/.test(name)){ tAuthByLogin = true; tOn(); tPoll(); toast('👑 선생님 계정이라 관리 탭이 열렸어요'); }
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
 function logout(){
+  if (tAuthByLogin){ tAuthByLogin = false; if (!tKey) tOff(true); }
+  myProfile = null;
   me = null; chatReset(); asks = []; coin = null; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
 }
 
@@ -444,13 +461,16 @@ async function enterVillage(){
       if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요' }[j.error] || '보내지 못했어요') : ''; }
       return '다시 로그인해 주세요';
     },
+    hud: () => me && me.info ? { lv: me.info.lv, lvName: me.info.lvName, exp: me.info.exp, coins: coin ? coinText() : '…' } : null,
+    refresh: () => { coinCall('coins'); refreshMe(true); },
     getChat: () => chat.msgs,
     getInv: () => (coin && coin.inv) || {},
     onCoins: j => { if (j && j.ok){ coin = j; render(); } },
     onHanaLook: look => { hanaLookNow = look; drawHeaderHana(); },
     onGame: g => openGame(g),
     onClose: () => clearInterval(villageChatTimer) });
-  villageChatTimer = setInterval(() => { if (me && !document.hidden) chatPull(); }, 3000);
+  let vTick = 0;
+  villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
   if (!me) toast('로그인하면 내 고양이로 걸어 다닐 수 있어요');
 }
 let villageChatTimer = 0, hanaLookNow = {}, megaNow = [], special = { banners: [], butler: '' };
@@ -547,6 +567,32 @@ async function doCheckin(){
   } catch(e){ toast('연결이 안 돼요. 다시 눌러 주세요'); }
   finally { $('oathGo').textContent = '✋ 맹세하고 출석하기'; }
 }
+/* 🪪 내 냥이 카드 (자기소개) */
+const PROFILE_FORM = [
+  ['nick', '🏷️ 냥이 닉네임', 12, '예: 급식요정'], ['bday', '🎂 생일', 10, '예: 3월 14일'], ['mbti', '🧠 MBTI', 4, '예: ENFP'],
+  ['food', '🍙 최애 음식', 20, '예: 마라탕'], ['hobby', '🎮 취미·특기', 20, '예: 농구, 그림'], ['subject', '📚 좋아하는 과목', 12, '예: 체육'],
+  ['dream', '🌟 장래희망', 20, '예: 웹툰 작가'], ['song', '🎧 요즘 듣는 노래', 30, '예: 아이유 - 밤편지'], ['motto', '💬 한 줄 자기소개', 40, '예: 지각 안 하는 게 목표!']
+];
+let myProfile = null;
+async function loadProfile(){ try { const r = await api(`${API}?card=${encodeURIComponent(me.name)}&t=${Date.now()}`); myProfile = (r && r.profile) || {}; renderMe(); } catch(e){} }
+function profileBox(){
+  if (myProfile === null){ setTimeout(loadProfile, 0); myProfile = {}; }
+  return `<div class="box"><div class="box-head lav">🪪 내 냥이 카드 <small style="font-size:.8rem;">마을에서 친구가 나를 누르면 보여요</small></div>
+    <div class="pf-grid">${PROFILE_FORM.map(([k, l, n, ph]) => `<label>${l}<input type="text" data-pf="${k}" maxlength="${n}" placeholder="${ph}" value="${esc(myProfile[k] || '')}"></label>`).join('')}</div>
+    <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-y" id="pfSave">💾 카드 저장</button></div>
+    <div class="hint">개인 정보(주소·전화번호 등)는 적지 마세요! 나쁜 말은 ♡로 바뀌어요.</div></div>`;
+}
+function dexBox(info){
+  const d = info.dex; if (!d) return '';
+  const done = info.dexDone || {}, R = { normal:['🐱 노멀', 40], rare:['💎 레어', 60], unique:['🦄 유니크', 100], legend:['👑 레전드', 150] };
+  return `<div class="box"><div class="box-head pink">📖 내 냥이 도감</div>${Object.keys(R).map(k => { const [g, t] = d[k] || [0, 0];
+    return `<div class="dx-row"><span>${R[k][0]}</span><div class="bar"><i style="width:${t ? Math.round(g / t * 100) : 0}%"></i></div><span>${g}/${t}</span><span class="st">${done[k] ? '✔ 보상 받음' : `완성 +${R[k][1]}✨🐾`}</span></div>`; }).join('')}
+    <div class="hint">네 등급을 전부 모으면 보너스 +200✨🐾! 일찍 올수록 높은 등급 냥이가 나와요.</div></div>`;
+}
+async function saveProfile(){
+  const data = {}; document.querySelectorAll('[data-pf]').forEach(i => { data[i.dataset.pf] = i.value.trim(); });
+  try { const j = await studentCall('profile', { data }); if (j.ok){ myProfile = j.profile || {}; toast('🪪 카드를 저장했어요'); renderMe(); } else toast('저장하지 못했어요'); } catch(e){ toast('연결이 안 돼요'); }
+}
 function wearList(raw, lv){
   const look = lookOfRaw(raw, lv);
   return ['eye','mouth','top','earR','earL','neck','back','fur'].filter(k => look[k]).map(k => `${look[k].it.icon} ${look[k].c.n} ${look[k].it.name}`).join(' · ');
@@ -562,6 +608,7 @@ function openCat(s){
 
 function renderMe(){
   const box = $('meBox');
+  if (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.pf) return;   // 카드 쓰는 중엔 다시 그리지 않아요
   if (!me){
     box.innerHTML = `<div class="box" style="text-align:center;"><div class="box-head">🐱 내 고양이</div>
       <p style="font-size:1.2rem;">내 이름과 비밀번호로 로그인하면<br>고양이를 꾸밀 수 있어요!</p><button type="button" class="btn btn-y" id="loginOpenBtn2">🔑 로그인</button></div>`;
@@ -584,9 +631,11 @@ function renderMe(){
         </div>
       </div>
     </div>
+    ${profileBox()}
+    ${dexBox(info)}
     <div class="box"><div class="box-head mint">🎨 꾸미기</div>
       <div class="hint" style="margin-bottom:8px;">색을 누르면 바로 저장돼요. 같은 자리(머리 위·귀)는 하나만 쓸 수 있어요.</div>
-      <div class="items" id="items">${ITEMS.map(it => {
+      <div class="items" id="items">${ITEMS.filter(it => !it.teacher || /(쌤|샘|선생님|교감|교장)$/.test(me.name)).map(it => {
         const locked = it.lv > lv && !free;
         const eq = look[it.slot] && look[it.slot].it.id === it.id ? look[it.slot].ci : -1;
         const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot] || ''} · Lv.${it.lv}</small></div>`;
@@ -719,6 +768,12 @@ function renderCounsel(){
     ${mine.length ? mine.map(a => `<div class="my-ask ${a.kind === '긴급' ? 'urg' : ''}"><div class="meta">${a.kind === '긴급' ? '🚨 긴급' : '💬 상담'} · ${esc(a.t)}</div>
       <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : a.done ? '<div class="rep">✔ 선생님이 확인했어요. 곧 이야기해요!</div>' : '<div class="wait">⏳ 선생님이 확인하기 전이에요</div>'}</div>`).join('') : ''}`;
 }
+function counselNotice(urgent){
+  $('csNoteBody').innerHTML = urgent
+    ? `🚨 <b>긴급으로 선생님께 전달했어요.</b><br><br>그래도 선생님이 바로 못 볼 수도 있어요.<br><b>지금 바로</b> 교무실이나 가까운 선생님께 <b>직접 찾아가서 말해 주세요.</b><br>위험하거나 많이 아프면 망설이지 말고 어른에게 먼저 알려요! 💛`
+    : `💌 <b>선생님께 잘 전달됐어요.</b><br><br>선생님이 <b>오늘 안에</b> 따로 부르지 않으면,<br><b>내일까지</b> 꼭 선생님께 <b>직접 말로</b> 한 번 더 이야기해 주세요.<br>글로만 남기면 놓칠 수도 있거든요. 기다리고 있을게요 🐾`;
+  $('csNoteOv').style.display = 'flex';
+}
 async function counselSend(urgent){
   let text = ($('csText').value || '').trim();
   if (urgent){
@@ -727,7 +782,7 @@ async function counselSend(urgent){
   } else if (!text){ toast('내용을 적어 주세요'); return; }
   try {
     const j = await studentCall('askSend', { kind: urgent ? '긴급' : '상담', text });
-    if (j.ok && !j.error){ $('csText').value = ''; toast(urgent ? '🚨 선생님께 긴급으로 알렸어요' : '선생님께 보냈어요 💬'); }
+    if (j.ok && !j.error){ $('csText').value = ''; counselNotice(urgent); }
     else toast(j.error === 'slow' ? '조금 있다가 다시 보내 주세요' : '보내지 못했어요');
     if (j.ok){ asks = j.asks || []; renderAsk(); renderCounsel(); }
   } catch(e){ toast('연결이 안 돼서 보내지 못했어요'); }
@@ -751,10 +806,10 @@ async function coinCall(op, extra){
   if (!me) return null;
   try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
-const ERR = { order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
+const ERR = { nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
   closed:'지금은 게임 시간이 아니에요', limit:'오늘은 게임을 다 했어요. 내일 또 만나요!', bet:'걸 수 있는 코인을 확인해 주세요', bad:'다시 해 주세요' };
 function weekStartS(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return todayStr(x); }
-function periodS(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : null; }
+function periodS(limit){ const P = (coin && coin.periods) || {}; return limit === 'day' ? (P.day || todayStr()) : limit === 'week' ? (P.week || weekStartS()) : limit === 'once' ? 'all' : null; }
 function itemSprite(it){
   const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
   if (it.cat === 'house') drawHouse(x, it.id, 0, 0); else if (it.cat === 'decor'){ x.save(); x.scale(2, 2); drawDecor(x, it.id, 0, 0); x.restore(); }
@@ -766,15 +821,22 @@ function renderCoin(){
   if (!me){ box.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">🐾 냥코인</div><p>🔑 로그인하면 미션·상점·게임을 이용할 수 있어요</p></div>'; return; }
   if (!coin){ box.innerHTML = '<div class="box"><div class="box-head">🐾 냥코인</div><div class="empty">불러오는 중…</div></div>'; return; }
   const eco = coin.economy, claimed = new Set(coin.claimed || []), pend = new Set((coin.reqs || []).filter(r => r.status === '대기' && r.type === '미션').map(r => r.itemId));
-  const groups = [['daily','☀️ 매일 미션'], ['weekly','📅 매주 미션'], ['all','⭐ 특별 미션']];
-  const msHtml = groups.map(([k, t]) => {
+  const picks = coin.picks || { d:{ ids:[] }, w:{ ids:[] } }, lim = eco.pickLimit || { daily: 2, weekly: 3 };
+  const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 아침 8시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 아침 8시에 새로 골라요']];
+  const msHtml = groups.map(([k, t, sl, max, note]) => {
     const list = eco.missions.filter(m => m.cat === k); if (!list.length) return '';
-    return `<div class="ms-group">${t}</div>` + list.map(m => {
-      const per = periodS(m.limit), got = per && claimed.has(`m:${m.id}:${me.name}:${per}`);
-      const right = got ? '<span class="st">✔ 받았어요</span>' : pend.has(m.id) ? '<span class="st">⏳ 확인 중</span>'
-        : m.auto ? '<span class="st">자동 지급</span>' : m.req ? `<button type="button" data-mreq="${m.id}">완료했어요!</button>` : '<span class="st">선생님이 줘요</span>';
-      return `<div class="ms"><span class="nm">${esc(m.name)}</span><span class="cn">+${m.coins}🐾</span>${right}</div>`;
-    }).join('');
+    const mine = picks[sl].ids || [], full = mine.length >= max;
+    const row = m => {
+      const per = periodS(m.limit), got = per && claimed.has(`m:${m.id}:${me.name}:${per}`), picked = mine.includes(m.id);
+      const right = m.auto ? '<span class="st">자동</span>'
+        : !m.req ? '<span class="st">선생님이 줘요</span>'
+        : got ? '<span class="st">✔ 받았어요</span>' : pend.has(m.id) ? '<span class="st">⏳ 확인 중</span>'
+        : picked ? `<button type="button" data-mreq="${m.id}">완료했어요!</button>`
+        : full ? '<span class="st">🔒</span>' : `<button type="button" class="pick-btn" data-mpick="${m.id}">🎯 고르기</button>`;
+      return `<div class="ms ${picked ? 'picked' : ''} ${!picked && full && m.req && !m.auto ? 'dim' : ''}"><span class="nm">${picked ? '🎯 ' : ''}${esc(m.name)}</span><span class="cn">+${m.coins}🐾 +${m.exp != null ? m.exp : Math.round(m.coins / 2)}✨</span>${right}</div>`;
+    };
+    const order = list.slice().sort((a, b) => (mine.includes(b.id) - mine.includes(a.id)) || (!!a.auto - !!b.auto));
+    return `<div class="ms-group">${t} <small>(${mine.length}/${max} 골랐어요 · ${note})</small></div>` + order.map(row).join('');
   }).join('');
   const SPECIAL = ['song', 'banner', 'title', 'butler'];
   const items = eco.shop.filter(x => shopTab === 'special' ? SPECIAL.includes(x.cat) : x.cat === shopTab), inv = coin.inv || {};
@@ -795,7 +857,7 @@ function renderCoin(){
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box"><div class="box-head pink">📋 미션</div>${msHtml}<div class="hint" style="margin-top:6px;">'완료했어요!'를 누르면 선생님이 확인하고 코인을 줘요.</div></div>
+    <div class="box"><div class="box-head pink">📋 미션</div>${msHtml}<div class="hint" style="margin-top:6px;">🎯 하고 싶은 미션을 골라요 (한 번 고르면 바꿀 수 없어요!). 다 했으면 '완료했어요!' → 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
     <div class="box"><div class="box-head mint">🛒 상점</div>
       <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button><button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button><button type="button" data-stab="special" class="${shopTab === 'special' ? 'on' : ''}">✨ 특별</button></div>
       ${shopTab === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}
@@ -852,8 +914,11 @@ async function playGame(g, pick){
    👑 선생님 모드 (교사 열쇠로 들어와요)
    ========================================================= */
 const TKEY = 'nyangTeacherKey_v1';
-let tKey = '', tTab = 'ask', tData = {}, tUrgent = 0, tPick = new Set();
-async function tCall(body){ return api(API, { method:'POST', body: JSON.stringify(Object.assign({ key: tKey, tmode: true }, body)) }); }
+let tAuthByLogin = false, tKey = '', tTab = 'ask', tData = {}, tUrgent = 0, tPick = new Set();
+async function tCall(body){
+  const auth = tKey ? { key: tKey } : (tAuthByLogin && me ? { name: me.name, pin: me.pin } : {});
+  return api(API, { method:'POST', body: JSON.stringify(Object.assign(auth, { tmode: true }, body)) });
+}
 async function tOps(ops, msg){ try { const j = await tCall({ ops }); if (j.ok === false) throw new Error(j.error); if (msg) toast(msg); return true; } catch(e){ toast('저장하지 못했어요'); return false; } }
 async function tLogin(){
   const k = $('tKey').value.trim(); if (!k){ $('tErr').textContent = '교사 열쇠를 넣어 주세요'; return; }
@@ -867,8 +932,8 @@ async function tLogin(){
   } catch(e){ tKey = ''; $('tErr').textContent = '연결이 안 돼요'; }
 }
 function tOn(){ document.querySelector('.tab-t').style.display = ''; }
-function tOff(){ tKey = ''; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); toast('선생님 모드를 껐어요'); }
-const T_TABS = [['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기']];
+function tOff(quiet){ tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
+const T_TABS = [['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['eng', '📚 영어'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기'], ['safe', '🛟 안전']];
 function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
 async function tLoad(){
   $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tOffBtn" class="off">끄기</button>';
@@ -880,6 +945,7 @@ async function tLoad(){
     if (tTab === 'show') tData.coins = await tCall({ action:'coins' });
     if (tTab === 'free') tData.free = await tCall({ action:'free' });
     if (tTab === 'chat') tData.chat = await tCall({ action:'chat', after: 0 });
+    if (tTab === 'safe') tData.pull = await tCall({ action:'pull', since: -2 });
   } catch(e){ $('tBox').innerHTML = '<div class="empty">연결이 안 돼요</div>'; return; }
   tRender();
 }
@@ -940,6 +1006,17 @@ function tRender(){
       <div class="box"><div class="box-head pink">📋 종례 (한 줄에 하나)</div><textarea id="tClosing" rows="5">${esc(st.closing.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="closing">저장</button></div></div>`;
     return;
   }
+  if (tTab === 'safe'){
+    const lock = !!(tData.pull || {}).lockdown;
+    box.innerHTML = `<div class="box"><div class="box-head">💾 전체 백업</div><div class="hint">출석·EXP·코인·대화·상담·설정을 한 파일(JSON)로 내려받아요. 초기화하기 전에 꼭 받아 두세요.</div><div class="t-row"><button type="button" class="btn btn-y" id="tBackup">💾 백업 파일 받기</button></div></div>
+      <div class="box ${lock ? 't-card urg' : ''}"><div class="box-head pink">🚫 긴급 잠금</div><div class="hint">문제가 생겼을 때 대화·마을 말하기·게임을 <b>모두 바로 닫아요</b>. (보기는 돼요)</div>
+        <div class="t-row"><button type="button" class="btn ${lock ? 'btn-mint' : 'btn-urgent'}" data-tlock="${lock ? 0 : 1}">${lock ? '🔓 잠금 풀기' : '🚫 지금 잠그기'}</button><b>${lock ? '지금 잠겨 있어요' : ''}</b></div></div>
+      <div class="box"><div class="box-head lav">🧹 초기화 (보관 후 비우기)</div><div class="hint">지우기 전에 시트에 '…_보관_날짜' 탭으로 그대로 복사해 둬요. 학생 화면에서만 사라져요.</div>
+        <div class="t-row"><button type="button" class="btn btn-gray" data-treset="chatReset">💬 대화 초기화</button><button type="button" class="btn btn-gray" data-treset="askReset">📮 질문·건의·상담 초기화</button></div></div>
+      <div class="box"><div class="box-head mint">🔑 학생 비밀번호 새로 만들기</div><div class="t-row"><select id="tPinWho">${((st.pub && st.pub.students) || []).map(x => `<option>${esc(x.name)}</option>`).join('')}</select><button type="button" class="btn btn-y" id="tPinNew">새로 만들기</button></div><div id="tPinOut" class="hint"></div></div>`;
+    return;
+  }
+  if (tTab === 'eng'){ box.innerHTML = '<div id="tEngBox"></div>'; mountEngAdmin($('tEngBox'), tCall, toast); return; }
   if (tTab === 'show'){
     const d = tData.today || {}, inv = (tData.coins || {}).inv || {};
     box.innerHTML = `<div class="box"><div class="box-head">📢 확성기</div>${(d.mega || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="megaDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
@@ -955,7 +1032,7 @@ function songLink(q){
 }
 function tDot(){ $('dotAdmin').classList.toggle('on', tUrgent > 0); }
 async function tPoll(){
-  if (!tKey || document.hidden) return;
+  if ((!tKey && !tAuthByLogin) || document.hidden) return;
   try { const j = await tCall({ action:'asks' }); const n = (j.asks || []).filter(a => a.kind === '긴급' && !a.reply && !a.done && !a.del).length;
     if (n > tUrgent){ toast(`🚨 긴급 상담 ${n}건!`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e){} }
     tUrgent = n; tDot(); if (current === 'admin' && tTab === 'ask'){ tData.asks = j.asks || []; tRender(); }
@@ -967,7 +1044,7 @@ document.addEventListener('click', async e => {
   const t = e.target;
   if (t.closest('#tOpenBtn')){ $('tErr').textContent = ''; $('tLoginOv').style.display = 'flex'; setTimeout(() => $('tKey').focus(), 50); return; }
   if (t.closest('#tLoginBtn')){ tLogin(); return; }
-  if (!tKey || !t.closest('#p-admin')) return;
+  if ((!tKey && !tAuthByLogin) || !t.closest('#p-admin')) return;
   if (t.closest('#tOffBtn')){ if (confirm('선생님 모드를 끌까요?')) tOff(); return; }
   const tb = t.closest('[data-ttab]'); if (tb){ tTab = tb.dataset.ttab; tLoad(); return; }
   // 상담·질문
@@ -1009,6 +1086,10 @@ document.addEventListener('click', async e => {
   // 내리기
   const de = t.closest('[data-tdel]'); if (de){ if (!confirm('정말 할까요?')) return; if (await tOps([{ op: de.dataset.tdel, ts: Number(de.dataset.ts || 0) }], '완료')) tLoad(); return; }
   const ti = t.closest('[data-ttitle]'); if (ti){ if (confirm(`${ti.dataset.ttitle}의 칭호를 지울까요?`) && await tOps([{ op:'titleDel', name: ti.dataset.ttitle }], '🏷️ 지웠어요')) tLoad(); return; }
+  if (t.closest('#tBackup')){ try { const j = await tCall({ action:'backup' }); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 1)], { type:'application/json' })); a.download = `냥냥백업_${todayStr()}.json`; a.click(); toast('💾 백업 파일을 받았어요'); } catch(e){ toast('백업하지 못했어요'); } return; }
+  const lk = t.closest('[data-tlock]'); if (lk){ const on = lk.dataset.tlock === '1'; if (!confirm(on ? '대화·마을·게임을 지금 모두 닫을까요?' : '잠금을 풀까요?')) return; if (await tOps([{ op:'lockdown', on }], on ? '🚫 잠갔어요' : '🔓 풀었어요')) tLoad(); return; }
+  const rs = t.closest('[data-treset]'); if (rs){ const nm = rs.dataset.treset === 'chatReset' ? '대화' : '질문·건의·상담'; if (!confirm(`${nm}를 초기화할까요?\n(시트에 보관 탭으로 복사한 뒤 비워요)`) || !confirm('정말요? 학생 화면에서 모두 사라져요.')) return; if (await tOps([{ op: rs.dataset.treset }], `🧹 ${nm} 초기화 (보관 완료)`)) tLoad(); return; }
+  if (t.closest('#tPinNew')){ const who = $('tPinWho').value, pin = String(Math.floor(1000 + Math.random() * 9000)); if (!confirm(`${who}의 비밀번호를 새로 만들까요? (예전 비밀번호는 못 써요)`)) return; if (await tOps([{ op:'setPins', pins:{ [who]: pin } }])) $('tPinOut').innerHTML = `🔑 <b>${esc(who)}</b> 새 비밀번호: <b style="font-size:1.4rem;">${pin}</b> (지금 알려 주세요)`; return; }
   const sg = t.closest('[data-tsong]'); if (sg){ if (await tOps([{ op:'songDone', id:+sg.dataset.tsong }], '✔')) tLoad(); return; }
 });
 document.addEventListener('change', e => { if (e.target.id === 'tMission') $('tCustom').style.display = e.target.value === '_' ? 'flex' : 'none'; });
@@ -1033,6 +1114,7 @@ document.addEventListener('click', e => {
   if (t.closest('#enterVillage') || t.closest('#coinVillage')){ enterVillage(); return; }
   if (t.closest('#coinGame')){ openGame(); return; }
   const st2 = t.closest('[data-stab]'); if (st2){ shopTab = st2.dataset.stab; renderCoin(); return; }
+  const mp = t.closest('[data-mpick]'); if (mp){ const m = coin.economy.missions.find(x => x.id === mp.dataset.mpick); if (!confirm(`🎯 "${m.name}"\n이 미션을 고를까요?\n\n⚠️ 한 번 고르면 바꿀 수 없어요!`)) return; coinCall('missionPick', { mid: m.id }).then(j => j && toast(j.error ? ({ pickfull:'이미 다 골랐어요', owned:'이미 골랐어요' }[j.error] || '고르지 못했어요') : '🎯 미션을 골랐어요! 화이팅')); return; }
   const mr = t.closest('[data-mreq]'); if (mr){ coinCall('missionReq', { mid: mr.dataset.mreq }).then(j => j && toast(j.error ? (ERR[j.error] || '신청하지 못했어요') : '선생님께 신청했어요 ✅')); return; }
   const by = t.closest('[data-buy]'); if (by){ const it = coin.economy.shop.find(x => x.id === by.dataset.buy);
     let text = '', style = '';
@@ -1050,6 +1132,7 @@ document.addEventListener('click', e => {
   const pl = t.closest('[data-play]'); if (pl){ const g = pl.dataset.play; playGame(g, g === 'cups' || g === 'dice' ? +pl.dataset.pick : pl.dataset.pick); return; }
   if (t.closest('#askSend')){ askSend(); return; }
   if (t.closest('#checkinBtn')){ openOath(); return; }
+  if (t.closest('#pfSave')){ saveProfile(); return; }
   if (t.closest('#hanaBtn')){ hanaTalk(); return; }
   if (t.closest('#csSend')){ counselSend(false); return; }
   if (t.closest('#csUrgent')){ counselSend(true); return; }
@@ -1071,6 +1154,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) pull
   if (c && c.name && c.pin){
     me = { name: c.name, pin: c.pin, info: null, look: null, acked: [] };
     await refreshMe(true); render(); chatPull(); askList(); coinCall('coins');
+    if (me && /(쌤|샘|선생님|교감|교장)$/.test(me.name)){ tAuthByLogin = true; tOn(); }
   }
   const tk = localStorage.getItem(TKEY) || sessionStorage.getItem(TKEY);
   if (tk){ tKey = tk; tOn(); tPoll(); }

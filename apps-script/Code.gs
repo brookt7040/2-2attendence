@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v8 · 마을 건물·하나·집 꾸미기·원격 출석·상담·폰 선생님 모드)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v9 · 마을 지도·영어 학원·미션 고르기·ID 카드·안전 기능)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -25,14 +25,18 @@ const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
 const CLOSING_SHEET = '종례';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 8;
+const API_VERSION = 9;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
 // 🪑 앉을 수 있는 자리 수 — 마을 화면(index.html의 V_OBJS · HALL_TABLES)과 같아야 해요
 const SEAT_CAP = {
   out: { fountain: 4, bench1: 2, bench2: 2, longbench: 4, tower: 3, scratch: 1, hammock: 1, box1: 1, box2: 1, sun: 3, pond: 2, churu: 1, swing: 2, cushions: 3, yarn: 1, photo: 6, slide: 1 },
-  hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5 }
+  hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5 },
+  west: { umb1: 2, umb2: 2, umb3: 2, boat: 3, rock: 2, castle: 2, surf: 1 },
+  east: { camp: 5, logs: 3, mush: 3, swing2: 1, stump: 1 },
+  south: { park: 3, sandbox: 2 },
+  eng: { D1: 1, D2: 1, D3: 1, D4: 1, D5: 1, D6: 1, D7: 1, D8: 1, D9: 1, D10: 1, D11: 1, D12: 1 }
 };
 const HOUSE_ORDER = ['h_box', 'h_tent', 'h_cabin', 'h_cottage', 'h_castle'];
 const HANA_LV = [0, 20, 60, 120, 200, 320];
@@ -56,7 +60,8 @@ const ITEM_RULES = {
   wings:    { lv: 7,  slot: 'back',  n: 5 },
   crown:    { lv: 8,  slot: 'top',   n: 5 },
   wizard:   { lv: 9,  slot: 'top',   n: 5 },
-  fur:      { lv: 10, slot: 'fur',   n: 6 }
+  fur:      { lv: 10, slot: 'fur',   n: 6 },
+  tfur:     { lv: 1,  slot: 'fur',   n: 5, teacher: true }     // 👑 선생님 전용 털빛
 };
 const LOOK_SLOTS = ['eye', 'mouth', 'top', 'earR', 'earL', 'neck', 'back', 'fur'];
 
@@ -70,13 +75,20 @@ function doPost(e) {
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (body.action === 'student') return out_(handleStudent_(body));
-    const auth = teacherAuth_(body.key);
+    let auth;
+    if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
+      const c = checkStudent_(String(body.name), body.pin);
+      auth = c.ok ? { ok: true, needKey: false } : { ok: false };
+    } else auth = teacherAuth_(body.key);
     if (!auth.ok) return out_({ ok: false, error: 'auth', api: API_VERSION });
     if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
     if (body.action === 'chat') return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function () { return true; }) });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
+    if (body.action === 'engUpload') return out_(engUpload_(body));
+    if (body.action === 'engResults') return out_(engResults_());
+    if (body.action === 'backup') return out_(backupAll_());
     if (body.action === 'today') {           // 📱 선생님 모드(학생 페이지): 오늘 출석 현황
       const map = readRows_().map, ds = todayStr_();
       return out_({ ok: true, ds: ds, records: ((map['day:' + ds] || {}).records) || {}, remote: remoteList_().map(function (x) { return x.n; }),
@@ -188,6 +200,8 @@ function publicState_(map) {
 function publicGet_(p) {
   if (p.village) return villageState_();
   if (p.room) return roomState_(String(p.room));
+  if (p.card) return cardOf_(String(p.card));
+  if (p.eng) return engPublic_();
   const v = version_();
   const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
@@ -199,7 +213,8 @@ function publicGet_(p) {
 function teacherPull_(body, auth) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
-  if (body.remoteOk) res.remote = claimRemote_();
+  if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
+  res.lockdown = props_().getProperty('lockdown') === '1';
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
@@ -305,6 +320,10 @@ function handlePost_(body, auth) {
         case 'songDone': props_().setProperty('songs', JSON.stringify(todayList_('songs').map(function (x) { if (x.id === Number(o.id)) x.done = true; return x; }))); break;
         case 'bannerDel': props_().setProperty('banners', JSON.stringify(todayList_('banners').filter(function (x) { return x.ts !== Number(o.ts); }))); break;
         case 'butlerDel': props_().deleteProperty('butler'); break;
+        case 'chatReset': archiveSheet_(CHAT_SHEET, CHAT_HEADER); cacheDrop_(['v:chat']); break;
+        case 'askReset': archiveSheet_(ASK_SHEET, ASK_HEADER); break;
+        case 'lockdown': props_().setProperty('lockdown', o.on ? '1' : '0'); if (o.on) props_().setProperty('free', '{}'); break;
+        case 'engDel': props_().deleteProperty('eng:' + String(o.ds || todayStr_())); break;
         case 'remoteAdd': {                    // 선생님이 대신 원격 출석 (교실 출석부가 등급을 계산해요)
           const ds = todayStr_(), list = remoteList_(), recs = ((map['day:' + ds] || {}).records) || {};
           if (!recs[o.name] && !list.some(function (x) { return x.n === o.name; })) { list.push({ n: String(o.name), ts: Date.now(), ds: ds }); props_().setProperty('remote', JSON.stringify(list)); }
@@ -366,7 +385,7 @@ function checkStudent_(name, pin) {
   return { ok: true };
 }
 
-function cleanLook_(look, lv, old) {
+function cleanLook_(look, lv, old, name) {
   const out = {};
   LOOK_SLOTS.forEach(function (slot) {
     const v = look && look[slot];
@@ -374,6 +393,7 @@ function cleanLook_(look, lv, old) {
     const parts = String(v).split(':'), rule = ITEM_RULES[parts[0]], ci = Number(parts[1]);
     if (!rule || rule.slot !== slot || !(ci >= 0 && ci < rule.n) || Math.floor(ci) !== ci) return;
     if (rule.lv > lv && !(old && old._free)) return;
+    if (rule.teacher && !isTeacherName_(name || '')) return;
     out[slot] = parts[0] + ':' + ci;
   });
   if (old && old._free) out._free = true;           // '모든 아이템 열기'는 선생님만 바꿀 수 있어요
@@ -390,7 +410,9 @@ function handleStudent_(body) {
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (body.op === 'move' || body.op === 'emote') return studentVillage_(name, body);
   if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
-  if (['coins', 'buy', 'equipHouse', 'missionReq', 'game', 'buyFurn', 'roomSave'].indexOf(body.op) >= 0) return studentCoins_(name, body);
+  if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
+  if (body.op === 'profile') return studentProfile_(name, body);
+  if (body.op === 'engSubmit' || body.op === 'engPass' || body.op === 'engMine') return studentEng_(name, body);
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -403,7 +425,7 @@ function handleStudent_(body) {
       map.config = map.config || {};
       map.config.looks = map.config.looks || {};
       const old = map.config.looks[name];
-      map.config.looks[name] = cleanLook_(body.look || {}, lv, old);
+      map.config.looks[name] = cleanLook_(body.look || {}, lv, old, name);
       map.lookAt = map.lookAt || {}; map.lookAt[name] = Date.now();
       writeRows_(db, ['config', 'lookAt']);
       cacheDrop_(['v:pub']);
@@ -469,6 +491,7 @@ function free_() {
   try { return Object.assign({ chat: 0, game: 0 }, JSON.parse(props_().getProperty('free') || '{}')); } catch (e) { return { chat: 0, game: 0 }; }
 }
 function chatOpen_(cfg) {
+  if (props_().getProperty('lockdown') === '1') return false;    // 🚫 선생님 긴급 잠금
   if (free_().chat > Date.now()) return true;
   if (!cfg.on) return false;
   if (!cfg.start || !cfg.end) return true;
@@ -589,7 +612,7 @@ function villageState_() {
   if (!pubLite || !inv) {
     const map = readRows_().map;
     if (!pubLite) { pubLite = publicState_(map); cachePut_('v:pub', pubLite); }
-    if (!inv) { inv = {}; const raw = map.inv || {}; Object.keys(raw).forEach(function (n) { inv[n] = { house: raw[n].house || '', decor: (raw[n].decor || []).slice(0, 4), title: raw[n].title || '' }; }); cachePut_('v:inv', inv); }
+    if (!inv) { inv = {}; const raw = map.inv || {}; Object.keys(raw).forEach(function (n) { inv[n] = { house: raw[n].house || '', decor: (raw[n].decor || []).slice(0, 4), title: raw[n].title || '', plot: raw[n].plot || null }; }); cachePut_('v:inv', inv); }
   }
   const cut = Date.now() - 90000;
   return {
@@ -610,7 +633,7 @@ function studentVillage_(name, body) {
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
       let sc = String(body.sc || 'out');
-      if (!/^(out|hall|arcade|hana|house:.{1,20})$/.test(sc)) sc = 'out';
+      if (!/^(out|west|east|south|hall|arcade|hana|eng|house:.{1,20})$/.test(sc)) sc = 'out';
       const pos = cacheGet_('v:pos', {}), now = Date.now();
       const p = { x: x, y: y, sc: sc, ts: now };
       const sit = String(body.s || ''), seat = Math.floor(Number(body.t));
@@ -755,6 +778,119 @@ function studentHana_(name, body) {
   } finally { lock.releaseLock(); }
 }
 
+/* ---------------- 🪪 프로필 (ID 카드) ---------------- */
+const PROFILE_FIELDS = { nick: 12, bday: 10, mbti: 4, food: 20, hobby: 20, subject: 12, dream: 20, motto: 40, song: 30 };
+function studentProfile_(name, body) {
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const db = readRows_(), map = db.map, cfg = chatCfg_(), out = {};
+    Object.keys(PROFILE_FIELDS).forEach(function (k) { const v = cleanText_((body.data || {})[k], cfg).slice(0, PROFILE_FIELDS[k]); if (v) out[k] = v; });
+    map.profiles = map.profiles || {}; map.profiles[name] = out;
+    writeRows_(db, ['profiles']); cacheDrop_(['card:' + name]);
+    return { ok: true, profile: out };
+  } finally { lock.releaseLock(); }
+}
+function cardOf_(name) {
+  const hit = cacheGet_('card:' + name, null); if (hit) return hit;
+  const map = readRows_().map, pub = publicState_(map), s = (pub.students || []).filter(function (x) { return x.name === name; })[0];
+  if (!s) return { ok: false, error: 'none' };
+  const inv = (map.inv || {})[name] || {}, hana = hanaOf_(name);
+  const card = { ok: true, name: name, lv: s.lv, lvName: s.lvName, look: s.look, profile: (map.profiles || {})[name] || {}, title: inv.title || '',
+    house: inv.house || 'h_box', hana: hana.p || 0 };
+  try { cache_().put('card:' + name, JSON.stringify(card), 120); } catch (e) {}
+  return card;
+}
+
+/* ---------------- 📚 영어 학원 ---------------- */
+function engKey_(ds) { return 'eng:' + (ds || todayStr_()); }
+function engSet_(ds) { try { return JSON.parse(props_().getProperty(engKey_(ds)) || 'null'); } catch (e) { return null; } }
+function normAns_(v) {
+  return String(v == null ? '' : v).toLowerCase().replace(/[①-⑩]/g, function (c) { return String('①②③④⑤⑥⑦⑧⑨⑩'.indexOf(c) + 1); })
+    .replace(/[\s.,!?'"`~()\[\]{}·]/g, '');
+}
+function engUpload_(body) {
+  const images = (body.images || []).slice(0, 12), answers = (body.answers || []).slice(0, 10).map(function (a) { return String(a || '').trim(); });
+  if (!images.length) return { ok: false, error: 'noimg' };
+  const it = DriveApp.getFoldersByName('냥냥 영어 문제'), folder = it.hasNext() ? it.next() : DriveApp.createFolder('냥냥 영어 문제');
+  const ds = String(body.ds || todayStr_()), urls = [];
+  images.forEach(function (d, i) {
+    const m = String(d).match(/^data:(image\/\w+);base64,(.+)$/); if (!m) return;
+    const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], ds + '_' + (i + 1) + '.' + m[1].split('/')[1]);
+    const f = folder.createFile(blob);
+    f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    urls.push('https://drive.google.com/thumbnail?id=' + f.getId() + '&sz=w2000');
+  });
+  const set = { ds: ds, title: String(body.title || '오늘의 영어').slice(0, 40), urls: urls, answers: answers, n: 10, at: Date.now() };
+  props_().setProperty(engKey_(ds), JSON.stringify(set)); bump_();
+  return { ok: true, set: engPublicOf_(set) };
+}
+function engPublicOf_(set) {
+  if (!set) return { ok: true, none: true };
+  const subj = []; for (let i = 0; i < 10; i++) subj.push(!(set.answers || [])[i]);
+  return { ok: true, ds: set.ds, title: set.title, urls: set.urls, n: set.n || 10, subj: subj };
+}
+function engPublic_() { return engPublicOf_(engSet_()); }
+function engResultKey_(name) { return 'engr:' + todayStr_() + ':' + name; }
+function engReward_(name, map) {
+  const eco = economy_(map), r = eco.engReward || { coins: 20, exp: 20 };
+  if (addCoin_(name, r.coins, '영어 학원 통과', '영어', 'eng:' + todayStr_() + ':' + name)) expQueue_(name, r.exp, '📚 영어 학원 통과');
+}
+function studentEng_(name, body) {
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const set = engSet_(), k = engResultKey_(name);
+    let res = null; try { res = JSON.parse(props_().getProperty(k) || 'null'); } catch (e) {}
+    if (body.op === 'engMine') return { ok: true, result: res, set: engPublicOf_(set) };
+    if (!set) return { ok: true, error: 'none' };
+    if (body.op === 'engSubmit') {
+      if (res && res.pass) return { ok: true, result: res };
+      const ans = (body.answers || []).slice(0, 10).map(function (a) { return String(a || '').slice(0, 60); });
+      const marks = [];
+      for (let i = 0; i < 10; i++) {
+        const key = (set.answers || [])[i];
+        if (!key) { marks.push(null); continue; }              // 주관식 → 선생님 확인
+        const keys = String(key).split('/').map(normAns_);   // 정답이 여러 개면 / 로 나눠요
+        marks.push(keys.indexOf(normAns_(ans[i])) >= 0 ? 1 : 0);
+      }
+      const score = marks.reduce(function (s, m) { return s + (m === 1 ? 10 : 0); }, 0);
+      res = { ans: ans, marks: marks, score: score, pass: score >= 80, tries: ((res && res.tries) || 0) + 1, at: Date.now() };
+      props_().setProperty(k, JSON.stringify(res));
+      if (res.pass) engReward_(name, readRows_().map);
+      return { ok: true, result: res };
+    }
+    if (body.op === 'engPass') {                // 👩‍🏫 선생님 통과 (관리자 비밀번호)
+      const map = readRows_().map, pin = String(((map.config || {}).adminPin) || '');
+      if (!res) return { ok: true, error: 'nores' };
+      if (!pin || String(body.pin || '') !== pin) return { ok: true, error: 'pin' };
+      res.pass = true; res.byTeacher = true; props_().setProperty(k, JSON.stringify(res));
+      engReward_(name, map);
+      return { ok: true, result: res };
+    }
+    return { ok: true, result: res };
+  } finally { lock.releaseLock(); }
+}
+function engResults_() {
+  const all = props_().getProperties(), pre = 'engr:' + todayStr_() + ':', out = [];
+  Object.keys(all).forEach(function (k) { if (k.indexOf(pre) === 0) { try { const r = JSON.parse(all[k]); out.push({ n: k.slice(pre.length), score: r.score, pass: r.pass, byTeacher: !!r.byTeacher, tries: r.tries, ans: r.ans, marks: r.marks }); } catch (e) {} } });
+  return { ok: true, set: engPublicOf_(engSet_()), answers: (engSet_() || {}).answers || [], results: out };
+}
+
+/* ---------------- 🛟 안전: 보관(백업) 후 비우기 · 전체 백업 ---------------- */
+function archiveSheet_(name, header) {
+  const ss = SpreadsheetApp.getActive(), sh = sheet_(name, header), n = sh.getLastRow();
+  if (n < 2) return;
+  const vals = sh.getRange(1, 1, n, header.length).getValues();
+  const bk = ss.insertSheet(name + '_보관_' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd_HHmm'));
+  bk.getRange(1, 1, vals.length, header.length).setValues(vals);
+  sh.getRange(2, 1, n - 1, header.length).clearContent();
+}
+function backupAll_() {
+  const map = readRows_().map, props = props_().getProperties(), safe = {};
+  Object.keys(props).forEach(function (k) { if (k.indexOf('pin:') !== 0 && k !== 'teacherKey' && k.indexOf('fail:') !== 0) safe[k] = props[k]; });
+  return { ok: true, at: nowStr_(), data: map, props: safe,
+    chat: readChat_(0, function () { return true; }), asks: readAsks_(function () { return true; }), coins: readCoins_(), reqs: readReqs_(function () { return true; }) };
+}
+
 /* ---------------- 🐾 냥코인 ---------------- */
 function economy_(map) { return (map.config && map.config.economy) || { missions: [], shop: [], game: {} }; }
 function readCoins_() {
@@ -790,7 +926,36 @@ function weekKey_() {
   const wd = d.getDay() === 0 ? 7 : d.getDay(); d.setDate(d.getDate() - wd + 1);
   return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd');
 }
-function periodKey_(limit) { return limit === 'day' ? todayStr_() : limit === 'week' ? weekKey_() : limit === 'once' ? 'all' : String(Date.now()); }
+// 미션은 매일 아침 8시, 매주 월요일 아침 8시에 새로 시작해요
+function missionDay_() { return Utilities.formatDate(new Date(Date.now() - 8 * 3600000), 'Asia/Seoul', 'yyyy-MM-dd'); }
+function missionWeek_() {
+  const d0 = new Date(Date.now() - 8 * 3600000), u = Number(Utilities.formatDate(d0, 'Asia/Seoul', 'u'));
+  return Utilities.formatDate(new Date(d0.getTime() - (u - 1) * 86400000), 'Asia/Seoul', 'yyyy-MM-dd');
+}
+function periodKey_(limit) { return limit === 'day' ? missionDay_() : limit === 'week' ? missionWeek_() : limit === 'once' ? 'all' : String(Date.now()); }
+/* ✨ 서버에서 생긴 EXP(미션·영어 등)는 교실 출석부가 가져가서 기록해요 */
+function expQueue_(name, exp, why) {
+  if (!exp) return;
+  let q = []; try { q = JSON.parse(props_().getProperty('expq') || '[]'); } catch (e) {}
+  q.push({ id: Date.now() + Math.random(), n: name, exp: exp, why: why, ts: Date.now() });
+  props_().setProperty('expq', JSON.stringify(q.slice(-300))); bump_();
+}
+function claimExp_() {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch (e) { return []; }
+  try {
+    let q = []; try { q = JSON.parse(props_().getProperty('expq') || '[]'); } catch (e) {}
+    if (q.length) props_().setProperty('expq', '[]');
+    return q;
+  } finally { lock.releaseLock(); }
+}
+function picksOf_(name) {
+  let p = {}; try { p = JSON.parse(props_().getProperty('pick:' + name) || '{}'); } catch (e) {}
+  const d = missionDay_(), w = missionWeek_();
+  if (!p.d || p.d.k !== d) p.d = { k: d, ids: [] };
+  if (!p.w || p.w.k !== w) p.w = { k: w, ids: [] };
+  return p;
+}
 function settleReq_(id, ok, map) {
   const r = findRow_(REQ_SHEET, REQ_HEADER, id); if (!r) return;
   const row = r.sh.getRange(r.row, 1, 1, 9).getValues()[0];
@@ -798,13 +963,15 @@ function settleReq_(id, ok, map) {
   const name = String(row[2]), type = String(row[3]), coins = Number(row[5]) || 0, itemId = String(row[8] || '');
   if (type === '미션' && ok) {
     const m = (economy_(map).missions || []).filter(function (x) { return x.id === itemId; })[0];
-    addCoin_(name, coins, '미션: ' + String(row[4]), '미션', 'm:' + itemId + ':' + name + ':' + periodKey_(m ? m.limit : 'none'));
+    if (addCoin_(name, coins, '미션: ' + String(row[4]), '미션', 'm:' + itemId + ':' + name + ':' + periodKey_(m ? m.limit : 'none')))
+      expQueue_(name, m && m.exp != null ? Number(m.exp) : Math.round(coins / 2), '미션: ' + String(row[4]));
   }
   if (type === '쿠폰' && !ok) addCoin_(name, coins, '쿠폰 취소 환불: ' + String(row[4]), '환불', 'refund:' + id);
   r.sh.getRange(r.row, 7, 1, 2).setValues([[ok ? (type === '쿠폰' ? '지급 완료' : '승인') : (type === '쿠폰' ? '취소(환불)' : '반려'), "'" + nowStr_()]]);
 }
 function soldCount_(itemId) { return Number(props_().getProperty('sold:' + itemId) || 0); }
 function gameOpen_(game) {
+  if (props_().getProperty('lockdown') === '1') return false;
   if (game && free_().game > Date.now()) return true;
   if (!game || !game.on) return false;
   const now = new Date(), wd = Number(Utilities.formatDate(now, 'Asia/Seoul', 'u')) % 7;   // 1=월 … 7→0=일
@@ -886,14 +1053,34 @@ function studentCoins_(name, body) {
       const lv = (((map.pub || {}).priv || {})[name] || {}).lv || 1;
       const r = cleanRoom_(body.room || {}, eco, inv, T ? 99 : lv);
       if (r.error) error = r.error; else { inv.room = r.room; writeRows_(db, ['inv']); cacheDrop_(['room:' + name]); result = 'ok'; }
+    } else if (body.op === 'relocate') {         // 🏗️ Lv.7부터 집 옮기기 (다음 날 완공)
+      const lv = (((map.pub || {}).priv || {})[name] || {}).lv || 1, plot = String(body.plot || '');
+      if (lv < 7 && !T) error = 'lv';
+      else if (plot && !/^P([1-9]|1[0-2])$/.test(plot)) error = 'bad';
+      else if (plot && Object.keys(map.inv).some(function (n) { return n !== name && map.inv[n] && map.inv[n].plot && map.inv[n].plot.id === plot; })) error = 'taken';
+      else {
+        const tmr = Utilities.formatDate(new Date(Date.now() + 86400000), 'Asia/Seoul', 'yyyy-MM-dd');
+        inv.plot = plot ? { id: plot, ready: T ? todayStr_() : tmr } : null;
+        writeRows_(db, ['inv']); cacheDrop_(['v:inv']); result = inv.plot;
+      }
     } else if (body.op === 'equipHouse') {
       if (body.house === '' || (inv.houses || []).indexOf(body.house) >= 0) { inv.house = body.house || ''; writeRows_(db, ['inv']); cacheDrop_(['v:inv']); }
       else error = 'noitem';
+    } else if (body.op === 'missionPick') {      // 🎯 오늘(이번 주) 할 미션 고르기 — 고르면 바꿀 수 없어요
+      const m = (eco.missions || []).filter(function (x) { return x.id === body.mid; })[0];
+      const pk = picksOf_(name), lim = eco.pickLimit || { daily: 2, weekly: 3 };
+      const slot = m && m.cat === 'daily' ? 'd' : m && m.cat === 'weekly' ? 'w' : '';
+      if (!m || m.auto || !m.req || !slot) error = 'noitem';
+      else if (pk[slot].ids.indexOf(m.id) >= 0) error = 'owned';
+      else if (pk[slot].ids.length >= (slot === 'd' ? lim.daily : lim.weekly)) error = 'pickfull';
+      else { pk[slot].ids.push(m.id); props_().setProperty('pick:' + name, JSON.stringify(pk)); result = m.name; }
     } else if (body.op === 'missionReq') {
       const m = (eco.missions || []).filter(function (x) { return x.id === body.mid; })[0];
+      const pk0 = picksOf_(name);
       const key = m ? 'm:' + m.id + ':' + name + ':' + periodKey_(m.limit) : '';
       const pending = readReqs_(function (r) { return r.name === name && r.itemId === body.mid && r.status === '대기'; }).length;
       if (!m || !m.req) error = 'noitem';
+      else if (eco.pickLimit && pk0.d.ids.indexOf(m.id) < 0 && pk0.w.ids.indexOf(m.id) < 0) error = 'nopick';
       else if (pending) error = 'pending';
       else if (m.limit !== 'none' && rows.some(function (r) { return r.key === key; })) error = 'done';
       else {
@@ -954,7 +1141,8 @@ function studentCoins_(name, body) {
       economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on, open: gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} },
         furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {} },
       playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
-      claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; })
+      claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),
+      picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }
     };
   } finally { lock.releaseLock(); }
 }
