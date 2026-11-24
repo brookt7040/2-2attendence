@@ -1112,7 +1112,9 @@ const OLD_DB_KEY = 'rpgClassDB_v9';
 const FIRED_KEY = 'rpgAlarmFired_v1';
 const PARTY_KEY = 'nyangPartyDone_v1';
 const DEFAULT_TITLE = '2-2 냥냥 출석 아일랜드';
-const DEFAULT_TIERS = { e1:10, e1Exp:200, eU:8, eUExp:150, e2:5, e2Exp:100, eN:2, e3Exp:50, eSExp:20, l1:1, l1Exp:-10, l2:5, l2Exp:-50, l3:10, l3Exp:-100, l4Exp:-150 };
+/* ⚖️ 밸런스 (2026-11 패치): 하루 제시간 출석 ≈ 40 EXP
+   2일 → Lv.2 · 2주(10일) 출석만 → Lv.5~6 · 2주 출석+미션+영어 성실 → Lv.9~10 · 그 뒤로도 EXP는 계속 쌓여요 */
+const DEFAULT_TIERS = { e1:10, e1Exp:60, eU:8, eUExp:50, e2:5, e2Exp:45, eN:2, e3Exp:40, eSExp:30, l1:1, l1Exp:-10, l2:5, l2Exp:-30, l3:10, l3Exp:-50, l4Exp:-80 };
 // 예전 4단계(레전드·레어·노멀) 설정을 새 단계(레전드·유니크·레어·노멀·세이프)로 바꿔 줘요
 function upgradeTiers(t){
   t = Object.assign({}, t);
@@ -1135,7 +1137,9 @@ const DEFAULT_MENU = [
 ];
 
 /*@@SHARED:begin*/
-const DEFAULT_LEVEL = { start:'2026-11-24', max:2200, curve:1.5 };
+const DEFAULT_LEVEL = { start:'2026-11-24', max:1100, curve:1.5 };
+// 레벨별로 필요한 누적 EXP (Lv.10 = 1100 기준 · 설정의 'Lv.10까지 필요한 총 EXP'를 바꾸면 비율대로 늘거나 줄어요)
+const LV_TABLE = [0, 60, 150, 250, 350, 450, 600, 780, 950, 1100];
 const LEVELS = [
   { name:'아기냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
   { name:'새싹냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
@@ -1306,10 +1310,19 @@ const SPECIAL_ITEMS = [
   { id:'x_title',  cat:'title',  name:'🏷️ 칭호 달기', price:100 },
   { id:'x_butler', cat:'butler', name:'🐱 하나 하루 집사권 (하루 1명)', price:120 }
 ];
+/* ⚖️ v6 밸런스: 출석 EXP를 줄이고(하루 ≈40), 미션 EXP = 코인만큼, 레벨표 새로 */
+function balancePatch6(e){
+  e.missions = (e.missions || []).map(m => Object.assign({}, m, { exp: m.coins }));
+  e.engReward = { coins: 20, exp: 25 };
+  db.expTiers = Object.assign({}, db.expTiers, { e1Exp:60, eUExp:50, e2Exp:45, e3Exp:40, eSExp:30, l1Exp:-10, l2Exp:-30, l3Exp:-50, l4Exp:-80 });
+  db.level = Object.assign({}, db.level, { max: 1100 });
+  e.ver = 6;
+}
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 5) return false;
-  if ((e.ver || 1) === 4){ e.locked = { missions: true, shop: true }; e.ver = 5; return true; }
+  if ((e.ver || 1) >= 6) return false;
+  if ((e.ver || 1) === 5){ balancePatch6(e); return true; }
+  if ((e.ver || 1) === 4){ e.locked = { missions: true, shop: true }; balancePatch6(e); return true; }
   const v4 = () => {
     // 🎯 미션은 학생이 직접 고르기 (매일 2개 · 매주 3개) · 특별 미션 없앰 · 미션도 EXP를 줘요 (코인의 절반)
     e.missions = (e.missions || []).filter(m => m.cat !== 'all').map(m => Object.assign({}, m, { exp: m.exp != null ? m.exp : Math.round(m.coins / 2) }));
@@ -1317,7 +1330,7 @@ function upgradeEconomy(){
     e.engReward = e.engReward || { coins: 20, exp: 20 };
     db.menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
     e.locked = { missions: true, shop: true };     // 처음엔 미션·상점을 잠가 둬요 (코인은 모여요)
-    e.ver = 5;
+    balancePatch6(e);
   };
   if ((e.ver || 1) >= 3){ v4(); return true; }
   e.shop = e.shop || [];
@@ -1865,11 +1878,11 @@ function pickChar(tierKey, day){
   const avail = pool.filter(c => !used.includes(c.id));
   return rand(avail.length ? avail : pool);
 }
-const RANK_BONUS = 10, RANK_BONUS_TOP = 5;
+const RANK_BONUS = 5, RANK_BONUS_TOP = 5;
 /* 🐾 출석하면 냥코인도 같이! (지각은 0) */
 const ATT_COINS = { legend:20, unique:15, rare:10, normal:5, safe:3 };
 /* 📖 내 냥이 도감 완성 보상 (EXP · 냥코인) */
-const COLLECT_REWARD = { normal:[40, 40, '🐱 노멀'], rare:[60, 60, '💎 레어'], unique:[100, 100, '🦄 유니크'], legend:[150, 150, '👑 레전드'], all:[200, 200, '🌈 모든'] };
+const COLLECT_REWARD = { normal:[30, 40, '🐱 노멀'], rare:[40, 60, '💎 레어'], unique:[60, 100, '🦄 유니크'], legend:[80, 150, '👑 레전드'], all:[100, 200, '🌈 모든'] };
 function myDex(name){
   const got = new Set();
   for (const [ds, day] of Object.entries(db.records)){ const r = day[name]; if (r && r.charId){ const ch = CHAR_BY_ID[r.charId]; if (ch && !ch.sleepy) got.add(ch.id); } }
@@ -2023,7 +2036,7 @@ function renderMenuBoard(){
   let html = '<div class="menu-header">📋 EXP 리스트</div><div class="menu-cols">';
   html += `<div><div class="menu-col-title">✨ 얻을 수 있어요</div>${plus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
-  html += '</div><div class="menu-auto">🎯 미션(매일 2·매주 3) · 📚 영어 학원 +20 · 📖 도감 완성 +40~200 · 🥇 1~5등 +10 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
+  html += '</div><div class="menu-auto">🎯 미션(코인만큼 EXP) · 📚 영어 학원 +25 · 📖 도감 완성 +30~100 · 🥇 1~5등 +5 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
   const cleaners = kids().filter(n => dayTotal(n) < 0);
   html += `<div class="clean-row"><span>🧹 오늘의 청소 당번</span>${cleaners.length
@@ -2055,11 +2068,11 @@ function renderCoinView(){
     box.innerHTML = cvData ? (d.ledger || []).slice(0, 60).map(r => `<div class="cv-row"><span>${esc(r.t.slice(5))} · <b>${esc(r.name)}</b> · ${esc(r.why)}</span><span class="pts ${r.amt >= 0 ? 'plus' : 'minus'}">${r.amt >= 0 ? '+' : ''}${r.amt}</span></div>`).join('') || '<div class="clean-empty">아직 없어요</div>' : '<div class="clean-empty">불러오는 중…</div>';
   } else {
     box.innerHTML = `<div class="cv-row"><span>⭐ 제시간 출석 (레전드 20 · 유니크 15 · 레어 10 · 노멀 5 · 세이프 3)</span><b>+3~20🐾</b></div>
-      <div class="cv-row"><span>🥇 1~5등 도착</span><b>+5🐾 · +10✨</b></div>
+      <div class="cv-row"><span>🥇 1~5등 도착</span><b>+5🐾 · +5✨</b></div>
       <div class="cv-row"><span>🎯 미션 (매일 2개 · 매주 3개 직접 골라요)</span><b>코인 + EXP</b></div>
-      <div class="cv-row"><span>📚 냥글리시 아카데미 통과</span><b>+20🐾 · +20✨</b></div>
+      <div class="cv-row"><span>📚 냥글리시 아카데미 통과</span><b>+20🐾 · +25✨</b></div>
       <div class="cv-row"><span>📋 EXP 리스트 (+EXP의 절반)</span><b>+🐾</b></div>
-      <div class="cv-row"><span>📖 내 냥이 도감 완성</span><b>+40~200🐾✨</b></div>`;
+      <div class="cv-row"><span>📖 내 냥이 도감 완성</span><b>+30~100✨ · +40~200🐾</b></div>`;
   }
 }
 function toggleClean(name){
@@ -2282,8 +2295,8 @@ function stampClass(n){ return n >= 10 ? 'rainbow' : (n >= 5 ? 'gold' : ''); }
    🏆 레벨 (시즌 EXP)
    ========================================================= */
 function lvThresholds(){
-  const L = db.level;
-  return LEVELS.map((_, i) => i === 0 ? 0 : Math.max(i, Math.round(L.max * Math.pow(i / 9, L.curve || 1.5) / 10) * 10));
+  const k = (Number(db.level.max) || 1100) / 1100;
+  return LV_TABLE.map((v, i) => i === 0 ? 0 : Math.max(i, Math.round(v * k / 10) * 10));
 }
 function seasonExpMap(){
   const m = {}; db.students.forEach(n => m[n] = 0);

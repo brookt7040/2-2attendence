@@ -583,10 +583,10 @@ function profileBox(){
 }
 function dexBox(info){
   const d = info.dex; if (!d) return '';
-  const done = info.dexDone || {}, R = { normal:['🐱 노멀', 40], rare:['💎 레어', 60], unique:['🦄 유니크', 100], legend:['👑 레전드', 150] };
+  const done = info.dexDone || {}, R = { normal:['🐱 노멀', '30✨ 40🐾'], rare:['💎 레어', '40✨ 60🐾'], unique:['🦄 유니크', '60✨ 100🐾'], legend:['👑 레전드', '80✨ 150🐾'] };
   return `<div class="box"><div class="box-head pink">📖 내 냥이 도감</div>${Object.keys(R).map(k => { const [g, t] = d[k] || [0, 0];
-    return `<div class="dx-row"><span>${R[k][0]}</span><div class="bar"><i style="width:${t ? Math.round(g / t * 100) : 0}%"></i></div><span>${g}/${t}</span><span class="st">${done[k] ? '✔ 보상 받음' : `완성 +${R[k][1]}✨🐾`}</span></div>`; }).join('')}
-    <div class="hint">네 등급을 전부 모으면 보너스 +200✨🐾! 일찍 올수록 높은 등급 냥이가 나와요.</div></div>`;
+    return `<div class="dx-row"><span>${R[k][0]}</span><div class="bar"><i style="width:${t ? Math.round(g / t * 100) : 0}%"></i></div><span>${g}/${t}</span><span class="st">${done[k] ? '✔ 보상 받음' : `완성 +${R[k][1]}`}</span></div>`; }).join('')}
+    <div class="hint">네 등급을 전부 모으면 보너스 +100✨ +200🐾! 일찍 올수록 높은 등급 냥이가 나와요.</div></div>`;
 }
 async function saveProfile(){
   const data = {}; document.querySelectorAll('[data-pf]').forEach(i => { data[i.dataset.pf] = i.value.trim(); });
