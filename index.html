@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>노랑반 냥냥 출석 아일랜드</title>
+<style>
+@font-face{
+  font-family:'NeoDunggeunmo';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');
+  font-weight:normal;font-style:normal;
+}
+:root{
+  --ink:#5B4636; --ink-soft:#8A7060;
+  --y:#FFD84D; --y-deep:#F5B70A; --y-soft:#FFF2BF; --cream:#FFFCF3;
+  --pink:#FFC2D4; --pink-deep:#FF7FA6;
+  --mint:#C4F0DD; --mint-deep:#3DBE8B;
+  --sky:#CDE8FF; --sky-deep:#5FAEF5;
+  --lav:#E2D8FF; --lav-deep:#8C74F0;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  font-family:'NeoDunggeunmo',sans-serif; color:var(--ink);
+  min-height:100vh; padding:22px 36px 48px; overflow-x:hidden;
+  background-color:#FFF5D1;
+  background-image:
+    radial-gradient(rgba(255,207,51,.30) 3px, transparent 3.6px),
+    radial-gradient(rgba(255,170,198,.26) 3px, transparent 3.6px);
+  background-size:44px 44px,44px 44px; background-position:0 0,22px 22px;
+  background-attachment:fixed;
+}
+button,input,textarea{font-family:inherit;color:var(--ink);}
+.pix{image-rendering:pixelated;image-rendering:crisp-edges;}
+
+/* ===== 떠다니는 장식 ===== */
+.deco{position:fixed;pointer-events:none;z-index:0;opacity:.5;font-size:2rem;animation:floaty 7s ease-in-out infinite;}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-16px) rotate(8deg)}}
+.wrap{position:relative;z-index:1;}
+
+/* ===== 헤더 ===== */
+.header{display:flex;justify-content:space-between;align-items:flex-start;gap:28px;}
+.header-left{flex:1;min-width:0;}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:14px;}
+.title-row{display:flex;align-items:center;gap:18px;}
+.mascot-wrap{position:relative;flex:none;width:128px;height:128px;cursor:pointer;}
+#mascot{width:128px;height:128px;animation:bob 2.4s ease-in-out infinite;filter:drop-shadow(0 6px 0 rgba(91,70,54,.22));}
+.mascot-wrap.jump #mascot{animation:jump .55s ease-out 2;}
+.mascot-heart{position:absolute;font-size:1.4rem;pointer-events:none;animation:heartUp 1.1s ease-out forwards;}
+@keyframes heartUp{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1}100%{opacity:0;transform:translateY(-60px) scale(1.2)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes jump{0%{transform:translateY(0) scale(1)}35%{transform:translateY(-28px) scale(1.05,.95)}65%{transform:translateY(0) scale(1.1,.88)}100%{transform:translateY(0) scale(1)}}
+
+.title-block{min-width:0;}
+#mainTitleDisplay{
+  margin:0;font-size:3.1rem;line-height:1.2;color:var(--y);letter-spacing:2px;font-weight:normal;
+  text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),
+    2px 2px 0 var(--ink),-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink),0 7px 0 var(--ink);
+}
+.bubble{
+  position:relative;display:inline-block;margin:14px 0 0 14px;background:#fff;
+  border:3px solid var(--ink);border-radius:18px;padding:8px 16px;font-size:1.3rem;
+  box-shadow:0 4px 0 var(--ink);max-width:100%;
+}
+.bubble::before{content:'';position:absolute;left:-17px;top:10px;border-style:solid;border-width:8px 15px 8px 0;border-color:transparent var(--ink) transparent transparent;}
+.bubble::after{content:'';position:absolute;left:-11px;top:12px;border-style:solid;border-width:6px 11px 6px 0;border-color:transparent #fff transparent transparent;}
+.bubble.pop{animation:bubblePop .35s cubic-bezier(.2,1.6,.4,1);}
+@keyframes bubblePop{0%{transform:scale(.7)}100%{transform:scale(1)}}
+
+/* ===== 알립니다 (메모지) ===== */
+.notice-area{
+  position:relative;margin-top:34px;max-width:720px;
+  background-color:#FFFBE3;
+  background-image:repeating-linear-gradient(transparent 0 38px, rgba(245,183,10,.22) 38px 40px);
+  background-position:0 26px;
+  border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);
+  padding:30px 22px 14px;
+}
+.tape{position:absolute;top:-13px;width:76px;height:24px;border:2px dashed rgba(91,70,54,.3);}
+.tape.l{left:22px;transform:rotate(-7deg);background:rgba(255,184,203,.9);}
+.tape.r{right:22px;transform:rotate(6deg);background:rgba(196,240,221,.95);}
+.notice-header{
+  position:absolute;top:-19px;left:50%;transform:translateX(-50%);
+  background:var(--y);border:3px solid var(--ink);border-radius:999px;padding:4px 20px;
+  font-size:1.3rem;box-shadow:0 3px 0 var(--ink);white-space:nowrap;
+}
+.notice-item{display:flex;gap:12px;align-items:flex-start;padding:5px 2px;cursor:pointer;user-select:none;}
+.notice-item:active{transform:translateX(3px);}
+.notice-mark{flex:none;width:30px;height:30px;margin-top:3px;border:3px solid var(--ink);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.notice-item.done .notice-mark{background:var(--mint);}
+.notice-text{font-size:1.5rem;line-height:1.45;word-break:keep-all;}
+.notice-item.done .notice-text{color:#B8A391;text-decoration:line-through;}
+.notice-empty{font-size:1.15rem;color:var(--ink-soft);padding:4px 2px;}
+
+/* ===== 보드 (알립니다 + 메뉴판) ===== */
+.boards{display:flex;gap:22px;align-items:stretch;margin-top:34px;flex-wrap:wrap;}
+.boards .notice-area{margin-top:0;flex:1 1 340px;max-width:none;}
+.menu-board{
+  position:relative;flex:1 1 360px;background:#FFFDF6;border:3px solid var(--ink);border-radius:20px;
+  box-shadow:0 6px 0 var(--ink);padding:30px 18px 12px;
+}
+.menu-header{position:absolute;top:-19px;left:50%;transform:translateX(-50%);background:var(--pink);border:3px solid var(--ink);border-radius:999px;padding:4px 20px;font-size:1.3rem;box-shadow:0 3px 0 var(--ink);white-space:nowrap;}
+.menu-cols{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;}
+.menu-col-title{font-size:1.05rem;color:var(--ink-soft);margin:0 6px 2px;}
+.menu-item{display:flex;align-items:baseline;gap:6px;width:100%;font-size:1.25rem;padding:3px 6px;border:none;border-radius:10px;background:none;cursor:pointer;text-align:left;}
+.menu-item:hover{background:var(--y-soft);}
+.menu-item:active{transform:translateY(2px);}
+.menu-item .dots{flex:1;min-width:10px;border-bottom:3px dotted #DCC895;transform:translateY(-6px);}
+.menu-item .pts{white-space:nowrap;}
+.pts.plus{color:#1F8A5F;} .pts.minus{color:#D6456E;}
+.clean-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:3px dashed #EAD49A;font-size:1.15rem;}
+.clean-chip{border:2px solid var(--ink);border-radius:999px;padding:2px 11px;background:var(--lav);cursor:pointer;font-size:1.1rem;}
+.clean-chip.done{background:var(--mint);text-decoration:line-through;color:#6D8F7F;}
+.clean-empty{color:var(--ink-soft);font-size:1rem;}
+.pick-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.pick{border:3px solid var(--ink);border-radius:999px;padding:7px 15px;font-size:1.15rem;cursor:pointer;background:#fff;box-shadow:0 3px 0 var(--ink);}
+.pick.on{background:var(--y);transform:translateY(-2px);}
+.bonus-log{display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto;}
+.bonus-entry{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:1rem;padding:3px 6px;border-bottom:2px dashed #F0E2BC;}
+#toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-140%);z-index:10001;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:10px 24px;font-size:1.35rem;box-shadow:0 5px 0 var(--ink);transition:transform .35s cubic-bezier(.2,1.5,.4,1);pointer-events:none;white-space:nowrap;}
+#toast.show{transform:translate(-50%,0);}
+.card-clean{position:absolute;top:8px;right:10px;font-size:1.2rem;}
+.exp-pill.bonus{background:#FFF0B8;color:#A0700A;font-size:.92rem;}
+
+/* ===== 날짜 · 시계 ===== */
+.date-pill{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 22px;font-size:1.8rem;box-shadow:0 4px 0 var(--ink);}
+.clock-panel{display:flex;align-items:center;gap:8px;}
+.flip-unit{
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#FFFFFF 0 50%,#FFF0B3 50% 100%);
+  border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);
+  padding:6px 16px 8px;perspective:300px;
+}
+.flip-unit.sec{background:linear-gradient(180deg,#FFFFFF 0 50%,#FFDCE7 50% 100%);}
+.flip-unit::after{content:'';position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(91,70,54,.22);}
+.flip-digits{display:inline-block;font-size:3.1rem;line-height:1.1;letter-spacing:2px;transform-origin:center top;}
+.flip-digits.flipping{animation:flipDown .35s ease-out;}
+@keyframes flipDown{0%{transform:rotateX(-88deg);opacity:.35}60%{transform:rotateX(12deg);opacity:1}100%{transform:rotateX(0);opacity:1}}
+.flip-colon{display:flex;flex-direction:column;gap:12px;}
+.flip-colon span{width:11px;height:11px;border-radius:50%;background:var(--pink-deep);border:2px solid var(--ink);}
+
+/* ===== 지금 보상 패널 ===== */
+.reward-panel{
+  width:470px;max-width:100%;background:#fff;border:3px solid var(--ink);border-radius:22px;
+  box-shadow:0 6px 0 var(--ink);padding:12px 14px;text-align:center;transition:background .4s;
+}
+.rp-top{display:flex;justify-content:space-between;align-items:center;font-size:1.05rem;gap:8px;}
+.deadline{background:var(--y-soft);border:2px solid var(--ink);border-radius:999px;padding:3px 12px;}
+.rp-main{display:flex;justify-content:center;align-items:center;gap:12px;margin:6px 0 0;}
+.rp-icon{font-size:2.3rem;animation:bob 1.8s ease-in-out infinite;}
+.rp-exp{font-size:2.6rem;}
+.rp-exp.plus{color:#1F8A5F;} .rp-exp.minus{color:#D6456E;}
+.rp-tier{font-size:1rem;padding:3px 10px;border-radius:999px;border:2px solid var(--ink);background:#fff;}
+.rp-sub{font-size:1.1rem;color:var(--ink-soft);margin-top:2px;}
+.rp-ladder{display:flex;gap:4px;margin-top:10px;}
+.rp-step{flex:1;border:2px solid var(--ink);border-radius:10px;padding:4px 0 3px;font-size:.74rem;line-height:1.3;background:#FBF7EE;opacity:.5;transition:all .25s;}
+.rp-step b{display:block;font-size:.95rem;font-weight:normal;}
+.rp-step.on{opacity:1;transform:translateY(-4px);box-shadow:0 4px 0 var(--ink);}
+
+/* ===== 상태바 ===== */
+.toolbar{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin:26px 0 28px;}
+.gauge{flex:1;min-width:280px;max-width:560px;}
+.gauge-label{display:flex;justify-content:space-between;font-size:1.1rem;margin:0 6px 6px;}
+.gauge-bar{position:relative;height:30px;background:#fff;border:3px solid var(--ink);border-radius:999px;box-shadow:0 4px 0 var(--ink);}
+.gauge-fill{height:100%;width:0;border-radius:999px;background:repeating-linear-gradient(45deg,var(--y) 0 12px,#FFE89A 12px 24px);transition:width .7s cubic-bezier(.2,1.3,.4,1);}
+.gauge-paw{position:absolute;top:50%;left:0;transform:translate(-50%,-55%);font-size:1.6rem;transition:left .7s cubic-bezier(.2,1.3,.4,1);}
+.gauge.full .gauge-fill{background:repeating-linear-gradient(45deg,#FFB8CB 0 12px,#FFD84D 12px 24px,#BDEFD9 24px 36px);animation:stripes 1s linear infinite;background-size:200% 100%;}
+@keyframes stripes{to{background-position:-51px 0}}
+.toolbar-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+.chip{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:8px 15px;font-size:1.1rem;box-shadow:0 4px 0 var(--ink);white-space:nowrap;}
+
+/* ===== 버튼 ===== */
+.btn{border:3px solid var(--ink);border-radius:14px;padding:10px 18px;font-size:1.15rem;cursor:pointer;box-shadow:0 4px 0 var(--ink);background:#fff;transition:transform .08s;}
+.btn:hover{transform:translateY(-2px);}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink);}
+.btn-y{background:var(--y);} .btn-pink{background:var(--pink);} .btn-mint{background:var(--mint);}
+.btn-sky{background:var(--sky);} .btn-lav{background:var(--lav);} .btn-gray{background:#EEE6DA;} .btn-danger{background:#FF9DAE;}
+.mini-btn{border:2px solid var(--ink);border-radius:10px;padding:5px 11px;font-size:.95rem;cursor:pointer;box-shadow:0 3px 0 var(--ink);background:var(--sky);}
+.mini-btn:active{transform:translateY(3px);box-shadow:none;}
+
+/* ===== 학생 카드 ===== */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:22px;}
+.card{
+  position:relative;height:228px;background:#fff;border:3px solid var(--ink);border-radius:24px;
+  box-shadow:0 6px 0 var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:16px 8px 12px;text-align:center;user-select:none;transition:transform .12s;
+}
+.card .cat{width:92px;height:92px;}
+.card.waiting{cursor:pointer;background:var(--cream);border-style:dashed;}
+.card.waiting:hover{transform:translateY(-4px) rotate(-1deg);}
+.card.waiting:active{transform:translateY(5px);box-shadow:0 1px 0 var(--ink);}
+.card.tapped{transform:scale(.92)!important;background:var(--y-soft);}
+.card.waiting .cat{animation:bob 2.2s ease-in-out infinite;}
+.qmark{position:absolute;top:52px;left:50%;transform:translateX(-50%);font-size:2.1rem;color:#fff;text-shadow:2px 0 var(--y-deep),-2px 0 var(--y-deep),0 2px var(--y-deep),0 -2px var(--y-deep);pointer-events:none;}
+.student-name{font-size:1.7rem;margin-top:4px;line-height:1.2;}
+.touch-text{font-size:1rem;margin-top:6px;color:var(--ink-soft);animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.card-tag{position:absolute;top:10px;left:10px;font-size:.82rem;padding:2px 8px;border:2px solid var(--ink);border-radius:999px;background:#fff;}
+.card-streak{position:absolute;top:9px;right:10px;font-size:1.05rem;}
+.card-first{position:absolute;top:-16px;right:-10px;font-size:2.1rem;transform:rotate(12deg);filter:drop-shadow(0 3px 0 rgba(91,70,54,.35));}
+.card-meta{display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap;margin-top:6px;font-size:.98rem;white-space:nowrap;}
+.card-meta .exp-pill{padding:1px 6px;}
+.exp-pill{border:2px solid var(--ink);border-radius:999px;padding:1px 9px;background:#fff;}
+.exp-pill.plus{background:#D9F7E9;color:#1F8A5F;} .exp-pill.minus{background:#FFE0E7;color:#D6456E;}
+
+.card.t-legend{background:linear-gradient(115deg,#FFF6C9 0%,#FFE070 25%,#FFF8D6 50%,#FFE070 75%,#FFF6C9 100%);background-size:300% 100%;animation:shimmer 5s linear infinite;}
+@keyframes shimmer{from{background-position:0 0}to{background-position:300% 0}}
+.card.t-legend::before,.card.t-legend::after{content:'✦';position:absolute;color:#fff;font-size:1.3rem;text-shadow:0 0 6px #FFC21A;animation:twinkle 1.6s ease-in-out infinite;}
+.card.t-legend::before{left:18px;bottom:52px;} .card.t-legend::after{right:20px;top:42px;animation-delay:.8s;}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
+.card.t-rare{background:linear-gradient(160deg,#E3FFF3,#FFE6EF);}
+.card.t-normal{background:#FFFDF6;}
+.card.sleepy{background:linear-gradient(180deg,#EEE8FF,#DCEBFF);}
+.card.t-absent{background:#F1ECE4;}
+.card.t-absent .student-name{color:#A8978A;}
+.zzz{position:absolute;top:40px;right:26px;font-size:1.25rem;color:var(--lav-deep);animation:zz 2.4s ease-in-out infinite;}
+@keyframes zz{0%{opacity:0;transform:translate(0,8px) scale(.8)}40%{opacity:1}100%{opacity:0;transform:translate(10px,-16px) scale(1.15)}}
+.card.new{animation:cardPop .65s cubic-bezier(.2,1.7,.4,1);}
+.card.t-legend.new{animation:cardPop .65s cubic-bezier(.2,1.7,.4,1),shimmer 5s linear infinite;}
+@keyframes cardPop{0%{transform:scale(.5) rotate(-8deg)}100%{transform:scale(1) rotate(0)}}
+
+/* ===== 오버레이 · 모달 ===== */
+.overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
+.modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
+.modal h2{margin:0;text-align:center;font-size:1.7rem;font-weight:normal;padding-bottom:10px;border-bottom:3px dashed #EAD49A;}
+.modal-small{width:600px;max-width:94vw;} .modal-large{width:920px;max-width:96vw;}
+@keyframes popIn{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.section{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;}
+.section-title{font-size:1.25rem;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group label{font-size:1.05rem;}
+input[type=text],input[type=number],input[type=time],textarea{padding:7px 10px;font-size:1.05rem;border:2px solid var(--ink);border-radius:10px;background:#FFFDF6;}
+textarea{resize:vertical;}
+.form-hint{font-size:.9rem;color:var(--ink-soft);line-height:1.4;}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.row input[type=number]{width:82px;text-align:right;}
+.tier-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:6px 10px;border-radius:12px;}
+.tier-row input[type=number]{width:70px;text-align:right;}
+.modal-btns{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.sound-status{font-size:.92rem;background:var(--y-soft);border:2px solid var(--ink);border-radius:10px;padding:7px 9px;line-height:1.5;}
+
+/* 기록장 */
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.tab{border:3px solid var(--ink);border-radius:999px;padding:7px 16px;font-size:1.05rem;cursor:pointer;background:#fff;box-shadow:0 3px 0 var(--ink);}
+.tab.active{background:var(--y);transform:translateY(-2px);box-shadow:0 5px 0 var(--ink);}
+.weekend-note{font-size:.95rem;text-align:center;color:#C0506F;}
+table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:3px solid var(--ink);border-radius:18px;overflow:hidden;text-align:center;}
+th{background:var(--y);padding:10px 6px;font-size:1.05rem;font-weight:normal;border-bottom:3px solid var(--ink);}
+td{padding:8px 6px;font-size:1.05rem;border-bottom:2px dashed #F0E2BC;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
+.act-btn{border:2px solid var(--ink);border-radius:10px;padding:4px 10px;cursor:pointer;font-size:.95rem;box-shadow:0 2px 0 var(--ink);}
+.act-btn.absent{background:var(--lav);} .act-btn.cancel{background:#FFC9D3;}
+.dex-head{text-align:center;font-size:1.3rem;}
+.dex-section-title{font-size:1.2rem;margin:6px 4px 0;}
+.dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:12px;}
+.dex-item{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:10px 6px;text-align:center;box-shadow:0 3px 0 var(--ink);}
+.dex-item img{width:66px;height:66px;}
+.dex-item.locked{background:#F3EEE6;}
+.dex-name{font-size:.95rem;margin-top:2px;}
+.dex-count{font-size:.85rem;color:var(--ink-soft);}
+
+/* ===== 가챠 연출 ===== */
+#revealOverlay{background:rgba(70,52,40,.62);}
+.reveal{position:relative;width:min(600px,94vw);height:min(600px,90vh);display:flex;align-items:center;justify-content:center;}
+.rays{
+  position:absolute;width:820px;height:820px;left:50%;top:50%;margin:-410px 0 0 -410px;border-radius:50%;
+  background:repeating-conic-gradient(rgba(255,255,255,.6) 0 10deg, rgba(255,255,255,0) 10deg 20deg);
+  -webkit-mask:radial-gradient(circle,#000 25%,transparent 66%);mask:radial-gradient(circle,#000 25%,transparent 66%);
+  opacity:0;transition:opacity .35s;animation:spin 14s linear infinite;pointer-events:none;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.reveal.open .rays{opacity:1;}
+.reveal.t-legend .rays{background:repeating-conic-gradient(rgba(255,216,77,.95) 0 8deg, rgba(255,184,203,.7) 8deg 16deg, rgba(255,255,255,0) 16deg 24deg);}
+.reveal.t-rare .rays{background:repeating-conic-gradient(rgba(127,216,190,.85) 0 10deg, rgba(255,255,255,0) 10deg 20deg);}
+.reveal.sleepy .rays{background:repeating-conic-gradient(rgba(169,150,255,.55) 0 10deg, rgba(255,255,255,0) 10deg 20deg);animation-duration:30s;}
+.capsule{position:absolute;width:180px;height:180px;}
+.cap-top,.cap-bottom{height:50%;border:4px solid var(--ink);transition:transform .3s ease-out,opacity .3s;}
+.cap-top{border-bottom-width:2px;border-radius:90px 90px 0 0;background:var(--capcolor,#FFD84D);position:relative;overflow:hidden;}
+.cap-top::after{content:'';position:absolute;left:28px;top:22px;width:34px;height:18px;border-radius:50%;background:rgba(255,255,255,.7);transform:rotate(-25deg);}
+.cap-bottom{border-top-width:2px;border-radius:0 0 90px 90px;background:#fff;}
+.capsule::after{content:'';position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px;border-radius:50%;background:#fff;border:4px solid var(--ink);transition:opacity .2s;}
+.reveal.t-legend .cap-top{background:linear-gradient(90deg,#FF9AAE,#FFD84D,#7FD8BE,#8CC8FF,#A996FF);}
+.reveal.shake .capsule{animation:shake .14s linear infinite;}
+@keyframes shake{0%{transform:rotate(-9deg)}50%{transform:rotate(9deg) translateY(-4px)}100%{transform:rotate(-9deg)}}
+.reveal.open .cap-top{transform:translateY(-150px) rotate(-35deg);opacity:0;}
+.reveal.open .cap-bottom{transform:translateY(150px) rotate(25deg);opacity:0;}
+.reveal.open .capsule::after{opacity:0;}
+.reveal-card{
+  position:relative;opacity:0;transform:scale(.3);transition:all .32s cubic-bezier(.2,1.6,.4,1);
+  background:#fff;border:4px solid var(--ink);border-radius:30px;box-shadow:0 9px 0 var(--ink);
+  padding:20px 38px 16px;text-align:center;min-width:360px;max-width:92vw;pointer-events:none;
+}
+.reveal.open .reveal-card{opacity:1;transform:scale(1);}
+.reveal.t-legend .reveal-card{background:linear-gradient(180deg,#FFFBE6,#FFF0A8);}
+.reveal.t-rare .reveal-card{background:linear-gradient(180deg,#F0FFF8,#FFEFF4);}
+.reveal.sleepy .reveal-card{background:linear-gradient(180deg,#F4F0FF,#E3EDFF);}
+.rev-rarity{display:inline-block;font-size:1.5rem;padding:4px 20px;border:3px solid var(--ink);border-radius:999px;background:var(--y);}
+.rev-cat{width:184px;height:184px;margin:8px auto 0;display:block;animation:bob 1.6s ease-in-out infinite;}
+.rev-charname{font-size:1.7rem;}
+.rev-msg{font-size:1.4rem;margin-top:8px;color:var(--ink-soft);word-break:keep-all;}
+.rev-first{font-size:1.25rem;margin-top:4px;color:#E0861B;min-height:0;}
+.rev-exp{font-size:3.4rem;margin-top:4px;}
+.rev-exp.plus{color:#1F8A5F;} .rev-exp.minus{color:#D6456E;}
+.rev-hint{font-size:.9rem;color:#B5A08E;margin-top:6px;}
+
+/* 파티 */
+.party-box{background:linear-gradient(180deg,#FFFBE6,#FFE3EE);border:5px solid var(--ink);border-radius:34px;box-shadow:0 10px 0 var(--ink);padding:30px 60px 24px;text-align:center;animation:popIn .35s cubic-bezier(.2,1.6,.4,1);}
+#partyMascot{width:200px;height:200px;animation:jump .6s ease-out infinite;}
+.party-title{font-size:3.4rem;color:var(--y);text-shadow:3px 0 var(--ink),-3px 0 var(--ink),0 3px var(--ink),0 -3px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 7px var(--ink);}
+.party-sub{font-size:1.6rem;margin-top:14px;}
+
+/* ===== 알람 ===== */
+.alarm-overlay{z-index:99999;background:rgba(70,52,40,.85);}
+.alarm-box{
+  width:92vw;max-width:1400px;max-height:92vh;overflow-y:auto;padding:30px 46px 36px;text-align:center;
+  background:linear-gradient(180deg,#FFFCF0,#FFF0B8);border:6px solid var(--ink);border-radius:36px;
+  box-shadow:0 12px 0 var(--ink);animation:popIn .25s ease-out;
+}
+.alarm-box.second{background:linear-gradient(180deg,#FFF6F8,#FFD3E0);}
+.alarm-mascot{width:130px;height:130px;animation:jump .6s ease-out infinite;}
+.alarm-badge{display:inline-block;padding:8px 28px;font-size:1.9rem;background:var(--y);border:4px solid var(--ink);border-radius:999px;box-shadow:0 4px 0 var(--ink);}
+.alarm-box.second .alarm-badge{background:var(--pink-deep);color:#fff;}
+.alarm-clock-big{font-size:5rem;margin:14px 0 2px;letter-spacing:4px;}
+.alarm-text{font-size:3.3rem;line-height:1.5;margin:18px 0 14px;white-space:pre-wrap;word-break:keep-all;}
+.alarm-footer{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.alarm-countdown{font-size:1.4rem;color:var(--ink-soft);}
+.btn-alarm-close{padding:16px 48px;font-size:2.1rem;cursor:pointer;background:var(--mint);border:4px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);}
+.btn-alarm-close:active{transform:translateY(5px);box-shadow:none;}
+#soundStopBtn{
+  position:fixed;bottom:20px;right:20px;z-index:100000;display:none;padding:14px 24px;font-size:1.3rem;cursor:pointer;
+  background:var(--pink-deep);color:#fff;border:4px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);
+  animation:sbPulse 1s infinite alternate;
+}
+@keyframes sbPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+
+#fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:10000;}
+
+@media (max-width:1100px){
+  .header{flex-direction:column;}
+  .header-right{align-items:flex-start;}
+  #mainTitleDisplay{font-size:2.4rem;}
+  .flip-digits{font-size:2.4rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="deco" style="left:2%;top:22%;">🐾</div>
+<div class="deco" style="right:2%;top:58%;animation-delay:-2s;">✨</div>
+<div class="deco" style="left:44%;bottom:3%;animation-delay:-4s;">💛</div>
+<div class="deco" style="left:52%;top:4%;animation-delay:-1s;font-size:1.4rem;">⭐</div>
+<div class="deco" style="right:34%;bottom:12%;animation-delay:-3s;">🐾</div>
+
+<div class="wrap">
+  <div class="header">
+    <div class="header-left">
+      <div class="title-row">
+        <div class="mascot-wrap" id="mascotWrap" title="하나를 쓰다듬어 보세요">
+          <canvas id="mascot" class="pix" width="16" height="16"></canvas>
+        </div>
+        <div class="title-block">
+          <h1 id="mainTitleDisplay">노랑반 냥냥 출석 아일랜드</h1>
+          <div class="bubble" id="mascotBubble">안녕하다냥!</div>
+        </div>
+      </div>
+      <div class="boards">
+        <div class="notice-area" id="noticeArea"></div>
+        <div class="menu-board" id="menuBoard"></div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="date-pill" id="currentDate">날짜 불러오는 중...</div>
+      <div class="clock-panel">
+        <div class="flip-unit"><span class="flip-digits" id="flipHour">00</span></div>
+        <div class="flip-colon"><span></span><span></span></div>
+        <div class="flip-unit"><span class="flip-digits" id="flipMin">00</span></div>
+        <div class="flip-colon"><span></span><span></span></div>
+        <div class="flip-unit sec"><span class="flip-digits" id="flipSec">00</span></div>
+      </div>
+      <div class="reward-panel" id="rewardPanel">
+        <div class="rp-top"><span>⏱ 지금 터치하면</span><span class="deadline">🔔 출석 마감 <b id="lateTimeDisplay">08:40</b></span></div>
+        <div class="rp-main"><span class="rp-icon" id="rpIcon">👑</span><span class="rp-exp" id="rpExp">+200</span><span class="rp-tier" id="rpTier">LEGEND</span></div>
+        <div class="rp-sub" id="rpSub"></div>
+        <div class="rp-ladder" id="rpLadder"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="gauge" id="gauge">
+      <div class="gauge-label"><span id="gaugeTitle">🎉 냥냥 파티 게이지</span><span id="gaugeText">0 / 0</span></div>
+      <div class="gauge-bar"><div class="gauge-fill" id="gaugeFill"></div><div class="gauge-paw" id="gaugePaw">🐾</div></div>
+    </div>
+    <div class="toolbar-right">
+      <div class="chip" id="statPresent">⭐ 출석 0</div>
+      <div class="chip" id="statLate">💤 지각 0</div>
+      <div class="chip" id="statDungeon">🏠 쉬는 날 0</div>
+      <div class="chip" id="statExp">✨ 오늘 EXP 0</div>
+      <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
+      <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
+    </div>
+  </div>
+
+  <div class="grid" id="studentGrid"></div>
+</div>
+
+<canvas id="fx"></canvas>
+<div id="toast"></div>
+
+<!-- EXP 메뉴판 지급 -->
+<div class="overlay" id="giveOverlay">
+  <div class="modal modal-small">
+    <h2 id="giveTitle">🎁 EXP 주기</h2>
+    <div class="form-hint" style="text-align:center;">받을 친구를 모두 골라 주세요</div>
+    <div class="pick-grid" id="pickGrid"></div>
+    <div class="row" style="justify-content:center;">
+      <button type="button" class="mini-btn" id="pickAllBtn">전체 선택</button>
+      <button type="button" class="mini-btn" style="background:#EEE6DA;" id="pickNoneBtn">선택 해제</button>
+    </div>
+    <div class="modal-btns">
+      <button type="button" class="btn btn-gray" data-close="giveOverlay">취소</button>
+      <button type="button" class="btn btn-y" id="giveBtn">✨ 지급하기</button>
+    </div>
+    <div class="section">
+      <div class="section-title">📜 오늘 메뉴판 내역 <small style="color:var(--ink-soft);">(잘못 줬으면 ↩)</small></div>
+      <div class="bonus-log" id="bonusLog"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 가챠 연출 -->
+<div class="overlay" id="revealOverlay">
+  <div class="reveal" id="reveal">
+    <div class="rays"></div>
+    <div class="capsule" id="capsule"><div class="cap-top"></div><div class="cap-bottom"></div></div>
+    <div class="reveal-card">
+      <div class="rev-rarity" id="revRarity">NORMAL</div>
+      <canvas id="revCanvas" class="pix rev-cat" width="16" height="16"></canvas>
+      <div class="rev-charname" id="revCharName"></div>
+      <div class="rev-msg" id="revMsg"></div>
+      <div class="rev-first" id="revFirst"></div>
+      <div class="rev-exp" id="revExp"></div>
+      <div class="rev-hint">화면을 터치하면 닫혀요</div>
+    </div>
+  </div>
+</div>
+
+<!-- 파티 -->
+<div class="overlay" id="partyOverlay">
+  <div class="party-box">
+    <canvas id="partyMascot" class="pix" width="16" height="16"></canvas>
+    <div class="party-title">🎉 모두 모였다냥! 🎉</div>
+    <div class="party-sub" id="partySub"></div>
+    <div class="rev-hint">화면을 터치하면 닫혀요</div>
+  </div>
+</div>
+
+<!-- 기록장 -->
+<div class="overlay" id="statsOverlay">
+  <div class="modal modal-large">
+    <h2>📒 냥냥 출석 기록장</h2>
+    <div class="tabs" id="statsTabs">
+      <button type="button" class="tab active" data-period="today">오늘 출석 관리</button>
+      <button type="button" class="tab" data-period="week">이번 주</button>
+      <button type="button" class="tab" data-period="month">이번 달</button>
+      <button type="button" class="tab" data-period="year">올해</button>
+      <button type="button" class="tab" data-period="dex">🐾 냥이 도감</button>
+    </div>
+    <div id="statsContent"></div>
+    <div class="modal-btns"><div></div><button type="button" class="btn btn-gray" data-close="statsOverlay">닫기</button></div>
+  </div>
+</div>
+
+<!-- 알람 -->
+<div class="overlay alarm-overlay" id="alarmOverlay">
+  <div class="alarm-box" id="alarmBox">
+    <canvas id="alarmMascot" class="pix alarm-mascot" width="16" height="16"></canvas><br>
+    <div class="alarm-badge" id="alarmBadge">1차 알람</div>
+    <div class="alarm-clock-big" id="alarmClockBig">00:00</div>
+    <div class="alarm-text" id="alarmTextArea"></div>
+    <div class="alarm-footer">
+      <div class="alarm-countdown" id="alarmCountdown"></div>
+      <button type="button" class="btn-alarm-close" id="alarmCloseBtn">✔ 확인 (닫기)</button>
+    </div>
+  </div>
+</div>
+<button type="button" id="soundStopBtn">🔕 알람 소리 정지</button>
+
+<!-- 설정 -->
+<div class="overlay" id="adminOverlay">
+  <div class="modal modal-small">
+    <h2>⚙️ 선생님 설정</h2>
+
+    <div class="section">
+      <div class="section-title">🏷️ 기본 정보</div>
+      <div class="form-group">
+        <label>타이틀</label>
+        <input type="text" id="mainTitleInput" placeholder="예: 노랑반 냥냥 출석 아일랜드">
+      </div>
+      <div class="form-group">
+        <label>📢 알립니다 (한 줄에 하나씩)</label>
+        <textarea id="noticeInput" style="height:84px;" placeholder="예: 오늘은 도서관 대출일입니다&#10;예: 6교시 후 사물함 정리"></textarea>
+        <div class="form-hint">메모지에 순서대로 나타나요. 터치하면 체크 표시가 돼요. (4줄 이하 권장)</div>
+      </div>
+      <div class="form-group">
+        <label>👥 친구들 명단 (한 줄에 한 명)</label>
+        <textarea id="studentNamesInput" style="height:84px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>🔔 출석 마감 시각 = 1차 알람 시각</label>
+        <input type="time" id="lateTimeInput">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">✨ EXP 보상 규칙</div>
+      <div class="tier-row" style="background:#FFF3B0;"><span>👑 레전드 — 마감 <input type="number" id="e1" min="1"> 분 이상 일찍</span><span>EXP <input type="number" id="e1Exp"></span></div>
+      <div class="tier-row" style="background:#DDF7EC;"><span>💎 레어 — 마감 <input type="number" id="e2" min="0"> 분 이상 일찍</span><span>EXP <input type="number" id="e2Exp"></span></div>
+      <div class="tier-row" style="background:#FFF8E0;"><span>🐱 노멀 — 그보다 늦게, 마감 시각까지</span><span>EXP <input type="number" id="e3Exp"></span></div>
+      <div class="tier-row" style="background:#EEE8FF;"><span>🥱 하품냥 — <input type="number" id="l1" min="1"> 분 미만 지각</span><span>EXP <input type="number" id="l1Exp"></span></div>
+      <div class="tier-row" style="background:#E6DFFF;"><span>😪 꾸벅냥 — <input type="number" id="l2" min="1"> 분 미만 지각</span><span>EXP <input type="number" id="l2Exp"></span></div>
+      <div class="tier-row" style="background:#DED8FF;"><span>💤 쿨쿨냥 — <input type="number" id="l3" min="1"> 분 미만 지각</span><span>EXP <input type="number" id="l3Exp"></span></div>
+      <div class="tier-row" style="background:#D6D3F7;"><span>🛌 이불냥 — 그 이상 지각</span><span>EXP <input type="number" id="l4Exp"></span></div>
+      <div class="form-hint">지각 EXP는 음수(-)로 적으면 누적 EXP에서 깎여요. 시각은 초 단위로 판정해요.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🍽️ EXP 메뉴판</div>
+      <textarea id="menuInput" style="height:170px;"></textarea>
+      <div class="form-hint">한 줄에 하나씩 <b>이름, 점수</b>로 적어요. 예) 숙제 완료, 30 / 수업 중 떠들기, -10<br>지각한 친구는 자동으로 '🧹 청소 당번'이 돼요. 청소를 마치면 메뉴판 아래 이름을 눌러 체크하세요.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔔 알람</div>
+      <div class="row"><label><input type="checkbox" id="alarm1EnableInput"> 1차 알람 사용</label><span>시각: <b id="alarm1TimeEcho">08:40</b> (출석 마감)</span></div>
+      <div class="form-group">
+        <label>1차 안내 문구 (5초 뒤 자동으로 닫혀요)</label>
+        <textarea id="alarm1TextInput" style="height:60px;" placeholder="예: 아침 활동을 정리하고 자리에 앉아 주세요"></textarea>
+      </div>
+      <div class="row"><label><input type="checkbox" id="alarm2EnableInput"> 2차 알람 사용</label><span>시각 <input type="time" id="alarm2TimeInput"></span></div>
+      <div class="form-group">
+        <label>2차 안내 문구 (선생님이 닫을 때까지 유지)</label>
+        <textarea id="alarm2TextInput" style="height:60px;" placeholder="예: 1교시를 시작합니다"></textarea>
+      </div>
+      <div class="row"><span>음량 (0~100)</span><input type="number" id="alarmVolumeInput" min="0" max="100" step="5"></div>
+      <div class="row"><span>1차 소리 최대 지속(초) <small>· 내장 차임음</small></span><input type="number" id="alarmDur1Input" min="5" max="600"></div>
+      <div class="row"><span>2차 소리 최대 지속(초) <small>· 내장 차임음</small></span><input type="number" id="alarmDur2Input" min="5" max="600"></div>
+      <div class="row"><label><input type="checkbox" id="alarmSkipWeekendInput"> 주말(토·일)에는 울리지 않음</label></div>
+      <div class="row"><span>1차 알람음 파일</span><input type="file" id="alarm1FileInput" accept="audio/*"></div>
+      <div class="form-hint" id="alarm1FileName"></div>
+      <div class="row"><span>2차 알람음 파일</span><input type="file" id="alarm2FileInput" accept="audio/*"></div>
+      <div class="form-hint" id="alarm2FileName"></div>
+      <div class="sound-status" id="soundStatusText">소리 파일 확인 중...</div>
+      <div class="row" style="justify-content:flex-start;">
+        <button type="button" class="mini-btn" id="test1Btn">▶ 1차 소리</button>
+        <button type="button" class="mini-btn" id="test2Btn">▶ 2차 소리</button>
+        <button type="button" class="mini-btn" style="background:#FFC9D3;" id="stopTestBtn">■ 정지</button>
+        <button type="button" class="mini-btn" style="background:var(--lav);" id="preview1Btn">🖥 1차 화면</button>
+        <button type="button" class="mini-btn" style="background:var(--lav);" id="preview2Btn">🖥 2차 화면</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🔊 효과음 · 연출</div>
+      <div class="row"><label><input type="checkbox" id="sfxInput"> 출석할 때 효과음 켜기</label><button type="button" class="mini-btn" id="sfxTestBtn">▶ 들어보기</button></div>
+      <div class="row" style="justify-content:flex-start;">
+        <button type="button" class="mini-btn" style="background:#FFF3B0;" data-demo="legend">👑 레전드 연출 보기</button>
+        <button type="button" class="mini-btn" style="background:var(--mint);" data-demo="rare">💎 레어</button>
+        <button type="button" class="mini-btn" style="background:#FFF8E0;" data-demo="normal">🐱 노멀</button>
+        <button type="button" class="mini-btn" style="background:var(--lav);" data-demo="nod">😪 지각</button>
+      </div>
+      <div class="form-hint">연출 미리보기는 기록에 남지 않아요.</div>
+    </div>
+
+    <div class="modal-btns">
+      <button type="button" class="btn btn-gray" data-close="adminOverlay">취소</button>
+      <button type="button" class="btn btn-y" id="saveAdminBtn">💾 저장하기</button>
+    </div>
+    <div class="modal-btns">
+      <button type="button" class="btn btn-sky" id="backupBtn">⬇ 백업 저장</button>
+      <button type="button" class="btn btn-sky" id="importBtn">⬆ 백업 불러오기</button>
+      <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none">
+      <button type="button" class="btn btn-danger" id="resetBtn">🧹 새 학년 초기화</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   💛 냥냥 출석 아일랜드
+   - 이전 버전(rpgClassDB_v9)에 저장된 명단·출결·설정은 자동으로 옮겨옵니다.
+   ========================================================= */
+const DB_KEY = 'nyangClassDB_v1';
+const OLD_DB_KEY = 'rpgClassDB_v9';
+const FIRED_KEY = 'rpgAlarmFired_v1';
+const PARTY_KEY = 'nyangPartyDone_v1';
+const DEFAULT_TITLE = '노랑반 냥냥 출석 아일랜드';
+const DEFAULT_TIERS = { e1:8, e1Exp:200, e2:1, e2Exp:100, e3Exp:50, l1:1, l1Exp:-10, l2:5, l2Exp:-50, l3:10, l3Exp:-100, l4Exp:-150 };
+const DEFAULT_ALARM = {
+  alarm1Enable:true, alarm2Enable:true, alarm2Time:"09:04",
+  alarm1Text:"아침 활동을 정리하고 자리에 앉아 주세요",
+  alarm2Text:"1교시를 시작합니다.\n교과서와 필기도구를 준비해 주세요",
+  volume:80, dur1:60, dur2:120, skipWeekend:true,
+  alarm1Audio:'', alarm1AudioName:'', alarm2Audio:'', alarm2AudioName:''
+};
+
+const DEFAULT_MENU = [
+  { name:'숙제 완료', exp:30 }, { name:'발표왕', exp:20 }, { name:'친구 도와주기', exp:20 },
+  { name:'정리정돈', exp:10 }, { name:'바른 자세', exp:10 },
+  { name:'수업 중 떠들기', exp:-10 }, { name:'준비물 안 챙김', exp:-10 }, { name:'복도에서 뛰기', exp:-10 }
+];
+
+let db = {
+  mainTitle: DEFAULT_TITLE,
+  notices: [],
+  students: ["친구1","친구2","친구3","친구4","친구5"],
+  lateTimeSetting: "08:40",
+  expTiers: { ...DEFAULT_TIERS },
+  sfx: true,
+  alarmConfig: { ...DEFAULT_ALARM },
+  menu: DEFAULT_MENU.map(m => ({ ...m })),
+  bonus: {},
+  cleanDone: {},
+  records: {}
+};
+
+let noticeChecked = {};
+let revealing = false;
+let lastNew = null;
+let currentDayStr = '';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+function getTodayStr(d = new Date()){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function parseDate(ds){ const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); }
+function secOfDay(d){ return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds(); }
+function deadlineSec(){ const [h,m] = db.lateTimeSetting.split(':').map(Number); return h*3600 + m*60; }
+function hm(sec){ sec = ((sec % 86400) + 86400) % 86400; return `${pad(Math.floor(sec/3600))}:${pad(Math.floor(sec%3600/60))}`; }
+function mmss(s){ s = Math.max(0, s); const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return h ? `${h}:${pad(m)}:${pad(x)}` : `${pad(m)}:${pad(x)}`; }
+function fmtExp(n){ n = Number(n)||0; return (n >= 0 ? '+' : '') + n; }
+function hashStr(s){ let h = 0; for (const ch of s) h = (h*31 + ch.charCodeAt(0)) >>> 0; return h; }
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+/* =========================================================
+   🎨 픽셀 냥이 공장 (16×16)
+   ========================================================= */
+const CAT_BASE = [
+  "................",
+  "..oo........oo..",
+  ".ofio......oifo.",
+  ".offfoooooofffo.",
+  ".offffffffffffo.",
+  ".offffffffffffo.",
+  ".offweffffweffo.",
+  ".offeeffffeeffo.",
+  ".ofccffnnffccfo.",
+  ".offfffoofffffo.",
+  "..offffffffffo..",
+  "...offffffffo...",
+  "..offffffffffo..",
+  "..offffffffffo..",
+  "..offoffffoffo..",
+  "...oo.oooo.oo..."
+];
+const HOUSE = [
+  "................",
+  ".......oo.......",
+  "......oRRo......",
+  ".....oRRRRo.....",
+  "....oRRRRRRo....",
+  "...oRRRRRRRRo...",
+  "..oRRRRRRRRRRo..",
+  ".oooooooooooooo.",
+  "..oWWWWWWWWWWo..",
+  "..oWbbWWWWDDWo..",
+  "..oWbbWWWWDDWo..",
+  "..oWWWWWWWDDWo..",
+  "..oWWWWWWWDDWo..",
+  "..oooooooooooo..",
+  "................",
+  "................"
+];
+const HOUSE_PAL = { o:'#5B4636', R:'#FFB8CB', W:'#FFF6DA', b:'#BFE3FF', D:'#D9A877' };
+
+const PATTERNS = {
+  none:{},
+  tabby:{ p:[[4,7],[4,8],[5,7],[5,8],[4,4],[4,11],[9,3],[9,12],[11,5],[11,10],[12,4],[12,11],[13,4],[13,11]] },
+  eyepatch:{ p:[[4,9],[4,10],[4,11],[4,12],[4,13],[5,10],[5,11],[5,12],[5,13],[6,12],[6,13],[7,12],[7,13],[12,4],[12,5],[13,4],[13,5],[13,6],[12,10]] },
+  calico:{
+    p:[[2,2],[3,2],[3,3],[3,4],[4,2],[4,3],[4,4],[5,2],[5,3],[12,9],[12,10],[12,11],[13,10],[13,11]],
+    q:[[2,13],[3,11],[3,12],[3,13],[4,11],[4,12],[4,13],[5,12],[5,13],[12,3],[13,3]]
+  },
+  tux:{ p:[[8,5],[8,6],[8,9],[8,10],[9,4],[9,5],[9,6],[9,9],[9,10],[9,11],[10,4],[10,5],[10,6],[10,7],[10,8],[10,9],[10,10],[10,11],
+           [11,6],[11,7],[11,8],[11,9],[12,6],[12,7],[12,8],[12,9],[13,6],[13,7],[13,8],[13,9],[14,3],[14,4],[14,11],[14,12]] }
+};
+
+const FURS = {
+  white:  { f:'#FFFFFF', p:'#EFEFEF', pat:'none',     label:'흰' },
+  cheese: { f:'#FFCB8E', p:'#F5A04A', pat:'tabby',    label:'치즈' },
+  cream:  { f:'#FFEDCB', p:'#F3D6A2', pat:'none',     label:'크림' },
+  gray:   { f:'#D3D8E0', p:'#A3ADBA', pat:'none',     label:'회색' },
+  tuxedo: { f:'#5A5470', p:'#FFFFFF', pat:'tux',      label:'턱시도', dark:true },
+  calico: { f:'#FFFFFF', p:'#FFB870', q:'#5A5470', pat:'calico', label:'삼색' },
+  tabby:  { f:'#DCE0E6', p:'#8E98A7', pat:'tabby',    label:'고등어' },
+  cow:    { f:'#FFFFFF', p:'#5A5470', pat:'eyepatch', label:'젖소' },
+  gold:   { f:'#FFE15C', p:'#FFB300', pat:'tabby',    label:'황금' },
+  mint:   { f:'#C9F5E3', p:'#8FE0C0', pat:'none',     label:'민트' },
+  pink:   { f:'#FFD3E4', p:'#FFA3C6', pat:'none',     label:'핑크' },
+  galaxy: { f:'#A08CF5', p:'#7B66E0', pat:'none',     label:'우주', dark:true },
+  rainbow:{ f:'#FFFFFF', p:'#FFFFFF', pat:'none',     label:'무지개', rainbow:true }
+};
+const SLEEPY_FURS = ['white','cheese','cream','gray','tuxedo','calico','tabby','cow'];
+const RAINBOW = ['#FFB3BA','#FFD6A5','#FDFFB6','#CAFFBF','#9BF6FF','#BDB2FF','#FFC6FF'];
+
+const ACC = {
+  bow:       { at:[0,10], rows:["pP.Pp","pPkPp",".p.p."], pal:{P:'#FF9EC4',p:'#E8679A',k:'#C9507F'} },
+  bowY:      { at:[0,10], rows:["pP.Pp","pPkPp",".p.p."], pal:{P:'#FFD84D',p:'#F2B705',k:'#D99A00'} },
+  flower:    { at:[1,1],  rows:[".P.","PyP",".P."], pal:{P:'#FF9EC4',y:'#FFD84D'} },
+  sprout:    { at:[0,5],  rows:["GG.GG",".GsG.","..s.."], pal:{G:'#7ED99B',s:'#4FB06D'} },
+  glasses:   { at:[5,3],  rows:["kkkk..kkkk","k..kkkk..k","k..k..k..k",".kk....kk."], pal:{k:'#E8679A'} },
+  sunglasses:{ at:[6,3],  rows:["kwkkkkkwkk","kkkk..kkkk"], pal:{k:'#2E2A36',w:'#FFFFFF'} },
+  headphones:{ at:[0,0],  rows:["..hhhhhhhhhhhh..",".h............h.","h..............h","h..............h","h..............h","cc............cc","cc............cc","cc............cc",".c............c."], pal:{h:'#7FD8BE',c:'#FF9EC4'} },
+  cherry:    { at:[0,4],  rows:["..g",".g.","R.R"], pal:{g:'#4FB06D',R:'#FF5C7A'} },
+  starclip:  { at:[1,11], rows:[".Y.","YYY",".Y."], pal:{Y:'#FFD84D'} },
+  heart:     { at:[0,5],  rows:["RR.RR","RRRRR",".RRR."], pal:{R:'#FF6F9C'} },
+  crown:     { at:[0,5],  rows:["y.yy.y","yyyyyy","yryyry"], pal:{y:'#FFC21A',r:'#FF6F9C'} },
+  halo:      { at:[0,4],  rows:["..hhhh..",".h....h."], pal:{h:'#FFD84D'} },
+  wings:     { at:[10,0], rows:["WW............WW","WWW..........WWW","WW............WW"], pal:{W:'#CDE8FF'} },
+  strawberry:{ at:[0,4],  rows:["...gg...",".RRRRRR.","RRwRRwRR"], pal:{R:'#FF6F8E',w:'#FFF3B0',g:'#4FB06D'} },
+  wizard:    { at:[0,4],  rows:["...VY...","..VVVV..","VVVVVVVV"], pal:{V:'#9F86FF',Y:'#FFD84D'} },
+  scarf:     { at:[10,3], rows:["yyyyyyyyyy",".......YY."], pal:{y:'#FFD84D',Y:'#F2B705'} },
+  nightcap:  { at:[0,3],  rows:["...bbbbb...",".bbBbbBbbbW","bbbbbbbbbb."], pal:{b:'#A8C8FF',B:'#FFFFFF',W:'#FFFFFF'} },
+  bubble:    { at:[6,13], rows:[".b.","bwb","bbb"], pal:{b:'#BFE6FF',w:'#FFFFFF'} },
+  stars:     { fn:g => { [[4,4],[5,11],[11,6],[12,9],[13,5],[10,11]].forEach(([r,c]) => { if (g[r][c]) g[r][c] = '#FFFFFF'; }); g[0][7] = '#FFE066'; g[1][6] = '#FFE066'; g[1][8] = '#FFE066'; g[1][7] = '#FFF6B0'; g[2][7] = '#FFE066'; } },
+  sparkles:  { fn:g => { [[0,1],[1,0],[1,2],[2,1],[10,14],[11,13],[11,15],[12,14]].forEach(([r,c]) => g[r][c] = '#FFC21A'); g[1][1] = '#FFF6B0'; g[11][14] = '#FFF6B0'; } },
+  blanket:   { fn:g => { for (let r = 10; r <= 15; r++) for (let c = 1; c <= 14; c++) g[r][c] = r === 10 ? '#8C74F0' : (((r + c) % 4 < 2) ? '#CFC2FF' : '#EEE8FF'); } }
+};
+
+const CHARS = [
+  // 🐱 노멀
+  { id:'n_white',  tier:'normal', name:'뽀얀 흰냥',     fur:'white' },
+  { id:'n_cheese', tier:'normal', name:'말랑 치즈냥',   fur:'cheese' },
+  { id:'n_cream',  tier:'normal', name:'포근 크림냥',   fur:'cream' },
+  { id:'n_gray',   tier:'normal', name:'시크 회색냥',   fur:'gray' },
+  { id:'n_tux',    tier:'normal', name:'신사 턱시도냥', fur:'tuxedo' },
+  { id:'n_calico', tier:'normal', name:'알록 삼색냥',   fur:'calico' },
+  { id:'n_tabby',  tier:'normal', name:'줄무늬 고등어냥', fur:'tabby' },
+  { id:'n_cow',    tier:'normal', name:'점박이 젖소냥', fur:'cow' },
+  // 💎 레어
+  { id:'r_ribbon',   tier:'rare', name:'리본냥',      fur:'white',  acc:['bow'] },
+  { id:'r_flower',   tier:'rare', name:'꽃핀냥',      fur:'cream',  acc:['flower'] },
+  { id:'r_sprout',   tier:'rare', name:'새싹냥',      fur:'gray',   acc:['sprout'] },
+  { id:'r_glasses',  tier:'rare', name:'똑똑 안경냥', fur:'tabby',  acc:['glasses'] },
+  { id:'r_headphone',tier:'rare', name:'헤드폰냥',    fur:'tuxedo', acc:['headphones'] },
+  { id:'r_cherry',   tier:'rare', name:'체리냥',      fur:'cheese', acc:['cherry'] },
+  { id:'r_star',     tier:'rare', name:'별핀냥',      fur:'calico', acc:['starclip'] },
+  { id:'r_heart',    tier:'rare', name:'두근 하트냥', fur:'cow',    acc:['heart'], heartCheeks:true },
+  // 👑 레전드
+  { id:'l_crown',   tier:'legend', name:'왕관 쓴 황금냥', fur:'gold',    acc:['crown'] },
+  { id:'l_angel',   tier:'legend', name:'날개 달린 천사냥', fur:'white', acc:['halo','wings'] },
+  { id:'l_rainbow', tier:'legend', name:'무지개냥',       fur:'rainbow' },
+  { id:'l_galaxy',  tier:'legend', name:'별빛 우주냥',    fur:'galaxy',  acc:['stars'] },
+  { id:'l_cool',    tier:'legend', name:'선글라스 치즈냥', fur:'cheese', acc:['sunglasses'] },
+  { id:'l_berry',   tier:'legend', name:'딸기모자냥',     fur:'pink',    acc:['strawberry'] },
+  { id:'l_wizard',  tier:'legend', name:'꼬마 마법사냥',  fur:'mint',    acc:['wizard'] },
+  { id:'l_mongsil', tier:'legend', name:'전설의 하나',    fur:'white',   eye:'#9A7440', pupil:'#4A3523', acc:['scarf','bowY','sparkles'] },
+  // 💤 잠꾸러기 (지각)
+  { id:'s_yawn',    tier:'yawn',    name:'하품냥',   sleepy:'yawn' },
+  { id:'s_nod',     tier:'nod',     name:'꾸벅냥',   sleepy:'nod',   acc:['nightcap'] },
+  { id:'s_sleep',   tier:'sleep',   name:'쿨쿨냥',   sleepy:'sleep', acc:['nightcap','bubble'] },
+  { id:'s_burrito', tier:'burrito', name:'이불 돌돌냥', sleepy:'sleep', acc:['blanket','nightcap'] }
+];
+const CHAR_BY_ID = Object.fromEntries(CHARS.map(c => [c.id, c]));
+const MASCOT = { name:'하나', fur:'white', eye:'#9A7440', pupil:'#4A3523', acc:['scarf','bowY'] };
+
+const TIER_META = {
+  legend: { label:'★ LEGEND ★', short:'LEGEND', icon:'👑', color:'#FFE36E', cap:'#FFD84D', msg:n => `${n} 등장! 엄청 일찍 왔다냥!` },
+  rare:   { label:'♦ RARE ♦',   short:'RARE',   icon:'💎', color:'#BDEFD9', cap:'#7FD8BE', msg:n => `${n} 출석! 부지런하다냥~` },
+  normal: { label:'NORMAL',     short:'NORMAL', icon:'🐱', color:'#FFF2BF', cap:'#FFB8CB', msg:n => `${n} 출석! 아슬아슬 세이프냥` },
+  yawn:   { label:'SLEEPY',     short:'하품',   icon:'🥱', color:'#E7DFFF', cap:'#C4B5FF', sleepy:true, msg:n => `하암~ ${n}, 살짝 늦었다냥` },
+  nod:    { label:'SLEEPY',     short:'꾸벅',   icon:'😪', color:'#DCD2FF', cap:'#B3A1FF', sleepy:true, msg:n => `꾸벅… ${n}, 조금 늦었다냥` },
+  sleep:  { label:'SLEEPY',     short:'쿨쿨',   icon:'💤', color:'#D0D8FF', cap:'#9C8BF0', sleepy:true, msg:n => `쿨쿨… ${n}, 내일은 일찍 오자냥` },
+  burrito:{ label:'SLEEPY',     short:'이불',   icon:'🛌', color:'#C6CDF6', cap:'#8C74F0', sleepy:true, msg:n => `이불 밖은 위험해… ${n}, 내일은 꼭!` },
+  absent: { label:'쉬는 날',    short:'쉬는 날', icon:'🏠', color:'#EFE9E1' }
+};
+const TIER_ORDER = ['legend','rare','normal','yawn','nod','sleep','burrito'];
+
+function catColors(def, furKey, opts = {}){
+  const fur = FURS[furKey || def.fur || 'white'] || FURS.white;
+  const g = CAT_BASE.map(r => r.split(''));
+  const pat = PATTERNS[fur.pat] || {};
+  (pat.p || []).forEach(([r,c]) => { if (g[r][c] === 'f') g[r][c] = 'p'; });
+  (pat.q || []).forEach(([r,c]) => { if (g[r][c] === 'f') g[r][c] = 'q'; });
+  if (def.sleepy || opts.blink){
+    [[6,4],[6,5],[6,10],[6,11]].forEach(([r,c]) => g[r][c] = 'f');
+    [[7,4],[7,5],[7,10],[7,11]].forEach(([r,c]) => g[r][c] = 'o');
+  }
+  if (def.sleepy === 'yawn'){ g[9][7] = 'm'; g[9][8] = 'm'; }
+  if (def.pupil && !(def.sleepy || opts.blink)){ g[6][4] = 'e'; g[6][10] = 'e'; g[7][5] = 'd'; g[7][11] = 'd'; }
+  const pal = {
+    o: fur.dark ? '#2E2A36' : '#5B4636', f: fur.f, p: fur.p, q: fur.q || fur.p,
+    e: def.eye || (fur.dark ? '#FFE066' : '#3B2F2A'), d: def.pupil || def.eye || (fur.dark ? '#FFE066' : '#3B2F2A'), w:'#FFFFFF', n:'#FF8FAB',
+    c: def.heartCheeks ? '#FF6F9C' : '#FFB8CB', i:'#FFB8CB', m:'#E25C7E'
+  };
+  const col = g.map((row, r) => row.map(ch => {
+    if (ch === '.') return null;
+    if (fur.rainbow && ch === 'f') return RAINBOW[(r + 4) % 7];
+    return pal[ch];
+  }));
+  (def.acc || []).forEach(k => applyAcc(col, k));
+  return col;
+}
+function applyAcc(g, key){
+  const a = ACC[key]; if (!a) return;
+  if (a.fn){ a.fn(g); return; }
+  const [r0, c0] = a.at;
+  a.rows.forEach((row, dr) => [...row].forEach((ch, dc) => {
+    if (ch === '.') return;
+    const r = r0 + dr, c = c0 + dc;
+    if (r < 0 || r > 15 || c < 0 || c > 15) return;
+    g[r][c] = a.pal[ch];
+  }));
+}
+function houseColors(){ return HOUSE.map(r => [...r].map(ch => ch === '.' ? null : HOUSE_PAL[ch])); }
+function silhouetteColors(){ return CAT_BASE.map(r => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? '#E6CB7A' : '#FFF0BF'))); }
+function lockedColors(){ return CAT_BASE.map(r => [...r].map(ch => ch === '.' ? null : (ch === 'o' ? '#B9AC9E' : '#DDD3C6'))); }
+
+function drawColors(canvas, col){
+  canvas.width = 16; canvas.height = 16;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 16, 16);
+  col.forEach((row, r) => row.forEach((c, x) => { if (c){ ctx.fillStyle = c; ctx.fillRect(x, r, 1, 1); } }));
+}
+const urlCache = {};
+function colorsToURL(col, key){
+  if (key && urlCache[key]) return urlCache[key];
+  const c = document.createElement('canvas'); drawColors(c, col);
+  const url = c.toDataURL();
+  if (key) urlCache[key] = url;
+  return url;
+}
+
+/* 기록 → 캐릭터 해석 (이전 버전 기록도 지원) */
+function recTier(rec){
+  if (rec.status === 'dungeon') return 'absent';
+  if (rec.tier && TIER_META[rec.tier]) return rec.tier;
+  return rec.status === 'late' ? 'nod' : 'normal';
+}
+function recChar(rec, name, ds){
+  const t = recTier(rec);
+  if (t === 'absent') return null;
+  if (rec.charId && CHAR_BY_ID[rec.charId]) return CHAR_BY_ID[rec.charId];
+  const pool = CHARS.filter(c => c.tier === t);
+  return pool[hashStr(name + ds) % pool.length];
+}
+function recFur(rec, ch, name, ds){
+  if (!ch || !ch.sleepy) return undefined;
+  return rec.fur || SLEEPY_FURS[hashStr(ds + name) % SLEEPY_FURS.length];
+}
+function recColors(rec, name, ds){
+  const ch = recChar(rec, name, ds);
+  if (!ch) return houseColors();
+  return catColors(ch, recFur(rec, ch, name, ds));
+}
+function recCharName(rec, name, ds){
+  const ch = recChar(rec, name, ds);
+  if (!ch) return '집에서 쉬는 중';
+  if (ch.sleepy){ const f = recFur(rec, ch, name, ds); return `${FURS[f].label} ${ch.name}`; }
+  return ch.name;
+}
+
+/* =========================================================
+   💾 저장소
+   ========================================================= */
+function normalizeStudents(value){
+  if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+  if (typeof value === 'string') return value.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
+  return [];
+}
+function validTime(v){ return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v); }
+
+function mergeInto(parsed){
+  if (parsed.mainTitle) db.mainTitle = parsed.mainTitle;
+  if (Array.isArray(parsed.notices)) db.notices = parsed.notices;
+  if (parsed.students) db.students = normalizeStudents(parsed.students);
+  if (validTime(parsed.lateTimeSetting)) db.lateTimeSetting = parsed.lateTimeSetting;
+  if (parsed.expTiers) db.expTiers = Object.assign({}, DEFAULT_TIERS, parsed.expTiers);
+  if (typeof parsed.sfx === 'boolean') db.sfx = parsed.sfx;
+  if (parsed.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, parsed.alarmConfig);
+  if (parsed.records && typeof parsed.records === 'object') db.records = parsed.records;
+  if (Array.isArray(parsed.menu)) db.menu = parsed.menu.filter(m => m && m.name && Number.isFinite(Number(m.exp))).map(m => ({ name:String(m.name), exp:Number(m.exp) }));
+  if (parsed.bonus && typeof parsed.bonus === 'object') db.bonus = parsed.bonus;
+  if (parsed.cleanDone && typeof parsed.cleanDone === 'object') db.cleanDone = parsed.cleanDone;
+}
+function loadDB(){
+  let saved = localStorage.getItem(DB_KEY), migrated = false;
+  if (!saved){ saved = localStorage.getItem(OLD_DB_KEY); migrated = !!saved; }
+  if (!saved) return;
+  try {
+    const parsed = JSON.parse(saved);
+    if (migrated && parsed.mainTitle === '모두의 교실 온라인') delete parsed.mainTitle;
+    mergeInto(parsed);
+    if (migrated) saveDB();
+  } catch(e){ console.error('DB 로드 에러:', e); }
+}
+function saveDB(){
+  try { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+  catch(e){ alert('저장 공간이 부족해요. 알람 음원 파일 크기를 줄여 주세요.'); }
+}
+
+function downloadBackup(){
+  const backup = { version:2, app:'nyang', exportedAt:new Date().toISOString(), db, fired:getFiredMap() };
+  const blob = new Blob([JSON.stringify(backup)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `nyang-class-backup-${getTodayStr()}.json`; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function importBackupFile(event){
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  if (file.size > 15*1024*1024){ alert('백업 파일이 너무 커요(최대 15MB).'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      if (!payload || typeof payload !== 'object' || !payload.db || typeof payload.db !== 'object') throw new Error('백업 JSON 형식이 아니에요.');
+      const next = payload.db;
+      if (!next.students) throw new Error('학생 명단 데이터가 없어요.');
+      for (const key of ['alarm1Audio','alarm2Audio']){
+        const v = next.alarmConfig && next.alarmConfig[key];
+        if (v && (typeof v !== 'string' || !v.startsWith('data:audio/'))) throw new Error('알람 파일 데이터가 올바르지 않아요.');
+      }
+      if (!confirm('백업을 불러오면 지금의 명단·출결·설정이 백업 내용으로 바뀌어요. 계속할까요?')) return;
+      mergeInto(next);
+      saveDB();
+      localStorage.setItem(FIRED_KEY, JSON.stringify(payload.fired && typeof payload.fired === 'object' ? payload.fired : {}));
+    } catch(e){ alert(`백업을 불러오지 못했어요.\n${e.message}`); return; }
+    location.reload();
+  };
+  reader.readAsText(file);
+}
+function resetForNewYear(){
+  if (!confirm('새 학년 초기화: 학생 명단, 출결 기록, 설정, 알람 파일을 모두 지워요. 계속할까요?')) return;
+  if (!confirm('백업 없이는 되돌릴 수 없어요. 정말 초기화할까요?')) return;
+  [DB_KEY, OLD_DB_KEY, FIRED_KEY, PARTY_KEY].forEach(k => localStorage.removeItem(k));
+  stopAlarmSound();
+  location.reload();
+}
+
+/* =========================================================
+   ⏱ EXP 단계 계산
+   ========================================================= */
+function getTier(d = new Date()){
+  const t = db.expTiers, now = secOfDay(d), dl = deadlineSec();
+  if (now <= dl){
+    const early = dl - now;
+    if (early >= t.e1*60) return { key:'legend', exp:t.e1Exp, late:false, left:early - t.e1*60, next:'💎 레어 타임까지' };
+    if (early >= t.e2*60) return { key:'rare',   exp:t.e2Exp, late:false, left:early - t.e2*60, next:'🐱 노멀 타임까지' };
+    return { key:'normal', exp:t.e3Exp, late:false, left:early, next:'⏰ 마감까지' };
+  }
+  const late = now - dl;
+  if (late < t.l1*60) return { key:'yawn',  exp:t.l1Exp, late:true, left:t.l1*60 - late, next:'😪 꾸벅냥까지' };
+  if (late < t.l2*60) return { key:'nod',   exp:t.l2Exp, late:true, left:t.l2*60 - late, next:'💤 쿨쿨냥까지' };
+  if (late < t.l3*60) return { key:'sleep', exp:t.l3Exp, late:true, left:t.l3*60 - late, next:'🛌 이불냥까지' };
+  return { key:'burrito', exp:t.l4Exp, late:true, left:null, next:'' };
+}
+function renderLadder(){
+  const t = db.expTiers, dl = deadlineSec();
+  const steps = [
+    ['legend', t.e1Exp, `~${hm(dl - t.e1*60)}`],
+    ['rare',   t.e2Exp, `~${hm(dl - t.e2*60)}`],
+    ['normal', t.e3Exp, `~${hm(dl)}`],
+    ['yawn',   t.l1Exp, `${hm(dl + t.l1*60)}전`],
+    ['nod',    t.l2Exp, `${hm(dl + t.l2*60)}전`],
+    ['sleep',  t.l3Exp, `${hm(dl + t.l3*60)}전`],
+    ['burrito',t.l4Exp, `${hm(dl + t.l3*60)}~`]
+  ];
+  $('rpLadder').innerHTML = steps.map(([k, e, w]) =>
+    `<div class="rp-step" data-k="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon}<b>${fmtExp(e)}</b>${w}</div>`).join('');
+  $('lateTimeDisplay').textContent = db.lateTimeSetting;
+}
+function updateReward(now){
+  const t = getTier(now), meta = TIER_META[t.key];
+  $('rewardPanel').style.background = `linear-gradient(180deg,#FFFFFF 35%, ${meta.color} 100%)`;
+  $('rpIcon').textContent = meta.icon;
+  $('rpExp').textContent = `${fmtExp(t.exp)} EXP`;
+  $('rpExp').className = 'rp-exp ' + (t.exp >= 0 ? 'plus' : 'minus');
+  $('rpTier').textContent = meta.short;
+  $('rpSub').textContent = t.left != null ? `${t.next} ${mmss(t.left)}` : '그래도 와줘서 고맙다냥 💛';
+  document.querySelectorAll('.rp-step').forEach(el => el.classList.toggle('on', el.dataset.k === t.key));
+}
+
+/* =========================================================
+   🐾 학생 카드
+   ========================================================= */
+function todayData(){ return db.records[getTodayStr()] || {}; }
+function streakOf(name){
+  let n = 0; const d = new Date();
+  for (let i = 0; i < 400; i++){
+    const ds = getTodayStr(d), wd = d.getDay(), day = db.records[ds];
+    if (wd !== 0 && wd !== 6 && day && Object.keys(day).length){
+      const r = day[name];
+      if (r && r.status === 'present') n++;
+      else if (!(i === 0 && !r)) break;
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus' : 'minus'}">${fmtExp(exp)}</span>`; }
+
+function renderGrid(){
+  const grid = $('studentGrid'); grid.innerHTML = '';
+  const ds = getTodayStr(), day = todayData();
+  db.students.forEach(name => {
+    const rec = day[name];
+    const card = document.createElement('div');
+    const cv = document.createElement('canvas'); cv.className = 'pix cat';
+    if (!rec){
+      card.className = 'card waiting';
+      drawColors(cv, silhouetteColors());
+      card.append(cv);
+      card.insertAdjacentHTML('beforeend', `<div class="qmark">?</div><div class="student-name">${esc(name)}</div><div class="touch-text">▼ 터치해서 출석 ▼</div>`);
+      card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
+    } else {
+      const tk = recTier(rec), meta = TIER_META[tk];
+      card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
+      const streak = rec.status === 'present' ? streakOf(name) : 0;
+      card.innerHTML =
+        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}</div>` +
+        (streak >= 2 ? `<div class="card-streak" title="연속 제시간 출석">🔥${streak}</div>` : '') +
+        (medalOf(rec) ? `<div class="card-first" title="오늘의 ${medalOf(rec)}등">${MEDALS[medalOf(rec)]}</div>` : '') +
+        (meta.sleepy ? `<div class="zzz">z<small>z</small></div><div class="card-clean" title="오늘의 청소 당번">🧹</div>` : '');
+      drawColors(cv, recColors(rec, name, ds));
+      card.append(cv);
+      card.insertAdjacentHTML('beforeend',
+        `<div class="student-name">${esc(name)}</div>` +
+        `<div class="card-meta"><span>${esc(rec.time || '')}</span>${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
+      card.title = recCharName(rec, name, ds);
+    }
+    grid.append(card);
+  });
+  lastNew = null;
+  renderMenuBoard();
+}
+
+function updateStatsBoard(){
+  const day = todayData();
+  let p = 0, l = 0, d = 0, exp = 0;
+  db.students.forEach(n => {
+    const r = day[n]; if (!r) return;
+    if (r.status === 'present') p++; else if (r.status === 'late') l++; else if (r.status === 'dungeon') d++;
+    exp += Number(r.exp) || 0;
+  });
+  (db.bonus[getTodayStr()] || []).forEach(b => { if (db.students.includes(b.who)) exp += b.exp; });
+  $('statPresent').textContent = `⭐ 출석 ${p}`;
+  $('statLate').textContent = `💤 지각 ${l}`;
+  $('statDungeon').textContent = `🏠 쉬는 날 ${d}`;
+  $('statExp').textContent = `✨ 오늘 EXP ${fmtExp(exp)}`;
+  const total = Math.max(0, db.students.length - d), arrived = p + l;
+  const pct = total ? Math.min(100, arrived / total * 100) : 0;
+  $('gaugeFill').style.width = pct + '%';
+  $('gaugePaw').style.left = `calc(${pct}% ${pct > 50 ? '- 14px' : '+ 14px'})`;
+  const full = total > 0 && arrived >= total;
+  $('gauge').classList.toggle('full', full);
+  $('gaugeText').textContent = `${arrived} / ${total}`;
+  $('gaugeTitle').textContent = full ? '🎉 냥냥 파티 성공!' : `🎉 냥냥 파티까지 ${total - arrived}명`;
+}
+function allArrived(){
+  const day = todayData();
+  return db.students.length > 0 && db.students.every(n => day[n]) && db.students.some(n => day[n].status !== 'dungeon');
+}
+
+/* =========================================================
+   ✨ 출석 터치 → 가챠 연출
+   ========================================================= */
+function pickChar(tierKey, day){
+  const pool = CHARS.filter(c => c.tier === tierKey);
+  const used = Object.values(day).map(r => r.charId);
+  const avail = pool.filter(c => !used.includes(c.id));
+  return rand(avail.length ? avail : pool);
+}
+function handleTouch(name){
+  if (revealing) return;
+  const now = new Date(), ds = getTodayStr(now);
+  if (!db.records[ds]) db.records[ds] = {};
+  const day = db.records[ds];
+  if (day[name]) return;
+  const tier = getTier(now);
+  const ch = pickChar(tier.key, day);
+  const rec = {
+    status: tier.late ? 'late' : 'present', tier: tier.key,
+    time: `${pad(now.getHours())}:${pad(now.getMinutes())}`, sec: secOfDay(now),
+    exp: tier.exp, charId: ch.id
+  };
+  if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
+  const arrivals = Object.values(day).filter(r => r.status === 'present' || r.status === 'late').length;
+  if (arrivals < 3) rec.rank = arrivals + 1;
+  day[name] = rec;
+  saveDB();
+  lastNew = name;
+  showReveal(name, rec, ds, () => { renderGrid(); updateStatsBoard(); checkParty(); });
+}
+
+let revealCloseTimer = null;
+function showReveal(name, rec, ds, done){
+  revealing = true;
+  unlockAudio(false);
+  const ov = $('revealOverlay'), rv = $('reveal'), meta = TIER_META[rec.tier];
+  rv.className = 'reveal t-' + rec.tier + (meta.sleepy ? ' sleepy' : '');
+  $('capsule').style.setProperty('--capcolor', meta.cap);
+  $('revRarity').textContent = meta.label;
+  $('revRarity').style.background = meta.color;
+  drawColors($('revCanvas'), recColors(rec, name, ds));
+  $('revCharName').textContent = recCharName(rec, name, ds);
+  $('revMsg').textContent = meta.msg(name);
+  const md = medalOf(rec);
+  $('revFirst').textContent = [md ? `${MEDALS[md]} 오늘의 ${md}등 도착!` : '', meta.sleepy && name !== '미리보기' ? '🧹 오늘의 청소 당번이 되었어요' : (meta.sleepy ? '🧹 지각하면 청소 당번!' : '')].filter(Boolean).join('  ');
+  $('revExp').textContent = '';
+  ov.style.display = 'flex';
+  let canClose = false;
+  void rv.offsetWidth;
+  rv.classList.add('shake');
+  sfx('shake');
+  const finish = () => {
+    if (!revealing) return;
+    clearTimeout(revealCloseTimer);
+    ov.style.display = 'none'; rv.className = 'reveal'; revealing = false; ov.onclick = null;
+    done && done();
+  };
+  setTimeout(() => {
+    rv.classList.remove('shake'); rv.classList.add('open');
+    sfx(meta.sleepy ? 'late' : rec.tier);
+    burst(meta.sleepy ? 'sleepy' : rec.tier);
+    if (rec.tier === 'legend') setTimeout(() => { burst('legend', innerWidth*.2, innerHeight*.35); burst('legend', innerWidth*.8, innerHeight*.35); }, 350);
+    countExp(Number(rec.exp) || 0);
+    mascotReact(rec.tier);
+    canClose = true;
+  }, 300);
+  revealCloseTimer = setTimeout(finish, rec.tier === 'legend' ? 3800 : 2900);
+  ov.onclick = () => { if (canClose) finish(); };
+}
+function countExp(target){
+  const el = $('revExp'); el.className = 'rev-exp ' + (target >= 0 ? 'plus' : 'minus');
+  const t0 = performance.now(), dur = 650;
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), v = Math.round(target * (1 - Math.pow(1 - k, 3)));
+    el.textContent = `${fmtExp(v)} EXP`;
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function demoReveal(tierKey){
+  $('adminOverlay').style.display = 'none';
+  const pool = CHARS.filter(c => c.tier === tierKey), ch = rand(pool);
+  const rec = { status: TIER_META[tierKey].sleepy ? 'late' : 'present', tier: tierKey, time:'--:--', charId: ch.id,
+    exp: getTierExp(tierKey), rank: tierKey === 'legend' ? 1 : (tierKey === 'rare' ? 2 : 0) };
+  if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
+  showReveal('미리보기', rec, getTodayStr(), null);
+}
+function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, rare:t.e2Exp, normal:t.e3Exp, yawn:t.l1Exp, nod:t.l2Exp, sleep:t.l3Exp, burrito:t.l4Exp }[k]; }
+
+/* =========================================================
+   🥇 메달 · 🍽️ 메뉴판 · 🧹 청소 당번
+   ========================================================= */
+const MEDALS = { 1:'🥇', 2:'🥈', 3:'🥉' };
+function medalOf(rec){ return rec.rank || (rec.first ? 1 : 0); }
+function todayBonus(){ return db.bonus[getTodayStr()] || []; }
+function bonusSum(name){ return todayBonus().filter(b => b.who === name).reduce((s, b) => s + b.exp, 0); }
+function bonusPill(name){ const v = bonusSum(name); return todayBonus().some(b => b.who === name) ? `<span class="exp-pill bonus" title="메뉴판 EXP">🎁${fmtExp(v)}</span>` : ''; }
+function bonusCell(name){ const list = todayBonus().filter(b => b.who === name); return list.length ? `${fmtExp(bonusSum(name))} <small style="color:var(--ink-soft);">(${list.length}건)</small>` : '-'; }
+
+function renderMenuBoard(){
+  const box = $('menuBoard');
+  const plus = db.menu.map((m, i) => ({ ...m, i })).filter(m => m.exp >= 0);
+  const minus = db.menu.map((m, i) => ({ ...m, i })).filter(m => m.exp < 0);
+  const item = m => `<button type="button" class="menu-item" data-mi="${m.i}"><span>${esc(m.name)}</span><span class="dots"></span><span class="pts ${m.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(m.exp)}</span></button>`;
+  let html = '<div class="menu-header">🍽️ EXP 메뉴판</div><div class="menu-cols">';
+  html += `<div><div class="menu-col-title">✨ 얻을 수 있어요</div>${plus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
+  html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
+  html += '</div>';
+  const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
+  const cleaners = db.students.filter(n => day[n] && day[n].status === 'late');
+  html += `<div class="clean-row"><span>🧹 오늘의 청소 당번</span>${cleaners.length
+    ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
+    : '<span class="clean-empty">없어요! 다들 부지런하다냥 ✨</span>'}</div>`;
+  box.innerHTML = html;
+}
+function toggleClean(name){
+  const ds = getTodayStr();
+  db.cleanDone[ds] = db.cleanDone[ds] || {};
+  db.cleanDone[ds][name] = !db.cleanDone[ds][name];
+  saveDB(); renderMenuBoard();
+  if (db.cleanDone[ds][name]){ sfx('normal'); setBubble(`${name}, 청소 고마워냥! 반짝반짝 ✨`, 3500); }
+}
+
+let giveIdx = -1;
+function openGive(idx){
+  giveIdx = idx;
+  const m = db.menu[idx]; if (!m) return;
+  $('giveTitle').innerHTML = `${m.exp >= 0 ? '🎁' : '💦'} ${esc(m.name)} <span class="pts ${m.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(m.exp)}</span>`;
+  $('pickGrid').innerHTML = db.students.map(n => `<button type="button" class="pick" data-pick="${esc(n)}">${esc(n)}</button>`).join('');
+  renderBonusLog();
+  $('giveOverlay').style.display = 'flex';
+}
+function renderBonusLog(){
+  const list = todayBonus();
+  $('bonusLog').innerHTML = list.length ? list.slice().reverse().map(b =>
+    `<div class="bonus-entry"><span>${esc(b.t)} · <b>${esc(b.who)}</b> ${esc(b.item)} <span class="pts ${b.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(b.exp)}</span></span><button type="button" class="act-btn cancel" data-undo="${esc(b.id)}">↩</button></div>`).join('')
+    : '<div class="clean-empty">아직 없어요</div>';
+}
+function giveBonus(){
+  const m = db.menu[giveIdx]; if (!m) return;
+  const who = [...document.querySelectorAll('#pickGrid .pick.on')].map(b => b.dataset.pick);
+  if (!who.length){ alert('받을 친구를 골라 주세요.'); return; }
+  const ds = getTodayStr(), now = new Date(), t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  db.bonus[ds] = db.bonus[ds] || [];
+  who.forEach(n => db.bonus[ds].push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), who:n, item:m.name, exp:m.exp, t }));
+  saveDB();
+  $('giveOverlay').style.display = 'none';
+  renderGrid(); updateStatsBoard();
+  const names = who.length > 3 ? `${who.slice(0, 3).join(', ')} 외 ${who.length - 3}명` : who.join(', ');
+  showToast(`${m.exp >= 0 ? '🎁' : '💦'} ${names} · ${m.name} ${fmtExp(m.exp)} EXP`);
+  unlockAudio(false);
+  if (m.exp >= 0){ sfx('rare'); burst('rare', innerWidth/2, innerHeight*.35); setBubble(`${m.name}! 멋지다냥 ${fmtExp(m.exp)} ✨`, 3500); mascotJump(); }
+  else { sfx('late'); setBubble(`앗… ${m.name} ${fmtExp(m.exp)}. 다음엔 조심하자냥`, 3500); }
+}
+function undoBonus(id){
+  const ds = getTodayStr(), list = db.bonus[ds] || [];
+  const i = list.findIndex(b => b.id === id); if (i < 0) return;
+  if (!confirm(`${list[i].who} · ${list[i].item} ${fmtExp(list[i].exp)} 를 취소할까요?`)) return;
+  list.splice(i, 1); saveDB(); renderBonusLog(); renderGrid(); updateStatsBoard();
+}
+let toastTimer = null;
+function showToast(text){
+  const t = $('toast'); t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function parseMenu(text){
+  const out = [];
+  for (const line of text.split('\n')){
+    const m = line.trim().match(/^(.+?)[\s,]+([+-]?\d+)\s*$/);
+    if (m) out.push({ name: m[1].trim().replace(/,$/, ''), exp: parseInt(m[2], 10) });
+  }
+  return out;
+}
+
+/* 🎉 모두 모이면 파티 */
+function partyMap(){ try { return JSON.parse(localStorage.getItem(PARTY_KEY)) || {}; } catch(e){ return {}; } }
+function checkParty(){
+  const ds = getTodayStr();
+  if (!allArrived() || partyMap()[ds]) return;
+  const m = partyMap(); m[ds] = true; localStorage.setItem(PARTY_KEY, JSON.stringify(m));
+  const day = todayData();
+  const exp = db.students.reduce((s, n) => s + (Number(day[n] && day[n].exp) || 0), 0);
+  drawColors($('partyMascot'), catColors(MASCOT));
+  $('partySub').textContent = `오늘 우리 반이 모은 EXP ${fmtExp(exp)} ✨`;
+  const ov = $('partyOverlay'); ov.style.display = 'flex';
+  sfx('party');
+  [0, 400, 800, 1300].forEach((t, i) => setTimeout(() => burst('party', innerWidth * (0.15 + 0.23*i), innerHeight * 0.3), t));
+  const close = () => { ov.style.display = 'none'; ov.onclick = null; };
+  ov.onclick = close; setTimeout(close, 6000);
+}
+
+/* =========================================================
+   🎊 꽃가루 엔진
+   ========================================================= */
+const fx = { c:null, ctx:null, parts:[], running:false };
+function fxInit(){
+  fx.c = $('fx'); fx.ctx = fx.c.getContext('2d');
+  const rs = () => { fx.c.width = innerWidth; fx.c.height = innerHeight; };
+  rs(); addEventListener('resize', rs);
+}
+const FX_PAL = {
+  legend:['#FFD84D','#FFB8CB','#7FD8BE','#8CC8FF','#A996FF','#FFFFFF','#FFC21A'],
+  rare:['#7FD8BE','#FFB8CB','#FFD84D','#FFFFFF'],
+  normal:['#FFD84D','#FFB8CB','#FFFFFF','#FFE89A'],
+  sleepy:['#C4B5FF','#A8C8FF','#FFFFFF'],
+  party:['#FFD84D','#FFB8CB','#7FD8BE','#8CC8FF','#A996FF','#FFC21A','#FF8FB1']
+};
+function burst(kind, x, y){
+  const W = innerWidth, H = innerHeight;
+  x = x ?? W/2; y = y ?? H/2;
+  const n = { legend:150, rare:95, normal:60, sleepy:26, party:140 }[kind] || 60;
+  const pal = FX_PAL[kind] || FX_PAL.normal;
+  for (let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * (kind === 'legend' || kind === 'party' ? 11 : 8);
+    const sleepy = kind === 'sleepy';
+    const shapes = sleepy ? ['z','z','★'] : (kind === 'normal' ? ['rect','circle','circle'] : ['rect','circle','star','heart','paw']);
+    fx.parts.push({
+      x: sleepy ? x + (Math.random()-.5)*360 : x, y: sleepy ? y + Math.random()*140 : y,
+      vx: sleepy ? (Math.random()-.5)*.8 : Math.cos(a)*s, vy: sleepy ? -0.8 - Math.random()*1.4 : Math.sin(a)*s - 4,
+      g: sleepy ? 0 : 0.2, rot: Math.random()*6, vr: (Math.random()-.5)*.3,
+      size: 5 + Math.random()*7, color: rand(pal), shape: rand(shapes), life: 0, max: 110 + Math.random()*70
+    });
+  }
+  if (!fx.running){ fx.running = true; requestAnimationFrame(fxLoop); }
+}
+function fxLoop(){
+  const ctx = fx.ctx; ctx.clearRect(0, 0, fx.c.width, fx.c.height);
+  fx.parts = fx.parts.filter(p => p.life < p.max && p.y < fx.c.height + 60);
+  for (const p of fx.parts){
+    p.vx *= .985; p.vy += p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life++;
+    ctx.save(); ctx.globalAlpha = Math.max(0, 1 - p.life / p.max); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.color; ctx.strokeStyle = 'rgba(91,70,54,.5)'; ctx.lineWidth = 1.5;
+    if (p.shape === 'rect'){ ctx.fillRect(-p.size/2, -p.size/4, p.size, p.size/2); }
+    else if (p.shape === 'circle'){ ctx.beginPath(); ctx.arc(0, 0, p.size/2.2, 0, Math.PI*2); ctx.fill(); }
+    else {
+      const glyph = { star:'★', heart:'♥', paw:'🐾', z:'z', '★':'★' }[p.shape];
+      ctx.font = `${Math.round(p.size*2.2)}px NeoDunggeunmo, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (p.shape === 'z') ctx.fillStyle = '#8C74F0';
+      ctx.fillText(glyph, 0, 0);
+    }
+    ctx.restore();
+  }
+  if (fx.parts.length) requestAnimationFrame(fxLoop); else { fx.running = false; ctx.clearRect(0, 0, fx.c.width, fx.c.height); }
+}
+
+/* =========================================================
+   🔊 효과음 (Web Audio)
+   ========================================================= */
+let audioCtx = null, audioUnlocked = false;
+function unlockAudio(manual){
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    audioUnlocked = true;
+    updateSoundStatusText();
+    if (manual) playChime(1, 0.35);
+  } catch(e){ console.error('오디오 잠금 해제 실패:', e); }
+}
+function note(freq, t0, dur, type = 'triangle', vol = .18){
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + .015); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+  o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + dur + .05);
+}
+function sfx(kind){
+  if (!db.sfx) return;
+  try { unlockAudio(false); } catch(e){ return; }
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime, v = .2;
+  const seq = (notes, step, type, dur, vol) => notes.forEach((f, i) => note(f, t + i*step, dur || .25, type || 'triangle', vol || v));
+  switch (kind){
+    case 'shake': for (let i = 0; i < 3; i++) note(i % 2 ? 620 : 540, t + i*.09, .06, 'square', .05); break;
+    case 'legend':
+      seq([523,659,784,1047,1319,1568,2093], .07, 'triangle', .4);
+      [2637,3136,2637,3136,3520].forEach((f, i) => note(f, t + .6 + i*.07, .2, 'sine', .07)); break;
+    case 'rare': seq([587,740,880,1175], .085, 'triangle', .32); note(1760, t + .4, .3, 'sine', .07); break;
+    case 'normal': seq([784,1047], .1, 'triangle', .3); break;
+    case 'late': seq([523,440,349,392], .17, 'sine', .45, .16); break;
+    case 'party': seq([523,523,523,659,784,659,784,1047], .13, 'square', .2, .08); seq([262,262,262,330,392,330,392,523], .13, 'triangle', .25, .1); break;
+    case 'meow': meow(); break;
+  }
+}
+function meow(){
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain(), f = audioCtx.createBiquadFilter();
+  o.type = 'sawtooth'; f.type = 'lowpass'; f.frequency.value = 1700;
+  o.frequency.setValueAtTime(620, t); o.frequency.linearRampToValueAtTime(1080, t + .13); o.frequency.linearRampToValueAtTime(720, t + .45);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.12, t + .05); g.gain.linearRampToValueAtTime(.08, t + .3); g.gain.exponentialRampToValueAtTime(.0001, t + .5);
+  o.connect(f); f.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t + .55);
+}
+
+/* =========================================================
+   🐱 마스코트 하나 (하얀 털 · 갈색 눈)
+   ========================================================= */
+let bubbleLockUntil = 0, lastBubble = '';
+function drawMascot(blink){ drawColors($('mascot'), catColors(MASCOT, null, { blink })); }
+function setBubble(text, lockMs){
+  const b = $('mascotBubble');
+  if (lockMs) bubbleLockUntil = Date.now() + lockMs;
+  if (text === lastBubble) return;
+  lastBubble = text; b.textContent = text;
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+}
+function mascotLine(now){
+  const wd = now.getDay(), h = now.getHours();
+  if (allArrived()) return '모두 모였다냥! 오늘도 최고야 💛';
+  if (wd === 0 || wd === 6) return '오늘은 주말이다냥~ 푹 쉬자 😺';
+  if (h >= 13) return '오늘도 수고했다냥! 내일 또 만나 🐾';
+  const t = getTier(now);
+  switch (t.key){
+    case 'legend': return `지금 오면 👑레전드 냥이가 나온다냥! (${fmtExp(t.exp)})`;
+    case 'rare':   return '💎 레어 냥이 찬스! 서두르라냥~';
+    case 'normal': return '⏰ 마감 직전이다냥! 얼른 터치!';
+    default:       return '💤 잠꾸러기 냥이들이 따라오는 중…';
+  }
+}
+function updateMascotBubble(now){ if (Date.now() >= bubbleLockUntil) setBubble(mascotLine(now)); }
+function mascotJump(){
+  const w = $('mascotWrap'); w.classList.remove('jump'); void w.offsetWidth; w.classList.add('jump');
+  setTimeout(() => w.classList.remove('jump'), 1200);
+}
+function mascotReact(tier){
+  const lines = {
+    legend:'우와아! 레전드다냥!! ✨', rare:'반짝반짝 레어 냥이다냥 💎', normal:'어서 와라냥~ 🐾',
+    yawn:'하암… 괜찮아, 내일은 일찍 오자냥', nod:'괜찮아, 내일은 일찍 오자냥', sleep:'쿨쿨이들 깨우러 가야겠다냥', burrito:'이불 밖으로 나온 것만으로도 장하다냥'
+  };
+  setBubble(lines[tier] || '냥!', 4500);
+  if (!TIER_META[tier].sleepy) mascotJump();
+}
+const PET_LINES = ['냥? 🐾','나는 하나다냥! 반가워 💛','쓰담쓰담 고마워냥 💛','오늘도 화이팅이다냥!','노랑반 최고냥!','츄르 먹고 싶다냥…','꼬리 살랑살랑~','골골골골… 😽'];
+function petMascot(){
+  unlockAudio(false); sfx('meow'); mascotJump();
+  setBubble(rand(PET_LINES.filter(l => l !== lastBubble)), 3500);
+  const w = $('mascotWrap'), h = document.createElement('div');
+  h.className = 'mascot-heart'; h.textContent = rand(['💛','🧡','💗','✨']);
+  h.style.left = (30 + Math.random()*60) + 'px'; h.style.top = '10px';
+  w.append(h); setTimeout(() => h.remove(), 1200);
+}
+function scheduleBlink(){
+  setTimeout(() => { drawMascot(true); setTimeout(() => { drawMascot(false); scheduleBlink(); }, 170); }, 2500 + Math.random()*3000);
+}
+
+/* =========================================================
+   📢 알립니다
+   ========================================================= */
+function renderNotices(){
+  const area = $('noticeArea');
+  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 알립니다</div>';
+  const list = (db.notices || []).filter(t => t && t.trim() !== '');
+  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">⚙️ 설정에서 오늘의 안내를 적어 주세요</div>'); return; }
+  list.forEach((text, idx) => {
+    const item = document.createElement('div');
+    item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
+    item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>`;
+    item.onclick = () => { noticeChecked[idx] = !noticeChecked[idx]; renderNotices(); };
+    area.append(item);
+  });
+}
+
+/* =========================================================
+   🕐 시계
+   ========================================================= */
+function setFlip(id, value){
+  const el = $(id);
+  if (el.textContent === value) return;
+  el.textContent = value;
+  el.classList.remove('flipping'); void el.offsetWidth; el.classList.add('flipping');
+}
+function updateDate(now){
+  const days = ['일','월','화','수','목','금','토'];
+  $('currentDate').textContent = `${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
+}
+function tick(){
+  const now = new Date();
+  setFlip('flipHour', pad(now.getHours()));
+  setFlip('flipMin', pad(now.getMinutes()));
+  setFlip('flipSec', pad(now.getSeconds()));
+  const ds = getTodayStr(now);
+  if (ds !== currentDayStr){
+    currentDayStr = ds; noticeChecked = {};
+    updateDate(now); renderNotices(); renderGrid(); updateStatsBoard();
+  }
+  updateReward(now);
+  updateMascotBubble(now);
+  try { checkAlarms(); } catch(e){ console.error('알람 확인 에러:', e); }
+}
+
+/* =========================================================
+   📒 기록장
+   ========================================================= */
+let statsPeriod = 'today';
+function openStatsUI(){ $('statsOverlay').style.display = 'flex'; loadStats('today'); }
+function loadStats(period){
+  statsPeriod = period;
+  document.querySelectorAll('#statsTabs .tab').forEach(b => b.classList.toggle('active', b.dataset.period === period));
+  const box = $('statsContent');
+  const now = new Date(), ds = getTodayStr(now), isWeekend = now.getDay() === 0 || now.getDay() === 6;
+
+  if (period === 'today'){
+    const day = todayData();
+    let html = isWeekend ? '<div class="weekend-note">※ 오늘은 주말이라 주·월·올해 누적에는 합산되지 않아요.</div>' : '';
+    html += '<table><thead><tr><th>이름</th><th>냥이</th><th>상태</th><th>시간</th><th>출석 EXP</th><th>🍽️ 메뉴판</th><th>관리</th></tr></thead><tbody>';
+    db.students.forEach(name => {
+      const rec = day[name];
+      if (!rec){
+        html += `<tr><td>${esc(name)}</td><td>-</td><td style="color:#A8978A;">기다리는 중</td><td>-</td><td>-</td><td>${bonusCell(name)}</td>
+          <td><button type="button" class="act-btn absent" data-act="absent" data-name="${esc(name)}">🏠 결석 처리</button></td></tr>`;
+      } else {
+        const tk = recTier(rec), meta = TIER_META[tk];
+        const img = colorsToURL(recColors(rec, name, ds));
+        const label = tk === 'absent' ? '결석(쉬는 날)' : (rec.status === 'late' ? '지각' : '출석');
+        html += `<tr><td>${esc(name)}</td><td><img class="pix mini-cat" src="${img}" alt=""> <small>${esc(recCharName(rec, name, ds))}</small></td>
+          <td><span class="exp-pill" style="background:${meta.color};color:var(--ink);">${meta.icon} ${label}</span></td>
+          <td>${esc(rec.time || '-')}</td><td>${tk === 'absent' ? '0' : expPill(rec.exp)}</td><td>${bonusCell(name)}</td>
+          <td><button type="button" class="act-btn cancel" data-act="cancel" data-name="${esc(name)}">↩ 기록 취소</button></td></tr>`;
+      }
+    });
+    box.innerHTML = html + '</tbody></table>';
+    return;
+  }
+
+  if (period === 'dex'){ renderDex(box); return; }
+
+  const map = periodStats(period);
+  let html = '<div class="weekend-note">주말 기록은 누적에서 빠져요.</div>';
+  html += '<table><thead><tr><th>이름</th><th>⭐ 출석</th><th>💤 지각</th><th>🏠 결석</th><th>👑 레전드</th><th>🍽️ 메뉴판</th><th>누적 EXP</th></tr></thead><tbody>';
+  db.students.forEach(name => {
+    const s = map[name];
+    html += `<tr><td>${esc(name)}</td><td>${s.p}</td><td>${s.l}</td><td>${s.d}</td><td>${s.leg}</td><td>${fmtExp(s.bonus)}</td><td>${expPill(s.exp)}</td></tr>`;
+  });
+  box.innerHTML = html + '</tbody></table>';
+}
+function periodStats(period){
+  const today = new Date(), y = today.getFullYear(), mStr = pad(today.getMonth()+1);
+  const dow = today.getDay() === 0 ? 7 : today.getDay();
+  const mon = new Date(today); mon.setDate(today.getDate() - dow + 1);
+  const fri = new Date(today); fri.setDate(today.getDate() - dow + 5);
+  const monS = getTodayStr(mon), friS = getTodayStr(fri);
+  const map = {}; db.students.forEach(n => map[n] = { p:0, l:0, d:0, leg:0, bonus:0, exp:0 });
+  for (const [ds, day] of Object.entries(db.records)){
+    const wd = parseDate(ds).getDay(); if (wd === 0 || wd === 6) continue;
+    const ok = period === 'week' ? (ds >= monS && ds <= friS) : period === 'month' ? ds.startsWith(`${y}-${mStr}`) : ds.startsWith(`${y}-`);
+    if (!ok) continue;
+    for (const [n, r] of Object.entries(day)){
+      const s = map[n]; if (!s) continue;
+      if (r.status === 'present') s.p++; else if (r.status === 'late') s.l++; else if (r.status === 'dungeon') s.d++;
+      if (r.tier === 'legend') s.leg++;
+      s.exp += Number(r.exp) || 0;
+    }
+  }
+  for (const [ds, list] of Object.entries(db.bonus || {})){
+    const wd = parseDate(ds).getDay(); if (wd === 0 || wd === 6) continue;
+    const ok = period === 'week' ? (ds >= monS && ds <= friS) : period === 'month' ? ds.startsWith(`${y}-${mStr}`) : ds.startsWith(`${y}-`);
+    if (!ok) continue;
+    list.forEach(b => { const s = map[b.who]; if (s){ s.bonus += b.exp; s.exp += b.exp; } });
+  }
+  return map;
+}
+function renderDex(box){
+  const y = new Date().getFullYear(), counts = {};
+  for (const [ds, day] of Object.entries(db.records)){
+    if (!ds.startsWith(`${y}-`)) continue;
+    for (const [n, r] of Object.entries(day)){ const ch = recChar(r, n, ds); if (ch) counts[ch.id] = (counts[ch.id] || 0) + 1; }
+  }
+  const collectible = CHARS.filter(c => !c.sleepy);
+  const got = collectible.filter(c => counts[c.id]).length;
+  const sections = [['legend','👑 레전드 냥이'],['rare','💎 레어 냥이'],['normal','🐱 노멀 냥이'],['sleepy','💤 잠꾸러기 냥이']];
+  let html = `<div class="dex-head">올해 우리 반이 만난 냥이 <b>${got}</b> / ${collectible.length}종</div>`;
+  for (const [key, title] of sections){
+    const list = key === 'sleepy' ? CHARS.filter(c => c.sleepy) : CHARS.filter(c => c.tier === key);
+    html += `<div class="dex-section-title">${title}</div><div class="dex-grid">`;
+    list.forEach(c => {
+      const n = counts[c.id] || 0;
+      const img = n ? colorsToURL(catColors(c, c.sleepy ? 'white' : undefined), 'dex_' + c.id) : colorsToURL(lockedColors(), 'locked');
+      html += `<div class="dex-item ${n ? '' : 'locked'}"><img class="pix" src="${img}" alt=""><div class="dex-name">${n ? esc(c.name) : '???'}</div><div class="dex-count">${n ? `만난 횟수 ×${n}` : '아직 못 만났어요'}</div></div>`;
+    });
+    html += '</div>';
+  }
+  box.innerHTML = html;
+}
+function sendToDungeon(name){
+  if (!confirm(`[${name}] 친구를 결석(쉬는 날)으로 처리할까요?\nEXP는 0으로 기록돼요.`)) return;
+  const ds = getTodayStr();
+  if (!db.records[ds]) db.records[ds] = {};
+  db.records[ds][name] = { status:'dungeon', tier:'absent', time:'결석', exp:0 };
+  saveDB(); renderGrid(); updateStatsBoard(); checkParty(); loadStats('today');
+}
+function cancelRecord(name){
+  if (!confirm(`[${name}] 친구의 오늘 기록을 취소할까요?`)) return;
+  const ds = getTodayStr();
+  if (db.records[ds] && db.records[ds][name]){
+    delete db.records[ds][name];
+    saveDB(); renderGrid(); updateStatsBoard(); loadStats('today');
+  }
+}
+
+/* =========================================================
+   ⚙️ 설정
+   ========================================================= */
+const TIER_FIELDS = ['e1','e1Exp','e2','e2Exp','e3Exp','l1','l1Exp','l2','l2Exp','l3','l3Exp','l4Exp'];
+function openAdminUI(){
+  $('mainTitleInput').value = db.mainTitle || '';
+  $('noticeInput').value = (db.notices || []).join('\n');
+  $('studentNamesInput').value = db.students.join('\n');
+  $('lateTimeInput').value = db.lateTimeSetting;
+  TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
+  $('sfxInput').checked = !!db.sfx;
+  $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
+  const ac = db.alarmConfig;
+  $('alarm1EnableInput').checked = !!ac.alarm1Enable;
+  $('alarm2EnableInput').checked = !!ac.alarm2Enable;
+  $('alarm2TimeInput').value = ac.alarm2Time || '09:04';
+  $('alarm1TextInput').value = ac.alarm1Text || '';
+  $('alarm2TextInput').value = ac.alarm2Text || '';
+  $('alarmVolumeInput').value = ac.volume;
+  $('alarmDur1Input').value = ac.dur1;
+  $('alarmDur2Input').value = ac.dur2;
+  $('alarmSkipWeekendInput').checked = !!ac.skipWeekend;
+  $('alarm1FileInput').value = ''; $('alarm2FileInput').value = '';
+  $('alarm1FileName').textContent = ac.alarm1AudioName ? `🎵 ${ac.alarm1AudioName} (저장됨)` : '선택된 파일 없음 → 내장 차임음 사용';
+  $('alarm2FileName').textContent = ac.alarm2AudioName ? `🎵 ${ac.alarm2AudioName} (저장됨)` : '선택된 파일 없음 → 내장 차임음 사용';
+  $('alarm1TimeEcho').textContent = db.lateTimeSetting;
+  updateSoundStatusText();
+  $('adminOverlay').style.display = 'flex';
+}
+function readAudioFile(file){
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    if (!file.type.startsWith('audio/')) return reject(new Error('오디오 파일만 선택할 수 있어요.'));
+    if (file.size > 8*1024*1024) return reject(new Error('알람 파일은 각각 8MB 이하만 저장할 수 있어요.'));
+    const reader = new FileReader();
+    reader.onload = () => resolve({ data: reader.result, name: file.name });
+    reader.onerror = () => reject(new Error('오디오 파일을 읽지 못했어요.'));
+    reader.readAsDataURL(file);
+  });
+}
+async function saveAdminData(){
+  const students = normalizeStudents($('studentNamesInput').value);
+  if (!students.length){ alert('친구를 한 명 이상 입력해 주세요.'); return; }
+  const late = $('lateTimeInput').value;
+  if (!validTime(late)){ alert('출석 마감 시각을 확인해 주세요.'); return; }
+  const tiers = {};
+  for (const k of TIER_FIELDS){
+    const v = parseInt($(k).value, 10);
+    if (isNaN(v)){ alert('EXP 보상 규칙에 빈칸이 있어요.'); return; }
+    tiers[k] = v;
+  }
+  if (!(tiers.e1 > tiers.e2 && tiers.e2 >= 0)){ alert('레전드 기준(분)은 레어 기준보다 커야 해요.'); return; }
+  if (!(tiers.l1 > 0 && tiers.l1 < tiers.l2 && tiers.l2 < tiers.l3)){ alert('지각 기준(분)은 하품냥 < 꾸벅냥 < 쿨쿨냥 순서로 커져야 해요.'); return; }
+
+  let a1, a2;
+  try {
+    a1 = await readAudioFile($('alarm1FileInput').files[0]);
+    a2 = await readAudioFile($('alarm2FileInput').files[0]);
+  } catch(e){ alert(e.message); return; }
+
+  db.mainTitle = $('mainTitleInput').value.trim() || DEFAULT_TITLE;
+  db.notices = $('noticeInput').value.split('\n').map(t => t.trim()).filter(Boolean);
+  noticeChecked = {};
+  db.students = students;
+  db.lateTimeSetting = late;
+  db.expTiers = tiers;
+  db.sfx = $('sfxInput').checked;
+  db.menu = parseMenu($('menuInput').value);
+  let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
+  const old = db.alarmConfig || {};
+  db.alarmConfig = {
+    alarm1Enable: $('alarm1EnableInput').checked,
+    alarm2Enable: $('alarm2EnableInput').checked,
+    alarm2Time: $('alarm2TimeInput').value || '09:04',
+    alarm1Text: $('alarm1TextInput').value,
+    alarm2Text: $('alarm2TextInput').value,
+    volume: Math.max(0, Math.min(100, vol)),
+    dur1: Math.max(5, parseInt($('alarmDur1Input').value, 10) || 60),
+    dur2: Math.max(5, parseInt($('alarmDur2Input').value, 10) || 120),
+    skipWeekend: $('alarmSkipWeekendInput').checked,
+    alarm1Audio: a1 ? a1.data : (old.alarm1Audio || ''), alarm1AudioName: a1 ? a1.name : (old.alarm1AudioName || ''),
+    alarm2Audio: a2 ? a2.data : (old.alarm2Audio || ''), alarm2AudioName: a2 ? a2.name : (old.alarm2AudioName || '')
+  };
+  saveDB();
+  applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
+  $('adminOverlay').style.display = 'none';
+  setBubble('설정 저장 완료다냥! 💾', 3000);
+}
+function applyTitle(){ $('mainTitleDisplay').textContent = db.mainTitle; document.title = db.mainTitle; }
+
+/* =========================================================
+   🔔 알람 시스템
+   ========================================================= */
+let currentAudio = null, chimeTimer = null, soundStopTimer = null, overlayCloseTimer = null, countdownTimer = null, alarmOverlayOpen = 0;
+
+function updateSoundStatusText(){
+  const el = $('soundStatusText'); if (!el) return;
+  const cfg = db.alarmConfig;
+  const mark = i => cfg[`alarm${i}Audio`] ? `${i}차: ${esc(cfg[`alarm${i}AudioName`] || '선택한 음원')} ✅` : `${i}차: 내장 차임음`;
+  const t1 = cfg.alarm1Enable ? db.lateTimeSetting : '꺼짐', t2 = cfg.alarm2Enable ? cfg.alarm2Time : '꺼짐';
+  const lock = audioUnlocked ? '<span style="color:#1F8A5F;">소리 재생 준비 완료 ✅</span>' : '<span style="color:#D6456E;">소리 잠김 — 화면을 한 번 터치하면 풀려요</span>';
+  el.innerHTML = `예정: 1차 ${t1} / 2차 ${t2}<br>${mark(1)} · ${mark(2)}<br>${lock}`;
+}
+function playChime(pattern, volScale){
+  if (!audioCtx) return;
+  const vol = (db.alarmConfig.volume / 100) * (volScale || 1);
+  const notes = pattern === 2 ? [[988,0],[784,.22],[988,.44],[1319,.66]] : [[880,0],[659,.3],[880,.6]];
+  notes.forEach(([freq, delay]) => {
+    const t = audioCtx.currentTime + delay, osc = audioCtx.createOscillator(), g = audioCtx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(Math.max(.0001, vol*.6), t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .55);
+    osc.connect(g); g.connect(audioCtx.destination); osc.start(t); osc.stop(t + .6);
+  });
+}
+function startAlarmSound(idx){
+  stopAlarmSound(); unlockAudio(false);
+  const cfg = db.alarmConfig, vol = Math.max(0, Math.min(1, cfg.volume / 100));
+  $('soundStopBtn').style.display = 'block';
+  const custom = cfg[`alarm${idx}Audio`];
+  if (custom){
+    try {
+      currentAudio = new Audio(custom); currentAudio.loop = false; currentAudio.volume = vol;
+      currentAudio.addEventListener('ended', () => { currentAudio = null; $('soundStopBtn').style.display = 'none'; });
+      currentAudio.play().catch(() => { currentAudio = null; startChimeWithLimit(idx); });
+    } catch(e){ currentAudio = null; startChimeWithLimit(idx); }
+  } else startChimeWithLimit(idx);
+}
+function startChimeWithLimit(idx){
+  const cfg = db.alarmConfig;
+  playChime(idx);
+  chimeTimer = setInterval(() => playChime(idx), idx === 2 ? 2200 : 3000);
+  const dur = parseInt(idx === 1 ? cfg.dur1 : cfg.dur2, 10) || 60;
+  soundStopTimer = setTimeout(stopAlarmSound, dur * 1000);
+}
+function stopAlarmSound(){
+  if (currentAudio){ try { currentAudio.pause(); currentAudio.currentTime = 0; } catch(e){} currentAudio = null; }
+  if (chimeTimer){ clearInterval(chimeTimer); chimeTimer = null; }
+  if (soundStopTimer){ clearTimeout(soundStopTimer); soundStopTimer = null; }
+  $('soundStopBtn').style.display = 'none';
+}
+function testAlarmSound(idx){
+  unlockAudio(false); startAlarmSound(idx);
+  if (soundStopTimer) clearTimeout(soundStopTimer);
+  soundStopTimer = setTimeout(stopAlarmSound, 6000);
+}
+function getFiredMap(){ try { return JSON.parse(localStorage.getItem(FIRED_KEY)) || {}; } catch(e){ return {}; } }
+function markFired(idx){ const m = getFiredMap(); m[`${getTodayStr()}_${idx}`] = true; localStorage.setItem(FIRED_KEY, JSON.stringify(m)); }
+function isFired(idx){ return !!getFiredMap()[`${getTodayStr()}_${idx}`]; }
+function checkAlarms(){
+  const cfg = db.alarmConfig, now = new Date();
+  if (cfg.skipWeekend && (now.getDay() === 0 || now.getDay() === 6)) return;
+  if (alarmOverlayOpen) return;
+  const nowSec = secOfDay(now);
+  const targets = [{ idx:1, on:cfg.alarm1Enable, time:db.lateTimeSetting }, { idx:2, on:cfg.alarm2Enable, time:cfg.alarm2Time }];
+  for (const t of targets){
+    if (!t.on || !validTime(t.time)) continue;
+    const [h, m] = t.time.split(':').map(Number);
+    const diff = nowSec - (h*3600 + m*60);
+    if (diff >= 0 && diff < 60 && !isFired(t.idx)){ markFired(t.idx); fireAlarm(t.idx, t.time); return; }
+  }
+}
+function previewAlarm(idx){
+  const time = idx === 1 ? ($('lateTimeInput').value || '--:--') : ($('alarm2TimeInput').value || '--:--');
+  const text = $(`alarm${idx}TextInput`).value;
+  $('adminOverlay').style.display = 'none';
+  fireAlarm(idx, time, text);
+}
+function fireAlarm(idx, timeStr, textOverride){
+  const cfg = db.alarmConfig;
+  alarmOverlayOpen = idx;
+  const text = (typeof textOverride === 'string' ? textOverride : (idx === 1 ? cfg.alarm1Text : cfg.alarm2Text)) || '';
+  $('alarmBox').className = 'alarm-box' + (idx === 2 ? ' second' : '');
+  drawColors($('alarmMascot'), catColors(MASCOT));
+  $('alarmBadge').textContent = idx === 1 ? '⏰ 1차 알람 · 출석 마감!' : '🚨 2차 알람';
+  $('alarmClockBig').textContent = timeStr;
+  $('alarmTextArea').textContent = text.trim() !== '' ? text : '(설정에 안내 문구가 없어요)';
+  $('alarmOverlay').style.display = 'flex';
+  startAlarmSound(idx);
+  const closeBtn = $('alarmCloseBtn'), cd = $('alarmCountdown');
+  if (idx === 1){
+    closeBtn.textContent = '✔ 지금 닫기';
+    let left = 5;
+    cd.textContent = `${left}초 뒤 자동으로 닫혀요 · 소리는 계속 울려요`;
+    countdownTimer = setInterval(() => { left--; cd.textContent = left > 0 ? `${left}초 뒤 자동으로 닫혀요 · 소리는 계속 울려요` : ''; }, 1000);
+    overlayCloseTimer = setTimeout(() => closeAlarmOverlay(false), 5000);
+  } else {
+    closeBtn.textContent = '✔ 확인 (창 닫고 소리 끄기)';
+    cd.textContent = '닫기 버튼을 누르면 알람이 끝나요';
+  }
+}
+function closeAlarmOverlay(stopSound){
+  if (overlayCloseTimer){ clearTimeout(overlayCloseTimer); overlayCloseTimer = null; }
+  if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+  $('alarmOverlay').style.display = 'none';
+  $('alarmCountdown').textContent = '';
+  alarmOverlayOpen = 0;
+  if (stopSound) stopAlarmSound();
+}
+
+/* =========================================================
+   🚀 시작
+   ========================================================= */
+function bindEvents(){
+  $('mascotWrap').addEventListener('click', petMascot);
+  $('openStatsBtn').addEventListener('click', openStatsUI);
+  $('openAdminBtn').addEventListener('click', openAdminUI);
+  $('statsTabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) loadStats(b.dataset.period); });
+  $('statsContent').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    if (b.dataset.act === 'absent') sendToDungeon(b.dataset.name); else cancelRecord(b.dataset.name);
+  });
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $(b.dataset.close).style.display = 'none'));
+  document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => demoReveal(b.dataset.demo)));
+  $('saveAdminBtn').addEventListener('click', saveAdminData);
+  $('menuBoard').addEventListener('click', e => {
+    const mi = e.target.closest('[data-mi]'); if (mi){ openGive(Number(mi.dataset.mi)); return; }
+    const c = e.target.closest('[data-clean]'); if (c) toggleClean(c.dataset.clean);
+  });
+  $('pickGrid').addEventListener('click', e => { const b = e.target.closest('.pick'); if (b) b.classList.toggle('on'); });
+  $('pickAllBtn').addEventListener('click', () => document.querySelectorAll('#pickGrid .pick').forEach(b => b.classList.add('on')));
+  $('pickNoneBtn').addEventListener('click', () => document.querySelectorAll('#pickGrid .pick').forEach(b => b.classList.remove('on')));
+  $('giveBtn').addEventListener('click', giveBonus);
+  $('bonusLog').addEventListener('click', e => { const b = e.target.closest('[data-undo]'); if (b) undoBonus(b.dataset.undo); });
+  $('backupBtn').addEventListener('click', downloadBackup);
+  $('importBtn').addEventListener('click', () => $('backupFileInput').click());
+  $('backupFileInput').addEventListener('change', importBackupFile);
+  $('resetBtn').addEventListener('click', resetForNewYear);
+  $('test1Btn').addEventListener('click', () => testAlarmSound(1));
+  $('test2Btn').addEventListener('click', () => testAlarmSound(2));
+  $('stopTestBtn').addEventListener('click', stopAlarmSound);
+  $('preview1Btn').addEventListener('click', () => previewAlarm(1));
+  $('preview2Btn').addEventListener('click', () => previewAlarm(2));
+  $('sfxTestBtn').addEventListener('click', () => { const was = db.sfx; db.sfx = true; sfx('rare'); db.sfx = was; });
+  $('alarmCloseBtn').addEventListener('click', () => closeAlarmOverlay(true));
+  $('soundStopBtn').addEventListener('click', stopAlarmSound);
+  $('lateTimeInput').addEventListener('input', function(){ $('alarm1TimeEcho').textContent = this.value; });
+  ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, () => { if (!audioUnlocked) unlockAudio(false); }));
+}
+function init(){
+  try {
+    loadDB();
+    applyTitle();
+    fxInit();
+    bindEvents();
+    drawMascot(false); scheduleBlink();
+    renderLadder();
+    tick();
+    setInterval(tick, 1000);
+    updateSoundStatusText();
+  } catch(e){ console.error('초기화 에러:', e); }
+}
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
