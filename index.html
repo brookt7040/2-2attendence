@@ -106,6 +106,14 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .title-row .mascot-wrap,.title-row #mascot{width:clamp(80px,6.5vw,128px);height:clamp(80px,6.5vw,128px);}
 .side-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;}
 .side-btns .side-clean{grid-column:1 / 3;}
+.urgent-box{grid-column:1 / 3;position:relative;background:#FFF1EC;border:3px solid #E8674F;border-radius:16px;padding:10px 14px 10px 16px;box-shadow:0 5px 0 #B9472F;cursor:pointer;}
+.urgent-box .uh{display:flex;align-items:center;gap:8px;font-size:1.05rem;color:#C2412A;margin-bottom:4px;}
+.urgent-box .dot{width:10px;height:10px;border-radius:50%;background:#FF5C3A;animation:udot 1.6s ease-in-out infinite;}
+@keyframes udot{50%{opacity:.25;transform:scale(.7)}}
+.urgent-box .ut{font-size:1.3rem;line-height:1.45;color:var(--ink);word-break:keep-all;white-space:pre-line;}
+.urgent-box.empty{background:#FFFAF6;border-style:dashed;box-shadow:none;}
+.urgent-box.empty .ut{font-size:1rem;color:var(--ink-soft);}
+.urgent-box.empty .dot{display:none;}
 .side-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-family:inherit;font-size:1.35rem;padding:14px 16px;border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);cursor:pointer;text-align:left;}
 .side-btn small{font-size:.85rem;color:var(--ink-soft);}
 .side-btn.exp{background:var(--pink);} .side-btn.coin{background:var(--y);}
@@ -603,6 +611,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <button type="button" class="side-btn exp" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
         <button type="button" class="side-btn coin" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
         <div class="side-clean" id="cleanSide"></div>
+        <div class="urgent-box" id="urgentBox"></div>
       </div>
     </div>
 
@@ -1598,6 +1607,7 @@ function mergeInto(parsed){
   if (parsed.level && typeof parsed.level === 'object') db.level = Object.assign({}, DEFAULT_LEVEL, parsed.level);
   if (parsed.economy && typeof parsed.economy === 'object') db.economy = parsed.economy;
   if (parsed.collect && typeof parsed.collect === 'object') db.collect = parsed.collect;
+  if (typeof parsed.urgent === 'string') db.urgent = parsed.urgent;
   if (parsed.looks && typeof parsed.looks === 'object') db.looks = parsed.looks;
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
@@ -2435,6 +2445,10 @@ let teKind = null;
 function editText(kind){
   requirePin(() => {
     teKind = kind;
+    if (kind === 'urgent'){
+      $('teTitle').textContent = '📌 중요 공지 고치기'; $('teHint').textContent = '비우고 저장하면 공지가 내려가요. (줄바꿈 가능 · 짧을수록 눈에 잘 띄어요)';
+      $('teInput').value = db.urgent || ''; $('textEditOverlay').style.display = 'flex'; setTimeout(() => $('teInput').focus(), 50); return;
+    }
     $('teTitle').textContent = kind === 'notices' ? '✏️ 오늘의 알림 고치기' : '✏️ 종례 고치기';
     $('teHint').textContent = kind === 'notices' ? '한 줄에 하나씩 · 메모지에 순서대로 나타나요 (4줄 이하 권장)' : "한 줄에 하나씩 · '종례하기' 화면과 학생 페이지에 떠요";
     $('teInput').value = (db[kind] || []).join('\n');
@@ -2442,6 +2456,10 @@ function editText(kind){
   });
 }
 function saveTextEdit(){
+  if (teKind === 'urgent'){
+    db.urgent = $('teInput').value.trim().slice(0, 200); saveDB(); syncOp({ op:'config', data: configOf() });
+    $('textEditOverlay').style.display = 'none'; renderUrgent(); showToast(db.urgent ? '📌 중요 공지를 올렸어요' : '📌 중요 공지를 내렸어요'); return;
+  }
   const list = $('teInput').value.split('\n').map(t => t.trim()).filter(Boolean);
   if (JSON.stringify(list) !== JSON.stringify(db[teKind] || [])){
     db[teKind] = list; if (teKind === 'notices') noticeChecked = {};
@@ -2825,6 +2843,13 @@ function renderNotices(){
 /* =========================================================
    🕐 시계
    ========================================================= */
+/* 📌 중요 공지 (조금 튀게) */
+function renderUrgent(){
+  const el = $('urgentBox'); if (!el) return;
+  const t = (db.urgent || '').trim();
+  el.classList.toggle('empty', !t);
+  el.innerHTML = `<div class="uh"><span class="dot"></span>📌 중요 공지<button type="button" class="edit-mini" title="고치기" style="margin-left:auto;">✏️</button></div><div class="ut">${t ? esc(t) : '눌러서 중요 공지를 적어요'}</div>`;
+}
 function setFlip(id, value){
   const el = $(id);
   if (el.textContent === value) return;
@@ -3256,7 +3281,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})) };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -3295,6 +3320,7 @@ function applyConfig(c){
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
+  if (typeof c.urgent === 'string' && c.urgent !== db.urgent){ db.urgent = c.urgent; setTimeout(renderUrgent, 0); }
 }
 function applyServerState(st){
   if (st.config) applyConfig(st.config);
@@ -5554,6 +5580,7 @@ function bindEvents(){
   $('syncPill').addEventListener('click', () => pullSync(true));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pullSync(); });
   window.addEventListener('online', () => pullSync());
+  $('urgentBox').addEventListener('click', () => editText('urgent'));
   $('openMenuBtn').addEventListener('click', () => { $('menuOverlay').style.display = 'flex'; });
   $('openCoinViewBtn').addEventListener('click', openCoinView);
   $('cvTabs').addEventListener('click', e => { const b = e.target.closest('[data-cv]'); if (b){ cvTab = b.dataset.cv; renderCoinView(); } });
@@ -5590,7 +5617,7 @@ function init(){
     applyTitle();
     fxInit();
     bindEvents();
-    drawMascot(false); scheduleBlink();
+    drawMascot(false); scheduleBlink(); renderUrgent();
     renderLadder();
     tick();
     setInterval(tick, 1000);
