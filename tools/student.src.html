@@ -103,6 +103,30 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .ci-on{font-size:.85rem;color:#C0506F;margin-top:5px;min-height:1em;}
 .ci-lock{margin-top:8px;font-size:.95rem;}
 
+/* 대화 */
+.chat{display:flex;flex-direction:column;gap:8px;}
+.chat-warn{font-size:.9rem;background:#FFF0B8;border:2px solid var(--ink);border-radius:10px;padding:5px 10px;}
+.chat-log{height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px;}
+.msg{max-width:82%;display:flex;flex-direction:column;gap:2px;}
+.msg .who{font-size:.8rem;color:var(--ink-soft);}
+.msg .bub{background:#FFF7DA;border:2px solid var(--ink);border-radius:14px 14px 14px 4px;padding:6px 10px;font-size:1.05rem;line-height:1.4;word-break:break-all;}
+.msg.me{align-self:flex-end;align-items:flex-end;}
+.msg.me .bub{background:#FFE3EE;border-radius:14px 14px 4px 14px;}
+.msg.wh .bub{background:var(--lav);border-style:dashed;}
+.msg.t .bub{background:#DFF7EC;}
+.chat-in{display:flex;gap:6px;}
+.chat-in select{width:auto;flex:none;font-size:1rem;padding:8px;}
+.chat-in input{flex:1;font-size:1.05rem;padding:8px 10px;}
+.chat-off{text-align:center;color:var(--ink-soft);padding:10px;}
+/* 건의함 */
+textarea{width:100%;padding:10px;font-size:1.1rem;border:3px solid var(--ink);border-radius:12px;background:#fff;font-family:inherit;color:var(--ink);resize:vertical;}
+.ask-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;}
+.ask-row select{width:auto;}
+.my-ask{border-top:2px dashed #F0E2BC;padding:8px 2px;font-size:1.05rem;line-height:1.45;}
+.my-ask .meta{font-size:.85rem;color:var(--ink-soft);}
+.my-ask .rep{background:var(--mint);border:2px solid var(--ink);border-radius:10px;padding:5px 10px;margin-top:4px;}
+.my-ask .wait{font-size:.9rem;color:var(--ink-soft);margin-top:3px;}
+
 /* 창 */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:100;padding:12px;}
 .modal{position:relative;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--cream);border:4px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px;animation:pop .22s ease-out;}
@@ -138,11 +162,13 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <div class="box"><div class="box-head">📢 오늘의 알림</div><div id="noticeList"></div></div>
     <div class="box"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
+    <div class="box"><div class="box-head mint">📮 질문 · 건의</div><div id="askBox"></div></div>
   </section>
 
   <section class="panel" id="p-village">
     <div class="ticker" id="ticker" style="display:none;"><span id="tickerText"></span></div>
     <div class="village" id="village"></div>
+    <div class="box" style="margin-top:30px;"><div class="box-head pink">💬 우리 반 대화</div><div id="chatBox"></div></div>
   </section>
 
   <section class="panel" id="p-me">
@@ -273,11 +299,11 @@ async function doLogin(){
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
     $('loginOv').style.display = 'none';
     toast(`${givenName(name)}, 어서 와! 🐾`);
-    render(); showTab('me');
+    chatReset(); render(); showTab('me'); chatPull(); askList();
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
 function logout(){
-  me = null; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
+  me = null; chatReset(); asks = []; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
 }
 
 /* ---------- 화면 ---------- */
@@ -329,6 +355,8 @@ function render(){
   });
 
   renderMe();
+  renderChat();
+  renderAsk();
 }
 
 function wearList(raw, lv){
@@ -400,6 +428,105 @@ async function changeLook(slot, val){
   });
 }
 
+/* ---------- 💬 대화 ---------- */
+let chat = { msgs: [], last: 0, cfg: null, muted: false, to: '' };
+function chatReset(){ chat = { msgs: [], last: 0, cfg: null, muted: false, to: '' }; }
+async function chatPull(){
+  if (!me || !API) return;
+  try {
+    const j = await studentCall('chatPull', { after: chat.last });
+    if (!j.ok) return;
+    applyChat(j);
+  } catch(e){}
+}
+function applyChat(j){
+  chat.cfg = j.cfg; chat.muted = j.muted;
+  const fresh = (j.msgs || []).filter(m => m.id > chat.last);
+  if (fresh.length){
+    chat.msgs = chat.msgs.concat(fresh).slice(-200); chat.last = fresh[fresh.length - 1].id;
+    if (current !== 'village' && fresh.some(m => m.from !== me.name)) $('dotVillage').classList.add('on');
+  }
+  renderChat();
+}
+function renderChat(){
+  const box = $('chatBox'); if (!box) return;
+  if (!me){ box.innerHTML = '<div class="chat-off">🔑 로그인하면 반 친구들과 대화할 수 있어요</div>'; return; }
+  const c = chat.cfg;
+  if (!c){ box.innerHTML = '<div class="chat-off">대화 불러오는 중…</div>'; return; }
+  if (!c.on){ box.innerHTML = '<div class="chat-off">💤 선생님이 대화를 잠시 꺼 두었어요</div>'; return; }
+  const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
+  const typing = $('chatText') ? $('chatText').value : '';
+  const logHtml = chat.msgs.length ? chat.msgs.map(m => {
+      const mine = m.from === me.name, wh = !!m.to, t = /(쌤|샘|선생님)$/.test(m.from);
+      const who = mine ? (wh ? `🤫 ${esc(m.to)}에게` : '나') : (wh ? `🤫 ${esc(m.from)} (귓속말)` : esc(m.from));
+      return `<div class="msg ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${t ? 't' : ''}"><span class="who">${who} · ${esc(m.t.slice(11))}</span><span class="bub">${esc(m.text)}</span></div>`;
+    }).join('') : '<div class="chat-off">첫 인사를 남겨 보자! 🐾</div>';
+  const sig = JSON.stringify([c, chat.muted, kidsList]);
+  if (document.activeElement && document.activeElement.id === 'chatText' && box.dataset.sig === sig && $('chatLog')){
+    const log = $('chatLog'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.innerHTML = logHtml; if (atBottom) log.scrollTop = log.scrollHeight;
+    return;
+  }
+  box.dataset.sig = sig;
+  box.innerHTML = `<div class="chat">
+    <div class="chat-warn">👀 선생님도 모든 대화(귓속말 포함)를 볼 수 있어요. 바르고 고운 말만! 💛</div>
+    <div class="chat-log" id="chatLog">${logHtml}</div>
+    ${!c.open ? `<div class="chat-off">🌙 지금은 대화 쉬는 시간이에요 (${esc(c.start)}~${esc(c.end)}에 할 수 있어요)</div>`
+      : chat.muted ? '<div class="chat-off">🔇 선생님이 잠시 대화 쓰기를 막아 두었어요</div>'
+      : `<div class="chat-in">
+          ${c.whisper ? `<select id="chatTo"><option value="">📢 전체</option>${kidsList.map(n => `<option value="${esc(n)}" ${chat.to === n ? 'selected' : ''}>🤫 ${esc(n)}</option>`).join('')}</select>` : ''}
+          <input type="text" id="chatText" maxlength="100" placeholder="${chat.to ? '귓속말 보내기' : '메시지 보내기'}" value="${esc(typing)}">
+          <button type="button" class="btn btn-y" id="chatSend">보내기</button></div>`}
+  </div>`;
+  const log = $('chatLog'); if (log) log.scrollTop = log.scrollHeight;
+}
+async function chatSend(){
+  const input = $('chatText'); if (!input) return;
+  const text = input.value.trim(); if (!text) return;
+  const btn = $('chatSend'); btn.disabled = true;
+  try {
+    const j = await studentCall('chatSend', { to: chat.to, text, after: chat.last });
+    if (j.ok){
+      if (j.error){ toast({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히 보내 주세요 🐢', whisper:'귓속말을 보낼 수 없어요', empty:'내용을 적어 주세요' }[j.error] || '보내지 못했어요'); }
+      else input.value = '';
+      applyChat(j);
+    } else toast('다시 로그인해 주세요');
+  } catch(e){ toast('연결이 안 돼서 보내지 못했어요'); }
+  finally { const b = $('chatSend'); if (b) b.disabled = false; }
+}
+
+/* ---------- 📮 질문·건의 ---------- */
+let asks = [];
+async function askList(){ if (!me) return; try { const j = await studentCall('askList'); if (j.ok){ asks = j.asks || []; renderAsk(); } } catch(e){} }
+function renderAsk(){
+  const box = $('askBox'); if (!box) return;
+  if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 질문이나 건의를 보낼 수 있어요</div>'; return; }
+  const ae = document.activeElement && document.activeElement.id;
+  if ((ae === 'askText' || ae === 'askKind' || ae === 'askAnon') && box.dataset.n === String(asks.length) && box.dataset.r === JSON.stringify(asks.map(a => a.reply))) return;
+  box.dataset.n = String(asks.length); box.dataset.r = JSON.stringify(asks.map(a => a.reply));
+  const kindNow = $('askKind') ? $('askKind').value : '질문', anonNow = $('askAnon') ? $('askAnon').checked : false;
+  const draft = $('askText') ? $('askText').value : '';
+  box.innerHTML = `<div class="ask-row"><select id="askKind"><option ${kindNow === '질문' ? 'selected' : ''}>질문</option><option ${kindNow === '건의' ? 'selected' : ''}>건의</option></select>
+      <label class="hint"><input type="checkbox" id="askAnon" ${anonNow ? 'checked' : ''}> 🙈 선생님 화면에 이름 없이 보내기</label></div>
+    <textarea id="askText" rows="3" maxlength="300" placeholder="궁금한 점이나 우리 반에 바라는 점을 적어 주세요">${esc(draft)}</textarea>
+    <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-mint" id="askSend">📮 보내기</button></div>
+    <div class="hint" style="margin:8px 0 4px;">내가 보낸 질문 (나만 볼 수 있어요)</div>
+    ${asks.length ? asks.map(a => `<div class="my-ask"><div class="meta">${a.kind === '건의' ? '💡 건의' : '❓ 질문'} · ${esc(a.t)}${a.anon ? ' · 🙈 익명' : ''}</div>
+      <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : '<div class="wait">⏳ 답변을 기다리는 중</div>'}</div>`).join('') : '<div class="empty">아직 보낸 질문이 없어요</div>'}`;
+}
+async function askSend(){
+  const text = $('askText').value.trim();
+  if (!text){ toast('내용을 적어 주세요'); return; }
+  $('askSend').disabled = true;
+  try {
+    const j = await studentCall('askSend', { kind: $('askKind').value, text, anon: $('askAnon').checked });
+    if (j.ok && !j.error){ $('askText').value = ''; toast('선생님께 보냈어요 📮'); }
+    else toast(j.error === 'slow' ? '조금 있다가 다시 보내 주세요' : '보내지 못했어요');
+    if (j.ok){ asks = j.asks || []; renderAsk(); }
+  } catch(e){ toast('연결이 안 돼서 보내지 못했어요'); }
+  finally { const b = $('askSend'); if (b) b.disabled = false; }
+}
+
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', e => {
   const t = e.target;
@@ -416,8 +543,12 @@ document.addEventListener('click', e => {
   }
   const sw = t.closest('[data-it]'); if (sw && me){ const it = ITEM_BY_ID[sw.dataset.it]; changeLook(it.slot, `${it.id}:${sw.dataset.ci}`); return; }
   const off = t.closest('[data-off]'); if (off && me){ changeLook(off.dataset.off, ''); return; }
+  if (t.closest('#chatSend')){ chatSend(); return; }
+  if (t.closest('#askSend')){ askSend(); return; }
 });
 $('loginBtn').addEventListener('click', doLogin);
+document.addEventListener('change', e => { if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
+document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });
 $('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
 
@@ -429,9 +560,11 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) pull
   const c = loadCred();
   if (c && c.name && c.pin){
     me = { name: c.name, pin: c.pin, info: null, look: null, acked: [] };
-    await refreshMe(true); render();
+    await refreshMe(true); render(); chatPull(); askList();
   }
   setInterval(() => pull(), 20000);
+  setInterval(() => { if (me && !document.hidden) chatPull(); }, current === 'village' ? 6000 : 6000);
+  setInterval(() => { if (me && !document.hidden) askList(); }, 60000);
 })();
 </script>
 </body>

@@ -363,6 +363,25 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .pin-list b{letter-spacing:3px;}
 @media print{ body *{visibility:hidden;} #pinListOverlay, #pinListOverlay *{visibility:visible;} #pinListOverlay{position:absolute;inset:0;background:#fff;} #pinListOverlay .modal-btns, #pinListOverlay .modal-x{display:none;} }
 
+/* ===== 💬 대화 · 📮 건의함 (관리) ===== */
+.chat-log{max-height:46vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:#FFFDF6;border:2px dashed #EAD49A;border-radius:12px;padding:8px;}
+.cmsg{display:flex;gap:8px;align-items:flex-start;font-size:1.05rem;line-height:1.4;}
+.cmsg .who{flex:none;font-size:.9rem;border:2px solid var(--ink);border-radius:999px;padding:0 8px;background:#fff;white-space:nowrap;}
+.cmsg.wh .who{background:var(--lav);}
+.cmsg.t .who{background:var(--pink);}
+.cmsg .txt{flex:1;word-break:break-all;}
+.cmsg .tm{flex:none;font-size:.75rem;color:var(--ink-soft);}
+.cmsg.del{opacity:.45;text-decoration:line-through;}
+.mute-chip{border:2px solid var(--ink);border-radius:999px;padding:2px 10px;cursor:pointer;background:#fff;font-size:.95rem;}
+.mute-chip.on{background:#FFC9D3;}
+.ask-card{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;}
+.ask-card.done{background:#F4FFF9;}
+.ask-meta{font-size:.9rem;color:var(--ink-soft);}
+.ask-text{font-size:1.15rem;line-height:1.45;word-break:break-all;}
+.ask-reply{font-size:1rem;background:var(--y-soft);border-radius:10px;padding:6px 10px;}
+.dot-red{position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;background:#FF5C7A;border:2px solid var(--ink);display:none;}
+#openGmBtn{position:relative;}
+
 /* ===== 오버레이 · 모달 ===== */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
@@ -527,7 +546,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     </div>
 
     <div class="header-right">
-      <div class="date-row"><button type="button" class="icon-btn" id="openGmBtn" title="관리자 모드">👑</button><div class="date-pill" id="currentDate">날짜 불러오는 중...</div></div>
+      <div class="date-row"><button type="button" class="icon-btn" id="openGmBtn" title="관리자 모드">👑<span class="dot-red" id="gmDot"></span></button><div class="date-pill" id="currentDate">날짜 불러오는 중...</div></div>
       <div class="clock-panel">
         <div class="flip-unit"><span class="flip-digits" id="flipHour">00</span></div>
         <div class="flip-colon"><span></span><span></span></div>
@@ -637,10 +656,65 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <button type="button" class="modal-x" data-close="gmOverlay" title="닫기">✕</button>
     <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 EXP·레벨·출석·꾸미기를 바꿔요</small></h2>
     <div class="gm-body">
-      <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
+      <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
+        <button type="button" class="mini-btn" style="background:var(--sky);margin-bottom:6px;" id="gmChatBtn">💬 대화 관리</button>
+        <button type="button" class="mini-btn" style="background:var(--mint);margin-bottom:6px;" id="gmAskBtn">📮 질문·건의함 <b id="gmAskCount"></b></button>
+        <button type="button" class="mini-btn" style="background:#FF9DAE;margin-bottom:10px;" id="gmResetBtn">🧨 전체 초기화</button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
     </div>
     <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
+  </div>
+</div>
+
+<!-- 전체 초기화 -->
+<div class="overlay" id="resetOverlay" style="z-index:10003;">
+  <div class="modal modal-small">
+    <button type="button" class="modal-x" data-close="resetOverlay" title="닫기">✕</button>
+    <h2>🧨 전체 초기화</h2>
+    <div class="section">
+      <label><input type="checkbox" id="rsRecords" checked> 출석 기록 · EXP 리스트 · 관리자 조정 EXP 전부 지우기 <small>(모든 학생 레벨이 Lv.1로)</small></label>
+      <label><input type="checkbox" id="rsLooks"> 고양이 꾸미기도 처음 상태로</label>
+      <label><input type="checkbox" id="rsSeason" checked> 시즌 시작일을 오늘로</label>
+      <div class="form-hint">명단 · 설정 · EXP 규칙 · 알림 · 종례 · 학생 비밀번호 · 교사 열쇠는 그대로 남아요. 알림 '확인' 기록은 지워져요.<br>지우기 전에 혹시 몰라 <b>백업 파일</b>을 자동으로 내려받아요.</div>
+    </div>
+    <div class="modal-btns"><button type="button" class="btn btn-gray" data-close="resetOverlay">취소</button><button type="button" class="btn btn-danger" id="rsGoBtn">🧨 초기화하기</button></div>
+  </div>
+</div>
+
+<!-- 대화 관리 -->
+<div class="overlay" id="chatAdmOverlay" style="z-index:10003;">
+  <div class="modal modal-large">
+    <button type="button" class="modal-x" id="caXBtn" title="닫기">✕</button>
+    <h2>💬 대화 관리 <small style="font-size:1rem;color:var(--ink-soft);">학생 페이지 '우리 반 대화'</small></h2>
+    <div class="section">
+      <div class="row" style="justify-content:flex-start;gap:16px;">
+        <label><input type="checkbox" id="caOn"> 대화 켜기</label>
+        <label><input type="checkbox" id="caWhisper"> 귓속말(1:1) 허용</label>
+        <span>대화 시간 <input type="time" id="caStart"> ~ <input type="time" id="caEnd"></span>
+      </div>
+      <div class="form-group"><label>🚫 금지어 더 넣기 (쉼표로 구분 · 기본 욕설은 이미 막혀 있어요)</label><input type="text" id="caBan" placeholder="예: 바보, 멍청이"></div>
+      <div><div class="form-hint" style="margin-bottom:4px;">🔇 누르면 그 학생은 대화를 쓸 수 없어요 (읽기는 가능)</div><div class="row" style="justify-content:flex-start;gap:6px;" id="caMute"></div></div>
+      <div class="row" style="justify-content:flex-end;"><button type="button" class="btn btn-y" id="caSaveBtn">설정 저장</button></div>
+    </div>
+    <div class="section">
+      <div class="section-title">📜 모든 대화 <small style="color:var(--ink-soft);">(귓속말 포함 · 시트 '대화' 탭에도 남아요)</small></div>
+      <div class="chat-log" id="caLog"></div>
+      <div class="row" style="justify-content:flex-start;">
+        <select id="caTo" style="padding:7px;border:2px solid var(--ink);border-radius:10px;font-size:1rem;"></select>
+        <input type="text" id="caText" maxlength="200" placeholder="선생님으로 메시지 보내기" style="flex:1;min-width:180px;">
+        <button type="button" class="mini-btn" id="caSendBtn">보내기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 질문·건의함 -->
+<div class="overlay" id="askAdmOverlay" style="z-index:10003;">
+  <div class="modal modal-large">
+    <button type="button" class="modal-x" id="aaXBtn" title="닫기">✕</button>
+    <h2>📮 질문 · 건의함</h2>
+    <div class="tabs"><button type="button" class="tab active" data-af="open">답변 기다림</button><button type="button" class="tab" data-af="all">전체</button></div>
+    <div id="askList" style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 </div>
 
@@ -1141,6 +1215,7 @@ const TIER_META = {
   yawn:   { label:'SLEEPY',     short:'하품',   icon:'🥱', color:'#E7DFFF', cap:'#C4B5FF', sleepy:true, msg:n => `하암~ ${n}, 살짝 늦었다냥` },
   nod:    { label:'SLEEPY',     short:'꾸벅',   icon:'😪', color:'#DCD2FF', cap:'#B3A1FF', sleepy:true, msg:n => `꾸벅… ${n}, 조금 늦었다냥` },
   sleep:  { label:'SLEEPY',     short:'쿨쿨',   icon:'💤', color:'#D0D8FF', cap:'#9C8BF0', sleepy:true, msg:n => `쿨쿨… ${n}, 내일은 일찍 오자냥` },
+  teacher:{ label:'👩‍🏫 출근 도장', short:'출근', icon:'👩‍🏫', color:'#FFE3EE', cap:'#FF9EC4', pool:'legend', msg:n => `${n} 출근!` },
   burrito:{ label:'SLEEPY',     short:'이불',   icon:'🛌', color:'#C6CDF6', cap:'#8C74F0', sleepy:true, msg:n => `이불 밖은 위험해… ${n}, 내일은 꼭!` },
   absent: { label:'쉬는 날',    short:'쉬는 날', icon:'🏠', color:'#EFE9E1' }
 };
@@ -1406,14 +1481,14 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
+      card.insertAdjacentHTML('beforeend', `<div class="student-name">${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
     } else {
       const tk = recTier(rec), meta = TIER_META[tk];
       card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
       const streak = tk === 'absent' ? 0 : streakOf(name);
       card.innerHTML =
-        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${dayTotal(name) < 0 ? ' 🧹' : ''}</div>` +
+        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` +
         (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
         (medalOf(rec) ? `<div class="card-first" title="오늘의 ${medalOf(rec)}등">${MEDALS[medalOf(rec)]}</div>` : '') +
         (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
@@ -1437,17 +1512,17 @@ function renderGrid(){
 function updateStatsBoard(){
   const day = todayData();
   let p = 0, l = 0, d = 0, exp = 0;
-  db.students.forEach(n => {
+  kids().forEach(n => {
     const r = day[n]; if (!r) return;
     if (r.status === 'present') p++; else if (r.status === 'late') l++; else if (r.status === 'dungeon') d++;
     exp += Number(r.exp) || 0;
   });
-  dailyBonus().forEach(b => { if (db.students.includes(b.who)) exp += b.exp; });
+  dailyBonus().forEach(b => { if (kids().includes(b.who)) exp += b.exp; });
   $('statPresent').textContent = `⭐ 출석 ${p}`;
   $('statLate').textContent = `💤 지각 ${l}`;
   $('statDungeon').textContent = `🏠 쉬는 날 ${d}`;
   $('statExp').textContent = `✨ 오늘 EXP ${fmtExp(exp)}`;
-  const total = Math.max(0, db.students.length - d), arrived = p + l;
+  const total = Math.max(0, kids().length - d), arrived = p + l;
   const pct = total ? Math.min(100, arrived / total * 100) : 0;
   $('gaugeFill').style.width = pct + '%';
   $('gaugePaw').style.left = `calc(${pct}% ${pct > 50 ? '- 14px' : '+ 14px'})`;
@@ -1456,9 +1531,11 @@ function updateStatsBoard(){
   $('gaugeText').textContent = `${arrived} / ${total}`;
   $('gaugeTitle').textContent = full ? '🎉 냥냥 파티 성공!' : `🎉 냥냥 파티까지 ${total - arrived}명`;
 }
+function kids(){ return db.students.filter(n => !isTeacherName(n)); }
 function allArrived(){
   const day = todayData();
-  return db.students.length > 0 && db.students.every(n => day[n]) && db.students.some(n => day[n].status !== 'dungeon');
+  const k = kids();
+  return k.length > 0 && k.every(n => day[n]) && k.some(n => day[n].status !== 'dungeon');
 }
 
 /* =========================================================
@@ -1477,7 +1554,8 @@ function handleTouch(name){
   if (!db.records[ds]) db.records[ds] = {};
   const day = db.records[ds];
   if (day[name]) return;
-  const tier = getTier(now);
+  const isT = isTeacherName(name);
+  const tier = isT ? { key:'teacher', exp:0, late:false } : getTier(now);
   const lvBefore = levelsNow();
   const ch = pickChar(tier.key, day);
   const rec = {
@@ -1486,8 +1564,8 @@ function handleTouch(name){
     exp: tier.exp, charId: ch.id
   };
   if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
-  const arrivals = Object.values(day).filter(r => r.status === 'present' || r.status === 'late').length;
-  if (arrivals < 3) rec.rank = arrivals + 1;
+  const arrivals = kids().filter(n => day[n] && (day[n].status === 'present' || day[n].status === 'late')).length;
+  if (!isT && arrivals < 3) rec.rank = arrivals + 1;
   day[name] = rec;
   saveDB(); syncOp({ op:'rec', ds, name, rec });
   lastNew = name;
@@ -1516,7 +1594,7 @@ function showReveal(name, rec, ds, done){
     st.classList.add(...stampClass(streak).split(' ').filter(Boolean));
   }
   const md = medalOf(rec);
-  $('revFirst').textContent = [md ? `${MEDALS[md]} 오늘의 ${md}등 도착!` : '', (name !== '미리보기' ? dayTotal(name) < 0 : meta.sleepy) ? '🧹 오늘 EXP가 마이너스예요! EXP 리스트로 만회해 보자' : ''].filter(Boolean).join('  ');
+  $('revFirst').textContent = [md ? `${MEDALS[md]} 오늘의 ${md}등 도착!` : '', (name !== '미리보기' ? (!isTeacherName(name) && dayTotal(name) < 0) : meta.sleepy) ? '🧹 오늘 EXP 마이너스 = 청소 당번! 만회 못 하면 빗자루 들 준비해 😾' : ''].filter(Boolean).join('  ');
   $('revExp').textContent = '';
   ov.style.display = 'flex';
   let canClose = false;
@@ -1532,7 +1610,7 @@ function showReveal(name, rec, ds, done){
   };
   setTimeout(() => {
     rv.classList.remove('shake'); rv.classList.add('open');
-    sfx(meta.sleepy ? 'late' : rec.tier);
+    sfx(meta.sleepy ? 'late' : (rec.tier === 'teacher' ? 'legend' : rec.tier));
     burst(meta.sleepy ? 'sleepy' : rec.tier);
     if (rec.tier === 'legend') setTimeout(() => { burst('legend', innerWidth*.2, innerHeight*.35); burst('legend', innerWidth*.8, innerHeight*.35); }, 350);
     countExp(Number(rec.exp) || 0);
@@ -1589,7 +1667,7 @@ function renderMenuBoard(){
   html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += '</div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
-  const cleaners = db.students.filter(n => dayTotal(n) < 0);
+  const cleaners = kids().filter(n => dayTotal(n) < 0);
   html += `<div class="clean-row"><span>🧹 오늘의 청소 당번</span>${cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
@@ -1687,11 +1765,11 @@ const GREET_TIME = {
   ],
   morning: GREETINGS,
   late: [
-    '헐레벌떡 왔구나! 숨 한번 고르고 천천히 앉자 🍃', '늦어도 괜찮아, 와 줘서 정말 고마워 💛', '아침에 바빴지? 여기 오면 이제 괜찮아',
-    '뛰어오느라 고생했어! 물 한 모금 마시자 💧', '오늘 늦은 건 오늘로 끝! 내일은 같이 일찍 와 보자 🐾',
-    '혹시 무슨 일 있었어? 힘들면 선생님께 꼭 말해 줘', '자리에 앉는 순간부터 다시 시작이야 ✨', '조금 늦었지만 오늘의 주인공은 여전히 너야!',
-    '천천히 와도 돼, 대신 다치지 않게! 🩹', '기다리고 있었어. 와 줘서 다행이다 🫶', '아침밥은 챙겨 먹었어? 배고프면 말해 줘',
-    '늦잠 잔 날도 있지! 하나도 가끔 그래 😽', '하나가 문 앞에서 기다렸어 🐱', '내일은 레전드 냥이 노려 보자! 👑'
+    '지각은 우리 반 금지어인 거 몰라?! 😾', '하나가 시계 보면서 기다렸다… 내일은 국물도 없다냥 🐾', '핑계는 종례 때 선생님 앞에서 들어 볼게 ✋',
+    '이불 밖으로 나오느라 수고했다… 근데 그게 이유가 될까? 🛌', '오늘 EXP 깎인 거 보이지? 내일 레전드로 갚아라 👑', '지각이 쌓이면 청소 당번 직행이야 🧹',
+    '우리 반은 지각 없는 반이야. 내일은 무조건 일찍! ⏰', '선생님 표정 봤어? 하나는 못 본 척… 아니, 다 봤어 👀', '알람 몇 개 맞춰? 내일부터 하나 더 맞추자 ⏰⏰',
+    '헐레벌떡 온 건 알겠는데… 지각은 지각이다냥 😾', '오늘 지각 기록, 하나가 똑똑히 적어 뒀어 📒', '내일도 늦으면 하나가 집까지 데리러 간다?! 🐱💨',
+    '숨 고르고 자리에 앉아. 대신 내일은 절대 안 돼! ❌', '반 친구들은 다 와 있는데… 주인공은 원래 늦게 등장하는 거 아니다 🎬'
   ],
   day: [
     '어서 와! 병원 다녀왔니? 몸은 괜찮아? 🩹', '지금이라도 와 줘서 정말 기뻐 💛', '오는 길 힘들진 않았어? 천천히 적응하자',
@@ -1719,7 +1797,7 @@ const GREET_SEASON = {
 const HELLO = {
   dawn: [ '{c} 일찍 왔네? 🌅', '{c} 벌써 왔어? 😮', '와, {c}! 1등 기운! ✨' ],
   morning: [ '{c} 왔어? 👋', '{c} 안녕! 🐾', '{c} 좋은 아침! ☀️', '어서 와, {g}! 💛' ],
-  late: [ '{c} 무사히 왔구나 🍃', '{c} 어서 와! 💛', '{g}, 왔구나! 🐾' ],
+  late: [ '{c}!!! 지금 몇 시야?! ⏰', '{c}, 거기 서! 🚨', '{g}… 오늘도 이불이 이겼구나? 🛌', '{c} 늦었다!!! 😾' ],
   day: [ '{c} 어서 와! 💛', '{c} 반가워! 🐾' ],
   afternoon: [ '{c} 어서 와! 💛', '{c} 반가워! 🌤' ],
   night: [ '{c} 이 밤에?! 🌙' ],
@@ -1729,7 +1807,6 @@ const HELLO = {
 const T_HELLO = {
   dawn: [ '{n} 벌써 출근하셨어요? 🌅', '{n} 오셨다냥! 일찍 오셨네요 🙇' ],
   morning: [ '{n} 출근하셨다냥! 🙇', '{n} 오셨어요? ☕', '어서 오세요, {n}! 🐾', '{n} 좋은 아침이에요! ☀️' ],
-  late: [ '{n}, 쉿! 비밀로 할게요 🤫', '{n} 오셨다냥! 🙇' ],
   day: [ '{n} 어서 오세요! 💛' ], afternoon: [ '{n} 어서 오세요! 💛' ],
   night: [ '{n} 아직 퇴근 안 하셨어요?! 🌙' ], weekend: [ '{n} 주말 출근이요?! 😿' ]
 };
@@ -1742,10 +1819,9 @@ const T_GREET = {
     '하나가 오늘 쌤 전담 응원단이에요 📣', '오늘 하루도 잘 부탁드려요, 대장님! 👑', '수업 준비하시느라 고생 많으셨죠? 🍀'
   ],
   dawn: [ '이렇게 일찍요?! 하나가 교실 불 켜 둘게요 💡', '쌤 덕분에 교실이 제일 먼저 깨어났어요 🌅', '오늘 1등 출근! 레전드 쌤이세요 👑' ],
-  late: [ '쌤도 늦을 때가 있죠… 아이들한텐 비밀이에요 🤫', '회의 다녀오셨어요? 고생 많으셨어요 📋', '숨 돌리시고 천천히 시작하세요 🍵' ],
   day: [ '출장 다녀오셨어요? 고생 많으셨어요 🚌', '오후도 힘내세요! 하나가 응원할게요 📣' ],
   afternoon: [ '출장 다녀오셨어요? 고생 많으셨어요 🚌', '오후도 힘내세요! 하나가 응원할게요 📣' ],
-  night: [ '아직 퇴근 안 하셨어요?! 얼른 들어가 쉬세요 🌙', '야근은 하나가 대신… 못 해요 😿 얼른 퇴근!' ],
+  night: [ '오늘 하루 정말 고생 많으셨어요. 얼른 들어가 쉬세요 🌙', '야근은 하나가 대신… 못 해요 😿 얼른 퇴근!' ],
   weekend: [ '주말엔 쉬셔야죠! 출석부는 하나가 지킬게요 🛋' ],
   1: [ '월요일 출근 성공! 이번 주도 화이팅이에요 💪' ],
   5: [ '불금이에요! 무사 퇴근까지 조금만 힘내세요 🎉' ]
@@ -1765,9 +1841,10 @@ function seasonOf(m){ return [12,1,2].includes(m) || m === 11 ? 'winter' : [3,4,
 function greetingFor(name, d){
   const b = timeBucket(d), wd = d.getDay();
   if (isTeacherName(name)){
-    const hello = rand(T_HELLO[b] || T_HELLO.morning).replace('{n}', name);
-    let pool = (T_GREET[b] || []).concat(b === 'dawn' || b === 'morning' ? T_GREET.base : []);
-    if (T_GREET[wd] && (b === 'dawn' || b === 'morning') && Math.random() < 0.4) pool = T_GREET[wd];
+    const tb = b === 'late' ? 'morning' : b;   // 선생님은 마감 이후 출근이 기본이에요
+    const hello = rand(T_HELLO[tb] || T_HELLO.morning).replace('{n}', name);
+    let pool = (T_GREET[tb] || []).concat(tb === 'dawn' || tb === 'morning' ? T_GREET.base : []);
+    if (T_GREET[wd] && (tb === 'dawn' || tb === 'morning') && Math.random() < 0.4) pool = T_GREET[wd];
     return { hello, msg: pickFrom(pool.length ? pool : T_GREET.base) };
   }
   const g = givenName(name), c = callName(g);
@@ -2018,8 +2095,8 @@ function renderClosing(){
   $('closingList').innerHTML = list.length
     ? list.map((t, i) => `<div class="closing-item ${closingChecked[i] ? 'done' : ''}" data-ci="${i}"><div class="closing-num">${closingChecked[i] ? '✔' : i + 1}</div><div class="closing-text">${esc(t)}</div></div>`).join('')
     : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>';
-  const cleaners = db.students.filter(n => dayTotal(n) < 0);
-  let exp = 0; db.students.forEach(n => exp += dayTotal(n));
+  const cleaners = kids().filter(n => dayTotal(n) < 0);
+  let exp = 0; kids().forEach(n => exp += dayTotal(n));
   const extra = [`✨ 오늘 우리 반 EXP ${fmtExp(exp)}`];
   if (cleaners.length) extra.push(`🧹 청소 당번: ${cleaners.map(esc).join(', ')}`);
   $('closingExtra').innerHTML = extra.map(x => `<span>${x}</span>`).join('');
@@ -2102,6 +2179,7 @@ function gmUndo(id){
   }
 }
 function renderGm(){
+  updateGmDot();
   const sm = seasonExpMap();
   $('gmList').innerHTML = db.students.map(n => { const li = levelInfo(sm[n] || 0);
     return `<div class="gm-stu ${n === gmName ? 'on' : ''}" data-gm="${esc(n)}"><span>${esc(n)}</span><small>Lv.${li.lv} · ${fmtExp(li.exp)}</small></div>`; }).join('');
@@ -2163,6 +2241,9 @@ function onGmClick(e){
   }
   if (t.closest('#gmPinDelBtn')){ if (confirm(`${gmName}의 비밀번호를 지울까요? 학생 페이지에 로그인할 수 없게 돼요.`)) setStudentPins({ [gmName]: '' }); return; }
   if (t.closest('#gmPinAllBtn')){ makeAllPins(); return; }
+  if (t.closest('#gmResetBtn')){ $('resetOverlay').style.display = 'flex'; return; }
+  if (t.closest('#gmChatBtn')){ openChatAdmin(); return; }
+  if (t.closest('#gmAskBtn')){ openAskAdmin(); return; }
   const u = t.closest('[data-gmundo]'); if (u){ gmUndo(u.dataset.gmundo); }
 }
 
@@ -2173,7 +2254,7 @@ function checkParty(){
   if (!allArrived() || partyMap()[ds]) return;
   const m = partyMap(); m[ds] = true; localStorage.setItem(PARTY_KEY, JSON.stringify(m));
   const day = todayData();
-  const exp = db.students.reduce((s, n) => s + (Number(day[n] && day[n].exp) || 0), 0);
+  const exp = kids().reduce((s, n) => s + (Number(day[n] && day[n].exp) || 0), 0);
   drawColors($('partyMascot'), catColors(MASCOT));
   $('partySub').textContent = `오늘 우리 반이 모은 EXP ${fmtExp(exp)} ✨`;
   const ov = $('partyOverlay'); ov.style.display = 'flex';
@@ -2325,7 +2406,7 @@ function mascotJump(){
 function mascotReact(tier){
   const lines = {
     legend:'우와아! 레전드다냥!! ✨', unique:'신비로운 유니크 냥이다냥 🦄', rare:'반짝반짝 레어 냥이다냥 💎', normal:'어서 와라냥~ 🐾', safe:'휴~ 세이프다냥! 🐾',
-    yawn:'하암… 괜찮아, 내일은 일찍 오자냥', nod:'괜찮아, 내일은 일찍 오자냥', sleep:'쿨쿨이들 깨우러 가야겠다냥', burrito:'이불 밖으로 나온 것만으로도 장하다냥'
+    yawn:'하암? 지금 하품할 때가 아니다냥! ⏰', nod:'꾸벅? 정신 차려라냥! 😾', sleep:'쿨쿨이라니… 내일은 국물도 없다냥 😾', burrito:'이불 돌돌 말고 왔냐냥?! 내일은 절대 안 돼! ❌'
   };
   setBubble(lines[tier] || '냥!', 4500);
   if (!TIER_META[tier].sleepy) mascotJump();
@@ -2356,7 +2437,7 @@ function renderNotices(){
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
     const acked = ackNames(text);
     item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>` +
-      (sync.url && sync.api >= 3 ? `<button type="button" class="ack-badge" title="학생 확인 현황">✔ ${acked.length}/${db.students.length}</button>` : '');
+      (sync.url && sync.api >= 3 ? `<button type="button" class="ack-badge" title="학생 확인 현황">✔ ${acked.length}/${kids().length}</button>` : '');
     const badge = item.querySelector('.ack-badge');
     if (badge) badge.onclick = e => { e.stopPropagation(); showAcks(text); };
     item.onclick = () => { noticeChecked[idx] = !noticeChecked[idx]; renderNotices(); };
@@ -2488,6 +2569,23 @@ function renderDex(box){
     html += '</div>';
   }
   box.innerHTML = html;
+}
+function fullReset(){
+  const doRec = $('rsRecords').checked, doLooks = $('rsLooks').checked, doSeason = $('rsSeason').checked;
+  if (!doRec && !doLooks && !doSeason){ alert('지울 항목을 하나 이상 골라 주세요.'); return; }
+  if (!confirm('정말 초기화할까요? 되돌리려면 방금 내려받는 백업 파일이 필요해요.')) return;
+  downloadBackup();
+  if (doRec){ db.records = {}; db.bonus = {}; db.cleanDone = {}; localStorage.removeItem(PARTY_KEY); }
+  if (doLooks) db.looks = {};
+  if (doSeason) db.level = Object.assign({}, db.level, { start: getTodayStr() });
+  saveDB();
+  if (sync.url){
+    sync.queue = [{ op:'import', state: serverStateOf(), notices: db.notices.slice(), closing: (db.closing || []).slice() }];
+    sync.pubHash = ''; saveSync(); flushSync();
+  }
+  $('resetOverlay').style.display = 'none';
+  renderGrid(); updateStatsBoard(); renderGm();
+  setBubble('싹 정리했다냥! 새 출발이다 🐾', 4000);
 }
 function resetToday(){
   const ds = getTodayStr();
@@ -2739,7 +2837,7 @@ function closeAlarmOverlay(stopSound){
    ========================================================= */
 const SYNC_KEY = 'nyangSync_v1';
 let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null, api:0, key:'', needKey:false, pubHash:'' };
-let serverPinSet = [], serverAcks = {};
+let serverPinSet = [], serverAcks = {}, serverAsksOpen = 0;
 let syncBusy = false;
 function loadSync(){ try { Object.assign(sync, JSON.parse(localStorage.getItem(SYNC_KEY)) || {}); } catch(e){} sync.ok = null; }
 function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last, api:sync.api, key:sync.key, pubHash:sync.pubHash })); }
@@ -2828,6 +2926,8 @@ async function pullSync(force){
       : await syncFetch(`${sync.url}?since=${since}&t=${Date.now()}`);
     if (sync.api < 3 && j.api >= 3){ sync.api = j.api; saveSync(); syncBusy = false; return pullSync(true); }   // 시트 코드가 새 버전으로 바뀌었어요
     sync.needKey = !!j.needKey;
+    if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
+    if (typeof j.asksOpen === 'number'){ serverAsksOpen = j.asksOpen; updateGmDot(); }
     if (j.pinSet) serverPinSet = j.pinSet;
     if (j.state && j.state.acks) serverAcks = j.state.acks;
     let changed = false;
@@ -2852,10 +2952,10 @@ function buildPub(){
     const li = levelInfo(sm[n] || 0), r = day[n], tk = r ? recTier(r) : null;
     priv[n] = { lv: li.lv, lvName: LEVELS[li.lv - 1].name, exp: li.exp, need: li.need, next: li.next, pct: Math.round(li.pct * 100),
       today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0 } : null,
-      total: dayTotal(n), clean: dayTotal(n) < 0 };
+      total: dayTotal(n), clean: !isTeacherName(n) && dayTotal(n) < 0 };
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
-  return { title: db.mainTitle, ds: getTodayStr(), clean: db.students.filter(n => dayTotal(n) < 0), students, priv };
+  return { title: db.mainTitle, ds: getTodayStr(), clean: kids().filter(n => dayTotal(n) < 0), students, priv };
 }
 function publishPub(){
   if (!sync.url || sync.api < 3) return;
@@ -2867,10 +2967,101 @@ function syncLook(name){
   if (sync.api >= 3) syncOp({ op:'look', name, look: (db.looks && db.looks[name]) || null });
   else syncOp({ op:'config', data: configOf() });
 }
-function ackNames(text){ return ((serverAcks[getTodayStr()] || {})[text] || []).filter(n => db.students.includes(n)); }
+function ackNames(text){ return ((serverAcks[getTodayStr()] || {})[text] || []).filter(n => kids().includes(n)); }
 function showAcks(text){
-  const yes = ackNames(text), no = db.students.filter(n => !yes.includes(n));
+  const yes = ackNames(text), no = kids().filter(n => !yes.includes(n));
   alert(`📢 ${text}\n\n✔ 확인함 (${yes.length}명): ${yes.join(', ') || '-'}\n\n⏳ 아직 (${no.length}명): ${no.join(', ') || '-'}`);
+}
+function updateGmDot(){
+  $('gmDot').style.display = serverAsksOpen > 0 ? 'block' : 'none';
+  const c = $('gmAskCount'); if (c) c.textContent = serverAsksOpen > 0 ? `(${serverAsksOpen})` : '';
+}
+function teacherName(){ return db.students.find(isTeacherName) || '선생님'; }
+async function teacherCall(body){
+  return syncFetch(sync.url, { method:'POST', body: JSON.stringify(Object.assign({ key: sync.key }, body)) });
+}
+function needApi4(){
+  if (!sync.url || sync.api < 4){ alert('대화·건의함은 구글 시트 코드를 최신 버전(v4)으로 업데이트해야 쓸 수 있어요.\n(Apps Script에 새 Code.gs 붙여넣기 → 배포 관리 → 새 버전)'); return true; }
+  return false;
+}
+/* 💬 대화 관리 */
+let caTimer = null, caCfg = null;
+async function openChatAdmin(){
+  if (needApi4()) return;
+  $('chatAdmOverlay').style.display = 'flex';
+  await loadChatAdmin(true);
+  clearInterval(caTimer); caTimer = setInterval(() => { if ($('chatAdmOverlay').style.display === 'flex') loadChatAdmin(false); else clearInterval(caTimer); }, 8000);
+}
+async function loadChatAdmin(withCfg){
+  try {
+    const j = await teacherCall({ action:'chat', after:0 });
+    if (withCfg || !caCfg){
+      caCfg = j.cfg;
+      $('caOn').checked = !!caCfg.on; $('caWhisper').checked = !!caCfg.whisper;
+      $('caStart').value = caCfg.start || ''; $('caEnd').value = caCfg.end || '';
+      $('caBan').value = (caCfg.ban || []).join(', ');
+      $('caMute').innerHTML = kids().map(n => `<button type="button" class="mute-chip ${(caCfg.muted || []).includes(n) ? 'on' : ''}" data-mute="${esc(n)}">${(caCfg.muted || []).includes(n) ? '🔇 ' : ''}${esc(n)}</button>`).join('');
+      $('caTo').innerHTML = '<option value="">📢 전체에게</option>' + kids().map(n => `<option value="${esc(n)}">🤫 ${esc(n)}에게</option>`).join('');
+    }
+    const log = $('caLog'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
+    log.innerHTML = j.msgs.length ? j.msgs.map(m => `<div class="cmsg ${m.to ? 'wh' : ''} ${isTeacherName(m.from) || m.from === '선생님' ? 't' : ''} ${m.del ? 'del' : ''}">
+        <span class="who">${esc(m.from)}${m.to ? ' → ' + esc(m.to) + ' 🤫' : ''}</span><span class="txt">${esc(m.text)}</span><span class="tm">${esc(m.t.slice(5))}</span>
+        ${m.del ? '' : `<button type="button" class="act-btn cancel" data-cdel="${m.id}" title="지우기">🗑</button>`}</div>`).join('')
+      : '<div class="clean-empty">아직 대화가 없어요</div>';
+    if (atBottom || withCfg) log.scrollTop = log.scrollHeight;
+  } catch(e){ $('caLog').innerHTML = `<div class="clean-empty">불러오지 못했어요: ${esc(e.message)}</div>`; }
+}
+async function saveChatCfg(){
+  const muted = [...document.querySelectorAll('#caMute .mute-chip.on')].map(b => b.dataset.mute);
+  const cfg = { on: $('caOn').checked, whisper: $('caWhisper').checked, start: $('caStart').value, end: $('caEnd').value,
+    ban: $('caBan').value.split(',').map(x => x.trim()).filter(Boolean), muted };
+  try { await teacherCall({ ops:[{ op:'chatCfg', cfg }] }); showToast('💬 대화 설정을 저장했어요'); await loadChatAdmin(true); }
+  catch(e){ alert('저장하지 못했어요: ' + e.message); }
+}
+async function onChatAdmClick(e){
+  const m = e.target.closest('[data-mute]'); if (m){ m.classList.toggle('on'); m.textContent = (m.classList.contains('on') ? '🔇 ' : '') + m.dataset.mute; return; }
+  const d = e.target.closest('[data-cdel]');
+  if (d){ if (!confirm('이 메시지를 지울까요? (학생 화면에서 사라져요)')) return; await teacherCall({ ops:[{ op:'chatDel', id:Number(d.dataset.cdel) }] }); loadChatAdmin(false); return; }
+  if (e.target.closest('#caSaveBtn')){ saveChatCfg(); return; }
+  if (e.target.closest('#caSendBtn')){
+    const text = $('caText').value.trim(); if (!text) return;
+    await teacherCall({ ops:[{ op:'chatSend', from: teacherName(), to: $('caTo').value, text }] });
+    $('caText').value = ''; loadChatAdmin(false); return;
+  }
+  if (e.target.closest('#caXBtn')){ $('chatAdmOverlay').style.display = 'none'; clearInterval(caTimer); }
+}
+/* 📮 질문·건의함 */
+let askFilter = 'open', askCache = [];
+async function openAskAdmin(){
+  if (needApi4()) return;
+  $('askAdmOverlay').style.display = 'flex';
+  await loadAskAdmin();
+}
+async function loadAskAdmin(){
+  try { const j = await teacherCall({ action:'asks' }); askCache = j.asks.filter(a => !a.del).reverse(); }
+  catch(e){ $('askList').innerHTML = `<div class="clean-empty">불러오지 못했어요: ${esc(e.message)}</div>`; return; }
+  serverAsksOpen = askCache.filter(a => !a.reply).length; updateGmDot();
+  document.querySelectorAll('#askAdmOverlay [data-af]').forEach(b => b.classList.toggle('active', b.dataset.af === askFilter));
+  const list = askFilter === 'open' ? askCache.filter(a => !a.reply) : askCache;
+  $('askList').innerHTML = list.length ? list.map(a => `<div class="ask-card ${a.reply ? 'done' : ''}">
+      <div class="ask-meta">${a.kind === '건의' ? '💡 건의' : '❓ 질문'} · ${a.anon ? '🙈 익명' : '🐱 ' + esc(a.from)} · ${esc(a.t)}</div>
+      <div class="ask-text">${esc(a.text)}</div>
+      ${a.reply ? `<div class="ask-reply">💬 ${esc(a.reply)} <small>(${esc(a.rt)})</small></div>` : ''}
+      <div class="row" style="justify-content:flex-start;"><input type="text" placeholder="${a.reply ? '답변 고치기' : '답변 쓰기'}" data-ain="${a.id}" style="flex:1;min-width:180px;">
+        <button type="button" class="mini-btn" data-areply="${a.id}">답변</button><button type="button" class="mini-btn" style="background:#FFC9D3;" data-adel="${a.id}">삭제</button></div>
+    </div>`).join('') : `<div class="clean-empty">${askFilter === 'open' ? '답변을 기다리는 질문이 없어요 ✨' : '아직 받은 질문이 없어요'}</div>`;
+}
+async function onAskAdmClick(e){
+  const f = e.target.closest('[data-af]'); if (f){ askFilter = f.dataset.af; loadAskAdmin(); return; }
+  const r = e.target.closest('[data-areply]');
+  if (r){
+    const text = document.querySelector(`[data-ain="${r.dataset.areply}"]`).value.trim();
+    if (!text){ alert('답변을 적어 주세요.'); return; }
+    await teacherCall({ ops:[{ op:'askReply', id:Number(r.dataset.areply), text }] }); showToast('📮 답변을 보냈어요'); loadAskAdmin(); return;
+  }
+  const d = e.target.closest('[data-adel]');
+  if (d){ if (!confirm('이 질문을 지울까요?')) return; await teacherCall({ ops:[{ op:'askDel', id:Number(d.dataset.adel) }] }); loadAskAdmin(); return; }
+  if (e.target.closest('#aaXBtn')) $('askAdmOverlay').style.display = 'none';
 }
 function setStudentPins(pins){
   if (!sync.url || sync.api < 3){ alert('학생 비밀번호는 구글 시트 동기화(새 버전 코드)가 연결되어 있어야 쓸 수 있어요.'); return false; }
@@ -3017,6 +3208,9 @@ function bindEvents(){
   $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
   $('pinCancelBtn').addEventListener('click', () => { $('pinOverlay').style.display = 'none'; pinNext = null; });
   $('gmOverlay').addEventListener('click', onGmClick);
+  $('rsGoBtn').addEventListener('click', fullReset);
+  $('chatAdmOverlay').addEventListener('click', onChatAdmClick);
+  $('askAdmOverlay').addEventListener('click', onAskAdmClick);
   $('closetFree').addEventListener('change', () => {
     if (!closetName) return;
     const lv = levelInfo(seasonExpMap()[closetName] || 0).lv;
