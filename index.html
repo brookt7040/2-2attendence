@@ -167,8 +167,8 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .rp-tier{font-size:1rem;padding:3px 10px;border-radius:999px;border:2px solid var(--ink);background:#fff;}
 .rp-sub{font-size:1.1rem;color:var(--ink-soft);margin-top:2px;}
 .rp-ladder{display:flex;gap:4px;margin-top:10px;}
-.rp-step{flex:1;border:2px solid var(--ink);border-radius:10px;padding:4px 0 3px;font-size:.74rem;line-height:1.3;background:#FBF7EE;opacity:.5;transition:all .25s;}
-.rp-step b{display:block;font-size:.95rem;font-weight:normal;}
+.rp-step{flex:1;min-width:0;border:2px solid var(--ink);border-radius:10px;padding:4px 0 3px;font-size:.62rem;line-height:1.3;background:#FBF7EE;opacity:.5;transition:all .25s;}
+.rp-step b{display:block;font-size:.86rem;font-weight:normal;}
 .rp-step.on{opacity:1;transform:translateY(-4px);box-shadow:0 4px 0 var(--ink);}
 
 /* ===== 상태바 ===== */
@@ -228,6 +228,8 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .card.t-legend::before{left:18px;bottom:52px;} .card.t-legend::after{right:20px;top:42px;animation-delay:.8s;}
 @keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
 .card.t-rare{background:linear-gradient(160deg,#E3FFF3,#FFE6EF);}
+.card.t-unique{background:linear-gradient(150deg,#EFE6FF,#FFE3F0 60%,#E3F3FF);}
+.card.t-safe{background:#FFFDF6;}
 .card.t-normal{background:#FFFDF6;}
 .card.sleepy{background:linear-gradient(180deg,#EEE8FF,#DCEBFF);}
 .card.t-absent{background:#F1ECE4;}
@@ -343,6 +345,18 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .gm-log{max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
 .closet-free{display:none;font-size:1rem;margin-top:8px;}
 
+.modal-x{
+  position:sticky;top:0;align-self:flex-end;z-index:20;margin:-8px -8px -52px 0;flex:none;
+  width:48px;height:48px;border-radius:14px;border:3px solid var(--ink);background:#FFC9D3;font-size:1.5rem;line-height:1;
+  cursor:pointer;box-shadow:0 4px 0 var(--ink);color:var(--ink);
+}
+.modal-x:hover{background:#FF9DAE;}
+.modal-x:active{transform:translateY(4px);box-shadow:none;}
+.date-row{display:flex;align-items:center;gap:10px;}
+.icon-btn{width:56px;height:56px;border-radius:50%;border:3px solid var(--ink);background:#fff;font-size:1.7rem;cursor:pointer;box-shadow:0 4px 0 var(--ink);padding:0;line-height:1;}
+.icon-btn:hover{background:var(--y-soft);transform:translateY(-2px);}
+.icon-btn:active{transform:translateY(4px);box-shadow:none;}
+
 /* ===== 오버레이 · 모달 ===== */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
@@ -396,6 +410,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .reveal.open .rays{opacity:1;}
 .reveal.t-legend .rays{background:repeating-conic-gradient(rgba(255,216,77,.95) 0 8deg, rgba(255,184,203,.7) 8deg 16deg, rgba(255,255,255,0) 16deg 24deg);}
+.reveal.t-unique .rays{background:repeating-conic-gradient(rgba(185,166,255,.9) 0 9deg, rgba(255,184,214,.6) 9deg 18deg, rgba(255,255,255,0) 18deg 26deg);}
 .reveal.t-rare .rays{background:repeating-conic-gradient(rgba(127,216,190,.85) 0 10deg, rgba(255,255,255,0) 10deg 20deg);}
 .reveal.sleepy .rays{background:repeating-conic-gradient(rgba(169,150,255,.55) 0 10deg, rgba(255,255,255,0) 10deg 20deg);animation-duration:30s;}
 .capsule{position:absolute;width:180px;height:180px;}
@@ -417,6 +432,8 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 }
 .reveal.open .reveal-card{opacity:1;transform:scale(1);}
 .reveal.t-legend .reveal-card{background:linear-gradient(180deg,#FFFBE6,#FFF0A8);}
+.reveal.t-unique .reveal-card{background:linear-gradient(180deg,#F6F0FF,#FFE9F3);}
+.reveal.t-unique .cap-top{background:linear-gradient(90deg,#B9A6FF,#FFB8D6);}
 .reveal.t-rare .reveal-card{background:linear-gradient(180deg,#F0FFF8,#FFEFF4);}
 .reveal.sleepy .reveal-card{background:linear-gradient(180deg,#F4F0FF,#E3EDFF);}
 .rev-rarity{display:inline-block;font-size:1.5rem;padding:4px 20px;border:3px solid var(--ink);border-radius:999px;background:var(--y);}
@@ -504,7 +521,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     </div>
 
     <div class="header-right">
-      <div class="date-pill" id="currentDate">날짜 불러오는 중...</div>
+      <div class="date-row"><button type="button" class="icon-btn" id="openGmBtn" title="관리자 모드">👑</button><div class="date-pill" id="currentDate">날짜 불러오는 중...</div></div>
       <div class="clock-panel">
         <div class="flip-unit"><span class="flip-digits" id="flipHour">00</span></div>
         <div class="flip-colon"><span></span><span></span></div>
@@ -534,7 +551,6 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="chip" id="statExp">✨ 오늘 EXP 0</div>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
-      <button type="button" class="btn btn-mint" id="openGmBtn">👑 관리자</button>
     </div>
   </div>
 
@@ -612,6 +628,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <!-- 관리자 모드 -->
 <div class="overlay" id="gmOverlay">
   <div class="modal modal-large">
+    <button type="button" class="modal-x" data-close="gmOverlay" title="닫기">✕</button>
     <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 EXP·레벨·출석·꾸미기를 바꿔요</small></h2>
     <div class="gm-body">
       <div class="gm-list" id="gmList"></div>
@@ -624,6 +641,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <!-- 꾸미기 방 -->
 <div class="overlay" id="closetOverlay">
   <div class="modal modal-large">
+    <button type="button" class="modal-x" id="closetXBtn" title="닫기">✕</button>
     <h2 id="closetTitle">🎨 꾸미기 방</h2>
     <div class="closet-body">
       <div class="closet-side">
@@ -664,6 +682,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <!-- 기록장 -->
 <div class="overlay" id="statsOverlay">
   <div class="modal modal-large">
+    <button type="button" class="modal-x" data-close="statsOverlay" title="닫기">✕</button>
     <h2>📒 냥냥 출석 기록장</h2>
     <div class="tabs" id="statsTabs">
       <button type="button" class="tab active" data-period="today">오늘 출석 관리</button>
@@ -696,6 +715,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <!-- 설정 -->
 <div class="overlay" id="adminOverlay">
   <div class="modal modal-small">
+    <button type="button" class="modal-x" data-close="adminOverlay" title="닫기">✕</button>
     <h2>⚙️ 선생님 설정</h2>
 
     <div class="section">
@@ -731,8 +751,10 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <div class="section">
       <div class="section-title">✨ EXP 보상 규칙</div>
       <div class="tier-row" style="background:#FFF3B0;"><span>👑 레전드 — 마감 <input type="number" id="e1" min="1"> 분 이상 일찍</span><span>EXP <input type="number" id="e1Exp"></span></div>
+      <div class="tier-row" style="background:#EEE6FF;"><span>🦄 유니크 — 마감 <input type="number" id="eU" min="0"> 분 이상 일찍</span><span>EXP <input type="number" id="eUExp"></span></div>
       <div class="tier-row" style="background:#DDF7EC;"><span>💎 레어 — 마감 <input type="number" id="e2" min="0"> 분 이상 일찍</span><span>EXP <input type="number" id="e2Exp"></span></div>
-      <div class="tier-row" style="background:#FFF8E0;"><span>🐱 노멀 — 그보다 늦게, 마감 시각까지</span><span>EXP <input type="number" id="e3Exp"></span></div>
+      <div class="tier-row" style="background:#FFF8E0;"><span>🐱 노멀 — 마감 <input type="number" id="eN" min="0"> 분 이상 일찍</span><span>EXP <input type="number" id="e3Exp"></span></div>
+      <div class="tier-row" style="background:#FFFBEE;"><span>🐾 세이프 — 그보다 늦게, 마감 시각까지</span><span>EXP <input type="number" id="eSExp"></span></div>
       <div class="tier-row" style="background:#EEE8FF;"><span>🥱 하품냥 — <input type="number" id="l1" min="1"> 분 미만 지각</span><span>EXP <input type="number" id="l1Exp"></span></div>
       <div class="tier-row" style="background:#E6DFFF;"><span>😪 꾸벅냥 — <input type="number" id="l2" min="1"> 분 미만 지각</span><span>EXP <input type="number" id="l2Exp"></span></div>
       <div class="tier-row" style="background:#DED8FF;"><span>💤 쿨쿨냥 — <input type="number" id="l3" min="1"> 분 미만 지각</span><span>EXP <input type="number" id="l3Exp"></span></div>
@@ -841,7 +863,13 @@ const OLD_DB_KEY = 'rpgClassDB_v9';
 const FIRED_KEY = 'rpgAlarmFired_v1';
 const PARTY_KEY = 'nyangPartyDone_v1';
 const DEFAULT_TITLE = '노랑반 냥냥 출석 아일랜드';
-const DEFAULT_TIERS = { e1:8, e1Exp:200, e2:1, e2Exp:100, e3Exp:50, l1:1, l1Exp:-10, l2:5, l2Exp:-50, l3:10, l3Exp:-100, l4Exp:-150 };
+const DEFAULT_TIERS = { e1:10, e1Exp:200, eU:8, eUExp:150, e2:5, e2Exp:100, eN:2, e3Exp:50, eSExp:20, l1:1, l1Exp:-10, l2:5, l2Exp:-50, l3:10, l3Exp:-100, l4Exp:-150 };
+// 예전 4단계(레전드·레어·노멀) 설정을 새 단계(레전드·유니크·레어·노멀·세이프)로 바꿔 줘요
+function upgradeTiers(t){
+  t = Object.assign({}, t);
+  if (t.eU === undefined){ Object.assign(t, { e1:10, eU:8, eUExp:150, e2:5, eN:2, eSExp:20 }); }
+  return Object.assign({}, DEFAULT_TIERS, t);
+}
 const DEFAULT_ALARM = {
   alarm1Enable:true, alarm2Enable:true, alarm2Time:"09:04",
   alarm1Text:"아침 활동을 정리하고 자리에 앉아 주세요",
@@ -1052,6 +1080,13 @@ const CHARS = [
   { id:'r_star',     tier:'rare', name:'별핀냥',      fur:'calico', acc:['starclip'] },
   { id:'r_heart',    tier:'rare', name:'두근 하트냥', fur:'cow',    acc:['heart'], heartCheeks:true },
   // 👑 레전드
+  // 🦄 유니크
+  { id:'u_sakura',  tier:'unique', name:'벚꽃 요정냥',    fur:'pink',    acc:['flower','sparkles'] },
+  { id:'u_mint',    tier:'unique', name:'민트초코냥',     fur:'mint',    acc:['starclip'] },
+  { id:'u_goldbow', tier:'unique', name:'황금 리본냥',    fur:'gold',    acc:['bow'] },
+  { id:'u_doctor',  tier:'unique', name:'우주 박사냥',    fur:'galaxy',  acc:['glasses'] },
+  { id:'u_sprout',  tier:'unique', name:'무지개 새싹냥',  fur:'rainbow', acc:['sprout'] },
+  { id:'u_prince',  tier:'unique', name:'턱시도 왕자냥',  fur:'tuxedo',  acc:['crown'] },
   { id:'l_crown',   tier:'legend', name:'왕관 쓴 황금냥', fur:'gold',    acc:['crown'] },
   { id:'l_angel',   tier:'legend', name:'날개 달린 천사냥', fur:'white', acc:['halo','wings'] },
   { id:'l_rainbow', tier:'legend', name:'무지개냥',       fur:'rainbow' },
@@ -1071,15 +1106,17 @@ const MASCOT = { name:'하나', fur:'white', eye:'#9A7440', pupil:'#4A3523', acc
 
 const TIER_META = {
   legend: { label:'★ LEGEND ★', short:'LEGEND', icon:'👑', color:'#FFE36E', cap:'#FFD84D', msg:n => `${n} 등장! 엄청 일찍 왔다냥!` },
+  unique: { label:'✦ UNIQUE ✦', short:'UNIQUE', icon:'🦄', color:'#E6DAFF', cap:'#B9A6FF', msg:n => `${n} 출석! 유니크 냥이다냥!` },
   rare:   { label:'♦ RARE ♦',   short:'RARE',   icon:'💎', color:'#BDEFD9', cap:'#7FD8BE', msg:n => `${n} 출석! 부지런하다냥~` },
-  normal: { label:'NORMAL',     short:'NORMAL', icon:'🐱', color:'#FFF2BF', cap:'#FFB8CB', msg:n => `${n} 출석! 아슬아슬 세이프냥` },
+  normal: { label:'NORMAL',     short:'NORMAL', icon:'🐱', color:'#FFF2BF', cap:'#FFB8CB', msg:n => `${n} 출석! 반가워냥` },
+  safe:   { label:'SAFE',       short:'세이프', icon:'🐾', color:'#FFF8E3', cap:'#FFE58A', pool:'normal', msg:n => `${n} 아슬아슬 세이프냥!` },
   yawn:   { label:'SLEEPY',     short:'하품',   icon:'🥱', color:'#E7DFFF', cap:'#C4B5FF', sleepy:true, msg:n => `하암~ ${n}, 살짝 늦었다냥` },
   nod:    { label:'SLEEPY',     short:'꾸벅',   icon:'😪', color:'#DCD2FF', cap:'#B3A1FF', sleepy:true, msg:n => `꾸벅… ${n}, 조금 늦었다냥` },
   sleep:  { label:'SLEEPY',     short:'쿨쿨',   icon:'💤', color:'#D0D8FF', cap:'#9C8BF0', sleepy:true, msg:n => `쿨쿨… ${n}, 내일은 일찍 오자냥` },
   burrito:{ label:'SLEEPY',     short:'이불',   icon:'🛌', color:'#C6CDF6', cap:'#8C74F0', sleepy:true, msg:n => `이불 밖은 위험해… ${n}, 내일은 꼭!` },
   absent: { label:'쉬는 날',    short:'쉬는 날', icon:'🏠', color:'#EFE9E1' }
 };
-const TIER_ORDER = ['legend','rare','normal','yawn','nod','sleep','burrito'];
+const TIER_ORDER = ['legend','unique','rare','normal','safe','yawn','nod','sleep','burrito'];
 
 function catColors(def, furKey, opts = {}){
   const fur = FURS[furKey || def.fur || 'white'] || FURS.white;
@@ -1147,17 +1184,23 @@ function recChar(rec, name, ds){
   const t = recTier(rec);
   if (t === 'absent') return null;
   if (rec.charId && CHAR_BY_ID[rec.charId]) return CHAR_BY_ID[rec.charId];
-  const pool = CHARS.filter(c => c.tier === t);
+  const pool = CHARS.filter(c => c.tier === poolTier(t));
   return pool[hashStr(name + ds) % pool.length];
 }
 function recFur(rec, ch, name, ds){
   if (!ch || !ch.sleepy) return undefined;
   return rec.fur || SLEEPY_FURS[hashStr(ds + name) % SLEEPY_FURS.length];
 }
-function recColors(rec, name, ds){
+function recColors(rec, name, ds, lv){
   const ch = recChar(rec, name, ds);
   if (!ch) return houseColors();
-  return catColors(ch, recFur(rec, ch, name, ds));
+  const col = catColors(ch, recFur(rec, ch, name, ds));
+  // 학생이 꾸미기 방에서 고른 아이템을 뽑힌 냥이에게도 입혀 줘요
+  if (name && db.students.includes(name)){
+    const L = lv || levelInfo(seasonExpMap()[name] || 0).lv, look = lookOf(name, L);
+    SLOT_ORDER.forEach(sl => { const e = look[sl]; if (e) applyAcc(col, e.it.acc, e.c.pal); });
+  }
+  return col;
 }
 function recCharName(rec, name, ds){
   const ch = recChar(rec, name, ds);
@@ -1181,7 +1224,7 @@ function mergeInto(parsed){
   if (Array.isArray(parsed.notices)) db.notices = parsed.notices;
   if (parsed.students) db.students = normalizeStudents(parsed.students);
   if (validTime(parsed.lateTimeSetting)) db.lateTimeSetting = parsed.lateTimeSetting;
-  if (parsed.expTiers) db.expTiers = Object.assign({}, DEFAULT_TIERS, parsed.expTiers);
+  if (parsed.expTiers) db.expTiers = upgradeTiers(parsed.expTiers);
   if (typeof parsed.sfx === 'boolean') db.sfx = parsed.sfx;
   if (parsed.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, parsed.alarmConfig);
   if (parsed.records && typeof parsed.records === 'object') db.records = parsed.records;
@@ -1263,9 +1306,11 @@ function getTier(d = new Date()){
   const t = db.expTiers, now = secOfDay(d), dl = deadlineSec();
   if (now <= dl){
     const early = dl - now;
-    if (early >= t.e1*60) return { key:'legend', exp:t.e1Exp, late:false, left:early - t.e1*60, next:'💎 레어 타임까지' };
+    if (early >= t.e1*60) return { key:'legend', exp:t.e1Exp, late:false, left:early - t.e1*60, next:'🦄 유니크 타임까지' };
+    if (early >= t.eU*60) return { key:'unique', exp:t.eUExp, late:false, left:early - t.eU*60, next:'💎 레어 타임까지' };
     if (early >= t.e2*60) return { key:'rare',   exp:t.e2Exp, late:false, left:early - t.e2*60, next:'🐱 노멀 타임까지' };
-    return { key:'normal', exp:t.e3Exp, late:false, left:early, next:'⏰ 마감까지' };
+    if (early >= t.eN*60) return { key:'normal', exp:t.e3Exp, late:false, left:early - t.eN*60, next:'🐾 세이프 타임까지' };
+    return { key:'safe', exp:t.eSExp, late:false, left:early, next:'⏰ 마감까지' };
   }
   const late = now - dl;
   if (late < t.l1*60) return { key:'yawn',  exp:t.l1Exp, late:true, left:t.l1*60 - late, next:'😪 꾸벅냥까지' };
@@ -1277,8 +1322,10 @@ function renderLadder(){
   const t = db.expTiers, dl = deadlineSec();
   const steps = [
     ['legend', t.e1Exp, `~${hm(dl - t.e1*60)}`],
+    ['unique', t.eUExp, `~${hm(dl - t.eU*60)}`],
     ['rare',   t.e2Exp, `~${hm(dl - t.e2*60)}`],
-    ['normal', t.e3Exp, `~${hm(dl)}`],
+    ['normal', t.e3Exp, `~${hm(dl - t.eN*60)}`],
+    ['safe',   t.eSExp, `~${hm(dl)}`],
     ['yawn',   t.l1Exp, `${hm(dl + t.l1*60)}전`],
     ['nod',    t.l2Exp, `${hm(dl + t.l2*60)}전`],
     ['sleep',  t.l3Exp, `${hm(dl + t.l3*60)}전`],
@@ -1341,7 +1388,7 @@ function renderGrid(){
         (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
         (medalOf(rec) ? `<div class="card-first" title="오늘의 ${medalOf(rec)}등">${MEDALS[medalOf(rec)]}</div>` : '') +
         (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
-      drawColors(cv, recColors(rec, name, ds));
+      drawColors(cv, recColors(rec, name, ds, li.lv));
       card.append(cv);
       card.insertAdjacentHTML('beforeend',
         `<div class="student-name">${esc(name)}</div>` +
@@ -1388,8 +1435,9 @@ function allArrived(){
 /* =========================================================
    ✨ 출석 터치 → 가챠 연출
    ========================================================= */
+function poolTier(k){ return (TIER_META[k] && TIER_META[k].pool) || k; }
 function pickChar(tierKey, day){
-  const pool = CHARS.filter(c => c.tier === tierKey);
+  const pool = CHARS.filter(c => c.tier === poolTier(tierKey));
   const used = Object.values(day).map(r => r.charId);
   const avail = pool.filter(c => !used.includes(c.id));
   return rand(avail.length ? avail : pool);
@@ -1429,7 +1477,7 @@ function showReveal(name, rec, ds, done){
   drawColors($('revCanvas'), recColors(rec, name, ds));
   $('revCharName').textContent = recCharName(rec, name, ds);
   const demo = name === '미리보기';
-  $('revHello').textContent = `${demo ? '하나' : callName(name)} 왔어? 👋`;
+  $('revHello').textContent = `${demo ? '하나' : callName(givenName(name))} 왔어? 👋`;
   $('revMsg').textContent = pickGreeting();
   const streak = demo ? 3 : streakOf(name);
   const st = $('revStamp'); st.className = 'rev-stamp'; st.innerHTML = '';
@@ -1480,13 +1528,13 @@ function countExp(target){
 }
 function demoReveal(tierKey){
   $('adminOverlay').style.display = 'none';
-  const pool = CHARS.filter(c => c.tier === tierKey), ch = rand(pool);
+  const pool = CHARS.filter(c => c.tier === poolTier(tierKey)), ch = rand(pool);
   const rec = { status: TIER_META[tierKey].sleepy ? 'late' : 'present', tier: tierKey, time:'--:--', charId: ch.id,
-    exp: getTierExp(tierKey), rank: tierKey === 'legend' ? 1 : (tierKey === 'rare' ? 2 : 0) };
+    exp: getTierExp(tierKey), rank: tierKey === 'legend' ? 1 : (tierKey === 'unique' ? 2 : (tierKey === 'rare' ? 3 : 0)) };
   if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
   showReveal('미리보기', rec, getTodayStr(), null);
 }
-function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, rare:t.e2Exp, normal:t.e3Exp, yawn:t.l1Exp, nod:t.l2Exp, sleep:t.l3Exp, burrito:t.l4Exp }[k]; }
+function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, unique:t.eUExp, rare:t.e2Exp, normal:t.e3Exp, safe:t.eSExp, yawn:t.l1Exp, nod:t.l2Exp, sleep:t.l3Exp, burrito:t.l4Exp }[k]; }
 
 /* =========================================================
    🥇 메달 · 📋 EXP 리스트 · 🧹 청소 당번
@@ -1604,6 +1652,14 @@ function pickGreeting(){
   const g = rand(pool.length ? pool : GREETINGS);
   recentGreetings.push(g); if (recentGreetings.length > 15) recentGreetings.shift();
   return g;
+}
+// 성을 빼고 이름만 (김하늘 → 하늘, 남궁민수 → 민수). 두 글자 이름은 그대로 불러요.
+const TWO_CHAR_SURNAMES = ['남궁','황보','제갈','사공','선우','서문','독고','동방','망절','어금'];
+function givenName(name){
+  const n = String(name).trim();
+  if (!/^[가-힣]+$/.test(n) || n.length < 3) return n;
+  if (n.length >= 4 && TWO_CHAR_SURNAMES.includes(n.slice(0, 2))) return n.slice(2);
+  return n.slice(1);
 }
 // 받침이 있으면 '아', 없으면 '야' (지훈아 / 원이야)
 function callName(name){
@@ -1969,7 +2025,9 @@ function fxInit(){
 }
 const FX_PAL = {
   legend:['#FFD84D','#FFB8CB','#7FD8BE','#8CC8FF','#A996FF','#FFFFFF','#FFC21A'],
+  unique:['#B9A6FF','#FFB8D6','#8CC8FF','#FFFFFF','#FFE066'],
   rare:['#7FD8BE','#FFB8CB','#FFD84D','#FFFFFF'],
+  safe:['#FFD84D','#FFFFFF'],
   normal:['#FFD84D','#FFB8CB','#FFFFFF','#FFE89A'],
   sleepy:['#C4B5FF','#A8C8FF','#FFFFFF'],
   party:['#FFD84D','#FFB8CB','#7FD8BE','#8CC8FF','#A996FF','#FFC21A','#FF8FB1']
@@ -1977,7 +2035,7 @@ const FX_PAL = {
 function burst(kind, x, y){
   const W = innerWidth, H = innerHeight;
   x = x ?? W/2; y = y ?? H/2;
-  const n = { legend:150, rare:95, normal:60, sleepy:26, party:140 }[kind] || 60;
+  const n = { legend:150, unique:120, rare:95, normal:60, safe:40, sleepy:26, party:140 }[kind] || 60;
   const pal = FX_PAL[kind] || FX_PAL.normal;
   for (let i = 0; i < n; i++){
     const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * (kind === 'legend' || kind === 'party' ? 11 : 8);
@@ -2042,6 +2100,8 @@ function sfx(kind){
     case 'legend':
       seq([523,659,784,1047,1319,1568,2093], .07, 'triangle', .4);
       [2637,3136,2637,3136,3520].forEach((f, i) => note(f, t + .6 + i*.07, .2, 'sine', .07)); break;
+    case 'unique': seq([523,698,880,1047,1397], .075, 'triangle', .35); [2093,2637].forEach((f, i) => note(f, t + .45 + i*.08, .2, 'sine', .07)); break;
+    case 'safe': seq([698,880], .1, 'triangle', .25); break;
     case 'rare': seq([587,740,880,1175], .085, 'triangle', .32); note(1760, t + .4, .3, 'sine', .07); break;
     case 'normal': seq([784,1047], .1, 'triangle', .3); break;
     case 'late': seq([523,440,349,392], .17, 'sine', .45, .16); break;
@@ -2081,8 +2141,10 @@ function mascotLine(now){
   const t = getTier(now);
   switch (t.key){
     case 'legend': return `지금 오면 👑레전드 냥이가 나온다냥! (${fmtExp(t.exp)})`;
+    case 'unique': return `🦄 유니크 냥이 찬스! (${fmtExp(t.exp)})`;
     case 'rare':   return '💎 레어 냥이 찬스! 서두르라냥~';
-    case 'normal': return '⏰ 마감 직전이다냥! 얼른 터치!';
+    case 'normal': return '🐱 노멀 타임! 조금만 더 서두르자냥';
+    case 'safe':   return '⏰ 마감 직전이다냥! 얼른 터치!';
     default:       return '💤 잠꾸러기 냥이들이 따라오는 중…';
   }
 }
@@ -2093,7 +2155,7 @@ function mascotJump(){
 }
 function mascotReact(tier){
   const lines = {
-    legend:'우와아! 레전드다냥!! ✨', rare:'반짝반짝 레어 냥이다냥 💎', normal:'어서 와라냥~ 🐾',
+    legend:'우와아! 레전드다냥!! ✨', unique:'신비로운 유니크 냥이다냥 🦄', rare:'반짝반짝 레어 냥이다냥 💎', normal:'어서 와라냥~ 🐾', safe:'휴~ 세이프다냥! 🐾',
     yawn:'하암… 괜찮아, 내일은 일찍 오자냥', nod:'괜찮아, 내일은 일찍 오자냥', sleep:'쿨쿨이들 깨우러 가야겠다냥', burrito:'이불 밖으로 나온 것만으로도 장하다냥'
   };
   setBubble(lines[tier] || '냥!', 4500);
@@ -2173,6 +2235,7 @@ function loadStats(period){
   if (period === 'today'){
     const day = todayData();
     let html = isWeekend ? '<div class="weekend-note">※ 오늘은 주말이라 주·월·올해 누적에는 합산되지 않아요.</div>' : '';
+    html += '<div class="row" style="justify-content:flex-end;"><button type="button" class="act-btn cancel" style="font-size:1rem;padding:6px 14px;" data-act="resetday">🧹 오늘 하루 전체 초기화</button></div>';
     html += '<table><thead><tr><th>이름</th><th>냥이</th><th>상태</th><th>시간</th><th>출석 EXP</th><th>📋 EXP 리스트</th><th>관리</th></tr></thead><tbody>';
     db.students.forEach(name => {
       const rec = day[name];
@@ -2239,7 +2302,7 @@ function renderDex(box){
   }
   const collectible = CHARS.filter(c => !c.sleepy);
   const got = collectible.filter(c => counts[c.id]).length;
-  const sections = [['legend','👑 레전드 냥이'],['rare','💎 레어 냥이'],['normal','🐱 노멀 냥이'],['sleepy','💤 잠꾸러기 냥이']];
+  const sections = [['legend','👑 레전드 냥이'],['unique','🦄 유니크 냥이'],['rare','💎 레어 냥이'],['normal','🐱 노멀 냥이'],['sleepy','💤 잠꾸러기 냥이']];
   let html = `<div class="dex-head">올해 우리 반이 만난 냥이 <b>${got}</b> / ${collectible.length}종</div>`;
   for (const [key, title] of sections){
     const list = key === 'sleepy' ? CHARS.filter(c => c.sleepy) : CHARS.filter(c => c.tier === key);
@@ -2252,6 +2315,20 @@ function renderDex(box){
     html += '</div>';
   }
   box.innerHTML = html;
+}
+function resetToday(){
+  const ds = getTodayStr();
+  if (!confirm('오늘 하루 기록을 모두 지울까요?\n출석·결석, EXP 리스트 점수, 청소 체크가 모두 지워져요. (관리자 조정 EXP는 남아요)')) return;
+  if (!confirm('정말 초기화할까요? 되돌릴 수 없어요.')) return;
+  Object.keys(db.records[ds] || {}).forEach(name => syncOp({ op:'rec', ds, name, rec:null }));
+  (db.bonus[ds] || []).filter(b => !b.adm).forEach(b => syncOp({ op:'bonusDel', ds, id:b.id }));
+  Object.keys(db.cleanDone[ds] || {}).forEach(name => syncOp({ op:'clean', ds, name, v:false }));
+  db.records[ds] = {};
+  db.bonus[ds] = (db.bonus[ds] || []).filter(b => b.adm);
+  db.cleanDone[ds] = {};
+  const pm = partyMap(); delete pm[ds]; localStorage.setItem(PARTY_KEY, JSON.stringify(pm));
+  saveDB(); renderGrid(); updateStatsBoard(); loadStats('today');
+  setBubble('오늘 기록을 깨끗하게 지웠다냥 🧹', 3500);
 }
 function sendToDungeon(name){
   if (!confirm(`[${name}] 친구를 결석(쉬는 날)으로 처리할까요?\nEXP는 0으로 기록돼요.`)) return;
@@ -2273,7 +2350,7 @@ function cancelRecord(name){
    ⚙️ 설정
    ========================================================= */
 let noticesAtOpen = '', closingAtOpen = '';
-const TIER_FIELDS = ['e1','e1Exp','e2','e2Exp','e3Exp','l1','l1Exp','l2','l2Exp','l3','l3Exp','l4Exp'];
+const TIER_FIELDS = ['e1','e1Exp','eU','eUExp','e2','e2Exp','eN','e3Exp','eSExp','l1','l1Exp','l2','l2Exp','l3','l3Exp','l4Exp'];
 function openAdminUI(){
   $('mainTitleInput').value = db.mainTitle || '';
   $('noticeInput').value = (db.notices || []).join('\n');
@@ -2326,7 +2403,7 @@ async function saveAdminData(){
     if (isNaN(v)){ alert('EXP 보상 규칙에 빈칸이 있어요.'); return; }
     tiers[k] = v;
   }
-  if (!(tiers.e1 > tiers.e2 && tiers.e2 >= 0)){ alert('레전드 기준(분)은 레어 기준보다 커야 해요.'); return; }
+  if (!(tiers.e1 > tiers.eU && tiers.eU > tiers.e2 && tiers.e2 > tiers.eN && tiers.eN >= 0)){ alert('일찍 온 기준(분)은 레전드 > 유니크 > 레어 > 노멀 순서로 커야 해요.'); return; }
   if (!(tiers.l1 > 0 && tiers.l1 < tiers.l2 && tiers.l2 < tiers.l3)){ alert('지각 기준(분)은 하품냥 < 꾸벅냥 < 쿨쿨냥 순서로 커져야 해요.'); return; }
 
   const lvMax = parseInt($('lvMaxInput').value, 10), lvStart = $('seasonStartInput').value;
@@ -2524,7 +2601,7 @@ function applyConfig(c){
   if (c.mainTitle) db.mainTitle = c.mainTitle;
   if (c.students) db.students = normalizeStudents(c.students);
   if (validTime(c.lateTimeSetting)) db.lateTimeSetting = c.lateTimeSetting;
-  if (c.expTiers) db.expTiers = Object.assign({}, DEFAULT_TIERS, c.expTiers);
+  if (c.expTiers) db.expTiers = upgradeTiers(c.expTiers);
   if (typeof c.sfx === 'boolean') db.sfx = c.sfx;
   if (Array.isArray(c.menu)) db.menu = c.menu;
   if (c.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, c.alarmConfig, keepAudio);
@@ -2680,13 +2757,14 @@ function bindEvents(){
   $('statsContent').addEventListener('click', e => {
     const cl = e.target.closest('[data-closet]'); if (cl){ openCloset(cl.dataset.closet); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
-    if (b.dataset.act === 'absent') sendToDungeon(b.dataset.name); else cancelRecord(b.dataset.name);
+    if (b.dataset.act === 'resetday') resetToday(); else if (b.dataset.act === 'absent') sendToDungeon(b.dataset.name); else cancelRecord(b.dataset.name);
   });
   document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $(b.dataset.close).style.display = 'none'));
   document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => demoReveal(b.dataset.demo)));
   $('saveAdminBtn').addEventListener('click', saveAdminData);
   $('closetItems').addEventListener('click', onClosetClick);
   $('closetDoneBtn').addEventListener('click', closeCloset);
+  $('closetXBtn').addEventListener('click', closeCloset);
   $('openClosingBtn').addEventListener('click', openClosing);
   $('closingCloseBtn').addEventListener('click', () => { $('closingOverlay').style.display = 'none'; });
   $('closingList').addEventListener('click', e => { const it = e.target.closest('[data-ci]'); if (!it) return; closingChecked[it.dataset.ci] = !closingChecked[it.dataset.ci]; renderClosing(); });
