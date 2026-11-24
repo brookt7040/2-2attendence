@@ -164,7 +164,7 @@ textarea{width:100%;padding:10px;font-size:1.1rem;border:3px solid var(--ink);bo
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:100;padding:12px;}
 .modal{position:relative;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--cream);border:4px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px;animation:pop .22s ease-out;}
 @keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
-.modal h2{margin:0;text-align:center;font-weight:normal;font-size:1.5rem;}
+.modal h2{margin:0;text-align:center;font-weight:normal;font-size:1.5rem;padding:0 38px;word-break:keep-all;}
 .x{position:absolute;top:10px;right:10px;width:42px;height:42px;border-radius:12px;border:3px solid var(--ink);background:#FFC9D3;font-size:1.3rem;cursor:pointer;}
 select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1.2rem;border:3px solid var(--ink);border-radius:12px;background:#fff;}
 .pin{font-size:2rem!important;text-align:center;letter-spacing:12px;}
@@ -213,8 +213,15 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .btn-urgent{background:#FF5C7A;color:#fff;}
 .btn-lav{background:#D9CCFF;}
 .my-ask.urg{border-color:#E0334F;background:#FFE3E8;}
-.oath-text{font-size:1.05rem;line-height:1.65;background:#FFF6DA;border:2px dashed var(--ink);border-radius:14px;padding:12px;margin:8px 0;}
-.oath-chk{display:block;font-size:1.05rem;margin:8px 0;}
+body{word-break:keep-all;overflow-wrap:break-word;}
+.oath-modal{width:min(440px,94vw);}
+.oath-text{font-size:1.05rem;line-height:1.55;background:#FFF6DA;border:2px dashed var(--ink);border-radius:14px;padding:12px 14px;margin:4px 0;text-align:center;word-break:keep-all;overflow-wrap:break-word;}
+.oath-text p{margin:0 0 10px;} .oath-text p:last-child{margin:0;}
+.oath-text .soft{font-size:.92rem;color:var(--ink-soft);}
+.oath-chk{display:flex;align-items:flex-start;gap:8px;font-size:1.02rem;line-height:1.45;margin:4px 0;text-align:left;word-break:keep-all;cursor:pointer;}
+.oath-chk input{flex:none;width:22px;height:22px;margin-top:1px;}
+#oathGo{width:100%;font-size:1.15rem;padding:12px;}
+@media (max-width:420px){ .oath-text{font-size:.98rem;padding:10px;} .modal h2{font-size:1.3rem;} }
 #oathGo:disabled{opacity:.45;cursor:not-allowed;}
 .status{position:fixed;left:10px;bottom:10px;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;}
 @media (max-width:560px){ .title{font-size:1.4rem;} #mascot{width:56px;height:56px;} .hana-wear{font-size:56px;} .n-item{font-size:1.15rem;} }
@@ -303,18 +310,16 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 </div>
 
 <div class="overlay" id="oathOv">
-  <div class="modal" style="text-align:center;">
+  <div class="modal oath-modal">
     <button type="button" class="x" data-close="oathOv">✕</button>
     <h2>🚨 잠깐! 원격 출석이에요</h2>
     <div class="oath-text">
-      지금 <b>교실 출석부 화면을 직접 누르는 게 아니에요.</b><br>
-      진짜로 <b>학교 교실에 도착</b>한 거 맞지?<br>
-      확실해? 집, 버스, 학교 앞 편의점, 복도… 다 안 돼요! 🙅<br><br>
-      📺 교실 화면에 <b>"OO이(가) 원격으로 출석했어요"</b>라고 크게 떠요.<br>
-      선생님이 교실을 둘러보고 없으면… <b>각오해라냥 😾</b>
+      <p>교실 출석부를 <b>직접 누르는 게 아니에요.</b></p>
+      <p>진짜 <b>교실 안</b>에 도착했나요?<br><span class="soft">집, 버스, 편의점, 복도는 안 돼요 🙅</span></p>
+      <p>📺 교실 화면에 <b>"원격 출석"</b>이라고 크게 떠요.<br><span class="soft">교실에 없으면… 각오해라냥 😾</span></p>
     </div>
-    <label class="oath-chk"><input type="checkbox" id="oathChk"> ✋ 저는 지금 <b>교실 안</b>에 있다는 걸 맹세합니다</label>
-    <button type="button" class="btn btn-y" id="oathGo" disabled>✋ 맹세하고 출석하기</button>
+    <label class="oath-chk"><input type="checkbox" id="oathChk"><span>✋ 저는 지금 <b>교실 안</b>에 있어요. 맹세해요!</span></label>
+    <button type="button" class="btn btn-y" id="oathGo" disabled>맹세하고 출석하기</button>
   </div>
 </div>
 
