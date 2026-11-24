@@ -105,7 +105,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 #mainTitleDisplay{font-size:clamp(1.8rem, 2.6vw, 3.1rem);white-space:nowrap;overflow:hidden;}
 .title-block{flex:1;min-width:0;}
 /* 🤍 깔끔한 흰색 (📢 오늘의 알림 · 📌 중요 공지만 색 있음) */
-.side-btn,.side-btn.exp,.side-btn.coin,.side-clean,.reward-panel,.date-pill,.icon-btn,.flip-unit,.flip-unit.sec,.bubble{
+.side-btn,.side-btn.exp,.side-btn.coin,.side-clean,.reward-panel,.date-pill,.icon-btn,.flip-unit,.flip-unit.sec{
   background:#FFFFFF !important;border:2px solid #CDBBA8 !important;box-shadow:0 3px 0 rgba(91,70,54,.12) !important;}
 .side-btn{font-size:1.2rem;padding:12px 14px;}
 .side-btn small{color:#A8978A;}
@@ -118,7 +118,11 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .flip-unit::after{background:rgba(91,70,54,.10);}
 .flip-colon span{background:#E6D9CA;border-color:#CDBBA8;}
 .rp-ladder > *{box-shadow:none !important;}
-.bubble::before{border-color:transparent #CDBBA8 transparent transparent !important;}
+/* 💬 하나 말풍선: 부드러운 노랑으로 살짝 강조 */
+.bubble{background:linear-gradient(180deg,#FFFBE6,#FFF0B8) !important;border:2px solid #E8C35A !important;box-shadow:0 3px 0 rgba(200,150,30,.25) !important;color:#5B4636;}
+.bubble::before{border-color:transparent #E8C35A transparent transparent !important;}
+.bubble::after{border-color:transparent #FFF6D2 transparent transparent !important;}
+.flip-unit{transition:background .8s,border-color .8s;}
 .toolbar .chip,.toolbar-right .btn,.toolbar-right button{box-shadow:0 3px 0 rgba(91,70,54,.12) !important;}
 .title-row .mascot-wrap,.title-row #mascot{width:clamp(80px,6.5vw,128px);height:clamp(80px,6.5vw,128px);}
 .side-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px;}
@@ -2882,11 +2886,23 @@ function updateDate(now){
   const days = ['일','월','화','수','목','금','토'];
   $('currentDate').textContent = `${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
 }
+/* ⏰ 출석 마감 10분 전부터 시계가 하양 → 빨강으로 */
+function clockHeat(now){
+  const left = deadlineSec() - secOfDay(now), on = left > 0 && left <= 600;
+  const k = on ? 1 - left / 600 : 0;
+  const mix = (a, b) => Math.round(a + (b - a) * k);
+  const bg = on ? `rgb(${mix(255, 255)},${mix(255, 92)},${mix(255, 92)})` : '', bd = on ? `rgb(${mix(205, 200)},${mix(187, 40)},${mix(168, 40)})` : '';
+  document.querySelectorAll('.clock-panel .flip-unit').forEach(u => {
+    if (on){ u.style.setProperty('background', bg, 'important'); u.style.setProperty('border-color', bd, 'important'); u.style.color = k > 0.6 ? '#fff' : ''; }
+    else { u.style.removeProperty('background'); u.style.removeProperty('border-color'); u.style.color = ''; }
+  });
+}
 function tick(){
   const now = new Date();
   setFlip('flipHour', pad(now.getHours()));
   setFlip('flipMin', pad(now.getMinutes()));
   setFlip('flipSec', pad(now.getSeconds()));
+  clockHeat(now);
   const ds = getTodayStr(now);
   if (ds !== currentDayStr){
     currentDayStr = ds; noticeChecked = {};
