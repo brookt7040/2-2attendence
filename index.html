@@ -3350,8 +3350,12 @@ function setHanaLook(look){
 let serverUrgent = 0, lastUrgentAlert = 0;
 /* ✨ 미션·영어 학원 등 서버에서 생긴 EXP 기록 (코인은 이미 들어가 있어요) */
 function handleExpQueue(list){
-  const before = levelsNow();
+  const before = levelsNow(), seen = JSON.parse(localStorage.getItem('nyangExpSeen') || '[]');
+  list = list.filter(x => !seen.includes(String(x.id)));
   list.forEach(x => { if (db.students.includes(x.n) && x.exp) addAdj(x.n, Number(x.exp), x.why || '미션'); });
+  localStorage.setItem('nyangExpSeen', JSON.stringify(seen.concat(list.map(x => String(x.id))).slice(-500)));
+  syncOp({ op:'expAck', ids: list.map(x => String(x.id)) });
+  if (!list.length) return;
   renderGrid(); updateStatsBoard(); publishPub();
   const names = [...new Set(list.map(x => x.n))];
   showToast(`✨ ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` 외 ${names.length - 3}명` : ''} 미션 EXP 받았다냥!`);
@@ -3363,6 +3367,7 @@ function handleRemote(list){
     if (!db.students.includes(x.n) || (db.records[ds] && db.records[ds][x.n])) return;
     handleTouch(x.n, { at: x.ts, remote: true });
   });
+  syncOp({ op:'remoteAck', ids: list.map(x => x.n + ':' + x.ts) });   // 기록했다고 서버에 알려요 (안 오면 1분 뒤 다시 와요)
 }
 function buildPub(){
   const sm = seasonExpMap(), day = todayData();
@@ -3766,6 +3771,8 @@ function updateSyncUI(){
   if (sync.ok === false){
     pill.className = 'warn';
     pill.textContent = `⚠️ 연결 안 됨${sync.queue.length ? ` · 대기 ${sync.queue.length}개` : ''}`;
+    pill.title = `이유: ${sync.err || '알 수 없음'} (눌러서 다시 연결)`;
+    pill.onclick = () => { showToast('🔄 다시 연결해 볼게요'); pullSync(true); };
     st.innerHTML = `⚠️ 시트에 연결하지 못했어요 (${esc(sync.err)}). 이 컴퓨터에 먼저 저장해 두고, 연결되면 자동으로 올려요.`;
   } else {
     pill.className = '';

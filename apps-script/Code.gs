@@ -324,9 +324,20 @@ function handlePost_(body, auth) {
         case 'askReset': archiveSheet_(ASK_SHEET, ASK_HEADER); break;
         case 'lockdown': props_().setProperty('lockdown', o.on ? '1' : '0'); if (o.on) props_().setProperty('free', '{}'); break;
         case 'engDel': props_().deleteProperty('eng:' + String(o.ds || todayStr_())); break;
+        case 'remoteAck': {                    // 출석부가 원격 출석을 기록했어요
+          const ids = (o.ids || []).map(String);
+          props_().setProperty('remote', JSON.stringify(remoteList_().map(function (x) { if (ids.indexOf(x.n + ':' + x.ts) >= 0) x.done = true; return x; })));
+          break;
+        }
+        case 'expAck': {
+          const ids = (o.ids || []).map(String);
+          let q = []; try { q = JSON.parse(props_().getProperty('expq') || '[]'); } catch (e) {}
+          props_().setProperty('expq', JSON.stringify(q.filter(function (x) { return ids.indexOf(String(x.id)) < 0; })));
+          break;
+        }
         case 'remoteAdd': {                    // 선생님이 대신 원격 출석 (교실 출석부가 등급을 계산해요)
           const ds = todayStr_(), list = remoteList_(), recs = ((map['day:' + ds] || {}).records) || {};
-          if (!recs[o.name] && !list.some(function (x) { return x.n === o.name; })) { list.push({ n: String(o.name), ts: Date.now(), ds: ds }); props_().setProperty('remote', JSON.stringify(list)); }
+          if (!recs[o.name] && !list.some(function (x) { return x.n === o.name && !x.done; })) { list.push({ n: String(o.name), ts: Date.now(), ds: ds }); props_().setProperty('remote', JSON.stringify(list)); }
           break;
         }
         case 'titleDel': { map.inv = map.inv || {}; if (map.inv[o.name]) { map.inv[o.name].title = ''; dirty.inv = true; } cacheDrop_(['v:inv']); break; }
@@ -458,13 +469,15 @@ function remoteList_() {
   const ds = todayStr_();
   try { return JSON.parse(props_().getProperty('remote') || '[]').filter(function (x) { return x.ds === ds; }); } catch (e) { return []; }
 }
-// 출석부(교사 화면)가 가져가서 처리해요. 가져간 건 claimed 로 표시해서 두 번 처리하지 않아요.
+// 출석부(교사 화면)가 가져가서 기록한 뒤 '받았어요(remoteAck)'를 보내요.
+// 응답이 중간에 끊겨도 잃어버리지 않게, 1분 안에 '받았어요'가 안 오면 다시 보내요.
 function claimRemote_() {
   const lock = LockService.getScriptLock();
   try { lock.waitLock(5000); } catch (e) { return []; }
   try {
-    const list = remoteList_(), out = list.filter(function (x) { return !x.claimed; });
-    if (out.length) { list.forEach(function (x) { x.claimed = true; }); props_().setProperty('remote', JSON.stringify(list)); }
+    const now = Date.now(), list = remoteList_();
+    const out = list.filter(function (x) { return !x.done && (!x.lease || now - x.lease > 60000); });
+    if (out.length) { out.forEach(function (x) { x.lease = now; }); props_().setProperty('remote', JSON.stringify(list)); }
     return out.map(function (x) { return { n: x.n, ts: x.ts }; });
   } finally { lock.releaseLock(); }
 }
@@ -473,7 +486,7 @@ function studentCheckin_(name, map) {
   const day = map['day:' + ds] || {}, recs = day.records || {};
   if (recs[name]) return { ok: true, error: 'already' };
   const list = remoteList_();
-  if (list.some(function (x) { return x.n === name; })) return { ok: true, error: 'pending' };
+  if (list.some(function (x) { return x.n === name && !x.done; })) return { ok: true, error: 'pending' };
   list.push({ n: name, ts: Date.now(), ds: ds });
   props_().setProperty('remote', JSON.stringify(list));
   bump_();
@@ -945,8 +958,9 @@ function claimExp_() {
   try { lock.waitLock(5000); } catch (e) { return []; }
   try {
     let q = []; try { q = JSON.parse(props_().getProperty('expq') || '[]'); } catch (e) {}
-    if (q.length) props_().setProperty('expq', '[]');
-    return q;
+    const now = Date.now(), out = q.filter(function (x) { return !x.lease || now - x.lease > 60000; });
+    if (out.length) { out.forEach(function (x) { x.lease = now; }); props_().setProperty('expq', JSON.stringify(q)); }
+    return out;
   } finally { lock.releaseLock(); }
 }
 function picksOf_(name) {
