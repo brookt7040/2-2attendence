@@ -277,21 +277,10 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <div class="err" id="loginErr"></div>
     <button type="button" class="btn btn-y" id="loginBtn">들어가기</button>
     <div class="hint">비밀번호는 선생님께 받아요. 잊어버렸으면 선생님께 말씀드려요.</div>
-    <button type="button" class="btn btn-gray" id="tOpenBtn" style="font-size:.95rem;">👑 선생님 모드</button>
   </div>
 </div>
 
-<div class="overlay" id="tLoginOv">
-  <div class="modal">
-    <button type="button" class="x" data-close="tLoginOv">✕</button>
-    <h2>👑 선생님 모드</h2>
-    <input type="password" id="tKey" placeholder="교사 열쇠" autocomplete="off">
-    <label class="hint"><input type="checkbox" id="tKeep"> 이 기기에서 계속 켜 두기 (선생님 폰일 때만!)</label>
-    <div class="err" id="tErr"></div>
-    <button type="button" class="btn btn-y" id="tLoginBtn">들어가기</button>
-    <div class="hint">교실 출석부 ⚙️ 설정에서 정한 '교사 열쇠'를 넣어요.</div>
-  </div>
-</div>
+
 
 <div class="overlay" id="catOv">
   <div class="modal" style="align-items:center;text-align:center;">
@@ -440,6 +429,7 @@ async function doLogin(){
     toast(`${givenName(name)}, 어서 와! 🐾`);
     chatReset(); coin = null; myProfile = null; render(); showTab('me'); chatPull(); askList(); coinCall('coins');
     if (/(쌤|샘|선생님|교감|교장)$/.test(name)){ tAuthByLogin = true; tOn(); tPoll(); toast('👑 선생님 계정이라 관리 탭이 열렸어요'); }
+    else tOff(true);
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
 function logout(){
@@ -936,7 +926,7 @@ function tOff(quiet){ tKey = ''; tAuthByLogin = false; localStorage.removeItem(T
 const T_TABS = [['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['eng', '📚 영어'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기'], ['safe', '🛟 안전']];
 function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
 async function tLoad(){
-  $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tOffBtn" class="off">끄기</button>';
+  $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tOffBtn" class="off">로그아웃</button>';
   $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
   try {
     if (tTab === 'ask') tData.asks = (await tCall({ action:'asks' })).asks || [];
@@ -1042,10 +1032,8 @@ async function tPoll(){
 function tPeriod(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
 document.addEventListener('click', async e => {
   const t = e.target;
-  if (t.closest('#tOpenBtn')){ $('tErr').textContent = ''; $('tLoginOv').style.display = 'flex'; setTimeout(() => $('tKey').focus(), 50); return; }
-  if (t.closest('#tLoginBtn')){ tLogin(); return; }
   if ((!tKey && !tAuthByLogin) || !t.closest('#p-admin')) return;
-  if (t.closest('#tOffBtn')){ if (confirm('선생님 모드를 끌까요?')) tOff(); return; }
+  if (t.closest('#tOffBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const tb = t.closest('[data-ttab]'); if (tb){ tTab = tb.dataset.ttab; tLoad(); return; }
   // 상담·질문
   const rp = t.closest('[data-tarep]'); if (rp){ const v = (document.querySelector(`[data-tain="${rp.dataset.tarep}"]`).value || '').trim(); if (!v){ toast('답변을 적어 주세요'); return; } if (await tOps([{ op:'askReply', id:+rp.dataset.tarep, text:v }], '📮 답변했어요')) tLoad(); return; }
@@ -1156,8 +1144,9 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) pull
     await refreshMe(true); render(); chatPull(); askList(); coinCall('coins');
     if (me && /(쌤|샘|선생님|교감|교장)$/.test(me.name)){ tAuthByLogin = true; tOn(); }
   }
-  const tk = localStorage.getItem(TKEY) || sessionStorage.getItem(TKEY);
-  if (tk){ tKey = tk; tOn(); tPoll(); }
+  // 👑 관리 탭은 'OO쌤' 계정으로 로그인했을 때만 보여요 (예전에 저장된 교사 열쇠는 지워요)
+  localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); tKey = '';
+  if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
   setInterval(tPoll, 30000);
   setInterval(() => pull(), 20000);
   setInterval(() => { if (me && !document.hidden) chatPull(); }, current === 'village' ? 6000 : 6000);
