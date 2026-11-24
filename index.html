@@ -2470,7 +2470,8 @@ function editText(kind){
 }
 function saveTextEdit(){
   if (teKind === 'urgent'){
-    db.urgent = $('teInput').value.trim().slice(0, 200); saveDB(); syncOp({ op:'config', data: configOf() });
+    db.urgent = $('teInput').value.trim().slice(0, 200); saveDB();
+    if (sync.api >= 10) syncOp({ op:'urgent', list: db.urgent.split('\n').map(t => t.trim()).filter(Boolean) }); else syncOp({ op:'config', data: configOf() });
     $('textEditOverlay').style.display = 'none'; renderUrgent(); showToast(db.urgent ? '📌 중요 공지를 올렸어요' : '📌 중요 공지를 내렸어요'); return;
   }
   const list = $('teInput').value.split('\n').map(t => t.trim()).filter(Boolean);
@@ -3340,7 +3341,7 @@ function applyConfig(c){
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
-  if (typeof c.urgent === 'string' && c.urgent !== db.urgent){ db.urgent = c.urgent; setTimeout(renderUrgent, 0); }
+  if (typeof c.urgent === 'string' && c.urgent !== db.urgent && !(sync.api >= 10)){ db.urgent = c.urgent; setTimeout(renderUrgent, 0); }
 }
 function applyServerState(st){
   if (st.config) applyConfig(st.config);
@@ -3400,6 +3401,10 @@ async function pullSync(force){
       sync.hasClosing = true;
       if (JSON.stringify(j.closing) !== JSON.stringify(db.closing) && !sync.queue.some(o => o.op === 'closing')){ db.closing = j.closing; changed = true; }
     } else sync.hasClosing = false;
+    if (Array.isArray(j.urgent)){
+      const u = j.urgent.join('\n');
+      if (u !== (db.urgent || '') && !sync.queue.some(o => o.op === 'urgent')){ db.urgent = u; saveDB(); renderUrgent(); }
+    }
     const nl = (j.notices || []);
     if (JSON.stringify(nl) !== JSON.stringify(db.notices) && !sync.queue.some(o => o.op === 'notices')){ db.notices = nl; noticeChecked = {}; changed = true; }
     sync.ok = true; sync.err = ''; sync.last = Date.now(); saveSync();

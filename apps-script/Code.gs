@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v9 · 마을 지도·영어 학원·미션 고르기·ID 카드·안전 기능)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v10 · 중요공지 시트·마을 지도·영어 학원·미션 고르기·ID 카드·안전 기능)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -7,6 +7,7 @@
  * 나온 웹 앱 주소(…/exec)를 출석부 ⚙️ 설정 → ☁️ 동기화 칸에 붙여넣으면 끝!
  *
  * 시트 구성 (자동으로 만들어져요)
+ *  - 중요공지 : A2칸부터 적으면 출석부 '📌 중요 공지' 칸에 떠요. 비우면 내려가요.
  *  - 알림 : A2칸부터 한 줄에 하나씩 적으면 모든 화면의 '오늘의 알림'에 떠요.
  *  - 종례 : A2칸부터 한 줄에 하나씩 적으면 '종례하기' 화면과 학생 페이지에 떠요.
  *  - 대화 : 학생 페이지 '우리 반 대화'(귓속말 포함) 기록이에요. 선생님은 모두 볼 수 있어요.
@@ -24,8 +25,9 @@ const DATA_SHEET = 'data';
 const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
 const CLOSING_SHEET = '종례';
+const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 9;
+const API_VERSION = 10;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -203,7 +205,7 @@ function publicGet_(p) {
   if (p.card) return cardOf_(String(p.card));
   if (p.eng) return engPublic_();
   const v = version_();
-  const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
+  const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   return res;
@@ -212,7 +214,7 @@ function publicGet_(p) {
 /* ---------------- 교사: 전체 읽기 ---------------- */
 function teacherPull_(body, auth) {
   const v = version_();
-  const res = { ok: true, api: API_VERSION, v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
+  const res = { ok: true, api: API_VERSION, v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
   res.lockdown = props_().getProperty('lockdown') === '1';
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
@@ -271,6 +273,7 @@ function handlePost_(body, auth) {
         case 'pub': map.pub = o.data || {}; dirty.pub = true; cacheDrop_(['v:pub']); break;
         case 'notices': writeNotices_(o.list || []); break;
         case 'closing': writeList_(CLOSING_SHEET, CLOSING_HEADER, o.list || []); break;
+        case 'urgent': writeList_(URGENT_SHEET, URGENT_HEADER, (o.list || []).slice(0, 5)); break;
         case 'rec': {
           const d = day(o.ds);
           if (o.rec) d.records[o.name] = o.rec; else delete d.records[o.name];
