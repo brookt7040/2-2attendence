@@ -313,6 +313,36 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .closing-extra span{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 18px;box-shadow:0 4px 0 var(--ink);}
 .closing-foot{display:flex;justify-content:center;}
 
+.closing-big{
+  width:470px;max-width:100%;padding:16px 0;font-size:2.1rem;letter-spacing:2px;cursor:pointer;
+  background:linear-gradient(180deg,#FFD3E1,#FFB0CA);border:4px solid var(--ink);border-radius:22px;box-shadow:0 7px 0 var(--ink);
+  transition:transform .08s;
+}
+.closing-big:hover{transform:translateY(-3px);}
+.closing-big:active{transform:translateY(6px);box-shadow:0 1px 0 var(--ink);}
+
+/* ===== 👑 관리자 ===== */
+.pin-box{width:380px;max-width:92vw;text-align:center;}
+.pin-input{font-size:2rem!important;text-align:center;letter-spacing:10px;width:220px;margin:0 auto;}
+.gm-body{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;}
+.gm-list{flex:0 0 250px;display:flex;flex-direction:column;gap:6px;max-height:62vh;overflow-y:auto;padding:4px;}
+.gm-stu{display:flex;justify-content:space-between;align-items:center;gap:6px;border:3px solid var(--ink);border-radius:14px;background:#fff;padding:6px 10px;cursor:pointer;font-size:1.1rem;box-shadow:0 3px 0 var(--ink);}
+.gm-stu small{color:var(--ink-soft);font-size:.82rem;}
+.gm-stu.on{background:var(--y);}
+.gm-main{flex:1;min-width:320px;display:flex;flex-direction:column;gap:12px;}
+.gm-head{display:flex;gap:14px;align-items:center;}
+.gm-head .closet-frame{width:120px;height:120px;margin:4px;flex:none;}
+.gm-head canvas{width:96px;height:96px;}
+.gm-name{font-size:1.9rem;}
+.gm-sub{font-size:1.05rem;color:var(--ink-soft);line-height:1.5;}
+.gm-btns{display:flex;flex-wrap:wrap;gap:6px;}
+.gm-btns button{border:2px solid var(--ink);border-radius:10px;padding:5px 11px;font-size:1rem;cursor:pointer;box-shadow:0 3px 0 var(--ink);background:#fff;}
+.gm-btns button:active{transform:translateY(3px);box-shadow:none;}
+.gm-btns .plus{background:#D9F7E9;} .gm-btns .minus{background:#FFE0E7;}
+.gm-btns .lvb.on{background:var(--y);}
+.gm-log{max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.closet-free{display:none;font-size:1rem;margin-top:8px;}
+
 /* ===== 오버레이 · 모달 ===== */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
@@ -488,6 +518,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <div class="rp-sub" id="rpSub"></div>
         <div class="rp-ladder" id="rpLadder"></div>
       </div>
+      <button type="button" class="closing-big" id="openClosingBtn">📋 종례하기</button>
     </div>
   </div>
 
@@ -501,9 +532,9 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="chip" id="statLate">💤 지각 0</div>
       <div class="chip" id="statDungeon">🏠 쉬는 날 0</div>
       <div class="chip" id="statExp">✨ 오늘 EXP 0</div>
-      <button type="button" class="btn btn-pink" id="openClosingBtn">📋 종례하기</button>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
+      <button type="button" class="btn btn-mint" id="openGmBtn">👑 관리자</button>
     </div>
   </div>
 
@@ -568,6 +599,28 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
   </div>
 </div>
 
+<!-- 비밀번호 -->
+<div class="overlay" id="pinOverlay" style="z-index:10002;">
+  <div class="modal pin-box">
+    <h2>🔒 선생님 확인</h2>
+    <div class="form-hint" id="pinHint">관리자 비밀번호를 입력해 주세요</div>
+    <input type="password" inputmode="numeric" class="pin-input" id="pinInput" maxlength="12" autocomplete="off">
+    <div class="modal-btns"><button type="button" class="btn btn-gray" id="pinCancelBtn">취소</button><button type="button" class="btn btn-y" id="pinOkBtn">확인</button></div>
+  </div>
+</div>
+
+<!-- 관리자 모드 -->
+<div class="overlay" id="gmOverlay">
+  <div class="modal modal-large">
+    <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 EXP·레벨·출석·꾸미기를 바꿔요</small></h2>
+    <div class="gm-body">
+      <div class="gm-list" id="gmList"></div>
+      <div class="gm-main" id="gmMain"></div>
+    </div>
+    <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
+  </div>
+</div>
+
 <!-- 꾸미기 방 -->
 <div class="overlay" id="closetOverlay">
   <div class="modal modal-large">
@@ -577,6 +630,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <div class="closet-frame" id="closetFrame"><div class="lv-frame"></div><canvas id="closetCanvas" class="pix" width="16" height="16"></canvas></div>
         <div class="closet-lv" id="closetLv"></div>
         <div class="closet-next" id="closetNext"></div>
+        <label class="closet-free" id="closetFreeWrap"><input type="checkbox" id="closetFree"> 👑 레벨 상관없이 모든 아이템 열기</label>
       </div>
       <div class="closet-items" id="closetItems"></div>
     </div>
@@ -643,6 +697,11 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <div class="overlay" id="adminOverlay">
   <div class="modal modal-small">
     <h2>⚙️ 선생님 설정</h2>
+
+    <div class="section">
+      <div class="section-title">🔒 관리자 비밀번호</div>
+      <div class="row"><span>설정·관리자 모드를 열 때 물어봐요 (비워 두면 잠그지 않아요)</span><input type="password" inputmode="numeric" id="adminPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
+    </div>
 
     <div class="section">
       <div class="section-title">🏷️ 기본 정보</div>
@@ -854,6 +913,7 @@ let db = {
   level: { ...DEFAULT_LEVEL },
   looks: {},
   closing: [],
+  adminPin: '',
   bonus: {},
   cleanDone: {},
   records: {}
@@ -1131,6 +1191,7 @@ function mergeInto(parsed){
   if (parsed.level && typeof parsed.level === 'object') db.level = Object.assign({}, DEFAULT_LEVEL, parsed.level);
   if (parsed.looks && typeof parsed.looks === 'object') db.looks = parsed.looks;
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
+  if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
 }
 function loadDB(){
   let saved = localStorage.getItem(DB_KEY), migrated = false;
@@ -1305,7 +1366,7 @@ function updateStatsBoard(){
     if (r.status === 'present') p++; else if (r.status === 'late') l++; else if (r.status === 'dungeon') d++;
     exp += Number(r.exp) || 0;
   });
-  (db.bonus[getTodayStr()] || []).forEach(b => { if (db.students.includes(b.who)) exp += b.exp; });
+  dailyBonus().forEach(b => { if (db.students.includes(b.who)) exp += b.exp; });
   $('statPresent').textContent = `⭐ 출석 ${p}`;
   $('statLate').textContent = `💤 지각 ${l}`;
   $('statDungeon').textContent = `🏠 쉬는 날 ${d}`;
@@ -1433,10 +1494,11 @@ function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, rare:t.e
 const MEDALS = { 1:'🥇', 2:'🥈', 3:'🥉' };
 function medalOf(rec){ return rec.rank || (rec.first ? 1 : 0); }
 function todayBonus(){ return db.bonus[getTodayStr()] || []; }
-function bonusSum(name){ return todayBonus().filter(b => b.who === name).reduce((s, b) => s + b.exp, 0); }
-function bonusPill(name){ const v = bonusSum(name); return todayBonus().some(b => b.who === name) ? `<span class="exp-pill bonus" title="EXP 리스트">🎁${fmtExp(v)}</span>` : ''; }
+function dailyBonus(){ return todayBonus().filter(b => !b.adm); }
+function bonusSum(name){ return dailyBonus().filter(b => b.who === name).reduce((s, b) => s + b.exp, 0); }
+function bonusPill(name){ const v = bonusSum(name); return dailyBonus().some(b => b.who === name) ? `<span class="exp-pill bonus" title="EXP 리스트">🎁${fmtExp(v)}</span>` : ''; }
 function dayTotal(name){ const r = todayData()[name]; return (r ? Number(r.exp) || 0 : 0) + bonusSum(name); }
-function bonusCell(name){ const list = todayBonus().filter(b => b.who === name); return list.length ? `${fmtExp(bonusSum(name))} <small style="color:var(--ink-soft);">(${list.length}건)</small>` : '-'; }
+function bonusCell(name){ const list = dailyBonus().filter(b => b.who === name); return list.length ? `${fmtExp(bonusSum(name))} <small style="color:var(--ink-soft);">(${list.length}건)</small>` : '-'; }
 
 function renderMenuBoard(){
   const box = $('menuBoard');
@@ -1472,7 +1534,7 @@ function openGive(idx){
   $('giveOverlay').style.display = 'flex';
 }
 function renderBonusLog(){
-  const list = todayBonus();
+  const list = dailyBonus();
   $('bonusLog').innerHTML = list.length ? list.slice().reverse().map(b =>
     `<div class="bonus-entry"><span>${esc(b.t)} · <b>${esc(b.who)}</b> ${esc(b.item)} <span class="pts ${b.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(b.exp)}</span></span><button type="button" class="act-btn cancel" data-undo="${esc(b.id)}">↩</button></div>`).join('')
     : '<div class="clean-empty">아직 없어요</div>';
@@ -1579,11 +1641,11 @@ function defaultLook(lv){
   return look;
 }
 function lookOf(name, lv){
-  const raw = (db.looks && db.looks[name]) || defaultLook(lv), out = {};
+  const raw = (db.looks && db.looks[name]) || defaultLook(lv), out = {}, free = !!raw._free;
   for (const [slot, v] of Object.entries(raw)){
-    if (!v) continue;
+    if (!v || slot === '_free') continue;
     const [id, ci] = String(v).split(':'); const it = ITEM_BY_ID[id];
-    if (it && it.lv <= lv && it.colors[+ci]) out[slot] = { it, c: it.colors[+ci], ci: +ci };
+    if (it && (free || it.lv <= lv) && it.colors[+ci]) out[slot] = { it, c: it.colors[+ci], ci: +ci };
   }
   return out;
 }
@@ -1606,13 +1668,14 @@ function setLook(name, slot, val){
 }
 
 /* 🎨 꾸미기 방 */
-let closetName = null, closetNew = [], closetOnClose = null;
-function openCloset(name, newIds, onClose){
-  closetName = name; closetNew = newIds || []; closetOnClose = onClose || null;
+let closetName = null, closetNew = [], closetOnClose = null, closetAdmin = false;
+function openCloset(name, newIds, onClose, admin){
+  closetName = name; closetNew = newIds || []; closetOnClose = onClose || null; closetAdmin = !!admin;
   renderCloset(); $('closetOverlay').style.display = 'flex';
 }
 function closeCloset(){
   $('closetOverlay').style.display = 'none'; closetName = null; renderGrid();
+  if ($('gmOverlay').style.display === 'flex') renderGm();
   const f = closetOnClose; closetOnClose = null; f && f();
 }
 function swatchBg(c){
@@ -1631,8 +1694,11 @@ function renderCloset(){
   $('closetNext').innerHTML = next
     ? `다음 아이템 ${next.icon} <b>${next.name}</b><br>Lv.${next.lv}까지 ${Math.max(0, th[next.lv - 1] - exp)} EXP 남았어요`
     : '모든 아이템을 모았어요! 🏆';
+  const free = !!(db.looks && db.looks[name] && db.looks[name]._free);
+  $('closetFreeWrap').style.display = closetAdmin ? 'block' : 'none';
+  $('closetFree').checked = free;
   $('closetItems').innerHTML = ITEMS.map(it => {
-    const locked = it.lv > lv;
+    const locked = it.lv > lv && !free;
     const eq = look[it.slot] && look[it.slot].it.id === it.id ? look[it.slot].ci : -1;
     const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot]} · Lv.${it.lv}</small></div>`;
     if (locked) return `<div class="ci locked">${head}<div class="ci-lock">🔒 Lv.${it.lv}가 되면 열려요</div></div>`;
@@ -1655,7 +1721,7 @@ function onClosetClick(e){
   renderCloset();
 }
 let lvQueue = [], lvShowing = false, lvAfter = null;
-function queueLevelUps(before, after){
+function queueLevelUps(before, after, silent){
   const now = levelsNow();
   let equipped = false;
   for (const n in now){
@@ -1667,9 +1733,10 @@ function queueLevelUps(before, after){
       items.forEach(it => { look[it.slot] = it.id + ':0'; });
       db.looks[n] = look; equipped = true;
     }
-    lvQueue.push({ name:n, lv:now[n], items });
+    if (!silent) lvQueue.push({ name:n, lv:now[n], items });
   }
   if (equipped){ saveDB(); syncOp({ op:'config', data: configOf() }); renderGrid(); }
+  if (silent) return;
   if (after) lvAfter = after;
   showNextLevelUp();
 }
@@ -1745,6 +1812,133 @@ function renderClosing(){
   const extra = [`✨ 오늘 우리 반 EXP ${fmtExp(exp)}`];
   if (cleaners.length) extra.push(`🧹 청소 당번: ${cleaners.map(esc).join(', ')}`);
   $('closingExtra').innerHTML = extra.map(x => `<span>${x}</span>`).join('');
+}
+
+/* =========================================================
+   🔒 비밀번호 · 👑 관리자 모드
+   ========================================================= */
+let pinUntil = 0, pinNext = null;
+function requirePin(fn){
+  if (!db.adminPin || Date.now() < pinUntil){ fn(); return; }
+  pinNext = fn; $('pinInput').value = ''; $('pinHint').textContent = '관리자 비밀번호를 입력해 주세요';
+  $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
+}
+function checkPin(){
+  if ($('pinInput').value === db.adminPin){
+    pinUntil = Date.now() + 10 * 60 * 1000;      // 10분 동안 다시 묻지 않아요
+    $('pinOverlay').style.display = 'none';
+    const f = pinNext; pinNext = null; f && f();
+  } else { $('pinHint').textContent = '❌ 비밀번호가 달라요'; $('pinInput').value = ''; $('pinInput').focus(); }
+}
+
+let gmName = null;
+function openGm(){ gmName = gmName && db.students.includes(gmName) ? gmName : db.students[0]; renderGm(); $('gmOverlay').style.display = 'flex'; }
+function addAdj(name, exp, reason){
+  if (!exp) return;
+  const ds = getTodayStr(), now = new Date();
+  const entry = { id: 'adm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), who:name, item: reason || '선생님 조정', exp, t:`${pad(now.getHours())}:${pad(now.getMinutes())}`, adm:true };
+  db.bonus[ds] = db.bonus[ds] || []; db.bonus[ds].push(entry);
+  saveDB(); syncOp({ op:'bonusAdd', ds, entry });
+}
+function gmAdjust(exp, reason, celebrate = true){
+  const name = gmName, before = levelsNow();
+  addAdj(name, exp, reason);
+  showToast(`👑 ${name} ${fmtExp(exp)} EXP${reason ? ' · ' + reason : ''}`);
+  afterGmChange(before, celebrate);
+}
+function gmSetLevel(target){
+  const name = gmName, th = lvThresholds(), exp = seasonExpMap()[name] || 0;
+  if (levelInfo(exp).lv === target) return;
+  const delta = th[target - 1] - exp, before = levelsNow();
+  addAdj(name, delta, `레벨 지정 → Lv.${target}`);
+  showToast(`👑 ${name} → Lv.${target} ${LEVELS[target-1].name}`);
+  afterGmChange(before, $('gmCelebrate') ? $('gmCelebrate').checked : true);
+}
+function afterGmChange(before, celebrate){
+  renderGrid(); updateStatsBoard(); renderGm();
+  if (celebrate){
+    $('gmOverlay').style.display = 'none';
+    queueLevelUps(before, () => { $('gmOverlay').style.display = 'flex'; renderGm(); });
+  } else {
+    queueLevelUps(before, null, true);   // 축하 화면 없이 아이템만 조용히 열어 줘요
+  }
+}
+function gmSetToday(key){
+  const name = gmName, ds = getTodayStr(), before = levelsNow();
+  db.records[ds] = db.records[ds] || {};
+  const old = db.records[ds][name];
+  if (key === 'cancel'){ delete db.records[ds][name]; syncOp({ op:'rec', ds, name, rec:null }); }
+  else if (key === 'absent'){ db.records[ds][name] = { status:'dungeon', tier:'absent', time:'결석', exp:0 }; syncOp({ op:'rec', ds, name, rec: db.records[ds][name] }); }
+  else {
+    const meta = TIER_META[key], ch = pickChar(key, db.records[ds]), now = new Date();
+    const rec = { status: meta.sleepy ? 'late' : 'present', tier:key, time: old && old.time && old.time !== '결석' ? old.time : `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+      exp: getTierExp(key), charId: ch.id, edited:true };
+    if (old && old.rank) rec.rank = old.rank;
+    if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
+    db.records[ds][name] = rec; syncOp({ op:'rec', ds, name, rec });
+  }
+  saveDB(); showToast(`👑 ${name} 오늘 출석 → ${key === 'cancel' ? '기록 취소' : TIER_META[key].icon + ' ' + TIER_META[key].short}`);
+  afterGmChange(before, false);
+}
+function gmUndo(id){
+  for (const [ds, list] of Object.entries(db.bonus)){
+    const i = (list || []).findIndex(b => b.id === id);
+    if (i >= 0){
+      if (!confirm(`${list[i].who} · ${list[i].item} ${fmtExp(list[i].exp)} 를 취소할까요?`)) return;
+      list.splice(i, 1); saveDB(); syncOp({ op:'bonusDel', ds, id });
+      renderGrid(); updateStatsBoard(); renderGm(); return;
+    }
+  }
+}
+function renderGm(){
+  const sm = seasonExpMap();
+  $('gmList').innerHTML = db.students.map(n => { const li = levelInfo(sm[n] || 0);
+    return `<div class="gm-stu ${n === gmName ? 'on' : ''}" data-gm="${esc(n)}"><span>${esc(n)}</span><small>Lv.${li.lv} · ${fmtExp(li.exp)}</small></div>`; }).join('');
+  const name = gmName; if (!name){ $('gmMain').innerHTML = ''; return; }
+  const li = levelInfo(sm[name] || 0), rec = todayData()[name];
+  const adj = [];
+  for (const [ds, list] of Object.entries(db.bonus)) if (ds >= db.level.start) (list || []).forEach(b => { if (b.adm && b.who === name) adj.push({ ...b, ds }); });
+  adj.sort((a, b) => (b.ds + b.t).localeCompare(a.ds + a.t));
+  const todayTxt = rec ? `${TIER_META[recTier(rec)].icon} ${TIER_META[recTier(rec)].short} · ${esc(rec.time || '')} · ${fmtExp(rec.exp)}` : '아직 안 왔어요';
+  $('gmMain').innerHTML = `
+    <div class="gm-head">
+      <div class="closet-frame lv-${li.lv}"><div class="lv-frame"></div><canvas id="gmCanvas" class="pix" width="16" height="16"></canvas></div>
+      <div><div class="gm-name">${esc(name)}</div>
+        <div class="gm-sub">Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP <b>${fmtExp(li.exp)}</b>${li.next ? ` · 다음 레벨까지 ${li.need}` : ' · MAX'}<br>오늘 출석: ${todayTxt} · 오늘 EXP ${fmtExp(dayTotal(name))}</div></div>
+    </div>
+    <div class="section"><div class="section-title">✨ EXP 주기 · 빼기</div>
+      <div class="gm-btns">${[-100,-50,-10].map(v => `<button type="button" class="minus" data-adj="${v}">${v}</button>`).join('')}${[10,50,100,200].map(v => `<button type="button" class="plus" data-adj="${v}">+${v}</button>`).join('')}</div>
+      <div class="row" style="justify-content:flex-start;"><input type="number" id="gmExp" placeholder="직접 입력 (예: -30)" style="width:160px;"><input type="text" id="gmReason" placeholder="이유 (선택)" style="flex:1;min-width:140px;"><button type="button" class="mini-btn" id="gmExpBtn">적용</button></div>
+    </div>
+    <div class="section"><div class="section-title">🏆 레벨 바로 지정</div>
+      <div class="gm-btns">${LEVELS.map((L, i) => `<button type="button" class="lvb ${li.lv === i+1 ? 'on' : ''}" data-lv="${i+1}">Lv.${i+1}</button>`).join('')}</div>
+      <label class="form-hint"><input type="checkbox" id="gmCelebrate" checked> 레벨이 오르면 축하 화면 보여주기</label>
+    </div>
+    <div class="section"><div class="section-title">📅 오늘 출석 바꾸기</div>
+      <div class="gm-btns">${TIER_ORDER.map(k => `<button type="button" data-today="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon} ${TIER_META[k].short} ${fmtExp(getTierExp(k))}</button>`).join('')}
+        <button type="button" data-today="absent" style="background:${TIER_META.absent.color}">🏠 결석</button><button type="button" data-today="cancel" style="background:#FFC9D3">↩ 기록 취소</button></div>
+    </div>
+    <div class="section"><div class="section-title">🎨 꾸미기</div>
+      <div class="row" style="justify-content:flex-start;"><button type="button" class="mini-btn" style="background:var(--y);" id="gmClosetBtn">🎨 꾸미기 방 열기 (관리자)</button><span class="form-hint">레벨과 상관없이 모든 아이템을 열어 줄 수도 있어요</span></div>
+    </div>
+    <div class="section"><div class="section-title">📜 이번 시즌 조정 내역</div>
+      <div class="gm-log">${adj.length ? adj.map(b => `<div class="bonus-entry"><span>${b.ds.slice(5).replace('-', '/')} ${esc(b.t)} · ${esc(b.item)} <span class="pts ${b.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(b.exp)}</span></span><button type="button" class="act-btn cancel" data-gmundo="${esc(b.id)}">↩</button></div>`).join('') : '<div class="clean-empty">아직 없어요</div>'}</div>
+    </div>`;
+  drawColors($('gmCanvas'), lookColors(name, li.lv));
+}
+function onGmClick(e){
+  const t = e.target;
+  const stu = t.closest('[data-gm]'); if (stu){ gmName = stu.dataset.gm; renderGm(); return; }
+  const adj = t.closest('[data-adj]'); if (adj){ gmAdjust(Number(adj.dataset.adj), '선생님 조정'); return; }
+  if (t.closest('#gmExpBtn')){
+    const v = parseInt($('gmExp').value, 10);
+    if (!v){ alert('더하거나 뺄 EXP를 숫자로 적어 주세요. (빼려면 -30처럼)'); return; }
+    gmAdjust(v, $('gmReason').value.trim() || '선생님 조정'); return;
+  }
+  const lv = t.closest('[data-lv]'); if (lv){ gmSetLevel(Number(lv.dataset.lv)); return; }
+  const td = t.closest('[data-today]'); if (td){ gmSetToday(td.dataset.today); return; }
+  if (t.closest('#gmClosetBtn')){ $('gmOverlay').style.display = 'none'; openCloset(gmName, [], () => { $('gmOverlay').style.display = 'flex'; renderGm(); }, true); return; }
+  const u = t.closest('[data-gmundo]'); if (u){ gmUndo(u.dataset.gmundo); }
 }
 
 /* 🎉 모두 모이면 파티 */
@@ -2089,6 +2283,7 @@ function openAdminUI(){
   $('lateTimeInput').value = db.lateTimeSetting;
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
+  $('adminPinInput').value = db.adminPin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
   const ac = db.alarmConfig;
   $('alarm1EnableInput').checked = !!ac.alarm1Enable;
@@ -2152,6 +2347,7 @@ async function saveAdminData(){
   db.lateTimeSetting = late;
   db.expTiers = tiers;
   db.sfx = $('sfxInput').checked;
+  db.adminPin = $('adminPinInput').value.trim();
   db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
   let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
@@ -2300,7 +2496,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice() };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -2335,6 +2531,7 @@ function applyConfig(c){
   if (c.level) db.level = Object.assign({}, DEFAULT_LEVEL, c.level);
   if (c.looks && typeof c.looks === 'object') db.looks = c.looks;
   if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
+  if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
 }
 function applyServerState(st){
   if (st.config) applyConfig(st.config);
@@ -2394,6 +2591,7 @@ function refreshAfterRemote(){
   if ($('giveOverlay').style.display === 'flex') renderBonusLog();
   if ($('closingOverlay').style.display === 'flex') renderClosing();
   if ($('closetOverlay').style.display === 'flex') renderCloset();
+  if ($('gmOverlay').style.display === 'flex') renderGm();
 }
 function updateSyncUI(){
   const pill = $('syncPill'), st = $('syncStatusText');
@@ -2465,7 +2663,19 @@ function disconnectSync(){
 function bindEvents(){
   $('mascotWrap').addEventListener('click', petMascot);
   $('openStatsBtn').addEventListener('click', openStatsUI);
-  $('openAdminBtn').addEventListener('click', openAdminUI);
+  $('openAdminBtn').addEventListener('click', () => requirePin(openAdminUI));
+  $('openGmBtn').addEventListener('click', () => requirePin(openGm));
+  $('pinOkBtn').addEventListener('click', checkPin);
+  $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+  $('pinCancelBtn').addEventListener('click', () => { $('pinOverlay').style.display = 'none'; pinNext = null; });
+  $('gmOverlay').addEventListener('click', onGmClick);
+  $('closetFree').addEventListener('change', () => {
+    if (!closetName) return;
+    const lv = levelInfo(seasonExpMap()[closetName] || 0).lv;
+    db.looks = db.looks || {};
+    db.looks[closetName] = Object.assign({}, db.looks[closetName] || defaultLook(lv), { _free: $('closetFree').checked });
+    saveDB(); syncOp({ op:'config', data: configOf() }); renderCloset();
+  });
   $('statsTabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) loadStats(b.dataset.period); });
   $('statsContent').addEventListener('click', e => {
     const cl = e.target.closest('[data-closet]'); if (cl){ openCloset(cl.dataset.closet); return; }
