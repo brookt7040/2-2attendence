@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v5 · 냥코인·마을·게임)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v6 · 냥코인·마을·게임·쉬는 시간 해제)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -25,7 +25,7 @@ const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
 const CLOSING_SHEET = '종례';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 5;
+const API_VERSION = 6;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾'];
@@ -68,6 +68,14 @@ function doPost(e) {
     if (body.action === 'chat') return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function () { return true; }) });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
+    if (body.action === 'free') {
+      if (body.set) {
+        const f = free_();
+        ['chat', 'game'].forEach(function (k) { if (body.set[k] !== undefined) f[k] = Math.max(0, Number(body.set[k]) || 0); });
+        props_().setProperty('free', JSON.stringify(f));
+      }
+      return out_({ ok: true, free: free_(), now: Date.now(), chatCfg: chatCfg_() });
+    }
     return out_(handlePost_(body, auth));
   } catch (err) { return out_({ ok: false, error: String(err) }); }
 }
@@ -396,7 +404,12 @@ function chatCfg_() {
   const def = { on: true, whisper: true, start: '07:00', end: '22:00', muted: [], ban: [] };
   try { return Object.assign(def, JSON.parse(props_().getProperty('chatCfg') || '{}')); } catch (e) { return def; }
 }
+/* ⏰ 쉬는 시간 해제: 선생님이 정한 시각까지 시간 제한 없이 열어요 */
+function free_() {
+  try { return Object.assign({ chat: 0, game: 0 }, JSON.parse(props_().getProperty('free') || '{}')); } catch (e) { return { chat: 0, game: 0 }; }
+}
 function chatOpen_(cfg) {
+  if (free_().chat > Date.now()) return true;
   if (!cfg.on) return false;
   if (!cfg.start || !cfg.end) return true;
   const t = Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm');
@@ -456,7 +469,7 @@ function studentChat_(name, body, pub) {
     }
   }
   const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (m.to === '' || m.to === name || m.from === name); });
-  return { ok: true, error: error, cfg: { on: !!cfg.on, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
+  return { ok: true, error: error, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
 }
 
 /* ---------------- 📮 질문 · 건의함 ---------------- */
@@ -588,6 +601,7 @@ function settleReq_(id, ok, map) {
 }
 function soldCount_(itemId) { return Number(props_().getProperty('sold:' + itemId) || 0); }
 function gameOpen_(game) {
+  if (game && free_().game > Date.now()) return true;
   if (!game || !game.on) return false;
   const now = new Date(), wd = Number(Utilities.formatDate(now, 'Asia/Seoul', 'u')) % 7;   // 1=월 … 7→0=일
   const h = (game.hours || {})[wd];

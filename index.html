@@ -660,6 +660,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
         <button type="button" class="mini-btn" style="background:var(--sky);margin-bottom:6px;" id="gmChatBtn">💬 대화 관리</button>
         <button type="button" class="mini-btn" style="background:var(--mint);margin-bottom:6px;" id="gmAskBtn">📮 질문·건의함 <b id="gmAskCount"></b></button>
+        <button type="button" class="mini-btn" style="background:#C9B8FF;margin-bottom:6px;" id="gmFreeBtn">⏰ 쉬는 시간 해제 <b id="gmFreeOn"></b></button>
         <button type="button" class="mini-btn" style="background:#FF9DAE;margin-bottom:10px;" id="gmResetBtn">🧨 전체 초기화</button>
         <button type="button" class="mini-btn" style="background:var(--y);margin-bottom:10px;" id="gmCoinBtn">🐾 냥코인 관리 <b id="gmReqCount"></b></button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
@@ -684,6 +685,14 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 </div>
 
 <!-- 대화 관리 -->
+<div class="overlay" id="freeOverlay" style="z-index:10003;">
+  <div class="modal">
+    <button type="button" class="modal-x" data-close="freeOverlay" title="닫기">✕</button>
+    <h2>⏰ 쉬는 시간 해제</h2>
+    <p class="form-hint" style="margin-bottom:10px;">정해진 시간이 아니어도 잠깐 열어 줄 수 있어요. 정한 시간이 지나면 저절로 원래대로 돌아가요.</p>
+    <div id="freeBody"><div class="clean-empty">불러오는 중…</div></div>
+  </div>
+</div>
 <div class="overlay" id="chatAdmOverlay" style="z-index:10003;">
   <div class="modal modal-large">
     <button type="button" class="modal-x" id="caXBtn" title="닫기">✕</button>
@@ -2314,6 +2323,7 @@ function onGmClick(e){
   }
   if (t.closest('#gmPinDelBtn')){ if (confirm(`${gmName}의 비밀번호를 지울까요? 학생 페이지에 로그인할 수 없게 돼요.`)) setStudentPins({ [gmName]: '' }); return; }
   if (t.closest('#gmPinAllBtn')){ makeAllPins(); return; }
+  if (t.closest('#gmFreeBtn')){ openFree(); return; }
   if (t.closest('#gmResetBtn')){ $('resetOverlay').style.display = 'flex'; return; }
   if (t.closest('#gmChatBtn')){ openChatAdmin(); return; }
   if (t.closest('#gmAskBtn')){ openAskAdmin(); return; }
@@ -3061,6 +3071,49 @@ function needApi4(){
   if (!sync.url || sync.api < 4){ alert('대화·건의함은 구글 시트 코드를 최신 버전(v4)으로 업데이트해야 쓸 수 있어요.\n(Apps Script에 새 Code.gs 붙여넣기 → 배포 관리 → 새 버전)'); return true; }
   return false;
 }
+/* ⏰ 쉬는 시간 해제 (대화·마을 / 게임 광장) */
+let freeState = null, freeSkew = 0;
+const FREE_KINDS = [['chat','💬 대화 · 🏘️ 마을'], ['game','🎮 게임 광장']];
+async function openFree(){
+  if (!sync.url || sync.api < 6){ alert('쉬는 시간 해제는 구글 시트 코드를 최신 버전(v6)으로 업데이트해야 쓸 수 있어요.\n(Apps Script에 새 Code.gs 붙여넣기 → 배포 관리 → 새 버전)'); return; }
+  $('freeOverlay').style.display = 'flex';
+  await freeCall(null);
+}
+async function freeCall(set){
+  try {
+    const j = await teacherCall(set ? { action:'free', set } : { action:'free' });
+    freeState = j.free; freeSkew = (j.now || Date.now()) - Date.now();
+    renderFree(); if (set) showToast('⏰ 저장했어요');
+  } catch(e){ $('freeBody').innerHTML = `<div class="clean-empty">불러오지 못했어요: ${esc(e.message)}</div>`; }
+}
+function freeLeft(k){ return freeState ? (freeState[k] || 0) - (Date.now() + freeSkew) : 0; }
+function renderFree(){
+  if (!freeState) return;
+  const fmt = ms => { const d = new Date(ms - freeSkew); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`; };
+  $('freeBody').innerHTML = FREE_KINDS.map(([k, label]) => {
+    const on = freeLeft(k) > 0;
+    return `<div class="section" style="margin-bottom:10px;">
+      <div style="font-size:1.15rem;margin-bottom:6px;">${label} — ${on ? `<b style="color:#2E9E5B;">🔓 ${fmt(freeState[k])}까지 열림</b>` : '<span style="color:var(--ink-soft);">⏱ 원래 시간대로</span>'}</div>
+      <div class="row" style="justify-content:flex-start;gap:6px;">
+        <button type="button" class="mini-btn" data-free="${k}" data-min="30">30분 열기</button>
+        <button type="button" class="mini-btn" data-free="${k}" data-min="60">1시간 열기</button>
+        <button type="button" class="mini-btn" data-free="${k}" data-min="night">오늘 밤 12시까지</button>
+        ${on ? `<button type="button" class="mini-btn" style="background:#FFC9D3;" data-free="${k}" data-min="0">🔒 원래대로</button>` : ''}
+      </div></div>`;
+  }).join('') + `<div class="row" style="justify-content:flex-end;gap:6px;">
+      <button type="button" class="mini-btn" style="background:var(--y);" data-free="all" data-min="60">전부 1시간 열기</button>
+      <button type="button" class="mini-btn" style="background:#FFC9D3;" data-free="all" data-min="0">전부 원래대로</button></div>`;
+  $('gmFreeOn').textContent = FREE_KINDS.some(([k]) => freeLeft(k) > 0) ? '🔓' : '';
+}
+function onFreeClick(e){
+  const b = e.target.closest('[data-free]'); if (!b) return;
+  const now = Date.now() + freeSkew, m = b.dataset.min;
+  let until = 0;
+  if (m === 'night'){ const d = new Date(); d.setHours(24, 0, 0, 0); until = d.getTime() + freeSkew; }
+  else if (Number(m) > 0) until = now + Number(m) * 60000;
+  const set = b.dataset.free === 'all' ? { chat: until, game: until } : { [b.dataset.free]: until };
+  freeCall(set);
+}
 /* 💬 대화 관리 */
 let caTimer = null, caCfg = null;
 async function openChatAdmin(){
@@ -3714,6 +3767,7 @@ function bindEvents(){
   $('coinAdmOverlay').addEventListener('click', onCoinAdmClick);
   $('openVillageBtn').addEventListener('click', openTvVillage);
   $('chatAdmOverlay').addEventListener('click', onChatAdmClick);
+  $('freeOverlay').addEventListener('click', onFreeClick);
   $('askAdmOverlay').addEventListener('click', onAskAdmClick);
   $('closetFree').addEventListener('change', () => {
     if (!closetName) return;
