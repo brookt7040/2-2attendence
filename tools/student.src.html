@@ -127,6 +127,39 @@ textarea{width:100%;padding:10px;font-size:1.1rem;border:3px solid var(--ink);bo
 .my-ask .rep{background:var(--mint);border:2px solid var(--ink);border-radius:10px;padding:5px 10px;margin-top:4px;}
 .my-ask .wait{font-size:.9rem;color:var(--ink-soft);margin-top:3px;}
 
+/* 냥코인 */
+.coin-big{font-size:2.4rem;text-align:center;margin:4px 0;}
+.coin-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;}
+.ms-group{font-size:1.05rem;color:var(--ink-soft);margin:10px 2px 4px;}
+.ms{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:2px dashed #F0E2BC;font-size:1.05rem;}
+.ms .nm{flex:1;line-height:1.35;}
+.ms .cn{white-space:nowrap;color:#C98000;}
+.ms button,.shop-item button{border:2px solid var(--ink);border-radius:10px;padding:4px 10px;font-size:.92rem;cursor:pointer;background:var(--y);box-shadow:0 2px 0 var(--ink);white-space:nowrap;font-family:inherit;}
+.ms .st{font-size:.85rem;color:var(--ink-soft);white-space:nowrap;}
+.shop-tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.shop-tabs button{flex:1;border:2px solid var(--ink);border-radius:12px;padding:6px;background:#fff;cursor:pointer;font-family:inherit;font-size:1rem;}
+.shop-tabs button.on{background:var(--y);}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.shop-item{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:8px;text-align:center;display:flex;flex-direction:column;gap:5px;align-items:center;}
+.shop-item canvas{width:64px;height:64px;image-rendering:pixelated;}
+.shop-item .pr{color:#C98000;}
+.shop-item.owned{background:#F4FFF9;}
+.shop-item button:disabled{opacity:.45;cursor:default;}
+.req{display:flex;justify-content:space-between;gap:8px;padding:5px 2px;border-bottom:2px dashed #F0E2BC;font-size:1rem;}
+/* 게임 */
+#gameOv{z-index:30000;}
+.g-info{display:flex;justify-content:space-between;font-size:1rem;flex-wrap:wrap;gap:6px;}
+.bets{display:flex;gap:6px;justify-content:center;}
+.bets button{border:2px solid var(--ink);border-radius:999px;padding:4px 12px;background:#fff;cursor:pointer;font-family:inherit;font-size:1rem;}
+.bets button.on{background:var(--y);}
+.g-card{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:10px;text-align:center;}
+.g-card h3{margin:0 0 4px;font-weight:normal;font-size:1.2rem;}
+.g-btns{display:flex;gap:10px;justify-content:center;margin:8px 0;}
+.g-btns button{font-size:2.2rem;width:70px;height:70px;border:3px solid var(--ink);border-radius:18px;background:#FFFDF6;cursor:pointer;box-shadow:0 4px 0 var(--ink);}
+.g-btns button:active{transform:translateY(4px);box-shadow:none;}
+.g-res{font-size:1.3rem;min-height:1.6em;}
+.g-prob{font-size:.85rem;color:var(--ink-soft);}
+
 /* 창 */
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:100;padding:12px;}
 .modal{position:relative;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--cream);border:4px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px;animation:pop .22s ease-out;}
@@ -155,6 +188,7 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <button type="button" class="tab active" data-tab="notice">📢 알림·종례<span class="dot" id="dotNotice"></span></button>
     <button type="button" class="tab" data-tab="village">🏘️ 냥이 마을<span class="dot" id="dotVillage"></span></button>
     <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
+    <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
   </div>
 
   <section class="panel on" id="p-notice">
@@ -166,6 +200,8 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
   </section>
 
   <section class="panel" id="p-village">
+    <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button>
+      <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
     <div class="ticker" id="ticker" style="display:none;"><span id="tickerText"></span></div>
     <div class="village" id="village"></div>
     <div class="box" style="margin-top:30px;"><div class="box-head pink">💬 우리 반 대화</div><div id="chatBox"></div></div>
@@ -173,6 +209,10 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 
   <section class="panel" id="p-me">
     <div id="meBox"></div>
+  </section>
+
+  <section class="panel" id="p-coin">
+    <div id="coinBox"></div>
   </section>
 </div>
 
@@ -195,6 +235,14 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <div class="frame" id="catFrame"><div class="lv-frame"></div><canvas id="catCanvas" class="pix" width="16" height="16"></canvas></div>
     <h2 id="catName"></h2>
     <div id="catWear" class="hint" style="font-size:1rem;line-height:1.6;"></div>
+  </div>
+</div>
+
+<div class="overlay" id="gameOv">
+  <div class="modal" style="width:460px;">
+    <button type="button" class="x" data-close="gameOv">✕</button>
+    <h2>🎮 게임 광장</h2>
+    <div id="gameBox"></div>
   </div>
 </div>
 
@@ -299,16 +347,28 @@ async function doLogin(){
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
     $('loginOv').style.display = 'none';
     toast(`${givenName(name)}, 어서 와! 🐾`);
-    chatReset(); render(); showTab('me'); chatPull(); askList();
+    chatReset(); coin = null; render(); showTab('me'); chatPull(); askList(); coinCall('coins');
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
 function logout(){
-  me = null; chatReset(); asks = []; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
+  me = null; chatReset(); asks = []; coin = null; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
 }
 
 /* ---------- 화면 ---------- */
 let current = 'notice';
+function enterVillage(){
+  openVillage({ api: API, me: me ? { name: me.name } : null, viewOnly: !me,
+    call: (op, extra) => studentCall(op, extra),
+    sendChat: async text => {
+      const j = await studentCall('chatSend', { to:'', text, after: chat.last });
+      if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢' }[j.error] || '보내지 못했어요') : ''; }
+      return '다시 로그인해 주세요';
+    },
+    onGame: openGame });
+  if (!me) toast('로그인하면 내 고양이로 걸어 다닐 수 있어요');
+}
 function showTab(t){
+  if (t === 'coin' && me) coinCall('coins');
   current = t;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
@@ -325,7 +385,7 @@ function render(){
   const d = new Date(), days = ['일','월','화','수','목','금','토'];
   $('today').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
   $('meBar').innerHTML = me
-    ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
+    ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}${coin ? ` · ${coin.balance}🐾` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
     : `<button type="button" class="btn btn-y" id="loginOpenBtn">🔑 로그인</button>`;
 
   // 알림
@@ -357,6 +417,7 @@ function render(){
   renderMe();
   renderChat();
   renderAsk();
+  renderCoin();
 }
 
 function wearList(raw, lv){
@@ -527,6 +588,93 @@ async function askSend(){
   finally { const b = $('askSend'); if (b) b.disabled = false; }
 }
 
+/* ---------- 🐾 냥코인 ---------- */
+let coin = null, shopTab = 'coupon', betAmt = 10;
+async function coinCall(op, extra){
+  if (!me) return null;
+  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
+}
+const ERR = { poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
+  closed:'지금은 게임 시간이 아니에요', limit:'오늘은 게임을 다 했어요. 내일 또 만나요!', bet:'걸 수 있는 코인을 확인해 주세요', bad:'다시 해 주세요' };
+function weekStartS(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return todayStr(x); }
+function periodS(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : null; }
+function itemSprite(it){
+  const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+  if (it.cat === 'house') drawHouse(x, it.id, 0, 0); else if (it.cat === 'decor'){ x.save(); x.scale(2, 2); drawDecor(x, it.id, 0, 0); x.restore(); }
+  return c;
+}
+function hoursText(g){ const d = ['', '월', '화', '수', '목', '금']; return [1,2,3,4,5].map(i => (g.hours || {})[i] ? `${d[i]} ${g.hours[i][0]}~${g.hours[i][1]}` : null).filter(Boolean).join(' · ') || '없음'; }
+function renderCoin(){
+  const box = $('coinBox'); if (!box) return;
+  if (!me){ box.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">🐾 냥코인</div><p>🔑 로그인하면 미션·상점·게임을 이용할 수 있어요</p></div>'; return; }
+  if (!coin){ box.innerHTML = '<div class="box"><div class="box-head">🐾 냥코인</div><div class="empty">불러오는 중…</div></div>'; return; }
+  const eco = coin.economy, claimed = new Set(coin.claimed || []), pend = new Set((coin.reqs || []).filter(r => r.status === '대기' && r.type === '미션').map(r => r.itemId));
+  const groups = [['daily','☀️ 매일 미션'], ['weekly','📅 매주 미션'], ['all','⭐ 특별 미션']];
+  const msHtml = groups.map(([k, t]) => {
+    const list = eco.missions.filter(m => m.cat === k); if (!list.length) return '';
+    return `<div class="ms-group">${t}</div>` + list.map(m => {
+      const per = periodS(m.limit), got = per && claimed.has(`m:${m.id}:${me.name}:${per}`);
+      const right = got ? '<span class="st">✔ 받았어요</span>' : pend.has(m.id) ? '<span class="st">⏳ 확인 중</span>'
+        : m.auto ? '<span class="st">자동 지급</span>' : m.req ? `<button type="button" data-mreq="${m.id}">완료했어요!</button>` : '<span class="st">선생님이 줘요</span>';
+      return `<div class="ms"><span class="nm">${esc(m.name)}</span><span class="cn">+${m.coins}🐾</span>${right}</div>`;
+    }).join('');
+  }).join('');
+  const items = eco.shop.filter(x => x.cat === shopTab), inv = coin.inv || {};
+  const shopHtml = items.map(it => {
+    const owned = it.cat === 'house' && (inv.houses || []).includes(it.id), living = it.cat === 'house' && inv.house === it.id;
+    const left = it.stock ? it.stock - ((coin.sold || {})[it.id] || 0) : null;
+    const btn = it.cat === 'house' && owned
+      ? (living ? '<span class="st">🏠 사는 중</span>' : `<button type="button" data-house="${it.id}">이사하기</button>`)
+      : `<button type="button" data-buy="${it.id}" ${coin.balance < it.price || left === 0 ? 'disabled' : ''}>${left === 0 ? '품절' : '사기'}</button>`;
+    return `<div class="shop-item ${owned ? 'owned' : ''}">${it.cat !== 'coupon' ? `<span data-spr="${it.id}"></span>` : ''}<div>${esc(it.name)}</div><div class="pr">${it.price} 🐾${left != null ? ` · 남은 ${Math.max(0, left)}개` : ''}</div>${btn}</div>`;
+  }).join('') || '<div class="empty">상품이 없어요</div>';
+  const g = eco.game;
+  box.innerHTML = `
+    <div class="box"><div class="box-head">🐾 내 냥코인</div>
+      <div class="coin-big">${coin.balance} 🐾</div>
+      <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
+      <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
+    <div class="box"><div class="box-head pink">📋 미션</div>${msHtml}<div class="hint" style="margin-top:6px;">'완료했어요!'를 누르면 선생님이 확인하고 코인을 줘요.</div></div>
+    <div class="box"><div class="box-head mint">🛒 상점</div>
+      <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button></div>
+      ${shopTab === 'house' ? `<div class="hint" style="margin-bottom:6px;">처음엔 📦 박스집에 살아요. 집을 사면 마을에 바로 지어져요!${inv.house ? ' <button type="button" data-house="" style="font-size:.85rem;">📦 박스집으로</button>' : ''}</div>` : ''}
+      ${shopTab === 'coupon' ? '<div class="hint" style="margin-bottom:6px;">쿠폰을 사면 선생님께 신청돼요. 실물을 받으면 &quot;지급 완료&quot;로 바뀌어요.</div>' : ''}
+      <div class="shop-grid">${shopHtml}</div></div>
+    <div class="box"><div class="box-head lav">🎟 내 신청</div>${(coin.reqs || []).length ? coin.reqs.map(r => `<div class="req"><span>${r.type === '미션' ? '✅' : '🎟'} ${esc(r.item)}</span><span class="st">${esc(r.status)}</span></div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
+    <div class="box"><div class="box-head">📜 코인 기록</div>${(coin.ledger || []).map(l => `<div class="req"><span>${esc(l.t.slice(5))} · ${esc(l.why)}</span><span style="color:${l.amt >= 0 ? '#1F8A5F' : '#D6456E'}">${l.amt >= 0 ? '+' : ''}${l.amt}</span></div>`).join('') || '<div class="empty">아직 없어요</div>'}</div>`;
+  box.querySelectorAll('[data-spr]').forEach(el => { const it = eco.shop.find(x => x.id === el.dataset.spr); el.replaceWith(itemSprite(it)); });
+}
+/* 🎮 게임 */
+function openGame(){
+  if (!me){ toast('로그인하면 게임을 할 수 있어요'); return; }
+  $('gameOv').style.display = 'flex'; renderGame(); coinCall('coins');
+}
+function renderGame(res){
+  const box = $('gameBox'); if (!box || !coin) { if (box) box.innerHTML = '<div class="empty">불러오는 중…</div>'; return; }
+  const g = coin.economy.game, bets = [5, 10, 20, 30, 50].filter(b => b <= g.maxBet);
+  if (!bets.includes(betAmt)) betAmt = bets[bets.length - 1] || 1;
+  const open = g.on && g.open;
+  box.innerHTML = `<div class="g-info"><span>🐾 ${coin.balance}</span><span>오늘 남은 판 ${coin.playsLeft}/${g.daily}</span></div>
+    ${!open ? `<div class="chat-off">🌙 지금은 게임 시간이 아니에요<br><small>${hoursText(g)}</small></div>` : `
+    <div class="bets">${bets.map(b => `<button type="button" data-bet="${b}" class="${b === betAmt ? 'on' : ''}">${b}</button>`).join('')}</div>
+    <div class="g-card"><h3>✊ 하나랑 가위바위보</h3><div class="g-prob">이기면 +${betAmt} · 비기면 그대로 · 지면 -${betAmt}</div>
+      <div class="g-btns"><button type="button" data-rps="✊">✊</button><button type="button" data-rps="✌️">✌️</button><button type="button" data-rps="✋">✋</button></div></div>
+    <div class="g-card"><h3>🥫 츄르 컵 찾기</h3><div class="g-prob">컵 3개 중 츄르는 하나! 맞히면 +${Math.round(betAmt * 1.5)} · 틀리면 -${betAmt} (맞힐 확률 1/3)</div>
+      <div class="g-btns"><button type="button" data-cup="0">🥫</button><button type="button" data-cup="1">🥫</button><button type="button" data-cup="2">🥫</button></div></div>`}
+    <div class="g-res" id="gRes">${res || ''}</div>`;
+}
+async function playGame(g, pick){
+  const r = $('gRes'); if (r) r.textContent = '두근두근…';
+  const j = await coinCall('game', { g, bet: betAmt, pick });
+  if (!j) return;
+  if (j.error){ renderGame(ERR[j.error] || '다시 해 주세요'); return; }
+  const d = j.result;
+  const msg = g === 'rps'
+    ? `하나: ${d.hana} → ${d.res === 'win' ? `이겼다! 🎉 +${d.net}` : d.res === 'draw' ? '비겼어요 🤝' : `졌어요 😿 ${d.net}`}`
+    : `츄르는 ${['첫', '두', '세'][d.ans]} 번째 컵! ${d.res === 'win' ? `찾았다! 🎉 +${d.net}` : `아쉬워요 😿 ${d.net}`}`;
+  renderGame(msg);
+}
+
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', e => {
   const t = e.target;
@@ -544,6 +692,15 @@ document.addEventListener('click', e => {
   const sw = t.closest('[data-it]'); if (sw && me){ const it = ITEM_BY_ID[sw.dataset.it]; changeLook(it.slot, `${it.id}:${sw.dataset.ci}`); return; }
   const off = t.closest('[data-off]'); if (off && me){ changeLook(off.dataset.off, ''); return; }
   if (t.closest('#chatSend')){ chatSend(); return; }
+  if (t.closest('#enterVillage') || t.closest('#coinVillage')){ enterVillage(); return; }
+  if (t.closest('#coinGame')){ openGame(); return; }
+  const st2 = t.closest('[data-stab]'); if (st2){ shopTab = st2.dataset.stab; renderCoin(); return; }
+  const mr = t.closest('[data-mreq]'); if (mr){ coinCall('missionReq', { mid: mr.dataset.mreq }).then(j => j && toast(j.error ? (ERR[j.error] || '신청하지 못했어요') : '선생님께 신청했어요 ✅')); return; }
+  const by = t.closest('[data-buy]'); if (by){ const it = coin.economy.shop.find(x => x.id === by.dataset.buy); if (!confirm(`${it.name}을(를) ${it.price}🐾에 살까요?`)) return; coinCall('buy', { item: it.id }).then(j => j && toast(j.error ? (ERR[j.error] || '사지 못했어요') : `${it.name} 샀어요! 🎉`)); return; }
+  const hs = t.closest('[data-house]'); if (hs){ coinCall('equipHouse', { house: hs.dataset.house }).then(j => j && !j.error && toast('이사 완료! 🏠')); return; }
+  const bt = t.closest('[data-bet]'); if (bt){ betAmt = +bt.dataset.bet; renderGame(); return; }
+  const rp = t.closest('[data-rps]'); if (rp){ playGame('rps', rp.dataset.rps); return; }
+  const cp = t.closest('[data-cup]'); if (cp){ playGame('cups', +cp.dataset.cup); return; }
   if (t.closest('#askSend')){ askSend(); return; }
 });
 $('loginBtn').addEventListener('click', doLogin);
@@ -560,11 +717,12 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) pull
   const c = loadCred();
   if (c && c.name && c.pin){
     me = { name: c.name, pin: c.pin, info: null, look: null, acked: [] };
-    await refreshMe(true); render(); chatPull(); askList();
+    await refreshMe(true); render(); chatPull(); askList(); coinCall('coins');
   }
   setInterval(() => pull(), 20000);
   setInterval(() => { if (me && !document.hidden) chatPull(); }, current === 'village' ? 6000 : 6000);
   setInterval(() => { if (me && !document.hidden) askList(); }, 60000);
+  setInterval(() => { if (me && !document.hidden && current === 'coin') coinCall('coins'); }, 30000);
 })();
 </script>
 </body>

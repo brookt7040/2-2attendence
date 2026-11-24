@@ -574,6 +574,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="chip" id="statLate">💤 지각 0</div>
       <div class="chip" id="statDungeon">🏠 쉬는 날 0</div>
       <div class="chip" id="statExp">✨ 오늘 EXP 0</div>
+      <button type="button" class="btn btn-mint" id="openVillageBtn">🏘️ 마을</button>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
     </div>
@@ -659,7 +660,8 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
         <button type="button" class="mini-btn" style="background:var(--sky);margin-bottom:6px;" id="gmChatBtn">💬 대화 관리</button>
         <button type="button" class="mini-btn" style="background:var(--mint);margin-bottom:6px;" id="gmAskBtn">📮 질문·건의함 <b id="gmAskCount"></b></button>
-        <button type="button" class="mini-btn" style="background:#FF9DAE;margin-bottom:10px;" id="gmResetBtn">🧨 전체 초기화</button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
+        <button type="button" class="mini-btn" style="background:#FF9DAE;margin-bottom:10px;" id="gmResetBtn">🧨 전체 초기화</button>
+        <button type="button" class="mini-btn" style="background:var(--y);margin-bottom:10px;" id="gmCoinBtn">🐾 냥코인 관리 <b id="gmReqCount"></b></button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
     </div>
     <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
@@ -715,6 +717,21 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
     <h2>📮 질문 · 건의함</h2>
     <div class="tabs"><button type="button" class="tab active" data-af="open">답변 기다림</button><button type="button" class="tab" data-af="all">전체</button></div>
     <div id="askList" style="display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+</div>
+
+<!-- 냥코인 관리 -->
+<div class="overlay" id="coinAdmOverlay" style="z-index:10003;">
+  <div class="modal modal-large">
+    <button type="button" class="modal-x" id="coXBtn" title="닫기">✕</button>
+    <h2>🐾 냥코인 관리</h2>
+    <div class="tabs" id="coTabs">
+      <button type="button" class="tab active" data-co="req">✅ 확인 대기</button>
+      <button type="button" class="tab" data-co="give">🎁 미션 주기</button>
+      <button type="button" class="tab" data-co="bal">💰 잔액 · 기록</button>
+      <button type="button" class="tab" data-co="set">⚙️ 미션 · 상점 · 게임 설정</button>
+    </div>
+    <div id="coBody"></div>
   </div>
 </div>
 
@@ -1030,6 +1047,59 @@ const ITEMS = [
 const ITEM_BY_ID = Object.fromEntries(ITEMS.map(it => [it.id, it]));
 /*@@SHARED:end*/
 
+/* 🐾 냥코인 경제 (기존 미션 메뉴의 P → 냥코인 ×10 기준으로 다시 맞춤) */
+const DEFAULT_ECONOMY = {
+  missions: [
+    { id:'d_attitude', cat:'daily',  name:'📚 학습태도 100% 만족 서명받기', coins:10, limit:'day',  req:true },
+    { id:'d_praise',   cat:'daily',  name:'💌 덜 친한 친구에게 칭찬쪽지 쓰기', coins:10, limit:'day',  req:true },
+    { id:'d_board',    cat:'daily',  name:'🖥 조회 전 전자칠판·컴퓨터 켜기', coins:10, limit:'day',  req:true },
+    { id:'d_word',     cat:'daily',  name:'📝 영어 단어 쪽지시험 80점 이상', coins:20, limit:'day',  req:true },
+    { id:'d_read',     cat:'daily',  name:'📖 독서기록장 제출', coins:20, limit:'day',  req:true },
+    { id:'d_story',    cat:'daily',  name:'🗨 선생님 스토리 질문에 답하기', coins:20, limit:'day',  req:true },
+    { id:'d_clean',    cat:'daily',  name:'🧹 종례 전 반 정리·청소 완료 (반 전체)', coins:10, limit:'day',  req:false },
+    { id:'a_allon',    cat:'daily',  name:'🌅 반 전체 제시간 등교 (자동)', coins:10, limit:'day',  req:false, auto:'allOnTime' },
+    { id:'w_allon3',   cat:'weekly', name:'🔥 주 3일 이상 반 전체 제시간 등교 (자동)', coins:30, limit:'week', req:false, auto:'week3' },
+    { id:'w_photo',    cat:'weekly', name:'📸 5명 이상 교실 밖에서 사진 찍어 게시', coins:20, limit:'week', req:true },
+    { id:'w_menu',     cat:'weekly', name:'🍱 급식 메뉴 2일 이상 영어로 번역', coins:30, limit:'week', req:true },
+    { id:'w_daily',    cat:'weekly', name:'📱 월~금 저녁 일상 스토리 올리기', coins:20, limit:'week', req:true },
+    { id:'w_study',    cat:'weekly', name:'✏️ 3일 이상 공부 인증 스토리 올리기', coins:20, limit:'week', req:true },
+    { id:'w_good',     cat:'weekly', name:'😇 지각·욕설·태도불량 없는 한 주', coins:30, limit:'week', req:false },
+    { id:'w_best',     cat:'weekly', name:'💛 금요일 "이번 주 좋았다" 선정', coins:50, limit:'week', req:false },
+    { id:'w_locker',   cat:'weekly', name:'🗄 깨끗이 관리된 사물함 구역', coins:50, limit:'week', req:false },
+    { id:'s_streak5',  cat:'all',    name:'🔥 5일 연속 제시간 출석 (자동 · 5일마다)', coins:20, limit:'none', req:false, auto:'streak5' },
+    { id:'s_award',    cat:'all',    name:'🏅 우리 반 25명 상장 제작 완료 (반 전체)', coins:20, limit:'once', req:false }
+  ],
+  shop: [
+    { id:'c_hotpack',  cat:'coupon', name:'🔥 핫팩', price:20 },
+    { id:'c_gimbap',   cat:'coupon', name:'🍙 삼각김밥 (예약 필수)', price:20 },
+    { id:'c_postit',   cat:'coupon', name:'🗒 포스트잇', price:20 },
+    { id:'c_iron',     cat:'coupon', name:'💇 고데기 사용권', price:20 },
+    { id:'c_candy',    cat:'coupon', name:'🍬 사탕', price:30 },
+    { id:'c_sticker',  cat:'coupon', name:'⭐ 스티커', price:30 },
+    { id:'c_eraser',   cat:'coupon', name:'🧽 지우개', price:30 },
+    { id:'c_pen',      cat:'coupon', name:'🖍 형광펜', price:30 },
+    { id:'c_sharp',    cat:'coupon', name:'✏️ 샤프', price:30 },
+    { id:'c_gacha',    cat:'coupon', name:'🎰 뽑기 1회', price:30 },
+    { id:'c_pass',     cat:'coupon', name:'🛡 까방권', price:30 },
+    { id:'c_escape',   cat:'coupon', name:'🏃 종례 탈출권', price:40 },
+    { id:'c_blanket',  cat:'coupon', name:'🧣 담요 대여권', price:50 },
+    { id:'c_locker',   cat:'coupon', name:'🗄 교실 사물함 이용권 (한정)', price:60, stock:5 },
+    { id:'c_outing',   cat:'coupon', name:'🎡 선생님과 놀러가기 (동반 1인)', price:500 },
+    { id:'h_tent',     cat:'house',  name:'⛺ 텐트', price:40 },
+    { id:'h_cabin',    cat:'house',  name:'🛖 통나무 오두막', price:100 },
+    { id:'h_cottage',  cat:'house',  name:'🏡 2층 집', price:200 },
+    { id:'h_castle',   cat:'house',  name:'🏰 냥냥 성', price:400 },
+    { id:'d_pot',      cat:'decor',  name:'🪴 화분', price:15 },
+    { id:'d_cushion',  cat:'decor',  name:'🟪 방석', price:15 },
+    { id:'d_flower',   cat:'decor',  name:'🌷 꽃밭', price:20 },
+    { id:'d_mailbox',  cat:'decor',  name:'📮 우체통', price:25 },
+    { id:'d_lamp',     cat:'decor',  name:'🏮 가로등', price:30 },
+    { id:'d_tree',     cat:'decor',  name:'🌳 나무', price:35 },
+    { id:'d_fountain', cat:'decor',  name:'⛲ 작은 분수', price:60 }
+  ],
+  game: { on:true, maxBet:30, daily:5, hours:{ 1:['08:00','15:00'], 2:['08:00','16:00'], 3:['08:00','15:00'], 4:['08:00','16:00'], 5:['08:00','15:00'] } }
+};
+
 let db = {
   mainTitle: DEFAULT_TITLE,
   notices: [],
@@ -1043,6 +1113,7 @@ let db = {
   looks: {},
   closing: [],
   adminPin: '',
+  economy: JSON.parse(JSON.stringify(DEFAULT_ECONOMY)),
   bonus: {},
   cleanDone: {},
   records: {}
@@ -1336,6 +1407,7 @@ function mergeInto(parsed){
   if (parsed.bonus && typeof parsed.bonus === 'object') db.bonus = parsed.bonus;
   if (parsed.cleanDone && typeof parsed.cleanDone === 'object') db.cleanDone = parsed.cleanDone;
   if (parsed.level && typeof parsed.level === 'object') db.level = Object.assign({}, DEFAULT_LEVEL, parsed.level);
+  if (parsed.economy && typeof parsed.economy === 'object') db.economy = parsed.economy;
   if (parsed.looks && typeof parsed.looks === 'object') db.looks = parsed.looks;
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
@@ -1568,6 +1640,7 @@ function handleTouch(name){
   if (!isT && arrivals < 3) rec.rank = arrivals + 1;
   day[name] = rec;
   saveDB(); syncOp({ op:'rec', ds, name, rec });
+  setTimeout(() => autoMissions(ds, name), 50);
   lastNew = name;
   showReveal(name, rec, ds, () => { renderGrid(); updateStatsBoard(); queueLevelUps(lvBefore, checkParty); });
 }
@@ -2244,6 +2317,7 @@ function onGmClick(e){
   if (t.closest('#gmResetBtn')){ $('resetOverlay').style.display = 'flex'; return; }
   if (t.closest('#gmChatBtn')){ openChatAdmin(); return; }
   if (t.closest('#gmAskBtn')){ openAskAdmin(); return; }
+  if (t.closest('#gmCoinBtn')){ openCoinAdmin(); return; }
   const u = t.closest('[data-gmundo]'); if (u){ gmUndo(u.dataset.gmundo); }
 }
 
@@ -2837,7 +2911,7 @@ function closeAlarmOverlay(stopSound){
    ========================================================= */
 const SYNC_KEY = 'nyangSync_v1';
 let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null, api:0, key:'', needKey:false, pubHash:'' };
-let serverPinSet = [], serverAcks = {}, serverAsksOpen = 0;
+let serverPinSet = [], serverAcks = {}, serverAsksOpen = 0, serverReqOpen = 0;
 let syncBusy = false;
 function loadSync(){ try { Object.assign(sync, JSON.parse(localStorage.getItem(SYNC_KEY)) || {}); } catch(e){} sync.ok = null; }
 function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last, api:sync.api, key:sync.key, pubHash:sync.pubHash })); }
@@ -2845,7 +2919,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', economy: JSON.parse(JSON.stringify(db.economy)) };
 }
 function serverStateOf(){
   const days = {};
@@ -2882,6 +2956,7 @@ function applyConfig(c){
   if (c.looks && typeof c.looks === 'object') db.looks = c.looks;
   if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
+  if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
 }
 function applyServerState(st){
   if (st.config) applyConfig(st.config);
@@ -2928,6 +3003,7 @@ async function pullSync(force){
     sync.needKey = !!j.needKey;
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
     if (typeof j.asksOpen === 'number'){ serverAsksOpen = j.asksOpen; updateGmDot(); }
+    if (typeof j.reqOpen === 'number'){ serverReqOpen = j.reqOpen; updateGmDot(); }
     if (j.pinSet) serverPinSet = j.pinSet;
     if (j.state && j.state.acks) serverAcks = j.state.acks;
     let changed = false;
@@ -2973,7 +3049,8 @@ function showAcks(text){
   alert(`📢 ${text}\n\n✔ 확인함 (${yes.length}명): ${yes.join(', ') || '-'}\n\n⏳ 아직 (${no.length}명): ${no.join(', ') || '-'}`);
 }
 function updateGmDot(){
-  $('gmDot').style.display = serverAsksOpen > 0 ? 'block' : 'none';
+  $('gmDot').style.display = (serverAsksOpen + serverReqOpen) > 0 ? 'block' : 'none';
+  const rc = $('gmReqCount'); if (rc) rc.textContent = serverReqOpen > 0 ? `(${serverReqOpen})` : '';
   const c = $('gmAskCount'); if (c) c.textContent = serverAsksOpen > 0 ? `(${serverAsksOpen})` : '';
 }
 function teacherName(){ return db.students.find(isTeacherName) || '선생님'; }
@@ -3062,6 +3139,154 @@ async function onAskAdmClick(e){
   const d = e.target.closest('[data-adel]');
   if (d){ if (!confirm('이 질문을 지울까요?')) return; await teacherCall({ ops:[{ op:'askDel', id:Number(d.dataset.adel) }] }); loadAskAdmin(); return; }
   if (e.target.closest('#aaXBtn')) $('askAdmOverlay').style.display = 'none';
+}
+/* 🐾 냥코인 관리 */
+let coTab = 'req', coData = null;
+const MISSION_CAT = { daily:'☀️ 매일', weekly:'📅 매주', all:'⭐ 특별' };
+const LIMIT_LABEL = { day:'하루 1번', week:'한 주 1번', once:'딱 1번', none:'제한 없음' };
+function weekStart(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return getTodayStr(x); }
+function periodKey(limit, d = new Date()){ return limit === 'day' ? getTodayStr(d) : limit === 'week' ? weekStart(d) : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
+function coinGrant(name, m, auto){
+  syncOp({ op:'coinAdd', name, amt:m.coins, why:'미션: ' + m.name, kind: auto ? '자동' : '선생님', key:`m:${m.id}:${name}:${periodKey(m.limit)}` });
+}
+function onTimeStreak(name){
+  let n = 0; const d = new Date();
+  for (let i = 0; i < 400; i++){
+    const ds = getTodayStr(d), wd = d.getDay(), day = db.records[ds];
+    if (wd !== 0 && wd !== 6 && day && Object.keys(day).length){ const r = day[name]; if (r && r.status === 'present') n++; else if (!(i === 0 && !r)) break; }
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+function dayAllOnTime(day){
+  const ks = kids(), present = ks.filter(n => day[n] && day[n].status !== 'dungeon');
+  return present.length > 0 && ks.every(n => day[n]) && present.every(n => day[n].status === 'present');
+}
+function autoMissions(ds, name){
+  if (!sync.url || sync.api < 5 || !db.economy) return;
+  const ms = db.economy.missions || [], day = db.records[ds] || {};
+  const present = kids().filter(n => day[n] && day[n].status === 'present');
+  const m1 = ms.find(m => m.auto === 'allOnTime'), m2 = ms.find(m => m.auto === 'week3'), m3 = ms.find(m => m.auto === 'streak5');
+  if (m1 && dayAllOnTime(day)){
+    present.forEach(n => coinGrant(n, m1, true));
+    showToast(`🌅 반 전체 제시간 등교 성공! 모두 +${m1.coins} 🐾`); setBubble('우리 반 전원 제시간 등교다냥!! 🎉', 5000); burst('party', innerWidth / 2, innerHeight * .3);
+    if (m2){
+      let cnt = 0; const mon = parseDate(weekStart());
+      for (let i = 0; i < 5; i++){ const x = new Date(mon); x.setDate(mon.getDate() + i); const k = getTodayStr(x); if (k > ds) break; if (db.records[k] && dayAllOnTime(db.records[k])) cnt++; }
+      if (cnt >= 3) present.forEach(n => coinGrant(n, m2, true));
+    }
+  }
+  if (m3 && name && !isTeacherName(name) && day[name] && day[name].status === 'present'){
+    const st = onTimeStreak(name);
+    if (st > 0 && st % 5 === 0) syncOp({ op:'coinAdd', name, amt:m3.coins, why:`미션: ${m3.name} (${st}일)`, kind:'자동', key:`m:${m3.id}:${name}:${ds}` });
+  }
+}
+async function openCoinAdmin(){
+  if (!sync.url || sync.api < 5){ alert('냥코인은 구글 시트 코드를 최신 버전(v5)으로 업데이트해야 쓸 수 있어요.'); return; }
+  coTab = 'req'; $('coinAdmOverlay').style.display = 'flex';
+  await loadCoinAdmin();
+}
+async function loadCoinAdmin(){
+  try { coData = await teacherCall({ action:'coins' }); } catch(e){ $('coBody').innerHTML = `<div class="clean-empty">불러오지 못했어요: ${esc(e.message)}</div>`; return; }
+  serverReqOpen = coData.reqs.filter(r => r.status === '대기').length; updateGmDot();
+  renderCoinAdmin();
+}
+function renderCoinAdmin(){
+  document.querySelectorAll('#coTabs .tab').forEach(b => b.classList.toggle('active', b.dataset.co === coTab));
+  const box = $('coBody'), eco = db.economy, d = coData || { balances:{}, ledger:[], reqs:[], sold:{} };
+  if (coTab === 'req'){
+    const pend = d.reqs.filter(r => r.status === '대기'), done = d.reqs.filter(r => r.status !== '대기').slice(0, 30);
+    box.innerHTML = `<div class="section"><div class="section-title">⏳ 확인 대기 (${pend.length})</div>${pend.length ? pend.map(r => `
+        <div class="bonus-entry"><span>${r.type === '미션' ? '✅ 미션' : '🎟 쿠폰'} · <b>${esc(r.name)}</b> · ${esc(r.item)} · ${r.type === '미션' ? '+' : ''}${r.coins}🐾 <small>${esc(r.t)}</small></span>
+        <span><button type="button" class="act-btn" style="background:var(--mint);" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button>
+        <button type="button" class="act-btn cancel" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="clean-empty">확인할 게 없어요 ✨</div>'}</div>
+      <div class="section"><div class="section-title">📜 최근 처리</div>${done.map(r => `<div class="bonus-entry"><span>${esc(r.type)} · ${esc(r.name)} · ${esc(r.item)} · ${esc(r.status)}</span><small>${esc(r.done)}</small></div>`).join('') || '<div class="clean-empty">-</div>'}</div>`;
+  } else if (coTab === 'give'){
+    box.innerHTML = `<div class="section"><div class="section-title">🎁 미션 코인 주기</div>
+      <select id="coMission" style="padding:8px;font-size:1.05rem;border:2px solid var(--ink);border-radius:10px;">${eco.missions.map(m => `<option value="${m.id}">${MISSION_CAT[m.cat] || ''} · ${esc(m.name)} (+${m.coins})</option>`).join('')}</select>
+      <div class="pick-grid" id="coPick">${kids().map(n => `<button type="button" class="pick" data-pick="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+      <div class="row" style="justify-content:center;"><button type="button" class="mini-btn" id="coAll">전체 선택</button><button type="button" class="btn btn-y" id="coGive">🐾 지급하기</button></div>
+      <div class="form-hint">같은 미션은 정해진 횟수(하루 1번 · 한 주 1번 등)까지만 들어가요. 중복으로 눌러도 한 번만 지급돼요.</div></div>`;
+  } else if (coTab === 'bal'){
+    box.innerHTML = `<div class="section"><div class="section-title">💰 잔액</div><table><thead><tr><th>이름</th><th>잔액</th><th>직접 조정</th></tr></thead><tbody>
+      ${kids().map(n => `<tr><td>${esc(n)}</td><td><b>${d.balances[n] || 0}</b> 🐾</td><td><input type="number" style="width:90px;" data-cadj="${esc(n)}" placeholder="+/-"> <button type="button" class="act-btn" style="background:var(--y);" data-cadjbtn="${esc(n)}">적용</button></td></tr>`).join('')}
+      </tbody></table></div>
+      <div class="section"><div class="section-title">📜 최근 기록 (시트 '냥코인' 탭에 전부 남아요)</div>${d.ledger.slice(0, 60).map(r => `<div class="bonus-entry"><span>${esc(r.t.slice(5))} · <b>${esc(r.name)}</b> · ${esc(r.why)}</span><span class="pts ${r.amt >= 0 ? 'plus' : 'minus'}">${r.amt >= 0 ? '+' : ''}${r.amt}</span></div>`).join('') || '<div class="clean-empty">-</div>'}</div>`;
+  } else {
+    const g = eco.game || {}, days = ['', '월', '화', '수', '목', '금'];
+    const ml = eco.missions.map(m => `${{ daily:'매일', weekly:'매주', all:'특별' }[m.cat] || '매일'}, ${m.name}, ${m.coins}, ${m.req ? 'O' : 'X'}${m.auto ? ', 자동' : ''}`).join('\n');
+    const cl = eco.shop.filter(x => x.cat === 'coupon').map(x => `${x.name}, ${x.price}${x.stock ? ', ' + x.stock : ''}`).join('\n');
+    box.innerHTML = `
+      <div class="section"><div class="section-title">📋 미션 (한 줄에 하나: 분류(매일/매주/특별), 이름, 코인, 학생 신청 O/X)</div>
+        <textarea id="coMissions" style="height:220px;">${esc(ml)}</textarea>
+        <div class="form-hint">'자동'이 붙은 미션(반 전체 제시간 등교 등)은 출석에 맞춰 저절로 지급돼요. 이름·코인만 바꿔 주세요.</div></div>
+      <div class="section"><div class="section-title">🎟 쿠폰 상품 (이름, 가격, 수량 · 수량을 비우면 무제한)</div>
+        <textarea id="coCoupons" style="height:200px;">${esc(cl)}</textarea>
+        <div class="form-hint">학생이 사면 '확인 대기'에 올라와요. 실물을 주고 '지급 완료'를 누르세요. (취소하면 코인이 돌아가요)</div></div>
+      <div class="section"><div class="section-title">🏠 마을 아이템 가격</div><div class="dex-grid">${eco.shop.filter(x => x.cat !== 'coupon').map(x => `
+        <div class="dex-item"><div class="dex-name">${esc(x.name)}</div><input type="number" min="0" style="width:80px;text-align:right;" data-vprice="${x.id}" value="${x.price}"><div class="dex-count"><label><input type="checkbox" data-voff="${x.id}" ${x.off ? '' : 'checked'}> 판매</label></div></div>`).join('')}</div></div>
+      <div class="section"><div class="section-title">🎮 게임 광장</div>
+        <div class="row" style="justify-content:flex-start;gap:16px;"><label><input type="checkbox" id="coGameOn" ${g.on ? 'checked' : ''}> 게임 켜기</label>
+          <span>한 번에 최대 <input type="number" id="coMaxBet" value="${g.maxBet || 30}" style="width:70px;"> 🐾</span><span>하루 <input type="number" id="coDaily" value="${g.daily || 5}" style="width:60px;"> 판</span></div>
+        <div class="row" style="justify-content:flex-start;gap:10px;">${[1,2,3,4,5].map(i => `<span>${days[i]} <input type="time" data-gh0="${i}" value="${((g.hours || {})[i] || [])[0] || ''}"> ~ <input type="time" data-gh1="${i}" value="${((g.hours || {})[i] || [])[1] || ''}"></span>`).join('')}</div>
+        <div class="form-hint">주말에는 게임이 닫혀요. 시간을 비우면 그 요일은 닫혀요.</div></div>
+      <div class="modal-btns"><div></div><button type="button" class="btn btn-y" id="coSave">💾 설정 저장</button></div>`;
+  }
+}
+function slugId(prefix, name){ return prefix + hashStr(name).toString(36); }
+function saveCoinSettings(){
+  const eco = db.economy, catMap = { '매일':'daily', '매주':'weekly', '특별':'all' }, limMap = { daily:'day', weekly:'week', all:'once' };
+  const missions = [];
+  for (const line of $('coMissions').value.split('\n')){
+    const p = line.split(',').map(x => x.trim()); if (p.length < 3 || !p[1]) continue;
+    const old = eco.missions.find(m => m.name === p[1]), cat = catMap[p[0]] || 'daily', coins = parseInt(p[2], 10);
+    if (isNaN(coins)) continue;
+    missions.push(Object.assign({}, old || {}, { id: old ? old.id : slugId('m', p[1]), cat, name: p[1], coins, req: (p[3] || '').toUpperCase() === 'O',
+      limit: old ? old.limit : limMap[cat] }));
+  }
+  const coupons = [];
+  for (const line of $('coCoupons').value.split('\n')){
+    const p = line.split(',').map(x => x.trim()); if (p.length < 2 || !p[0]) continue;
+    const price = parseInt(p[1], 10); if (isNaN(price)) continue;
+    const old = eco.shop.find(x => x.cat === 'coupon' && x.name === p[0]);
+    const it = { id: old ? old.id : slugId('c', p[0]), cat:'coupon', name: p[0], price }; const st = parseInt(p[2], 10); if (st > 0) it.stock = st;
+    coupons.push(it);
+  }
+  const village = eco.shop.filter(x => x.cat !== 'coupon').map(x => {
+    const price = parseInt(document.querySelector(`[data-vprice="${x.id}"]`).value, 10);
+    const it = Object.assign({}, x, { price: isNaN(price) ? x.price : price }); if (!document.querySelector(`[data-voff="${x.id}"]`).checked) it.off = true; else delete it.off; return it;
+  });
+  const hours = {}; [1,2,3,4,5].forEach(i => { const a = document.querySelector(`[data-gh0="${i}"]`).value, b = document.querySelector(`[data-gh1="${i}"]`).value; if (a && b) hours[i] = [a, b]; });
+  db.economy = { missions, shop: coupons.concat(village),
+    game: { on: $('coGameOn').checked, maxBet: Math.max(1, parseInt($('coMaxBet').value, 10) || 30), daily: Math.max(1, parseInt($('coDaily').value, 10) || 5), hours } };
+  saveDB(); syncOp({ op:'config', data: configOf() });
+  showToast('🐾 냥코인 설정을 저장했어요'); renderCoinAdmin();
+}
+async function onCoinAdmClick(e){
+  const t = e.target;
+  const tb = t.closest('[data-co]'); if (tb){ coTab = tb.dataset.co; renderCoinAdmin(); return; }
+  if (t.closest('#coXBtn')){ $('coinAdmOverlay').style.display = 'none'; return; }
+  const rq = t.closest('[data-rq]');
+  if (rq){ await teacherCall({ ops:[{ op:'reqDone', id:Number(rq.dataset.rq), ok: rq.dataset.ok === '1' }] }); showToast('처리했어요'); loadCoinAdmin(); return; }
+  const pk = t.closest('#coPick .pick'); if (pk){ pk.classList.toggle('on'); return; }
+  if (t.closest('#coAll')){ document.querySelectorAll('#coPick .pick').forEach(b => b.classList.add('on')); return; }
+  if (t.closest('#coGive')){
+    const m = db.economy.missions.find(x => x.id === $('coMission').value), who = [...document.querySelectorAll('#coPick .pick.on')].map(b => b.dataset.pick);
+    if (!m || !who.length){ alert('미션과 학생을 골라 주세요.'); return; }
+    who.forEach(n => coinGrant(n, m, false)); await flushSync();
+    showToast(`🐾 ${who.length}명에게 ${m.name} +${m.coins}`); loadCoinAdmin(); return;
+  }
+  const ab = t.closest('[data-cadjbtn]');
+  if (ab){
+    const n = ab.dataset.cadjbtn, v = parseInt(document.querySelector(`[data-cadj="${CSS.escape(n)}"]`).value, 10);
+    if (!v){ alert('더하거나 뺄 코인을 적어 주세요. (예: -20)'); return; }
+    syncOp({ op:'coinAdd', name:n, amt:v, why:'선생님 조정', kind:'선생님', key:'' }); await flushSync(); showToast(`🐾 ${n} ${v > 0 ? '+' : ''}${v}`); loadCoinAdmin(); return;
+  }
+  if (t.closest('#coSave')){ saveCoinSettings(); }
+}
+function openTvVillage(){
+  if (!sync.url || sync.api < 5){ alert('마을은 구글 시트 코드를 최신 버전(v5)으로 업데이트해야 볼 수 있어요.'); return; }
+  openVillage({ api: sync.url, viewOnly: true });
 }
 function setStudentPins(pins){
   if (!sync.url || sync.api < 3){ alert('학생 비밀번호는 구글 시트 동기화(새 버전 코드)가 연결되어 있어야 쓸 수 있어요.'); return false; }
@@ -3196,6 +3421,283 @@ function disconnectSync(){
   $('syncUrlInput').value = ''; updateSyncUI();
 }
 
+/*@@SHARED:begin*/
+/* =========================================================
+   🏘️ 걸어 다니는 냥이 마을 (교실 TV · 학생 페이지 공용)
+   ========================================================= */
+const VW = 1200, VH = 720;                         // 마을 크기(논리 좌표)
+const WALK = { x0: 30, x1: 1170, y0: 300, y1: 700 }; // 고양이가 걸을 수 있는 곳
+const PLAZA = { x: 935, y: 455, w: 240, h: 245 };   // 🎮 게임 광장
+const VILLAGE_EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾'];
+const HOUSE_INFO = {
+  h_box:     { name:'박스집', icon:'📦' },
+  h_tent:    { name:'텐트', icon:'⛺' },
+  h_cabin:   { name:'통나무 오두막', icon:'🛖' },
+  h_cottage: { name:'2층 집', icon:'🏡' },
+  h_castle:  { name:'냥냥 성', icon:'🏰' }
+};
+const DECOR_INFO = {
+  d_pot:{ name:'화분', icon:'🪴' }, d_flower:{ name:'꽃밭', icon:'🌷' }, d_cushion:{ name:'방석', icon:'🟪' },
+  d_mailbox:{ name:'우체통', icon:'📮' }, d_lamp:{ name:'가로등', icon:'🏮' }, d_tree:{ name:'나무', icon:'🌳' }, d_fountain:{ name:'작은 분수', icon:'⛲' }
+};
+/* 픽셀 집 그리기 (16칸 × 4px = 64px) */
+function drawHouse(ctx, id, x, y){
+  const u = 4, R = (cx, cy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + cx*u, y + cy*u, w*u, h*u); };
+  const ink = '#5B4636';
+  switch (id){
+    case 'h_tent':
+      for (let i = 0; i < 9; i++){ R(7 - i, 5 + i, 2 + i*2, 1, ink); R(8 - i, 5 + i, i*2, 1, i % 2 ? '#FFB8CB' : '#FFE1EA'); }
+      R(6, 10, 4, 4, '#7A5A48'); R(7, 11, 2, 3, '#3E2E26'); R(7, 3, 2, 2, '#FFD84D'); break;
+    case 'h_cabin':
+      R(1, 6, 14, 1, ink); for (let i = 0; i < 5; i++) R(2 + i, 1 + i, 12 - i*2, 1, i % 2 ? '#8B5A3C' : '#A86E4A');
+      R(1, 6, 14, 9, ink); R(2, 7, 12, 7, '#C98B5A'); [8, 10, 12].forEach(r => R(2, r, 12, 1, '#A86E4A'));
+      R(6, 10, 4, 4, '#6B4630'); R(3, 8, 2, 2, '#BFE3FF'); R(11, 8, 2, 2, '#BFE3FF'); break;
+    case 'h_cottage':
+      for (let i = 0; i < 6; i++) R(7 - i, i, 2 + i*2, 1, i === 0 ? ink : '#FF9EC4');
+      R(12, 1, 2, 4, '#B56B6B'); R(1, 6, 14, 1, ink); R(1, 6, 14, 9, ink); R(2, 7, 12, 7, '#FFF3DA');
+      R(3, 8, 3, 2, '#BFE3FF'); R(10, 8, 3, 2, '#BFE3FF'); R(3, 11, 3, 2, '#BFE3FF'); R(7, 10, 3, 4, '#D9A877'); R(9, 12, 1, 1, '#FFD84D'); break;
+    case 'h_castle':
+      R(1, 6, 14, 9, ink); R(2, 7, 12, 7, '#E2D8FF');
+      [[0, 3], [12, 3]].forEach(([tx, ty]) => { R(tx, ty, 4, 12, ink); R(tx + 1, ty + 1, 2, 10, '#CFC2FF'); R(tx, ty - 1, 1, 1, ink); R(tx + 3, ty - 1, 1, 1, ink); });
+      R(5, 4, 6, 3, ink); R(6, 5, 4, 2, '#CFC2FF'); R(7, 1, 1, 4, ink); R(8, 1, 3, 2, '#FF6F9C');
+      R(6, 10, 4, 4, '#8C74F0'); R(7, 9, 2, 1, '#8C74F0'); R(3, 9, 1, 2, '#FFE066'); R(12, 9, 1, 2, '#FFE066'); break;
+    default: // 📦 박스집
+      R(2, 6, 12, 8, ink); R(3, 7, 10, 6, '#E6B980'); R(1, 4, 14, 3, ink); R(2, 5, 12, 1, '#C9955A');
+      R(6, 9, 4, 5, ink); R(7, 10, 2, 4, '#3E2E26'); R(10, 8, 2, 1, '#C9955A'); break;
+  }
+}
+/* 픽셀 소품 (8칸 × 4px = 32px) */
+function drawDecor(ctx, id, x, y){
+  const u = 4, R = (cx, cy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x + cx*u, y + cy*u, w*u, h*u); };
+  switch (id){
+    case 'd_pot': R(2, 5, 4, 3, '#D9875A'); R(1, 4, 6, 1, '#B86A40'); R(2, 1, 2, 3, '#5CC08A'); R(4, 0, 2, 4, '#3DAE6E'); break;
+    case 'd_flower': R(0, 6, 8, 2, '#7ED99B'); [[1, 4, '#FF8FB8'], [4, 3, '#FFD84D'], [6, 5, '#A996FF'], [3, 5, '#FFFFFF']].forEach(([a, b, c]) => { R(a, b, 1, 2, '#4FB06D'); R(a - 0.5, b - 1, 2, 1, c); }); break;
+    case 'd_cushion': R(1, 4, 6, 3, '#E8679A'); R(1.5, 3.5, 5, 3, '#FFB3CF'); R(3.5, 4.5, 1, 1, '#FFFFFF'); break;
+    case 'd_mailbox': R(3.5, 4, 1, 4, '#8B5A3C'); R(2, 1, 4, 3, '#FF6F8E'); R(2, 1, 4, 1, '#D94A6A'); R(5.5, 1.5, 1, 1, '#FFD84D'); break;
+    case 'd_lamp': R(3.5, 2, 1, 6, '#5B4636'); R(2.5, 0, 3, 2, '#FFE066'); R(2, -0.5, 4, 0.5, '#5B4636'); break;
+    case 'd_tree': R(3.5, 5, 1, 3, '#8B5A3C'); R(1, 1, 6, 4, '#5CC08A'); R(2, 0, 4, 1, '#7ED99B'); R(2, 2, 1, 1, '#FF8FB8'); break;
+    case 'd_fountain': R(0, 5, 8, 3, '#8CC8FF'); R(0, 5, 8, 1, '#5FAEF5'); R(3.5, 2, 1, 3, '#BFE3FF'); R(2.5, 1, 3, 1, '#DFF2FF'); break;
+  }
+}
+function catSprite(look, lv){ const c = document.createElement('canvas'); drawColors(c, lookColorsRaw(look, lv)); return c; }
+
+function openVillage(opts){
+  /* opts = { api, me:{name}|null, call(op, extra) → Promise, sendChat(text) → Promise, viewOnly, onGame() } */
+  if (!document.getElementById('vg-style')){
+    const st = document.createElement('style'); st.id = 'vg-style';
+    st.textContent = `
+      .vg{position:fixed;inset:0;z-index:20000;background:#BFE8B4;display:flex;flex-direction:column;font-family:'NeoDunggeunmo',sans-serif;color:#5B4636;}
+      .vg canvas{flex:1;width:100%;min-height:0;touch-action:manipulation;cursor:pointer;}
+      .vg-top{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none;}
+      .vg-title{background:#fff;border:3px solid #5B4636;border-radius:999px;padding:6px 16px;font-size:1.1rem;box-shadow:0 3px 0 #5B4636;}
+      .vg-x{margin-left:auto;pointer-events:auto;width:46px;height:46px;border-radius:14px;border:3px solid #5B4636;background:#FFC9D3;font-size:1.4rem;cursor:pointer;box-shadow:0 3px 0 #5B4636;}
+      .vg-bar{display:flex;gap:6px;align-items:center;padding:8px;background:#FFFCF3;border-top:3px solid #5B4636;flex-wrap:wrap;}
+      .vg-bar button{border:2px solid #5B4636;border-radius:12px;background:#fff;font-size:1.3rem;padding:4px 8px;cursor:pointer;box-shadow:0 2px 0 #5B4636;font-family:inherit;}
+      .vg-bar input{flex:1;min-width:120px;padding:8px 10px;font-size:1.05rem;border:2px solid #5B4636;border-radius:12px;font-family:inherit;}
+      .vg-bar .send{font-size:1rem;background:#FFD84D;}
+      .vg-msg{position:absolute;left:50%;top:64px;transform:translateX(-50%);background:#fff;border:3px solid #5B4636;border-radius:999px;padding:6px 16px;font-size:1rem;box-shadow:0 3px 0 #5B4636;white-space:nowrap;display:none;}
+      .vg-game{position:absolute;right:16px;bottom:84px;font-size:1.3rem;padding:10px 18px;border:3px solid #5B4636;border-radius:16px;background:#FFD84D;box-shadow:0 4px 0 #5B4636;cursor:pointer;display:none;font-family:inherit;animation:vgb 1s ease-in-out infinite;}
+      @keyframes vgb{50%{transform:translateY(-4px)}}`;
+    document.head.appendChild(st);
+  }
+  const root = document.createElement('div'); root.className = 'vg';
+  root.innerHTML = `<canvas></canvas>
+    <div class="vg-top"><span class="vg-title">🏘️ ${opts.viewOnly ? '우리 반 냥이 마을' : '냥이 마을 · 땅을 눌러서 걸어가요'}</span><button type="button" class="vg-x">✕</button></div>
+    <div class="vg-msg"></div><button type="button" class="vg-game">🎮 게임 광장 입장!</button>
+    ${opts.viewOnly ? '' : `<div class="vg-bar">${VILLAGE_EMOTES.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}
+      <input type="text" maxlength="100" placeholder="말풍선으로 말하기 (전체 대화에도 올라가요)"><button type="button" class="send">말하기</button></div>`}`;
+  document.body.appendChild(root);
+  const cv = root.querySelector('canvas'), ctx = cv.getContext('2d');
+  const msgEl = root.querySelector('.vg-msg'), gameBtn = root.querySelector('.vg-game');
+  let state = null, cats = {}, seen = new Set(), raf = 0, poll = 0, alive = true, scale = 1, ox = 0, oy = 0, lastMoveSent = 0;
+  const T0 = Date.now();
+  const say = (t, ms) => { msgEl.textContent = t; msgEl.style.display = 'block'; clearTimeout(say.tm); say.tm = setTimeout(() => msgEl.style.display = 'none', ms || 2500); };
+
+  function resize(){
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    scale = Math.min(cv.width / VW, cv.height / VH); ox = (cv.width - VW * scale) / 2; oy = (cv.height - VH * scale) / 2;
+    // 📱 세로 화면(학생 폰): 화면 높이에 맞게 크게 보여주고 내 고양이를 따라 좌우로 이동
+    follow = !opts.viewOnly && cv.height > cv.width * 1.1;
+    if (follow){ scale = cv.height / VH; oy = 0; camera(true); }
+  }
+  let follow = false;
+  function camera(snap){
+    if (!follow) return;
+    const me = opts.me && cats[opts.me.name], cx = me ? me.x : VW / 2;
+    const want = Math.max(cv.width - VW * scale, Math.min(0, cv.width / 2 - cx * scale));
+    ox = snap ? want : ox + (want - ox) * 0.12;
+  }
+  window.addEventListener('resize', resize);
+  const kidList = () => (state ? state.students : []);
+  const plotOf = name => {
+    const list = kidList().map(s => s.name), i = Math.max(0, list.indexOf(name)), perRow = Math.max(8, Math.ceil(list.length / 2));
+    const row = i < perRow ? 0 : 1, col = row ? i - perRow : i, w = (VW - 40) / perRow;
+    return { x: 20 + col * w + w / 2, y: row ? 196 : 92, w };
+  };
+  function ensureCat(s){
+    let c = cats[s.name];
+    const key = JSON.stringify([s.look, s.lv]);
+    if (!c){
+      const p = plotOf(s.name);
+      c = cats[s.name] = { name: s.name, x: p.x, y: WALK.y0 + 20 + Math.random() * 60, tx: null, ty: null, anchor: null, wanderAt: 0, bubble: null, emo: null, face: 1 };
+    }
+    if (c.key !== key){ c.key = key; c.img = catSprite(s.look, s.lv); c.lv = s.lv; }
+    return c;
+  }
+  async function pull(){
+    try {
+      const r = await fetch(`${opts.api}?village=1&t=${Date.now()}`, { redirect:'follow' }); const j = await r.json();
+      if (!j.ok) return;
+      state = j;
+      j.students.forEach(ensureCat);
+      Object.keys(cats).forEach(n => { if (!j.students.some(s => s.name === n)) delete cats[n]; });
+      const me = opts.me && cats[opts.me.name];
+      Object.entries(j.pos || {}).forEach(([n, p]) => {
+        const c = cats[n]; if (!c || (me && c === me)) return;
+        const x = WALK.x0 + p[0] * (WALK.x1 - WALK.x0), y = WALK.y0 + p[1] * (WALK.y1 - WALK.y0);
+        if (!c.anchor || c.anchor.ts !== p[2]){ c.anchor = { x, y, ts: p[2] }; c.tx = x; c.ty = y; }
+      });
+      if (me && !me.placed && j.pos && j.pos[opts.me.name]){ const p = j.pos[opts.me.name]; me.x = WALK.x0 + p[0] * (WALK.x1 - WALK.x0); me.y = WALK.y0 + p[1] * (WALK.y1 - WALK.y0); }
+      if (me) me.placed = true;
+      (j.chat || []).forEach(m => { const k = 'c' + m.ts + m.n + m.text; if (seen.has(k)) return; seen.add(k); if (cats[m.n] && m.ts > T0 - 20000) cats[m.n].bubble = { text: m.text.length > 26 ? m.text.slice(0, 25) + '…' : m.text, until: Date.now() + 7000 }; });
+      (j.emo || []).forEach(m => { const k = 'e' + m.ts + m.n; if (seen.has(k)) return; seen.add(k); if (cats[m.n] && m.ts > T0 - 20000) cats[m.n].emo = { e: m.e, until: Date.now() + 3500 }; });
+    } catch(e){}
+  }
+  function drawWorld(now){
+    // 잔디 · 길 · 광장
+    ctx.fillStyle = '#CFEFC4'; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = '#C2E8B5'; for (let i = 0; i < 70; i++){ const x = (i * 197) % VW, y = (i * 113) % VH; ctx.fillRect(x, y, 6, 6); }
+    ctx.fillStyle = '#F6E3B4'; ctx.fillRect(0, 262, VW, 34); ctx.fillRect(570, 296, 60, VH - 296);
+    ctx.beginPath(); ctx.arc(600, 480, 125, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8CC8FF'; ctx.beginPath(); ctx.arc(600, 480, 46, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#BFE3FF'; ctx.beginPath(); ctx.arc(600, 480, 30, 0, Math.PI * 2); ctx.fill();
+    const sp = 6 + Math.sin(now / 300) * 3; ctx.fillStyle = '#FFFFFF'; ctx.fillRect(597, 480 - 30 - sp, 6, 30 + sp);
+    // 벤치 · 나무
+    [[440, 400], [720, 400], [440, 560], [720, 560]].forEach(([x, y]) => { ctx.fillStyle = '#A86E4A'; ctx.fillRect(x, y, 48, 10); ctx.fillStyle = '#8B5A3C'; ctx.fillRect(x + 4, y + 10, 6, 10); ctx.fillRect(x + 38, y + 10, 6, 10); });
+    [[60, 340], [300, 640], [860, 330], [820, 660], [160, 520]].forEach(([x, y]) => drawDecor(ctx, 'd_tree', x, y));
+    // 🎮 게임 광장
+    ctx.fillStyle = '#FFE3EE'; ctx.fillRect(PLAZA.x, PLAZA.y, PLAZA.w, PLAZA.h);
+    for (let i = 0; i < PLAZA.w; i += 30) for (let j = 0; j < PLAZA.h; j += 30) if (((i + j) / 30) % 2 === 0){ ctx.fillStyle = '#FFF2BF'; ctx.fillRect(PLAZA.x + i, PLAZA.y + j, 30, 30); }
+    ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.strokeRect(PLAZA.x, PLAZA.y, PLAZA.w, PLAZA.h);
+    ctx.fillStyle = '#8C74F0'; ctx.fillRect(PLAZA.x + 150, PLAZA.y + 20, 50, 70); ctx.fillStyle = '#BFE3FF'; ctx.fillRect(PLAZA.x + 158, PLAZA.y + 30, 34, 26);
+    ctx.fillStyle = (Math.floor(now / 400) % 2) ? '#FF6F9C' : '#FFD84D'; ctx.fillRect(PLAZA.x + 160, PLAZA.y + 64, 10, 10);
+    label('🎮 게임 광장', PLAZA.x + 70, PLAZA.y + 40, 16, '#fff');
+    // 집 줄
+    ctx.fillStyle = '#E3F5DA'; ctx.fillRect(0, 0, VW, 258);
+    kidList().forEach(s => {
+      const p = plotOf(s.name), inv = (state.inv || {})[s.name] || {};
+      drawHouse(ctx, inv.house || 'h_box', p.x - 32, p.y - 60);
+      (inv.decor || []).slice(0, 4).forEach((d, i) => drawDecor(ctx, d, p.x - 46 + (i % 2) * 64 + (i > 1 ? 14 : 0), p.y - 18 + (i > 1 ? -40 : 0)));
+      label(s.name, p.x, p.y + 18, 12, '#FFFDF6');
+    });
+    // 하나 (분수 옆 낮잠)
+    if (!drawWorld.hana){ drawWorld.hana = document.createElement('canvas'); drawColors(drawWorld.hana, catColors(MASCOT, null, { blink: true })); }
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(drawWorld.hana, 655, 505, 48, 48);
+    ctx.fillStyle = '#8C74F0'; ctx.font = '16px NeoDunggeunmo, sans-serif'; ctx.fillText('z', 705, 505 - (now / 100) % 12); ctx.fillText('Z', 715, 492 - (now / 120) % 10);
+  }
+  function label(t, x, y, size, bg){
+    ctx.font = `${size}px NeoDunggeunmo, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = ctx.measureText(t).width + 12;
+    ctx.fillStyle = bg; ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 2;
+    roundRect(x - w / 2, y - size / 2 - 4, w, size + 8, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#5B4636'; ctx.fillText(t, x, y + 1);
+  }
+  function roundRect(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function bubble(text, x, y, big){
+    ctx.font = `${big ? 30 : 15}px NeoDunggeunmo, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const w = Math.min(260, ctx.measureText(text).width + 18), h = big ? 42 : 30;
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 2.5;
+    roundRect(x - w / 2, y - h, w, h, 12); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 6, y - 1); ctx.lineTo(x, y + 8); ctx.lineTo(x + 6, y - 1); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.fillRect(x - 5, y - 3, 10, 3);
+    ctx.fillStyle = '#5B4636'; ctx.fillText(text, x, y - h / 2 + 1, 250);
+  }
+  let last = performance.now();
+  function frame(t){
+    if (!alive) return;
+    const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    const now = Date.now();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#BFE8B4'; ctx.fillRect(0, 0, cv.width, cv.height);
+    camera(false);
+    ctx.setTransform(scale, 0, 0, scale, ox, oy);
+    drawWorld(t);
+    const meName = opts.me && opts.me.name;
+    const list = Object.values(cats).sort((a, b) => a.y - b.y);
+    list.forEach(c => {
+      // 이동 · 어슬렁
+      if (c.tx == null && c.name !== meName && now > c.wanderAt){
+        const a = c.anchor || { x: c.x, y: c.y };
+        c.tx = Math.max(WALK.x0, Math.min(WALK.x1, a.x + (Math.random() - .5) * 140));
+        c.ty = Math.max(WALK.y0, Math.min(WALK.y1, a.y + (Math.random() - .5) * 90));
+        c.wanderAt = now + 3000 + Math.random() * 5000;
+      }
+      let walking = false;
+      if (c.tx != null){
+        const dx = c.tx - c.x, dy = c.ty - c.y, d = Math.hypot(dx, dy), sp = (c.name === meName ? 150 : 70) * dt;
+        if (d <= sp){ c.x = c.tx; c.y = c.ty; c.tx = null; if (c.name === meName) arrived(c); }
+        else { c.x += dx / d * sp; c.y += dy / d * sp; walking = true; if (Math.abs(dx) > 1) c.face = dx > 0 ? 1 : -1; }
+      }
+      const bob = walking ? Math.abs(Math.sin(t / 90)) * 5 : Math.sin(t / 600 + c.x) * 1.5;
+      if (c.name === meName){ ctx.fillStyle = 'rgba(255,216,77,.55)'; ctx.beginPath(); ctx.ellipse(c.x, c.y + 2, 30, 9, 0, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = 'rgba(91,70,54,.18)'; ctx.beginPath(); ctx.ellipse(c.x, c.y + 2, 20, 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.imageSmoothingEnabled = false;
+      ctx.save(); ctx.translate(c.x, c.y - 48 - bob); if (c.face < 0){ ctx.scale(-1, 1); } ctx.drawImage(c.img, -24, 0, 48, 48); ctx.restore();
+      label(c.name, c.x, c.y + 16, 12, c.name === meName ? '#FFE58A' : '#FFFFFF');
+      if (c.emo && c.emo.until > now) bubble(c.emo.e, c.x, c.y - 56 - bob, true);
+      else if (c.bubble && c.bubble.until > now) bubble(c.bubble.text, c.x, c.y - 56 - bob, false);
+    });
+    // 낮 · 저녁 · 밤
+    const h = new Date().getHours();
+    if (h >= 18 || h < 6){ ctx.fillStyle = 'rgba(40,40,100,.28)'; ctx.fillRect(0, 0, VW, VH); }
+    else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
+    if (state && !state.open){ label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF'); }
+    raf = requestAnimationFrame(frame);
+  }
+  function inPlaza(c){ return c.x > PLAZA.x && c.x < PLAZA.x + PLAZA.w && c.y > PLAZA.y && c.y < PLAZA.y + PLAZA.h + 20; }
+  function arrived(c){
+    gameBtn.style.display = (!opts.viewOnly && opts.onGame && inPlaza(c)) ? 'block' : 'none';
+    if (opts.viewOnly || !opts.call) return;
+    const send = () => { lastMoveSent = Date.now(); opts.call('move', { x: (c.x - WALK.x0) / (WALK.x1 - WALK.x0), y: (c.y - WALK.y0) / (WALK.y1 - WALK.y0) }).then(j => { if (j && j.error === 'closed') say('🌙 지금은 마을 쉬는 시간이에요'); }).catch(() => {}); };
+    const wait = 1200 - (Date.now() - lastMoveSent);
+    clearTimeout(arrived.tm); arrived.tm = setTimeout(send, Math.max(0, wait));
+  }
+  cv.addEventListener('pointerdown', e => {
+    if (opts.viewOnly || !opts.me || !cats[opts.me.name]) return;
+    if (state && !state.open){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
+    const r = cv.getBoundingClientRect(), dpr = cv.width / r.width;
+    const x = ((e.clientX - r.left) * dpr - ox) / scale, y = ((e.clientY - r.top) * dpr - oy) / scale;
+    const c = cats[opts.me.name];
+    c.tx = Math.max(WALK.x0, Math.min(WALK.x1, x)); c.ty = Math.max(WALK.y0, Math.min(WALK.y1, y));
+    gameBtn.style.display = 'none';
+  });
+  root.querySelector('.vg-x').addEventListener('click', () => close());
+  gameBtn.addEventListener('click', () => opts.onGame && opts.onGame());
+  if (!opts.viewOnly){
+    const input = root.querySelector('.vg-bar input');
+    root.querySelectorAll('[data-e]').forEach(b => b.addEventListener('click', async () => {
+      if (state && !state.open){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
+      const c = opts.me && cats[opts.me.name]; if (c) c.emo = { e: b.dataset.e, until: Date.now() + 3500 };
+      try { const j = await opts.call('emote', { e: b.dataset.e }); if (j && j.error === 'muted') say('🔇 선생님이 잠시 막아 두었어요'); if (j && j.error === 'slow') say('천천히! 🐢'); } catch(e){}
+    }));
+    const talk = async () => {
+      const text = input.value.trim(); if (!text) return;
+      if (state && !state.open){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
+      input.value = '';
+      const c = opts.me && cats[opts.me.name]; if (c) c.bubble = { text: text.length > 26 ? text.slice(0, 25) + '…' : text, until: Date.now() + 7000 };
+      try { const err = await opts.sendChat(text); if (err) say(err); } catch(e){}
+    };
+    root.querySelector('.vg-bar .send').addEventListener('click', talk);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); talk(); } });
+  }
+  function close(){ alive = false; cancelAnimationFrame(raf); clearInterval(poll); window.removeEventListener('resize', resize); root.remove(); opts.onClose && opts.onClose(); }
+  resize(); pull().then(() => { if (!state) say('마을에 연결하지 못했어요'); });
+  poll = setInterval(() => { if (!document.hidden) pull(); }, 4000);
+  raf = requestAnimationFrame(frame);
+  return { close, say };
+}
+/*@@SHARED:end*/
+
 /* =========================================================
    🚀 시작
    ========================================================= */
@@ -3209,6 +3711,8 @@ function bindEvents(){
   $('pinCancelBtn').addEventListener('click', () => { $('pinOverlay').style.display = 'none'; pinNext = null; });
   $('gmOverlay').addEventListener('click', onGmClick);
   $('rsGoBtn').addEventListener('click', fullReset);
+  $('coinAdmOverlay').addEventListener('click', onCoinAdmClick);
+  $('openVillageBtn').addEventListener('click', openTvVillage);
   $('chatAdmOverlay').addEventListener('click', onChatAdmClick);
   $('askAdmOverlay').addEventListener('click', onAskAdmClick);
   $('closetFree').addEventListener('change', () => {
