@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v7 · 마을 건물·하나·집 꾸미기·원격 출석·상담)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v8 · 마을 건물·하나·집 꾸미기·원격 출석·상담·폰 선생님 모드)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -25,7 +25,7 @@ const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
 const CLOSING_SHEET = '종례';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 7;
+const API_VERSION = 8;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -72,10 +72,16 @@ function doPost(e) {
     if (body.action === 'student') return out_(handleStudent_(body));
     const auth = teacherAuth_(body.key);
     if (!auth.ok) return out_({ ok: false, error: 'auth', api: API_VERSION });
+    if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
     if (body.action === 'chat') return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function () { return true; }) });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
+    if (body.action === 'today') {           // 📱 선생님 모드(학생 페이지): 오늘 출석 현황
+      const map = readRows_().map, ds = todayStr_();
+      return out_({ ok: true, ds: ds, records: ((map['day:' + ds] || {}).records) || {}, remote: remoteList_().map(function (x) { return x.n; }),
+        students: ((map.pub || {}).students || []).map(function (x) { return x.name; }), mega: megaList_(), banners: todayList_('banners'), butler: butlerToday_(), songs: todayList_('songs') });
+    }
     if (body.action === 'free') {
       if (body.set) {
         const f = free_();
@@ -299,6 +305,11 @@ function handlePost_(body, auth) {
         case 'songDone': props_().setProperty('songs', JSON.stringify(todayList_('songs').map(function (x) { if (x.id === Number(o.id)) x.done = true; return x; }))); break;
         case 'bannerDel': props_().setProperty('banners', JSON.stringify(todayList_('banners').filter(function (x) { return x.ts !== Number(o.ts); }))); break;
         case 'butlerDel': props_().deleteProperty('butler'); break;
+        case 'remoteAdd': {                    // 선생님이 대신 원격 출석 (교실 출석부가 등급을 계산해요)
+          const ds = todayStr_(), list = remoteList_(), recs = ((map['day:' + ds] || {}).records) || {};
+          if (!recs[o.name] && !list.some(function (x) { return x.n === o.name; })) { list.push({ n: String(o.name), ts: Date.now(), ds: ds }); props_().setProperty('remote', JSON.stringify(list)); }
+          break;
+        }
         case 'titleDel': { map.inv = map.inv || {}; if (map.inv[o.name]) { map.inv[o.name].title = ''; dirty.inv = true; } cacheDrop_(['v:inv']); break; }
         case 'coinAdd': addCoin_(String(o.name), Number(o.amt) || 0, String(o.why || ''), String(o.kind || '선생님'), String(o.key || '')); break;
         case 'reqDone': settleReq_(Number(o.id), !!o.ok, map); break;
@@ -808,7 +819,7 @@ function teacherCoins_() {
   const reqs = readReqs_(function () { return true; }).slice(-300).reverse();
   const map = readRows_().map, sold = {};
   (economy_(map).shop || []).forEach(function (it) { sold[it.id] = soldCount_(it.id); });
-  return { ok: true, balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {} };
+  return { ok: true, balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [] };
 }
 function studentCoins_(name, body) {
   const lock = LockService.getScriptLock(); lock.waitLock(20000);

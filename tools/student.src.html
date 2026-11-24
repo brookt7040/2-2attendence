@@ -179,6 +179,18 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 #mascot.hop{animation:hop .5s ease-out;}
 @keyframes hop{40%{transform:translateY(-12px) rotate(-6deg)}}
 .ticker.mega{background:#FFF2BF;}
+.t-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.t-tabs button{font-family:inherit;font-size:.95rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:5px 10px;cursor:pointer;box-shadow:0 2px 0 var(--ink);}
+.t-tabs button.on{background:var(--y);} .t-tabs .off{margin-left:auto;background:#EEE6DA;}
+.t-card.urg{border-color:#E0334F;background:#FFE3E8;box-shadow:0 0 0 3px #FF8DA1;} .t-card.done{opacity:.7;}
+.t-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;} .t-row input[type=text],.t-row input[type=number]{flex:1;min-width:120px;}
+.t-line{display:flex;justify-content:space-between;align-items:center;gap:6px;border-top:2px dashed #F0E2BC;padding:6px 0;}
+.t-line .btn{padding:4px 10px;font-size:.9rem;}
+.t-pick{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;} .t-pick button{font-family:inherit;border:2px solid var(--ink);border-radius:10px;background:#fff;padding:4px 8px;cursor:pointer;}
+.t-pick button.on{background:var(--y);}
+.t-bal{display:flex;flex-wrap:wrap;gap:6px 14px;} .t-chat{max-height:45vh;overflow:auto;font-size:.95rem;line-height:1.5;} .t-chat .del{opacity:.4;text-decoration:line-through;}
+.t-chat .mini{border:none;background:transparent;cursor:pointer;}
+#p-admin select,#p-admin textarea{width:100%;font-family:inherit;font-size:1rem;border:2px solid var(--ink);border-radius:10px;padding:6px;}
 .sp-banner{background:linear-gradient(90deg,#FFD3E4,#FFF2BF,#D9F2FF);border:3px solid var(--ink);border-radius:16px;padding:10px 14px;margin-bottom:10px;font-size:1.2rem;text-align:center;box-shadow:0 3px 0 var(--ink);}
 .sp-banner small{color:var(--ink-soft);font-size:.85rem;}
 .sp-butler{background:#FFE3EE;border:2px solid var(--ink);border-radius:999px;padding:4px 14px;margin-bottom:10px;text-align:center;}
@@ -212,6 +224,7 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <button type="button" class="tab" data-tab="village">🏘️ 냥이 마을<span class="dot" id="dotVillage"></span></button>
     <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
+    <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
 
   <section class="panel on" id="p-notice">
@@ -241,6 +254,11 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
   <section class="panel" id="p-coin">
     <div id="coinBox"></div>
   </section>
+
+  <section class="panel" id="p-admin">
+    <div class="t-tabs" id="tTabs"></div>
+    <div id="tBox"></div>
+  </section>
 </div>
 
 <div class="overlay" id="loginOv">
@@ -253,6 +271,19 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <div class="err" id="loginErr"></div>
     <button type="button" class="btn btn-y" id="loginBtn">들어가기</button>
     <div class="hint">비밀번호는 선생님께 받아요. 잊어버렸으면 선생님께 말씀드려요.</div>
+    <button type="button" class="btn btn-gray" id="tOpenBtn" style="font-size:.95rem;">👑 선생님 모드</button>
+  </div>
+</div>
+
+<div class="overlay" id="tLoginOv">
+  <div class="modal">
+    <button type="button" class="x" data-close="tLoginOv">✕</button>
+    <h2>👑 선생님 모드</h2>
+    <input type="password" id="tKey" placeholder="교사 열쇠" autocomplete="off">
+    <label class="hint"><input type="checkbox" id="tKeep"> 이 기기에서 계속 켜 두기 (선생님 폰일 때만!)</label>
+    <div class="err" id="tErr"></div>
+    <button type="button" class="btn btn-y" id="tLoginBtn">들어가기</button>
+    <div class="hint">교실 출석부 ⚙️ 설정에서 정한 '교사 열쇠'를 넣어요.</div>
   </div>
 </div>
 
@@ -432,6 +463,7 @@ function hanaTalk(){
 }
 function showTab(t){
   if (t === 'coin' && me) coinCall('coins');
+  if (t === 'admin') tLoad();
   current = t;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
@@ -816,6 +848,171 @@ async function playGame(g, pick){
   renderGame(msg);
 }
 
+/* =========================================================
+   👑 선생님 모드 (교사 열쇠로 들어와요)
+   ========================================================= */
+const TKEY = 'nyangTeacherKey_v1';
+let tKey = '', tTab = 'ask', tData = {}, tUrgent = 0, tPick = new Set();
+async function tCall(body){ return api(API, { method:'POST', body: JSON.stringify(Object.assign({ key: tKey, tmode: true }, body)) }); }
+async function tOps(ops, msg){ try { const j = await tCall({ ops }); if (j.ok === false) throw new Error(j.error); if (msg) toast(msg); return true; } catch(e){ toast('저장하지 못했어요'); return false; } }
+async function tLogin(){
+  const k = $('tKey').value.trim(); if (!k){ $('tErr').textContent = '교사 열쇠를 넣어 주세요'; return; }
+  tKey = k;
+  try {
+    const j = await tCall({ action:'asks' });
+    if (!j.ok){ tKey = ''; $('tErr').textContent = j.error === 'nokey' ? '교실 출석부 ⚙️ 설정에서 교사 열쇠를 먼저 정해 주세요' : '교사 열쇠가 맞지 않아요'; return; }
+    (($('tKeep').checked) ? localStorage : sessionStorage).setItem(TKEY, k);
+    $('tLoginOv').style.display = 'none'; $('loginOv').style.display = 'none';
+    tOn(); showTab('admin'); toast('👑 선생님 모드');
+  } catch(e){ tKey = ''; $('tErr').textContent = '연결이 안 돼요'; }
+}
+function tOn(){ document.querySelector('.tab-t').style.display = ''; }
+function tOff(){ tKey = ''; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); toast('선생님 모드를 껐어요'); }
+const T_TABS = [['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기']];
+function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
+async function tLoad(){
+  $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tOffBtn" class="off">끄기</button>';
+  $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
+  try {
+    if (tTab === 'ask') tData.asks = (await tCall({ action:'asks' })).asks || [];
+    if (tTab === 'coin') tData.coins = await tCall({ action:'coins' });
+    if (tTab === 'att' || tTab === 'show') tData.today = await tCall({ action:'today' });
+    if (tTab === 'show') tData.coins = await tCall({ action:'coins' });
+    if (tTab === 'free') tData.free = await tCall({ action:'free' });
+    if (tTab === 'chat') tData.chat = await tCall({ action:'chat', after: 0 });
+  } catch(e){ $('tBox').innerHTML = '<div class="empty">연결이 안 돼요</div>'; return; }
+  tRender();
+}
+function tRender(){
+  const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'🚨 긴급' };
+  if (tTab === 'ask'){
+    const open = a => !a.reply && !a.done;
+    const list = (tData.asks || []).filter(a => !a.del).reverse().sort((a, b) => (b.kind === '긴급' && open(b)) - (a.kind === '긴급' && open(a)));
+    tUrgent = list.filter(a => a.kind === '긴급' && open(a)).length; tDot();
+    box.innerHTML = list.length ? list.map(a => `<div class="box t-card ${a.kind === '긴급' && open(a) ? 'urg' : ''} ${open(a) ? '' : 'done'}">
+      <div class="hint">${K[a.kind] || '❓ 질문'} · ${a.anon ? '🙈 익명' : '🐱 ' + esc(a.from)} · ${esc(a.t)}${a.done && !a.reply ? ' · ✔ 확인함' : ''}</div>
+      <div style="font-size:1.1rem;margin:4px 0;">${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 ${esc(a.reply)}</div>` : ''}
+      <div class="t-row"><input type="text" data-tain="${a.id}" placeholder="${a.reply ? '답변 고치기' : '답변 쓰기'}"><button type="button" class="btn btn-y" data-tarep="${a.id}">답변</button></div>
+      <div class="t-row">${open(a) ? `<button type="button" class="btn btn-mint" data-tadone="${a.id}">✔ 확인만</button>` : ''}<button type="button" class="btn btn-gray" data-tadel="${a.id}">삭제</button></div></div>`).join('') : '<div class="empty">받은 질문·상담이 없어요 ✨</div>';
+    return;
+  }
+  if (tTab === 'coin'){
+    const c = tData.coins || {}, pend = (c.reqs || []).filter(r => r.status === '대기');
+    box.innerHTML = `<div class="box"><div class="box-head">⏳ 확인 대기 (${pend.length})</div>${pend.map(r => `<div class="t-line"><span>${r.type === '미션' ? '✅' : '🎟'} <b>${esc(r.name)}</b> ${esc(r.item)} <small>${r.type === '미션' ? '+' : ''}${r.coins}🐾</small></span>
+        <span><button type="button" class="btn btn-mint" data-treq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급'}</button><button type="button" class="btn btn-gray" data-treq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '환불'}</button></span></div>`).join('') || '<div class="empty">확인할 게 없어요 ✨</div>'}</div>
+      <div class="box"><div class="box-head pink">🎁 코인 주기</div>
+        <select id="tMission">${(c.missions || []).map(m => `<option value="${m.id}">${esc(m.name)} (+${m.coins})</option>`).join('')}<option value="_">✏️ 직접 입력</option></select>
+        <div class="t-row" id="tCustom" style="display:none;"><input type="number" id="tAmt" placeholder="코인 (예: 20 또는 -10)"><input type="text" id="tWhy" placeholder="이유"></div>
+        <div class="t-pick">${tKids().map(n => `<button type="button" data-tpick="${esc(n)}" class="${tPick.has(n) ? 'on' : ''}">${esc(n)}</button>`).join('')}</div>
+        <div class="t-row"><button type="button" class="btn btn-gray" id="tPickAll">전체 선택</button><button type="button" class="btn btn-y" id="tGive">🐾 지급하기</button></div>
+        <div class="hint">같은 미션은 정해진 횟수까지만 들어가요 (중복으로 눌러도 한 번만).</div></div>
+      <div class="box"><div class="box-head mint">💰 잔액</div><div class="t-bal">${tKids().map(n => `<span>${esc(n)} <b>${(c.balances || {})[n] || 0}</b></span>`).join('')}</div></div>`;
+    return;
+  }
+  if (tTab === 'att'){
+    const d = tData.today || {}, rec = d.records || {}, rm = d.remote || [];
+    box.innerHTML = `<div class="hint" style="margin-bottom:8px;">📱 원격 출석은 교실 출석부가 누른 시각으로 등급을 계산해요. 결석은 바로 기록돼요.</div>` + tKids().map(n => {
+      const r = rec[n], st = r ? (r.tier === 'absent' ? '🏠 결석' : `${r.status === 'late' ? '💤 지각' : '⭐ 출석'} · ${esc(r.time || '')}${r.rank ? ` · ${r.rank}등` : ''}${r.remote ? ' · 📱' : ''}`) : rm.includes(n) ? '⏳ 원격 출석 처리 중' : '<span style="color:#A8978A;">아직</span>';
+      return `<div class="t-line"><span><b>${esc(n)}</b> <small>${st}</small></span><span>${!r && !rm.includes(n) ? `<button type="button" class="btn btn-mint" data-tremote="${esc(n)}">📱 출석</button><button type="button" class="btn btn-gray" data-tabsent="${esc(n)}">🏠 결석</button>` : ''}</span></div>`;
+    }).join('');
+    return;
+  }
+  if (tTab === 'free'){
+    const f = (tData.free || {}).free || {}, now = (tData.free || {}).now || Date.now();
+    const row = (k, n) => { const on = (f[k] || 0) > now, t = new Date(f[k] - (now - Date.now()));
+      return `<div class="box"><div class="box-head">${n}</div><div style="margin-bottom:6px;">${on ? `<b style="color:#2E9E5B;">🔓 ${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}까지 열림</b>` : '⏱ 원래 시간대로'}</div>
+        <div class="t-row"><button type="button" class="btn btn-y" data-tfree="${k}" data-min="30">30분</button><button type="button" class="btn btn-y" data-tfree="${k}" data-min="60">1시간</button><button type="button" class="btn btn-y" data-tfree="${k}" data-min="night">밤 12시까지</button>${on ? `<button type="button" class="btn btn-gray" data-tfree="${k}" data-min="0">🔒 원래대로</button>` : ''}</div></div>`; };
+    box.innerHTML = row('chat', '💬 대화 · 🏘️ 마을') + row('game', '🎮 오락실 게임');
+    return;
+  }
+  if (tTab === 'chat'){
+    const c = tData.chat || {}, cfg = c.cfg || {}, msgs = (c.msgs || []).slice(-80);
+    box.innerHTML = `<div class="box"><div class="box-head pink">💬 최근 대화 (귓속말·모둠 포함)</div><div class="t-chat">${msgs.map(m => `<div class="${m.del ? 'del' : ''}"><b>${esc(m.from)}${m.to ? (m.to.charAt(0) === '#' ? ` → ${esc(m.to.slice(2))}모둠` : ` → ${esc(m.to)}`) + ' 🤫' : ''}</b> ${esc(m.text)} <small>${esc(m.t.slice(11))}</small>${m.del ? '' : ` <button type="button" class="mini" data-tcdel="${m.id}">🗑</button>`}</div>`).join('') || '<div class="empty">아직 없어요</div>'}</div>
+        <div class="t-row"><input type="text" id="tChatText" maxlength="200" placeholder="선생님으로 전체에게 말하기"><button type="button" class="btn btn-y" id="tChatSend">보내기</button></div></div>
+      <div class="box"><div class="box-head lav">🔇 대화 막기 (누르면 바뀌어요)</div><div class="t-pick">${tKids().map(n => `<button type="button" data-tmute="${esc(n)}" class="${(cfg.muted || []).includes(n) ? 'on' : ''}">${(cfg.muted || []).includes(n) ? '🔇 ' : ''}${esc(n)}</button>`).join('')}</div>
+        <div class="t-row"><label><input type="checkbox" id="tChatOn" ${cfg.on ? 'checked' : ''}> 대화 켜기</label><label><input type="checkbox" id="tWhisper" ${cfg.whisper ? 'checked' : ''}> 귓속말</label></div>
+        <div class="t-row"><input type="text" id="tBan" value="${esc((cfg.ban || []).join(', '))}" placeholder="금지어 (쉼표로)"><button type="button" class="btn btn-y" id="tCfgSave">저장</button></div></div>`;
+    const lg = box.querySelector('.t-chat'); if (lg) lg.scrollTop = lg.scrollHeight;
+    return;
+  }
+  if (tTab === 'board'){
+    box.innerHTML = `<div class="box"><div class="box-head">📢 오늘의 알림 (한 줄에 하나)</div><textarea id="tNotices" rows="5">${esc(st.notices.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="notices">저장</button></div></div>
+      <div class="box"><div class="box-head pink">📋 종례 (한 줄에 하나)</div><textarea id="tClosing" rows="5">${esc(st.closing.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="closing">저장</button></div></div>`;
+    return;
+  }
+  if (tTab === 'show'){
+    const d = tData.today || {}, inv = (tData.coins || {}).inv || {};
+    box.innerHTML = `<div class="box"><div class="box-head">📢 확성기</div>${(d.mega || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="megaDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
+      <div class="box"><div class="box-head pink">🎊 축하 배너</div>${(d.banners || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="bannerDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
+      <div class="box"><div class="box-head mint">🏷️ 칭호</div>${Object.entries(inv).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="t-line"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="btn btn-gray" data-ttitle="${esc(n)}">지우기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
+      <div class="box"><div class="box-head lav">🐱 하나</div><div>오늘의 집사: <b>${esc(d.butler || '없음')}</b></div><div class="t-row">${d.butler ? '<button type="button" class="btn btn-gray" data-tdel="butlerDel">집사 취소</button>' : ''}<button type="button" class="btn btn-gray" data-tdel="hanaReset">하나 꾸미기 초기화</button></div></div>
+      <div class="box"><div class="box-head">🎵 아침 신청곡</div>${(d.songs || []).filter(x => !x.done).map(x => `<div class="t-line"><span><b>${esc(x.q)}</b> <small>${esc(x.n)}</small></span><span><a class="btn btn-y" href="${songLink(x.q)}" target="_blank" rel="noopener">▶</a><button type="button" class="btn btn-gray" data-tsong="${x.id}">✔</button></span></div>`).join('') || '<div class="empty">없어요</div>'}</div>`;
+  }
+}
+function songLink(q){
+  const m = String(q).match(/(?:youtu\.be\/|v=)([\w-]{11})/);
+  return m ? `https://music.youtube.com/watch?v=${m[1]}` : `https://music.youtube.com/search?q=${encodeURIComponent(q)}`;
+}
+function tDot(){ $('dotAdmin').classList.toggle('on', tUrgent > 0); }
+async function tPoll(){
+  if (!tKey || document.hidden) return;
+  try { const j = await tCall({ action:'asks' }); const n = (j.asks || []).filter(a => a.kind === '긴급' && !a.reply && !a.done && !a.del).length;
+    if (n > tUrgent){ toast(`🚨 긴급 상담 ${n}건!`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e){} }
+    tUrgent = n; tDot(); if (current === 'admin' && tTab === 'ask'){ tData.asks = j.asks || []; tRender(); }
+    if (current === 'admin') document.querySelectorAll('[data-ttab="ask"]').forEach(b => b.textContent = '🚨 상담·질문' + (tUrgent ? ' 🔴' : ''));
+  } catch(e){}
+}
+function tPeriod(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
+document.addEventListener('click', async e => {
+  const t = e.target;
+  if (t.closest('#tOpenBtn')){ $('tErr').textContent = ''; $('tLoginOv').style.display = 'flex'; setTimeout(() => $('tKey').focus(), 50); return; }
+  if (t.closest('#tLoginBtn')){ tLogin(); return; }
+  if (!tKey || !t.closest('#p-admin')) return;
+  if (t.closest('#tOffBtn')){ if (confirm('선생님 모드를 끌까요?')) tOff(); return; }
+  const tb = t.closest('[data-ttab]'); if (tb){ tTab = tb.dataset.ttab; tLoad(); return; }
+  // 상담·질문
+  const rp = t.closest('[data-tarep]'); if (rp){ const v = (document.querySelector(`[data-tain="${rp.dataset.tarep}"]`).value || '').trim(); if (!v){ toast('답변을 적어 주세요'); return; } if (await tOps([{ op:'askReply', id:+rp.dataset.tarep, text:v }], '📮 답변했어요')) tLoad(); return; }
+  const dn = t.closest('[data-tadone]'); if (dn){ if (await tOps([{ op:'askDone', id:+dn.dataset.tadone }], '✔ 확인했어요')) tLoad(); return; }
+  const dl = t.closest('[data-tadel]'); if (dl){ if (confirm('지울까요?') && await tOps([{ op:'askDel', id:+dl.dataset.tadel }])) tLoad(); return; }
+  // 코인
+  const rq = t.closest('[data-treq]'); if (rq){ if (await tOps([{ op:'reqDone', id:+rq.dataset.treq, ok: rq.dataset.ok === '1' }], '처리했어요')) tLoad(); return; }
+  const pk = t.closest('[data-tpick]'); if (pk){ const n = pk.dataset.tpick; tPick.has(n) ? tPick.delete(n) : tPick.add(n); pk.classList.toggle('on'); return; }
+  if (t.closest('#tPickAll')){ const all = tKids(); if (tPick.size === all.length) tPick.clear(); else all.forEach(n => tPick.add(n)); tRender(); return; }
+  if (t.closest('#tGive')){
+    if (!tPick.size){ toast('학생을 골라 주세요'); return; }
+    const mid = $('tMission').value, names = [...tPick];
+    let ops;
+    if (mid === '_'){ const amt = parseInt($('tAmt').value, 10), why = $('tWhy').value.trim() || '선생님'; if (!amt){ toast('코인을 적어 주세요'); return; } ops = names.map(n => ({ op:'coinAdd', name:n, amt, why, kind:'선생님' })); }
+    else { const m = tData.coins.missions.find(x => x.id === mid); ops = names.map(n => ({ op:'coinAdd', name:n, amt:m.coins, why:'미션: ' + m.name, kind:'선생님', key:`m:${m.id}:${n}:${tPeriod(m.limit)}` })); }
+    if (!confirm(`${names.length}명에게 지급할까요?`)) return;
+    if (await tOps(ops, '🐾 지급했어요')){ tPick.clear(); tLoad(); }
+    return;
+  }
+  // 출석
+  const rm = t.closest('[data-tremote]'); if (rm){ if (!confirm(`${rm.dataset.tremote}을(를) 지금 시각으로 출석 처리할까요?\n(교실 출석부가 켜져 있으면 바로 기록돼요)`)) return; if (await tOps([{ op:'remoteAdd', name: rm.dataset.tremote }], '📱 출석 보냈어요')) tLoad(); return; }
+  const ab = t.closest('[data-tabsent]'); if (ab){ if (!confirm(`${ab.dataset.tabsent}을(를) 결석(쉬는 날)으로 처리할까요?`)) return; if (await tOps([{ op:'rec', ds: tData.today.ds, name: ab.dataset.tabsent, rec:{ status:'dungeon', tier:'absent', time:'결석', exp:0 } }], '🏠 결석 처리했어요')) tLoad(); return; }
+  // 쉬는 시간
+  const fr = t.closest('[data-tfree]');
+  if (fr){ const m = fr.dataset.min, now = Date.now(); let until = 0;
+    if (m === 'night'){ const d = new Date(); d.setHours(24, 0, 0, 0); until = d.getTime(); } else if (+m > 0) until = now + (+m) * 60000;
+    try { tData.free = await tCall({ action:'free', set:{ [fr.dataset.tfree]: until } }); toast('⏰ 저장했어요'); tRender(); } catch(e){ toast('저장하지 못했어요'); }
+    return; }
+  // 대화
+  const cd = t.closest('[data-tcdel]'); if (cd){ if (await tOps([{ op:'chatDel', id:+cd.dataset.tcdel }], '🗑 지웠어요')) tLoad(); return; }
+  if (t.closest('#tChatSend')){ const v = $('tChatText').value.trim(); if (!v) return; const tn = (st.pub && st.pub.students || []).map(x => x.name).find(n => /(쌤|샘|선생님)$/.test(n)) || '선생님'; if (await tOps([{ op:'chatSend', from: tn, to:'', text:v }], '💬 보냈어요')) tLoad(); return; }
+  const mu = t.closest('[data-tmute]'); if (mu){ mu.classList.toggle('on'); mu.textContent = (mu.classList.contains('on') ? '🔇 ' : '') + mu.dataset.tmute; return; }
+  if (t.closest('#tCfgSave')){ const muted = [...document.querySelectorAll('[data-tmute].on')].map(b => b.dataset.tmute);
+    if (await tOps([{ op:'chatCfg', cfg:{ on: $('tChatOn').checked, whisper: $('tWhisper').checked, muted, ban: $('tBan').value.split(',').map(x => x.trim()).filter(Boolean) } }], '💬 대화 설정 저장')) tLoad(); return; }
+  // 알림·종례
+  const bd = t.closest('[data-tboard]'); if (bd){ const k = bd.dataset.tboard, list = $(k === 'notices' ? 'tNotices' : 'tClosing').value.split('\n').map(x => x.trim()).filter(Boolean);
+    if (await tOps([{ op:k, list }], k === 'notices' ? '📢 알림 저장' : '📋 종례 저장')){ st[k] = list; render(); } return; }
+  // 내리기
+  const de = t.closest('[data-tdel]'); if (de){ if (!confirm('정말 할까요?')) return; if (await tOps([{ op: de.dataset.tdel, ts: Number(de.dataset.ts || 0) }], '완료')) tLoad(); return; }
+  const ti = t.closest('[data-ttitle]'); if (ti){ if (confirm(`${ti.dataset.ttitle}의 칭호를 지울까요?`) && await tOps([{ op:'titleDel', name: ti.dataset.ttitle }], '🏷️ 지웠어요')) tLoad(); return; }
+  const sg = t.closest('[data-tsong]'); if (sg){ if (await tOps([{ op:'songDone', id:+sg.dataset.tsong }], '✔')) tLoad(); return; }
+});
+document.addEventListener('change', e => { if (e.target.id === 'tMission') $('tCustom').style.display = e.target.value === '_' ? 'flex' : 'none'; });
+
 /* ---------- 이벤트 ---------- */
 document.addEventListener('click', e => {
   const t = e.target;
@@ -875,6 +1072,9 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) pull
     me = { name: c.name, pin: c.pin, info: null, look: null, acked: [] };
     await refreshMe(true); render(); chatPull(); askList(); coinCall('coins');
   }
+  const tk = localStorage.getItem(TKEY) || sessionStorage.getItem(TKEY);
+  if (tk){ tKey = tk; tOn(); tPoll(); }
+  setInterval(tPoll, 30000);
   setInterval(() => pull(), 20000);
   setInterval(() => { if (me && !document.hidden) chatPull(); }, current === 'village' ? 6000 : 6000);
   setInterval(() => { if (me && !document.hidden) askList(); }, 60000);

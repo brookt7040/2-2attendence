@@ -3628,7 +3628,7 @@ async function onCoinAdmClick(e){
   if (t.closest('#coSave')){ saveCoinSettings(); }
 }
 function openTvVillage(){
-  if (!sync.url || sync.api < 7){ alert('새 마을은 구글 시트 코드를 최신 버전(v7)으로 업데이트해야 볼 수 있어요.\n(Apps Script에 새 Code.gs 붙여넣기 → 배포 관리 → 새 버전)'); return; }
+  if (!sync.url || sync.api < 7){ alert('새 마을은 구글 시트 코드를 최신 버전(v8)으로 업데이트해야 볼 수 있어요.\n(Apps Script에 새 Code.gs 붙여넣기 → 배포 관리 → 새 버전)'); return; }
   openVillage({ api: sync.url, viewOnly: true, eco: db.economy });
 }
 function setStudentPins(pins){
