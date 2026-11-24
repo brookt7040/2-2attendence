@@ -120,6 +120,17 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 #toast{position:fixed;left:50%;top:22px;transform:translate(-50%,-140%);z-index:10001;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:10px 24px;font-size:1.35rem;box-shadow:0 5px 0 var(--ink);transition:transform .35s cubic-bezier(.2,1.5,.4,1),opacity .2s;opacity:0;pointer-events:none;white-space:nowrap;}
 #toast.show{transform:translate(-50%,0);opacity:1;}
 #remoteBanner{position:fixed;left:50%;bottom:22px;transform:translate(-50%,160%);z-index:10002;background:#E4F3FF;border:3px solid var(--ink);border-radius:18px;padding:12px 26px;font-size:1.35rem;box-shadow:0 5px 0 var(--ink);transition:transform .4s cubic-bezier(.2,1.5,.4,1);cursor:pointer;white-space:nowrap;}
+.butler-tag{margin-top:6px;background:#FFE3EE;border:2px solid var(--ink);border-radius:999px;padding:2px 12px;font-size:1.05rem;box-shadow:0 2px 0 var(--ink);}
+#bannerBox .banner-big{position:relative;display:flex;align-items:center;justify-content:center;gap:18px;border:4px solid var(--ink);border-radius:22px;padding:12px 50px;margin-bottom:12px;box-shadow:0 6px 0 var(--ink);animation:bnIn .6s cubic-bezier(.2,1.6,.4,1);}
+#bannerBox .be{font-size:2.6rem;animation:bnB 1.2s ease-in-out infinite;}
+#bannerBox .be.d1{animation-delay:-.3s}#bannerBox .be.d2{animation-delay:-.6s}#bannerBox .be.d3{animation-delay:-.9s}
+#bannerBox .bt{text-align:center;}#bannerBox .bm{font-size:2.3rem;}#bannerBox small{font-size:1rem;color:var(--ink-soft);}
+#bannerBox .banner-x{position:absolute;right:10px;top:8px;border:none;background:transparent;font-size:1.1rem;opacity:.35;cursor:pointer;}
+@keyframes bnB{50%{transform:translateY(-8px) rotate(8deg)}} @keyframes bnIn{from{transform:scale(.6);opacity:0}}
+#songDock{position:fixed;right:16px;bottom:70px;z-index:900;width:320px;max-height:40vh;overflow:auto;background:#FFFCF3;border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);padding:10px;}
+#songDock .sd-head{font-size:1.15rem;margin-bottom:6px;}
+#songDock .sd-row{display:flex;align-items:center;gap:6px;border-top:2px dashed #F0E2BC;padding:6px 0;}
+#songDock .sd-row>div{flex:1;min-width:0;}#songDock .sd-row b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}#songDock small{color:var(--ink-soft);}
 .mega-bar{overflow:hidden;white-space:nowrap;background:#FFF2BF;border:3px solid var(--ink);border-radius:16px;font-size:1.35rem;padding:6px 0;margin-bottom:10px;box-shadow:0 4px 0 var(--ink);}
 .mega-bar .mega-in{display:inline-block;padding-left:100%;animation:megam 22s linear infinite;}
 @keyframes megam{to{transform:translateX(-100%)}}
@@ -546,6 +557,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
 <div class="wrap">
   <div class="mega-bar" id="megaBar" style="display:none;"></div>
+  <div id="bannerBox"></div>
   <div class="header">
     <div class="header-left">
       <div class="title-row">
@@ -556,6 +568,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <div class="title-block">
           <h1 id="mainTitleDisplay">노랑반 냥냥 출석 아일랜드</h1>
           <div class="bubble" id="mascotBubble">안녕하다냥!</div>
+          <div class="butler-tag" id="butlerTag" style="display:none;"></div>
         </div>
       </div>
       <div class="boards">
@@ -604,6 +617,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
 <canvas id="fx"></canvas>
 <div id="toast"></div>
+<div id="songDock" style="display:none;"></div>
 <div id="remoteBanner" onclick="this.classList.remove('show')"></div>
 <div id="syncPill" title="눌러서 지금 동기화">☁️ 동기화</div>
 <div class="mini-clock" id="miniClock"><span id="mcTime">00:00</span><span id="mcTier"></span></div>
@@ -1186,14 +1200,25 @@ const ECONOMY_V2 = {
   meeting: { pres:'', vice:'', agenda:'' }
 };
 const MEGA_ITEM = { id:'x_mega', cat:'mega', name:'📢 확성기 (1시간 공지)', price:50 };
+/* v3: 특별 상품 */
+const SPECIAL_ITEMS = [
+  { id:'c_seat',   cat:'coupon', name:'🪑 오늘 자리 선택권 (앉고 싶은 자리에 앉기)', price:60 },
+  { id:'x_song',   cat:'song',   name:'🎵 아침 신청곡권', price:40 },
+  { id:'x_banner', cat:'banner', name:'🎊 축하 배너 (오늘 하루)', price:80 },
+  { id:'x_title',  cat:'title',  name:'🏷️ 칭호 달기', price:100 },
+  { id:'x_butler', cat:'butler', name:'🐱 하나 하루 집사권 (하루 1명)', price:120 }
+];
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 2) return false;
+  if ((e.ver || 1) >= 3) return false;
+  e.shop = e.shop || [];
+  SPECIAL_ITEMS.forEach(it => { if (!e.shop.some(x => x.id === it.id)) e.shop.push(Object.assign({}, it)); });
+  if ((e.ver || 1) >= 2){ e.ver = 3; return true; }
   for (const k of ['furn', 'walls', 'floors', 'hana', 'meeting']) if (!e[k]) e[k] = JSON.parse(JSON.stringify(ECONOMY_V2[k]));
   if (!e.hana.items) e.hana.items = JSON.parse(JSON.stringify(HANA_ITEMS));
   e.shop = e.shop || [];
   if (!e.shop.some(x => x.cat === 'mega')) e.shop.push(Object.assign({}, MEGA_ITEM));
-  e.ver = 2;
+  e.ver = 3;
   return true;
 }
 
@@ -3190,6 +3215,7 @@ async function pullSync(force){
     let changed = false;
     if (j.state){ applyServerState(j.state); sync.v = j.v; changed = true; if (upgradeEconomy()){ saveDB(); syncOp({ op:'config', data: configOf() }); } }
     if (Array.isArray(j.mega)) setMega(j.mega);
+    if (Array.isArray(j.banners)) setSpecials(j);
     if (j.hanaLook) setHanaLook(j.hanaLook);
     if (Array.isArray(j.closing)){
       sync.hasClosing = true;
@@ -3206,6 +3232,48 @@ async function pullSync(force){
   finally { syncBusy = false; updateSyncUI(); }
 }
 /* 학생 페이지에 보여줄 공개 정보(레벨·꾸미기·청소 당번 등)를 시트에 올려요 */
+/* 🎊 축하 배너 · 🎵 신청곡 · 🐱 하나 집사 (교실 화면) */
+const BANNER_STYLE = {
+  birthday: { e:['🎂', '🎉', '🎈', '🎁'], bg:'linear-gradient(90deg,#FFD3E4,#FFF2BF,#D9F2FF,#E3D9FF)', t:'생일 축하해!' },
+  congrats: { e:['🎉', '🎊', '✨', '🥳'], bg:'linear-gradient(90deg,#FFF2BF,#FFE066,#FFD3E4)', t:'축하해!' },
+  cheer:    { e:['💪', '📣', '🔥', '💛'], bg:'linear-gradient(90deg,#DFF7EE,#FFF2BF,#FFE3EE)', t:'힘내!' },
+  praise:   { e:['🏆', '👏', '🌟', '👑'], bg:'linear-gradient(90deg,#FFE98A,#FFF6DA,#FFE98A)', t:'최고야!' },
+  love:     { e:['💛', '💌', '🌸', '🐾'], bg:'linear-gradient(90deg,#FFE3EE,#FFF6DA,#E3D9FF)', t:'고마워!' }
+};
+let bannersNow = [], songsNow = [], butlerNow = '', bannerIdx = 0, bannerSeen = new Set();
+function setSpecials(j){
+  bannersNow = j.banners || []; songsNow = (j.songs || []).filter(x => !x.done); butlerNow = j.butler || '';
+  const bt = $('butlerTag'); bt.style.display = butlerNow ? 'inline-block' : 'none'; bt.textContent = `🐱 오늘의 하나 집사: ${butlerNow}`;
+  renderBanner(); renderSongs();
+  bannersNow.forEach(b => { if (!bannerSeen.has(b.ts)){ bannerSeen.add(b.ts); if (Date.now() - b.ts < 60000){ try { burst('party', innerWidth / 2, 160); sfx('legend'); } catch(e){} } } });
+}
+function renderBanner(){
+  const box = $('bannerBox');
+  if (!bannersNow.length){ box.innerHTML = ''; return; }
+  const b = bannersNow[bannerIdx % bannersNow.length], st = BANNER_STYLE[b.style] || BANNER_STYLE.congrats;
+  box.innerHTML = `<div class="banner-big" style="background:${st.bg}">
+    <span class="be">${st.e[0]}</span><span class="be d1">${st.e[1]}</span>
+    <div class="bt"><div class="bm">${esc(b.text)}</div><small>from. ${esc(b.n)}${bannersNow.length > 1 ? ` · ${bannerIdx % bannersNow.length + 1}/${bannersNow.length}` : ''}</small></div>
+    <span class="be d2">${st.e[2]}</span><span class="be d3">${st.e[3]}</span>
+    <button type="button" class="banner-x" title="배너 내리기 (관리자)" data-bts="${b.ts}">✕</button></div>`;
+  box.querySelector('.banner-x').onclick = () => requirePin(async () => { if (!confirm('이 배너를 내릴까요?')) return; await teacherCall({ ops:[{ op:'bannerDel', ts: b.ts }] }); bannersNow = bannersNow.filter(x => x.ts !== b.ts); renderBanner(); });
+}
+setInterval(() => { if (bannersNow.length > 1){ bannerIdx++; renderBanner(); } }, 12000);
+function songUrl(q){
+  const m = String(q).match(/(?:youtu\.be\/|v=)([\w-]{11})/);
+  if (m) return `https://music.youtube.com/watch?v=${m[1]}`;
+  if (/^https?:\/\/(music\.)?youtube\.com\//.test(q)) return q;
+  return `https://music.youtube.com/search?q=${encodeURIComponent(q)}`;
+}
+function renderSongs(){
+  const d = $('songDock');
+  d.style.display = songsNow.length ? 'block' : 'none';
+  d.innerHTML = `<div class="sd-head">🎵 아침 신청곡 (${songsNow.length})</div>` + songsNow.map(x => `<div class="sd-row"><div><b>${esc(x.q)}</b><small>신청: ${esc(x.n)}</small></div>
+    <button type="button" class="mini-btn" data-play="${x.id}" style="background:#FF6F9C;color:#fff;">▶ 재생</button><button type="button" class="mini-btn" data-sdone="${x.id}">✔</button></div>`).join('');
+  d.querySelectorAll('[data-play]').forEach(b => b.onclick = () => { const x = songsNow.find(s => String(s.id) === b.dataset.play); window.open(songUrl(x.q), 'nyangMusic'); setBubble(`🎵 ${x.n}의 신청곡 틀어 준다냥!`, 4000); });
+  d.querySelectorAll('[data-sdone]').forEach(b => b.onclick = async () => { await teacherCall({ ops:[{ op:'songDone', id: Number(b.dataset.sdone) }] }); songsNow = songsNow.filter(s => String(s.id) !== b.dataset.sdone); renderSongs(); });
+}
+
 /* 📢 확성기 · 🐱 하나 꾸미기 (교실 화면) */
 let megaNow = [], hanaLookNow = {};
 function setMega(list){
@@ -3462,7 +3530,8 @@ function renderCoinAdmin(){
         <span><button type="button" class="act-btn" style="background:var(--mint);" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button>
         <button type="button" class="act-btn cancel" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="clean-empty">확인할 게 없어요 ✨</div>'}</div>
       <div class="section"><div class="section-title">📢 지금 떠 있는 확성기 (1시간)</div>${megaNow.length ? megaNow.map(m => `<div class="bonus-entry"><span><b>${esc(m.n)}</b>: ${esc(m.text)} <small>${new Date(m.ts).toTimeString().slice(0, 5)}</small></span><button type="button" class="act-btn cancel" data-megadel="${m.ts}">내리기</button></div>`).join('') : '<div class="clean-empty">없어요</div>'}
-        <div class="row" style="justify-content:flex-end;"><button type="button" class="mini-btn" id="hanaResetBtn">🐱 하나 꾸미기 초기화</button></div></div>
+        <div class="row" style="justify-content:flex-end;"><button type="button" class="mini-btn" id="hanaResetBtn">🐱 하나 꾸미기 초기화</button>${butlerNow ? `<button type="button" class="mini-btn" id="butlerDelBtn">🐱 오늘 집사(${esc(butlerNow)}) 취소</button>` : ''}</div></div>
+      <div class="section"><div class="section-title">🏷️ 학생 칭호</div>${Object.entries(d.inv || {}).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="bonus-entry"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="act-btn cancel" data-titledel="${esc(n)}">지우기</button></div>`).join('') || '<div class="clean-empty">아직 없어요</div>'}</div>
       <div class="section"><div class="section-title">📜 최근 처리</div>${done.map(r => `<div class="bonus-entry"><span>${esc(r.type)} · ${esc(r.name)} · ${esc(r.item)} · ${esc(r.status)}</span><small>${esc(r.done)}</small></div>`).join('') || '<div class="clean-empty">-</div>'}</div>`;
   } else if (coTab === 'give'){
     box.innerHTML = `<div class="section"><div class="section-title">🎁 미션 코인 주기</div>
@@ -3536,6 +3605,8 @@ async function onCoinAdmClick(e){
   const t = e.target;
   const tb = t.closest('[data-co]'); if (tb){ coTab = tb.dataset.co; renderCoinAdmin(); return; }
   const md = t.closest('[data-megadel]'); if (md){ await teacherCall({ ops:[{ op:'megaDel', ts: Number(md.dataset.megadel) }] }); megaNow = megaNow.filter(m => m.ts !== Number(md.dataset.megadel)); setMega(megaNow); renderCoinAdmin(); showToast('📢 확성기를 내렸어요'); return; }
+  const td = t.closest('[data-titledel]'); if (td){ if (!confirm(`${td.dataset.titledel}의 칭호를 지울까요?`)) return; await teacherCall({ ops:[{ op:'titleDel', name: td.dataset.titledel }] }); showToast('🏷️ 칭호를 지웠어요'); loadCoinAdmin(); return; }
+  if (t.closest('#butlerDelBtn')){ if (!confirm('오늘의 하나 집사를 취소할까요? (코인은 냥코인 관리에서 돌려주세요)')) return; await teacherCall({ ops:[{ op:'butlerDel' }] }); butlerNow = ''; setSpecials({ banners: bannersNow, songs: songsNow, butler: '' }); renderCoinAdmin(); return; }
   if (t.closest('#hanaResetBtn')){ if (!confirm('하나 꾸미기를 모두 벗길까요?')) return; await teacherCall({ ops:[{ op:'hanaReset' }] }); setHanaLook({}); showToast('🐱 하나가 원래대로 돌아왔어요'); return; }
   if (t.closest('#coXBtn')){ $('coinAdmOverlay').style.display = 'none'; return; }
   const rq = t.closest('[data-rq]');
@@ -3982,6 +4053,7 @@ function openVillage(opts){
       if (JSON.stringify(j.hanaLook || {}) !== JSON.stringify(hana.look)){ hana.look = j.hanaLook || {}; }
       const mega = (j.mega || []);
       const mg = $q('.vg-mega'); mg.style.display = mega.length && scene === 'out' ? 'block' : 'none'; root.classList.toggle('has-mega', !!mega.length && scene === 'out');
+      if (j.butler) hana.butler = j.butler;
       if (mega.length) mg.innerHTML = `<span>${mega.map(m => `📢 ${escV(m.n)} : ${escV(m.text)}`).join('　　·　　')}</span>`;
       updateTop();
     } catch(e){}
@@ -4022,7 +4094,7 @@ function openVillage(opts){
       emoji(it.icon, x - size / 2 + size * px / 100, y - size + size * py / 100, size * pz / 100);
     });
     if (sleep){ ctx.fillStyle = '#8C74F0'; ctx.font = '16px NeoDunggeunmo, sans-serif'; ctx.fillText('z', x + size / 2, y - size - (t / 100) % 12); ctx.fillText('Z', x + size / 2 + 10, y - size - 12 - (t / 120) % 10); }
-    label('하나', x, y + 14, 12, '#FFF2BF');
+    label(hana.butler ? `하나 · 집사 ${hana.butler}` : '하나', x, y + 14, 12, '#FFF2BF');
   }
 
   /* ---------- 바깥 마을 ---------- */
@@ -4240,7 +4312,8 @@ function openVillage(opts){
     if (pose === 'fish'){ ctx.strokeStyle = '#8B5A3C'; ctx.lineWidth = 3; const dir = c.sit && c.sit.t ? -1 : 1; ctx.beginPath(); ctx.moveTo(c.x + dir * 12, c.y - 30); ctx.lineTo(c.x + dir * 60, c.y - 70); ctx.stroke(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c.x + dir * 60, c.y - 70); ctx.lineTo(c.x + dir * 64, c.y + 10 + Math.sin(t / 300) * 3); ctx.stroke(); }
     if (pose === 'drink' && Math.floor(t / 600) % 3 === 0) emoji('💧', c.x, c.y - 56, 14);
     if (pose === 'yarn') emoji('🧶', c.x + 26 + Math.sin(t / 250) * 8, c.y - 8, 18);
-    label(c.name, c.x, c.y + 16, 12, c.name === meName ? '#FFE58A' : '#FFFFFF');
+    const ttl = state && state.inv && state.inv[c.name] && state.inv[c.name].title;
+    label((ttl ? `«${ttl}» ` : '') + c.name, c.x, c.y + 16, 12, c.name === meName ? '#FFE58A' : '#FFFFFF');
     if (c.emo && c.emo.until > now) bubble(c.emo.e, c.x, c.y - 56 - bob, true);
     else if (c.bubble && c.bubble.until > now) bubble(c.bubble.text, c.x, c.y - 56 - bob, false);
   }
@@ -4495,7 +4568,9 @@ function openVillage(opts){
         <div class="hint">📊 하나 집사 랭킹: ${rank}</div>`;
     } else {
       const look = hana.look || {}, by = look.by ? `마지막으로 ${escV(look.by)}이(가) 꾸몄어요` : '';
-      body = canDress ? `<div class="hint">Lv.5 이상만 하나를 꾸밀 수 있어요. 모두가 같은 하나를 봐요! ${by}</div>` +
+      const bt = state && state.butler, TT = /(쌤|샘|선생님)$/.test(meName || '');
+      if (bt && bt !== meName && !TT) body = `<div class="hint" style="text-align:center;">🐱 오늘은 <b>${escV(bt)}</b>이(가) 하나 집사예요!<br>오늘 하나 꾸미기는 집사만 할 수 있어요.</div>`;
+      else body = (canDress || bt === meName) ? `<div class="hint">Lv.5 이상만 하나를 꾸밀 수 있어요. 모두가 같은 하나를 봐요! ${by}</div>` +
         ['head', 'face', 'mouth', 'body'].map(sl => `<div style="margin-top:6px;"><b>${{ head:'🎩 머리', face:'😎 얼굴', mouth:'👄 입', body:'👕 몸' }[sl]}</b><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(64px,1fr));">
           <button type="button" data-hdress="${sl}:" class="${!look[sl] ? 'on' : ''}">없음</button>${(HANA.items || []).filter(i => i.slot === sl).map(i => `<button type="button" data-hdress="${sl}:${i.id}" class="${look[sl] === i.id ? 'on' : ''}" title="${escV(i.name)}" style="font-size:1.5rem;">${i.icon}</button>`).join('')}</div></div>`).join('')
         : `<div class="hint" style="text-align:center;">🔒 Lv.5가 되면 하나를 꾸밀 수 있어요!<br>(지금 Lv.${myLv})</div>`;
@@ -4532,7 +4607,7 @@ function openVillage(opts){
       const [slot, item] = dr.dataset.hdress.split(':');
       try {
         const j = await opts.call('hanaDress', { slot, item });
-        if (j && j.error) say({ lv:'Lv.5부터 꾸밀 수 있어요', slow:'조금 있다가 다시 바꿔 주세요 (20초)' }[j.error] || '다시 해 주세요');
+        if (j && j.error) say({ butler:'오늘은 하나 집사만 꾸밀 수 있어요', lv:'Lv.5부터 꾸밀 수 있어요', slow:'조금 있다가 다시 바꿔 주세요 (20초)' }[j.error] || '다시 해 주세요');
         else if (j){ hana.look = j.look || {}; hana.bubble = { text: item ? '어때, 잘 어울리냥? 😼' : '시원하다냥~', until: Date.now() + 3500 }; renderHana(); if (opts.onHanaLook) opts.onHanaLook(hana.look); }
       } catch(err){ say('연결이 안 돼요'); }
     }

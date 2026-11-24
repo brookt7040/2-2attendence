@@ -185,7 +185,7 @@ function publicGet_(p) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
-  res.hanaLook = hanaLook_(); res.mega = megaList_();
+  res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   return res;
 }
 
@@ -194,7 +194,7 @@ function teacherPull_(body, auth) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
   if (body.remoteOk) res.remote = claimRemote_();
-  res.mega = megaList_(); res.hanaLook = hanaLook_();
+  res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
     const st = { config: map.config || null, days: {}, acks: {} };
@@ -296,6 +296,10 @@ function handlePost_(body, auth) {
         case 'askDone': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '확인'); break;
         case 'megaDel': props_().setProperty('mega', JSON.stringify(megaList_().filter(function (m) { return m.ts !== Number(o.ts); }))); break;
         case 'hanaReset': props_().setProperty('hanaLook', '{}'); break;
+        case 'songDone': props_().setProperty('songs', JSON.stringify(todayList_('songs').map(function (x) { if (x.id === Number(o.id)) x.done = true; return x; }))); break;
+        case 'bannerDel': props_().setProperty('banners', JSON.stringify(todayList_('banners').filter(function (x) { return x.ts !== Number(o.ts); }))); break;
+        case 'butlerDel': props_().deleteProperty('butler'); break;
+        case 'titleDel': { map.inv = map.inv || {}; if (map.inv[o.name]) { map.inv[o.name].title = ''; dirty.inv = true; } cacheDrop_(['v:inv']); break; }
         case 'coinAdd': addCoin_(String(o.name), Number(o.amt) || 0, String(o.why || ''), String(o.kind || '선생님'), String(o.key || '')); break;
         case 'reqDone': settleReq_(Number(o.id), !!o.ok, map); break;
         case 'housePlace': {            // 선생님이 집 · 소품을 정리해 줄 때
@@ -574,7 +578,7 @@ function villageState_() {
   if (!pubLite || !inv) {
     const map = readRows_().map;
     if (!pubLite) { pubLite = publicState_(map); cachePut_('v:pub', pubLite); }
-    if (!inv) { inv = {}; const raw = map.inv || {}; Object.keys(raw).forEach(function (n) { inv[n] = { house: raw[n].house || '', decor: (raw[n].decor || []).slice(0, 4) }; }); cachePut_('v:inv', inv); }
+    if (!inv) { inv = {}; const raw = map.inv || {}; Object.keys(raw).forEach(function (n) { inv[n] = { house: raw[n].house || '', decor: (raw[n].decor || []).slice(0, 4), title: raw[n].title || '' }; }); cachePut_('v:inv', inv); }
   }
   const cut = Date.now() - 90000;
   return {
@@ -583,7 +587,7 @@ function villageState_() {
     pos: cacheGet_('v:pos', {}), inv: inv,
     emo: cacheGet_('v:emo', []).filter(function (x) { return x.ts > cut; }),
     chat: cacheGet_('v:chat', []).filter(function (x) { return x.ts > cut; }),
-    hanaLook: hanaLook_(), mega: megaList_(),
+    hanaLook: hanaLook_(), mega: megaList_(), butler: butlerToday_(), banners: todayList_('banners'),
     now: Date.now()
   };
 }
@@ -626,6 +630,13 @@ function studentVillage_(name, body) {
 function myTable_(name) {
   const p = cacheGet_('v:pos', {})[name];
   return (p && p.sc === 'hall' && p.s && Date.now() - p.ts < 600000) ? p.s : '';
+}
+function todayList_(key) {
+  const ds = todayStr_();
+  try { return JSON.parse(props_().getProperty(key) || '[]').filter(function (x) { return x.ds === ds; }); } catch (e) { return []; }
+}
+function butlerToday_() {
+  try { const b = JSON.parse(props_().getProperty('butler') || 'null'); return b && b.ds === todayStr_() ? b.n : ''; } catch (e) { return ''; }
 }
 function megaList_() {
   const cut = Date.now() - 3600000;
@@ -718,7 +729,9 @@ function studentHana_(name, body) {
       const slot = String(body.slot || ''), item = String(body.item || '');
       const it = (hana.items || []).filter(function (x) { return x.id === item; })[0];
       const last = Number(props_().getProperty('hanaDressLast:' + name) || 0);
-      if (lv < 5 && !T) error = 'lv';
+      const bt = butlerToday_();
+      if (bt && bt !== name && !T) error = 'butler';
+      else if (!bt && lv < 5 && !T) error = 'lv';
       else if (['head', 'face', 'mouth', 'body'].indexOf(slot) < 0 || (item && (!it || it.slot !== slot))) error = 'bad';
       else if (Date.now() - last < 20000 && !T) error = 'slow';
       else {
@@ -814,7 +827,8 @@ function studentCoins_(name, body) {
       else if (!T && it.stock > 0 && soldCount_(it.id) >= it.stock) error = 'soldout';
       else if (it.cat === 'house' && (inv.houses || []).indexOf(it.id) >= 0) error = 'owned';
       else if (it.cat === 'house' && !houseReady_(inv, it.id)) error = 'order';
-      else if (it.cat === 'mega' && !cleanText_(body.text, chatCfg_())) error = 'empty';
+      else if (['mega', 'song', 'banner', 'title'].indexOf(it.cat) >= 0 && !cleanText_(body.text, chatCfg_())) error = 'empty';
+      else if (it.cat === 'butler' && butlerToday_()) error = 'soldout';
       else if (it.cat === 'decor' && (inv.decor || []).length >= 4) error = 'full';
       else {
         if (!T) {
@@ -825,12 +839,25 @@ function studentCoins_(name, body) {
           const sh = sheet_(REQ_SHEET, REQ_HEADER), id = Number(props_().getProperty('reqSeq') || 0) + 1;
           props_().setProperty('reqSeq', String(id));
           sh.appendRow([id, "'" + nowStr_(), name, '쿠폰', it.name, it.price, '대기', '', it.id]);
+        } else if (it.cat === 'song') {          // 🎵 아침 신청곡 (교실 화면에서 유튜브 뮤직으로 틀어요)
+          const list = todayList_('songs'), id = Date.now();
+          list.push({ id: id, n: name, q: cleanText_(body.text, chatCfg_()).slice(0, 100), ts: id, ds: todayStr_() });
+          props_().setProperty('songs', JSON.stringify(list.slice(-20))); bump_();
+        } else if (it.cat === 'banner') {        // 🎊 축하 배너 (오늘 하루 교실 화면에)
+          const st = ['birthday', 'congrats', 'cheer', 'praise', 'love'].indexOf(body.style) >= 0 ? body.style : 'congrats';
+          const list = todayList_('banners');
+          list.push({ n: name, text: cleanText_(body.text, chatCfg_()).slice(0, 40), style: st, ts: Date.now(), ds: todayStr_() });
+          props_().setProperty('banners', JSON.stringify(list.slice(-10))); bump_();
+        } else if (it.cat === 'title') {         // 🏷️ 칭호 (마을 이름표 옆)
+          inv.title = cleanText_(body.text, chatCfg_()).slice(0, 8);
+        } else if (it.cat === 'butler') {        // 🐱 하나 하루 집사
+          props_().setProperty('butler', JSON.stringify({ ds: todayStr_(), n: name })); bump_();
         } else if (it.cat === 'mega') {
           const list = megaList_(); list.push({ n: name, text: cleanText_(body.text, chatCfg_()).slice(0, 60), ts: Date.now() });
           props_().setProperty('mega', JSON.stringify(list.slice(-5))); bump_();
         } else if (it.cat === 'house') { inv.houses = (inv.houses || []).concat([it.id]); inv.house = it.id; }
         else if (it.cat === 'decor') { inv.decor = (inv.decor || []).concat([it.id]); }
-        if (it.cat !== 'coupon' && it.cat !== 'mega') { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + name]); }
+        if (['house', 'decor', 'title'].indexOf(it.cat) >= 0) { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + name]); }
         result = it.name;
       }
     } else if (body.op === 'buyFurn') {
