@@ -2821,6 +2821,7 @@ function setFlip(id, value){
   const el = $(id);
   if (el.textContent === value) return;
   el.textContent = value;
+  if (id === 'flipSec') return;            // ⏱ 초는 얌전하게 (움직임 없이 숫자만 바뀌어요)
   el.classList.remove('flipping'); void el.offsetWidth; el.classList.add('flipping');
 }
 function updateDate(now){
