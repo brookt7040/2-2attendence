@@ -1506,8 +1506,9 @@ function showReveal(name, rec, ds, done){
   drawColors($('revCanvas'), recColors(rec, name, ds));
   $('revCharName').textContent = recCharName(rec, name, ds);
   const demo = name === '미리보기';
-  $('revHello').textContent = `${demo ? '하나' : callName(givenName(name))} 왔어? 👋`;
-  $('revMsg').textContent = pickGreeting();
+  const greet = greetingFor(demo ? '하나' : name, new Date());
+  $('revHello').textContent = greet.hello;
+  $('revMsg').textContent = greet.msg;
   const streak = demo ? 3 : streakOf(name);
   const st = $('revStamp'); st.className = 'rev-stamp'; st.innerHTML = '';
   if (streak >= 2){
@@ -1536,6 +1537,7 @@ function showReveal(name, rec, ds, done){
     if (rec.tier === 'legend') setTimeout(() => { burst('legend', innerWidth*.2, innerHeight*.35); burst('legend', innerWidth*.8, innerHeight*.35); }, 350);
     countExp(Number(rec.exp) || 0);
     mascotReact(rec.tier);
+    if (isTeacherName(name)) setBubble(`${name} 출근 확인했다냥! 오늘도 화이팅 🙇`, 4500);
     if (streak >= 2) setTimeout(() => {
       st.classList.add('show'); sfx('stamp');
       if (STREAK_MILESTONES.includes(streak)){ burst('party', innerWidth*.72, innerHeight*.3); setBubble(`우와! ${streak}일 연속 출석 달성이다냥!! 🔥`, 4500); }
@@ -1675,6 +1677,115 @@ const GREETINGS = [
   '손 깨끗이 씻고 시작하자 🧼', '물 한 잔 마시고 시작해 볼까? 💧', '오늘도 웃음 한 스푼 추가! 😆', '어제보다 더 멋진 오늘!',
   '네가 와서 하나가 신났어 🐱', '오늘도 같이 있어서 든든해!'
 ];
+/* ⏰ 시간대 · 요일 · 계절마다 달라지는 다정한 인사 */
+const GREET_TIME = {
+  dawn: [
+    '해님보다 먼저 왔구나! 🌅', '아직 교실이 조용하지? 오늘 첫 공기는 네 거야 🍃', '엄청 일찍 왔네! 잠은 푹 잤어?',
+    '부지런한 냥이가 츄르를 먹는댔어 🐟', '오늘 1등 기운이 느껴져! ✨', '일찍 온 만큼 여유롭게 하루를 시작하자 ☕',
+    '창밖 아침 하늘 봤어? 오늘 예쁘다 🌤', '조용한 아침엔 책 한 장 어때? 📖', '하나가 너 기다리다가 하품했어 🥱',
+    '네가 일찍 와서 교실이 금방 따뜻해졌어 💛', '이른 아침의 너, 정말 멋져!', '오늘 하루, 제일 먼저 시작한 사람은 너야 🏃'
+  ],
+  morning: GREETINGS,
+  late: [
+    '헐레벌떡 왔구나! 숨 한번 고르고 천천히 앉자 🍃', '늦어도 괜찮아, 와 줘서 정말 고마워 💛', '아침에 바빴지? 여기 오면 이제 괜찮아',
+    '뛰어오느라 고생했어! 물 한 모금 마시자 💧', '오늘 늦은 건 오늘로 끝! 내일은 같이 일찍 와 보자 🐾',
+    '혹시 무슨 일 있었어? 힘들면 선생님께 꼭 말해 줘', '자리에 앉는 순간부터 다시 시작이야 ✨', '조금 늦었지만 오늘의 주인공은 여전히 너야!',
+    '천천히 와도 돼, 대신 다치지 않게! 🩹', '기다리고 있었어. 와 줘서 다행이다 🫶', '아침밥은 챙겨 먹었어? 배고프면 말해 줘',
+    '늦잠 잔 날도 있지! 하나도 가끔 그래 😽', '하나가 문 앞에서 기다렸어 🐱', '내일은 레전드 냥이 노려 보자! 👑'
+  ],
+  day: [
+    '어서 와! 병원 다녀왔니? 몸은 괜찮아? 🩹', '지금이라도 와 줘서 정말 기뻐 💛', '오는 길 힘들진 않았어? 천천히 적응하자',
+    '친구들이 너 많이 기다렸어 🐾', '중간에 와도 괜찮아, 같이 하면 금방 따라잡아!', '무리하지 말고 필요한 거 있으면 말해 줘',
+    '와 줘서 고마워. 남은 시간 즐겁게 보내자 ✨', '점심 먹고 힘내자! 🍚'
+  ],
+  afternoon: [
+    '오후에도 와 줘서 반가워! 🌤', '하루의 반이 지났지만 즐거운 일은 아직 많아!', '어디 아팠던 건 아니지? 몸 잘 챙기자 🩹',
+    '친구들이 반겨 줄 거야 💛', '남은 시간 즐겁게! 하나가 응원해 🐾', '천천히, 편하게 시작하자'
+  ],
+  night: [ '이 시간에 출석?! 혹시 선생님 테스트 중? 😺', '밤에는 푹 자야 내일 레전드 냥이를 만나지 🌙', '오늘 하루도 고생 많았어 🌙', '내일 아침에 또 만나자! ⭐' ],
+  weekend: [ '주말에도 출석?! 정말 대단해 🎉', '주말엔 푹 쉬는 것도 숙제야 🛋', '하나도 주말엔 낮잠 자는 중… 😴', '주말 잘 보내고 월요일에 만나자!' ]
+};
+const GREET_DAY = {
+  1: [ '새로운 한 주 시작! 이번 주도 같이 힘내자 💪', '월요일 아침! 주말 이야기 들려줄래? 🗨', '월요병은 하나가 냥냥 물리쳐 줄게 🐾' ],
+  3: [ '벌써 수요일! 한 주의 반이 지났어 🐫', '수요일엔 하나가 응원 두 배! 📣' ],
+  5: [ '드디어 금요일! 오늘만 힘내면 주말이다 🎉', '금요일이라 그런지 표정이 밝다! ✨', '한 주 동안 정말 수고했어 💛' ]
+};
+const GREET_SEASON = {
+  winter: [ '손 시렵지? 손 비비고 따뜻하게 녹이자 🧤', '추운데 오느라 고생했어! 겉옷 꼭 걸어 두자 🧥', '입김 나는 날씨네! 감기 조심 🤧', '따뜻한 물 한 잔 마시고 시작하자 ☕' ],
+  spring: [ '봄바람 맞으면서 왔구나 🌸', '꽃 피는 계절이다! 기분 좋은 하루 보내자 🌷' ],
+  summer: [ '덥지? 땀 닦고 시원하게 시작하자 🌊', '물 많이 마시자! 더위 조심 ☀️' ],
+  fall:   [ '선선한 가을 아침이다 🍂', '하늘 높은 날! 오늘 기분도 높이 높이 🍁' ]
+};
+const HELLO = {
+  dawn: [ '{c} 일찍 왔네? 🌅', '{c} 벌써 왔어? 😮', '와, {c}! 1등 기운! ✨' ],
+  morning: [ '{c} 왔어? 👋', '{c} 안녕! 🐾', '{c} 좋은 아침! ☀️', '어서 와, {g}! 💛' ],
+  late: [ '{c} 무사히 왔구나 🍃', '{c} 어서 와! 💛', '{g}, 왔구나! 🐾' ],
+  day: [ '{c} 어서 와! 💛', '{c} 반가워! 🐾' ],
+  afternoon: [ '{c} 어서 와! 💛', '{c} 반가워! 🌤' ],
+  night: [ '{c} 이 밤에?! 🌙' ],
+  weekend: [ '{c} 주말에도?! 🎉' ]
+};
+/* 👩‍🏫 'OO쌤' 전용 */
+const T_HELLO = {
+  dawn: [ '{n} 벌써 출근하셨어요? 🌅', '{n} 오셨다냥! 일찍 오셨네요 🙇' ],
+  morning: [ '{n} 출근하셨다냥! 🙇', '{n} 오셨어요? ☕', '어서 오세요, {n}! 🐾', '{n} 좋은 아침이에요! ☀️' ],
+  late: [ '{n}, 쉿! 비밀로 할게요 🤫', '{n} 오셨다냥! 🙇' ],
+  day: [ '{n} 어서 오세요! 💛' ], afternoon: [ '{n} 어서 오세요! 💛' ],
+  night: [ '{n} 아직 퇴근 안 하셨어요?! 🌙' ], weekend: [ '{n} 주말 출근이요?! 😿' ]
+};
+const T_GREET = {
+  base: [
+    '오늘도 우리 반 지키러 와 주셔서 감사해요 💛', '커피 한 잔 하셨어요? 하나가 대신 꾹꾹이 해 드릴게요 ☕', '아이들이 쌤 오시길 기다렸어요 🐾',
+    '오늘도 출근 도장 쾅! 🐱', '오늘의 무사 퇴근, 하나가 빌게요 🙏', '쌤 웃는 얼굴이 우리 반 비타민이에요 🍋',
+    '오늘 업무는 가볍고 칭찬은 무겁기를! ✨', '쌤, 오늘 날씨보다 쌤이 더 반가워요', '아침 메신저 폭탄은 하나가 냥냥 막아 볼게요 📨',
+    '오늘도 아이들 사이에서 반짝반짝 빛나실 거예요 💫', '물 자주 드시고 목 아끼세요! 🍯', '쌤이 있어서 우리 반이 따뜻해요 🧣',
+    '하나가 오늘 쌤 전담 응원단이에요 📣', '오늘 하루도 잘 부탁드려요, 대장님! 👑', '수업 준비하시느라 고생 많으셨죠? 🍀'
+  ],
+  dawn: [ '이렇게 일찍요?! 하나가 교실 불 켜 둘게요 💡', '쌤 덕분에 교실이 제일 먼저 깨어났어요 🌅', '오늘 1등 출근! 레전드 쌤이세요 👑' ],
+  late: [ '쌤도 늦을 때가 있죠… 아이들한텐 비밀이에요 🤫', '회의 다녀오셨어요? 고생 많으셨어요 📋', '숨 돌리시고 천천히 시작하세요 🍵' ],
+  day: [ '출장 다녀오셨어요? 고생 많으셨어요 🚌', '오후도 힘내세요! 하나가 응원할게요 📣' ],
+  afternoon: [ '출장 다녀오셨어요? 고생 많으셨어요 🚌', '오후도 힘내세요! 하나가 응원할게요 📣' ],
+  night: [ '아직 퇴근 안 하셨어요?! 얼른 들어가 쉬세요 🌙', '야근은 하나가 대신… 못 해요 😿 얼른 퇴근!' ],
+  weekend: [ '주말엔 쉬셔야죠! 출석부는 하나가 지킬게요 🛋' ],
+  1: [ '월요일 출근 성공! 이번 주도 화이팅이에요 💪' ],
+  5: [ '불금이에요! 무사 퇴근까지 조금만 힘내세요 🎉' ]
+};
+function isTeacherName(name){ return /(쌤|샘|선생님|교감|교장)$/.test(String(name).trim()); }
+function timeBucket(d){
+  const wd = d.getDay(), h = d.getHours(), sec = secOfDay(d), dl = deadlineSec();
+  if (wd === 0 || wd === 6) return 'weekend';
+  if (h >= 18 || h < 5) return 'night';
+  if (sec < dl - 40 * 60) return 'dawn';
+  if (sec <= dl) return 'morning';
+  if (h < 10) return 'late';
+  if (h < 13) return 'day';
+  return 'afternoon';
+}
+function seasonOf(m){ return [12,1,2].includes(m) || m === 11 ? 'winter' : [3,4,5].includes(m) ? 'spring' : [6,7,8].includes(m) ? 'summer' : 'fall'; }
+function greetingFor(name, d){
+  const b = timeBucket(d), wd = d.getDay();
+  if (isTeacherName(name)){
+    const hello = rand(T_HELLO[b] || T_HELLO.morning).replace('{n}', name);
+    let pool = (T_GREET[b] || []).concat(b === 'dawn' || b === 'morning' ? T_GREET.base : []);
+    if (T_GREET[wd] && (b === 'dawn' || b === 'morning') && Math.random() < 0.4) pool = T_GREET[wd];
+    return { hello, msg: pickFrom(pool.length ? pool : T_GREET.base) };
+  }
+  const g = givenName(name), c = callName(g);
+  const hello = rand(HELLO[b] || HELLO.morning).replace('{c}', c).replace('{g}', g);
+  let pool = GREET_TIME[b] || GREETINGS;
+  const r = Math.random();
+  if (['dawn','morning','late'].includes(b)){
+    if (GREET_DAY[wd] && r < 0.25) pool = GREET_DAY[wd];
+    else if (r < 0.45) pool = GREET_SEASON[seasonOf(d.getMonth() + 1)];
+  }
+  return { hello, msg: pickFrom(pool) };
+}
+function pickFrom(pool){
+  const fresh = pool.filter(g => !recentGreetings.includes(g));
+  const g = rand(fresh.length ? fresh : pool);
+  recentGreetings.push(g); if (recentGreetings.length > 15) recentGreetings.shift();
+  return g;
+}
 let recentGreetings = [];
 function pickGreeting(){
   const pool = GREETINGS.filter(g => !recentGreetings.includes(g));
@@ -1686,6 +1797,7 @@ function pickGreeting(){
 const TWO_CHAR_SURNAMES = ['남궁','황보','제갈','사공','선우','서문','독고','동방','망절','어금'];
 function givenName(name){
   const n = String(name).trim();
+  if (isTeacherName(n)) return n;
   if (!/^[가-힣]+$/.test(n) || n.length < 3) return n;
   if (n.length >= 4 && TWO_CHAR_SURNAMES.includes(n.slice(0, 2))) return n.slice(2);
   return n.slice(1);

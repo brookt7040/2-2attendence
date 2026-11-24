@@ -487,6 +487,7 @@ const pad = n => String(n).padStart(2, '0');
 function todayStr(d = new Date()){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function givenName(name){
   const n = String(name).trim();
+  if (/(쌤|샘|선생님|교감|교장)$/.test(n)) return n;
   if (!/^[가-힣]+$/.test(n) || n.length < 3) return n;
   if (n.length >= 4 && ['남궁','황보','제갈','사공','선우','서문','독고','동방'].includes(n.slice(0, 2))) return n.slice(2);
   return n.slice(1);
