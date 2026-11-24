@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>노랑반 냥냥 출석 아일랜드</title>
+<title>2-2 냥냥 출석 아일랜드</title>
 <style>
 @font-face{
   font-family:'NeoDunggeunmo';
@@ -95,6 +95,23 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 /* ===== 보드 (오늘의 알림 + EXP 리스트) ===== */
 .boards{display:flex;gap:22px;align-items:stretch;margin-top:34px;flex-wrap:wrap;}
 .boards .notice-area{margin-top:0;flex:1 1 340px;max-width:none;}
+.boards{flex-wrap:nowrap;}
+.side-btns{flex:0 0 210px;display:flex;flex-direction:column;gap:14px;}
+.side-btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-family:inherit;font-size:1.35rem;padding:14px 16px;border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);cursor:pointer;text-align:left;}
+.side-btn small{font-size:.85rem;color:var(--ink-soft);}
+.side-btn.exp{background:var(--pink);} .side-btn.coin{background:var(--y);}
+.side-btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink);}
+.side-clean{background:#FFFDF6;border:3px solid var(--ink);border-radius:18px;padding:10px 12px;box-shadow:0 5px 0 var(--ink);font-size:1rem;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.side-clean .t{width:100%;font-size:1.05rem;}
+.notice-area.big{min-height:300px;padding:36px 30px 18px;background-image:repeating-linear-gradient(transparent 0 50px, rgba(245,183,10,.22) 50px 52px);background-position:0 34px;}
+.notice-area.big .notice-header{font-size:1.6rem;padding:6px 28px;top:-24px;}
+.notice-area.big .notice-text{font-size:2.1rem;line-height:1.5;}
+.notice-area.big .notice-mark{width:38px;height:38px;font-size:1.2rem;margin-top:8px;}
+.notice-area.big .notice-empty{font-size:1.4rem;}
+#menuOverlay .menu-board{box-shadow:none;border:none;padding:24px 4px 4px;}
+.cv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.cv-item b{white-space:nowrap;} .cv-item{border:2px solid var(--ink);border-radius:12px;padding:8px 10px;background:#FFFDF6;display:flex;justify-content:space-between;gap:6px;font-size:1.05rem;}
+.cv-row{display:flex;justify-content:space-between;border-bottom:1px dashed #E2CFA6;padding:4px 2px;font-size:1.05rem;}
 .menu-board{
   position:relative;flex:1 1 360px;background:#FFFDF6;border:3px solid var(--ink);border-radius:20px;
   box-shadow:0 6px 0 var(--ink);padding:30px 18px 12px;
@@ -568,14 +585,18 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
           <div id="hanaWear" style="position:absolute;inset:0;pointer-events:none;font-size:128px;animation:bob 2.4s ease-in-out infinite;"></div>
         </div>
         <div class="title-block">
-          <h1 id="mainTitleDisplay">노랑반 냥냥 출석 아일랜드</h1>
+          <h1 id="mainTitleDisplay">2-2 냥냥 출석 아일랜드</h1>
           <div class="bubble" id="mascotBubble">안녕하다냥!</div>
           <div class="butler-tag" id="butlerTag" style="display:none;"></div>
         </div>
       </div>
       <div class="boards">
-        <div class="notice-area" id="noticeArea"></div>
-        <div class="menu-board" id="menuBoard"></div>
+        <div class="side-btns">
+          <button type="button" class="side-btn exp" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
+          <button type="button" class="side-btn coin" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
+          <div class="side-clean" id="cleanSide"></div>
+        </div>
+        <div class="notice-area big" id="noticeArea"></div>
       </div>
     </div>
 
@@ -625,6 +646,20 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 <div class="mini-clock" id="miniClock"><span id="mcTime">00:00</span><span id="mcTier"></span></div>
 
 <!-- EXP 리스트 지급 -->
+<div class="overlay" id="menuOverlay">
+  <div class="modal modal-large" style="padding-top:44px;">
+    <button type="button" class="modal-x" data-close="menuOverlay" title="닫기">✕</button>
+    <div class="menu-board" id="menuBoard"></div>
+  </div>
+</div>
+<div class="overlay" id="coinViewOverlay">
+  <div class="modal modal-large">
+    <button type="button" class="modal-x" data-close="coinViewOverlay" title="닫기">✕</button>
+    <h2>🐾 냥코인</h2>
+    <div class="tabs" id="cvTabs"><button type="button" class="tab active" data-cv="shop">🛒 상품</button><button type="button" class="tab" data-cv="rank">🏆 순위</button><button type="button" class="tab" data-cv="log">📜 최근 내역</button><button type="button" class="tab" data-cv="how">💡 모으는 법</button></div>
+    <div id="cvBody"></div>
+  </div>
+</div>
 <div class="overlay" id="giveOverlay">
   <div class="modal modal-small">
     <h2 id="giveTitle">🎁 EXP 주기</h2>
@@ -899,7 +934,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="section-title">🏷️ 기본 정보</div>
       <div class="form-group">
         <label>타이틀</label>
-        <input type="text" id="mainTitleInput" placeholder="예: 노랑반 냥냥 출석 아일랜드">
+        <input type="text" id="mainTitleInput" placeholder="예: 2-2 냥냥 출석 아일랜드">
       </div>
       <div class="form-hint" style="margin-bottom:10px;">📢 오늘의 알림·📋 종례는 화면의 ✏️ 버튼으로 고쳐요.</div>
       <div class="form-group">
@@ -1028,7 +1063,7 @@ const DB_KEY = 'nyangClassDB_v1';
 const OLD_DB_KEY = 'rpgClassDB_v9';
 const FIRED_KEY = 'rpgAlarmFired_v1';
 const PARTY_KEY = 'nyangPartyDone_v1';
-const DEFAULT_TITLE = '노랑반 냥냥 출석 아일랜드';
+const DEFAULT_TITLE = '2-2 냥냥 출석 아일랜드';
 const DEFAULT_TIERS = { e1:10, e1Exp:200, eU:8, eUExp:150, e2:5, e2Exp:100, eN:2, e3Exp:50, eSExp:20, l1:1, l1Exp:-10, l2:5, l2Exp:-50, l3:10, l3Exp:-100, l4Exp:-150 };
 // 예전 4단계(레전드·레어·노멀) 설정을 새 단계(레전드·유니크·레어·노멀·세이프)로 바꿔 줘요
 function upgradeTiers(t){
@@ -1944,6 +1979,37 @@ function renderMenuBoard(){
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
   box.innerHTML = html;
+  const side = $('cleanSide');
+  if (side) side.innerHTML = `<div class="t">🧹 오늘의 청소 당번</div>` + (cleaners.length
+    ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
+    : '<span class="clean-empty">없어요! ✨</span>');
+}
+/* 🐾 냥코인 보기 (교실 화면 · 보기 전용) */
+let cvTab = 'shop', cvData = null;
+async function openCoinView(){
+  $('coinViewOverlay').style.display = 'flex'; renderCoinView();
+  if (sync.url && sync.api >= 5){ try { cvData = await teacherCall({ action:'coins' }); } catch(e){ cvData = null; } renderCoinView(); }
+}
+function renderCoinView(){
+  document.querySelectorAll('#cvTabs .tab').forEach(b => b.classList.toggle('active', b.dataset.cv === cvTab));
+  const box = $('cvBody'), eco = db.economy || {}, d = cvData || {};
+  const CAT = { coupon:'🎟 쿠폰', house:'🏠 집', decor:'🌷 정원', mega:'📢 확성기', song:'🎵 신청곡', banner:'🎊 배너', title:'🏷️ 칭호', butler:'🐱 하나 집사' };
+  if (cvTab === 'shop'){
+    const groups = {}; (eco.shop || []).filter(x => !x.off).forEach(x => (groups[x.cat] = groups[x.cat] || []).push(x));
+    box.innerHTML = Object.keys(groups).map(c => `<div class="section-title" style="margin-top:8px;">${CAT[c] || c}</div><div class="cv-grid">${groups[c].map(x => `<div class="cv-item"><span>${esc(x.name)}</span><b>${x.price}🐾</b></div>`).join('')}</div>`).join('') + '<div class="form-hint" style="margin-top:8px;">학생 페이지 🐾 냥코인 탭에서 살 수 있어요.</div>';
+  } else if (cvTab === 'rank'){
+    const list = kids().map(n => [n, (d.balances || {})[n] || 0]).sort((a, b) => b[1] - a[1]);
+    box.innerHTML = cvData ? list.map(([n, v], i) => `<div class="cv-row"><span>${i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1) + '.'} ${esc(n)}</span><b>${v}🐾</b></div>`).join('') : '<div class="clean-empty">불러오는 중… (동기화가 필요해요)</div>';
+  } else if (cvTab === 'log'){
+    box.innerHTML = cvData ? (d.ledger || []).slice(0, 60).map(r => `<div class="cv-row"><span>${esc(r.t.slice(5))} · <b>${esc(r.name)}</b> · ${esc(r.why)}</span><span class="pts ${r.amt >= 0 ? 'plus' : 'minus'}">${r.amt >= 0 ? '+' : ''}${r.amt}</span></div>`).join('') || '<div class="clean-empty">아직 없어요</div>' : '<div class="clean-empty">불러오는 중…</div>';
+  } else {
+    box.innerHTML = `<div class="cv-row"><span>⭐ 제시간 출석 (레전드 20 · 유니크 15 · 레어 10 · 노멀 5 · 세이프 3)</span><b>+3~20🐾</b></div>
+      <div class="cv-row"><span>🥇 1~5등 도착</span><b>+5🐾 · +10✨</b></div>
+      <div class="cv-row"><span>🎯 미션 (매일 2개 · 매주 3개 직접 골라요)</span><b>코인 + EXP</b></div>
+      <div class="cv-row"><span>📚 냥글리시 아카데미 통과</span><b>+20🐾 · +20✨</b></div>
+      <div class="cv-row"><span>📋 EXP 리스트 (+EXP의 절반)</span><b>+🐾</b></div>
+      <div class="cv-row"><span>📖 내 냥이 도감 완성</span><b>+40~200🐾✨</b></div>`;
+  }
 }
 function toggleClean(name){
   const ds = getTodayStr();
@@ -1981,7 +2047,7 @@ function giveBonus(){
     if (m.exp > 0 && !isTeacherName(n) && sync.url && sync.api >= 5) syncOp({ op:'coinAdd', name:n, amt: Math.max(1, Math.round(m.exp / 2)), why:`EXP 리스트: ${m.name}`, kind:'EXP 리스트', key:`b:${entry.id}` });
   });
   saveDB();
-  $('giveOverlay').style.display = 'none';
+  $('giveOverlay').style.display = 'none'; $('menuOverlay').style.display = 'none';
   renderGrid(); updateStatsBoard();
   const names = who.length > 3 ? `${who.slice(0, 3).join(', ')} 외 ${who.length - 3}명` : who.join(', ');
   showToast(`${m.exp >= 0 ? '🎁' : '💦'} ${names} · ${m.name} ${fmtExp(m.exp)} EXP`);
@@ -2714,7 +2780,7 @@ function mascotReact(tier){
   setBubble(lines[tier] || '냥!', 4500);
   if (!TIER_META[tier].sleepy) mascotJump();
 }
-const PET_LINES = ['냥? 🐾','나는 하나다냥! 반가워 💛','쓰담쓰담 고마워냥 💛','오늘도 화이팅이다냥!','노랑반 최고냥!','츄르 먹고 싶다냥…','꼬리 살랑살랑~','골골골골… 😽'];
+const PET_LINES = ['냥? 🐾','나는 하나다냥! 반가워 💛','쓰담쓰담 고마워냥 💛','오늘도 화이팅이다냥!','2반 최고냥!','츄르 먹고 싶다냥…','꼬리 살랑살랑~','골골골골… 😽'];
 function petMascot(){
   unlockAudio(false); sfx('meow'); mascotJump();
   setBubble(rand(PET_LINES.filter(l => l !== lastBubble)), 3500);
@@ -3939,7 +4005,7 @@ const ARCADE_MACHINES = [
   { g:'coin', name:'🪙 동전 앞뒤',        x:1160, y:430, c:'#7ED99B' },
   { g:'dice', name:'🎲 주사위 맞히기',    x:1400, y:430, c:'#B9A6FF' }
 ];
-const HANA_LINES = ['냥? 🐾', '나는 하나다냥! 반가워 💛', '츄르 먹고 싶다냥…', '오늘도 화이팅이다냥!', '노랑반 최고냥!', '꼬리 살랑살랑~', '골골골골… 😽',
+const HANA_LINES = ['냥? 🐾', '나는 하나다냥! 반가워 💛', '츄르 먹고 싶다냥…', '오늘도 화이팅이다냥!', '2반 최고냥!', '꼬리 살랑살랑~', '골골골골… 😽',
   '지각하면 혼난다냥 😾', '숙제는 했냥?', '낮잠 잘 시간이다냥 💤', '거기 너! 쓰다듬어 줘라냥', '물 마시고 오자냥 💧', '선생님 몰래 간식 먹을까냥?', '나랑 사진 찍을래냥? 📸'];
 const HANA_REPLY = {
   pet:['골골골… 😽 거기 좋다냥', '한 번 더! 한 번 더냥!', '손이 따뜻하다냥 💛'], feed:['냠냠냠! 맛있다냥 🍚', '배부르다냥… 😋', '오늘 밥 최고냥!'],
@@ -3948,7 +4014,7 @@ const HANA_REPLY = {
   churu:['츄르다냥!!!! 😻😻', '이 은혜 잊지 않겠다냥…', '츄르 최고 츄르 최고!'], hug:['꼬옥… 🤗', '따뜻하다냥 💛', '조금만 더 안아 줘냥'],
   selfie:['찰칵! 📸 하나 예쁘게 나왔냥?', '브이! ✌️', '이 사진 평생 간직하라냥'], nap:['쿨… 💤', '같이 자니까 좋다냥…', 'zzZ…'],
   massage:['꾹꾹 꾹꾹… 🐾', '하나의 꾹꾹이를 받아라냥!', '피로가 풀린다냥?'], party:['파티다냥!!! 🎉🎂', '최고의 하루다냥!', '너는 하나의 영원한 집사냥 👑'],
-  secret:['사실… 하나는 선생님 의자를 제일 좋아한다냥 🤫', '비밀인데… 지각한 애들 다 기억한다냥 😼', '하나는 노랑반이 세상에서 제일 좋다냥 💛', '밤에 몰래 교실 순찰한다냥 🔦']
+  secret:['사실… 하나는 선생님 의자를 제일 좋아한다냥 🤫', '비밀인데… 지각한 애들 다 기억한다냥 😼', '하나는 2반이 세상에서 제일 좋다냥 💛', '밤에 몰래 교실 순찰한다냥 🔦']
 };
 /* 👒 하나 꾸미기 아이템 (Lv.5 이상 학생 누구나 · 모두가 같은 하나를 봐요) */
 const HANA_ITEMS = [
@@ -4516,7 +4582,7 @@ function openVillage(opts){
         ctx.fillStyle = 'rgba(255,240,200,.6)'; roundRect(x - 100, y - 90, 200, 150, 20); ctx.fill();
         ctx.strokeStyle = '#FF8FB8'; ctx.lineWidth = 12; ctx.beginPath(); ctx.arc(x, y - 30, 95, Math.PI, 0); ctx.stroke();
         ['🌸', '🌼', '🌷', '💛', '🌸', '🌼', '🌷'].forEach((e, i) => { const a = Math.PI + i * Math.PI / 6; emoji(e, x + Math.cos(a) * 95, y - 30 + Math.sin(a) * 95, 18); });
-        label('📸 노랑반 포토존', x, y - 140, 14, '#FFE3EE'); break;
+        label('📸 2-2 포토존', x, y - 140, 14, '#FFE3EE'); break;
       case 'umbrella':
         ctx.fillStyle = '#8B5A3C'; ctx.fillRect(x - 3, y - 90, 6, 92);
         ctx.fillStyle = (o.id === 'umb2') ? '#8CC8FF' : '#FF8FB8'; ctx.beginPath(); ctx.arc(x, y - 86, 70, Math.PI, 0); ctx.fill(); ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.stroke();
@@ -5124,7 +5190,7 @@ function openVillage(opts){
     const pf = cd.profile || {}, F = [['nick', '🏷️ 닉네임'], ['bday', '🎂 생일'], ['mbti', '🧠 MBTI'], ['food', '🍙 최애 음식'], ['hobby', '🎮 취미·특기'], ['subject', '📚 좋아하는 과목'], ['dream', '🌟 장래희망'], ['song', '🎧 요즘 노래']];
     const hl = [0, 20, 60, 120, 200, 320].reduce((a, t, i) => (cd.hana >= t ? i : a), 0);
     panel.innerHTML = `<button type="button" class="px">✕</button>
-      <div class="idc"><div class="idc-top"><span>🐾 노랑반 냥이 ID</span><span>No.${String((kidList().findIndex(s => s.name === name) + 1) || 0).padStart(2, '0')}</span></div>
+      <div class="idc"><div class="idc-top"><span>🐾 2학년 2반 냥이 ID</span><span>No.${String((kidList().findIndex(s => s.name === name) + 1) || 0).padStart(2, '0')}</span></div>
         <div class="idc-body"><div class="idc-pic"><canvas width="16" height="16" style="width:96px;height:96px;image-rendering:pixelated;"></canvas><div class="idc-lv">Lv.${cd.lv} ${escV(cd.lvName || '')}</div></div>
           <div class="idc-info"><div class="idc-name">${cd.title ? `<small>«${escV(cd.title)}»</small><br>` : ''}${escV(name)}</div>
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
@@ -5266,7 +5332,7 @@ function openVillage(opts){
     g.fillStyle = '#5B4636'; g.font = '30px NeoDunggeunmo, sans-serif'; g.textAlign = 'center';
     const d = new Date(), who = selfie ? `${meName} ♥ 하나` : Object.values(cats).filter(q => q.sc === scene && q.sit && q.sit.s === 'photo').map(q => q.name).join(' · ') || meName;
     g.fillText(`📸 ${who}`, 420, 636);
-    g.font = '20px NeoDunggeunmo, sans-serif'; g.fillText(`노랑반 냥이 마을 · ${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, 420, 674);
+    g.font = '20px NeoDunggeunmo, sans-serif'; g.fillText(`2-2 냥이 마을 · ${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, 420, 674);
     ['🌸', '💛', '⭐', '🐾'].forEach((e, i) => { g.font = '34px sans-serif'; g.fillText(e, [44, 796, 44, 796][i], [56, 56, 580, 580][i]); });
     emote('📸');
     let url = ''; try { url = out.toDataURL('image/png'); } catch(e){}
@@ -5479,6 +5545,10 @@ function bindEvents(){
   $('syncPill').addEventListener('click', () => pullSync(true));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) pullSync(); });
   window.addEventListener('online', () => pullSync());
+  $('openMenuBtn').addEventListener('click', () => { $('menuOverlay').style.display = 'flex'; });
+  $('openCoinViewBtn').addEventListener('click', openCoinView);
+  $('cvTabs').addEventListener('click', e => { const b = e.target.closest('[data-cv]'); if (b){ cvTab = b.dataset.cv; renderCoinView(); } });
+  $('cleanSide').addEventListener('click', e => { const c = e.target.closest('[data-clean]'); if (c) toggleClean(c.dataset.clean); });
   $('menuBoard').addEventListener('click', e => {
     const mi = e.target.closest('[data-mi]'); if (mi){ openGive(Number(mi.dataset.mi)); return; }
     const c = e.target.closest('[data-clean]'); if (c) toggleClean(c.dataset.clean);

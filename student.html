@@ -735,7 +735,7 @@ const ARCADE_MACHINES = [
   { g:'coin', name:'🪙 동전 앞뒤',        x:1160, y:430, c:'#7ED99B' },
   { g:'dice', name:'🎲 주사위 맞히기',    x:1400, y:430, c:'#B9A6FF' }
 ];
-const HANA_LINES = ['냥? 🐾', '나는 하나다냥! 반가워 💛', '츄르 먹고 싶다냥…', '오늘도 화이팅이다냥!', '노랑반 최고냥!', '꼬리 살랑살랑~', '골골골골… 😽',
+const HANA_LINES = ['냥? 🐾', '나는 하나다냥! 반가워 💛', '츄르 먹고 싶다냥…', '오늘도 화이팅이다냥!', '2반 최고냥!', '꼬리 살랑살랑~', '골골골골… 😽',
   '지각하면 혼난다냥 😾', '숙제는 했냥?', '낮잠 잘 시간이다냥 💤', '거기 너! 쓰다듬어 줘라냥', '물 마시고 오자냥 💧', '선생님 몰래 간식 먹을까냥?', '나랑 사진 찍을래냥? 📸'];
 const HANA_REPLY = {
   pet:['골골골… 😽 거기 좋다냥', '한 번 더! 한 번 더냥!', '손이 따뜻하다냥 💛'], feed:['냠냠냠! 맛있다냥 🍚', '배부르다냥… 😋', '오늘 밥 최고냥!'],
@@ -744,7 +744,7 @@ const HANA_REPLY = {
   churu:['츄르다냥!!!! 😻😻', '이 은혜 잊지 않겠다냥…', '츄르 최고 츄르 최고!'], hug:['꼬옥… 🤗', '따뜻하다냥 💛', '조금만 더 안아 줘냥'],
   selfie:['찰칵! 📸 하나 예쁘게 나왔냥?', '브이! ✌️', '이 사진 평생 간직하라냥'], nap:['쿨… 💤', '같이 자니까 좋다냥…', 'zzZ…'],
   massage:['꾹꾹 꾹꾹… 🐾', '하나의 꾹꾹이를 받아라냥!', '피로가 풀린다냥?'], party:['파티다냥!!! 🎉🎂', '최고의 하루다냥!', '너는 하나의 영원한 집사냥 👑'],
-  secret:['사실… 하나는 선생님 의자를 제일 좋아한다냥 🤫', '비밀인데… 지각한 애들 다 기억한다냥 😼', '하나는 노랑반이 세상에서 제일 좋다냥 💛', '밤에 몰래 교실 순찰한다냥 🔦']
+  secret:['사실… 하나는 선생님 의자를 제일 좋아한다냥 🤫', '비밀인데… 지각한 애들 다 기억한다냥 😼', '하나는 2반이 세상에서 제일 좋다냥 💛', '밤에 몰래 교실 순찰한다냥 🔦']
 };
 /* 👒 하나 꾸미기 아이템 (Lv.5 이상 학생 누구나 · 모두가 같은 하나를 봐요) */
 const HANA_ITEMS = [
@@ -1312,7 +1312,7 @@ function openVillage(opts){
         ctx.fillStyle = 'rgba(255,240,200,.6)'; roundRect(x - 100, y - 90, 200, 150, 20); ctx.fill();
         ctx.strokeStyle = '#FF8FB8'; ctx.lineWidth = 12; ctx.beginPath(); ctx.arc(x, y - 30, 95, Math.PI, 0); ctx.stroke();
         ['🌸', '🌼', '🌷', '💛', '🌸', '🌼', '🌷'].forEach((e, i) => { const a = Math.PI + i * Math.PI / 6; emoji(e, x + Math.cos(a) * 95, y - 30 + Math.sin(a) * 95, 18); });
-        label('📸 노랑반 포토존', x, y - 140, 14, '#FFE3EE'); break;
+        label('📸 2-2 포토존', x, y - 140, 14, '#FFE3EE'); break;
       case 'umbrella':
         ctx.fillStyle = '#8B5A3C'; ctx.fillRect(x - 3, y - 90, 6, 92);
         ctx.fillStyle = (o.id === 'umb2') ? '#8CC8FF' : '#FF8FB8'; ctx.beginPath(); ctx.arc(x, y - 86, 70, Math.PI, 0); ctx.fill(); ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.stroke();
@@ -1920,7 +1920,7 @@ function openVillage(opts){
     const pf = cd.profile || {}, F = [['nick', '🏷️ 닉네임'], ['bday', '🎂 생일'], ['mbti', '🧠 MBTI'], ['food', '🍙 최애 음식'], ['hobby', '🎮 취미·특기'], ['subject', '📚 좋아하는 과목'], ['dream', '🌟 장래희망'], ['song', '🎧 요즘 노래']];
     const hl = [0, 20, 60, 120, 200, 320].reduce((a, t, i) => (cd.hana >= t ? i : a), 0);
     panel.innerHTML = `<button type="button" class="px">✕</button>
-      <div class="idc"><div class="idc-top"><span>🐾 노랑반 냥이 ID</span><span>No.${String((kidList().findIndex(s => s.name === name) + 1) || 0).padStart(2, '0')}</span></div>
+      <div class="idc"><div class="idc-top"><span>🐾 2학년 2반 냥이 ID</span><span>No.${String((kidList().findIndex(s => s.name === name) + 1) || 0).padStart(2, '0')}</span></div>
         <div class="idc-body"><div class="idc-pic"><canvas width="16" height="16" style="width:96px;height:96px;image-rendering:pixelated;"></canvas><div class="idc-lv">Lv.${cd.lv} ${escV(cd.lvName || '')}</div></div>
           <div class="idc-info"><div class="idc-name">${cd.title ? `<small>«${escV(cd.title)}»</small><br>` : ''}${escV(name)}</div>
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
@@ -2062,7 +2062,7 @@ function openVillage(opts){
     g.fillStyle = '#5B4636'; g.font = '30px NeoDunggeunmo, sans-serif'; g.textAlign = 'center';
     const d = new Date(), who = selfie ? `${meName} ♥ 하나` : Object.values(cats).filter(q => q.sc === scene && q.sit && q.sit.s === 'photo').map(q => q.name).join(' · ') || meName;
     g.fillText(`📸 ${who}`, 420, 636);
-    g.font = '20px NeoDunggeunmo, sans-serif'; g.fillText(`노랑반 냥이 마을 · ${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, 420, 674);
+    g.font = '20px NeoDunggeunmo, sans-serif'; g.fillText(`2-2 냥이 마을 · ${d.getFullYear()}.${d.getMonth() + 1}.${d.getDate()}`, 420, 674);
     ['🌸', '💛', '⭐', '🐾'].forEach((e, i) => { g.font = '34px sans-serif'; g.fillText(e, [44, 796, 44, 796][i], [56, 56, 580, 580][i]); });
     emote('📸');
     let url = ''; try { url = out.toDataURL('image/png'); } catch(e){}
