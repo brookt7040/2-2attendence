@@ -836,7 +836,7 @@ async function engFilesToImages(files, onMsg){
 }
 /* 📝 정답지(PDF·이미지)에서 1~10번 정답 읽기 — PDF 글자는 그대로, 스캔·사진은 글자 인식(OCR) */
 async function loadScript(src){ await new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); }); }
-async function engKeyText(files, onMsg){
+async function engKeyText(files, onMsg, onlyLast){
   let text = '';
   const ocr = async (src) => {
     if (!window.Tesseract){ onMsg && onMsg('글자 인식 도구를 불러오는 중… (처음 한 번은 조금 걸려요)'); await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'); }
@@ -847,7 +847,8 @@ async function engKeyText(files, onMsg){
     if (/pdf$/i.test(f.type) || /\.pdf$/i.test(f.name)){
       if (!window.pdfjsLib){ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
       const pdf = await window.pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
-      for (let i = 1; i <= Math.min(pdf.numPages, 6); i++){
+      const pages = onlyLast ? [pdf.numPages] : Array.from({ length: Math.min(pdf.numPages, 6) }, (_, k) => k + 1);
+      for (const i of pages){
         const page = await pdf.getPage(i), tc = await page.getTextContent();
         let t = ''; let lastY = null;
         tc.items.forEach(it => { const y = Math.round(it.transform[5]); if (lastY !== null && Math.abs(y - lastY) > 4) t += '\n'; t += it.str + ' '; lastY = y; });
@@ -889,6 +890,7 @@ function mountEngAdmin(el, tcall, toastFn){
           <div class="ea-hint">PDF나 캡쳐 이미지(여러 장 가능)를 고르고, 정답 10개를 적어요. <b>주관식은 정답 칸을 비워요</b> → 학생 결과지에 '선생님 확인'으로 떠요. 정답이 여러 개면 <b>/</b>로 나눠요 (예: color/colour).</div>
           <input type="text" class="ea-title" maxlength="40" placeholder="제목 (예: 3과 단어 테스트)" value="${E(set.title || '')}">
           <label class="ea-lab">📄 시험지 <small>(학생에게 보여요)</small><input type="file" class="ea-file" accept="image/*,application/pdf" multiple></label>
+          <label class="ea-split"><input type="checkbox" class="ea-splitchk" checked> 📎 PDF <b>마지막 쪽은 정답지</b>예요 (예: 1쪽 문제 + 2쪽 정답) — 학생에겐 안 보이고 정답만 읽어요</label>
           <div class="ea-prev"></div>
           <label class="ea-lab">🔑 정답지 <small>(선택 · 학생에게 안 보여요 · 읽어서 아래 칸을 채워요)</small><input type="file" class="ea-keyfile" accept="image/*,application/pdf" multiple></label>
           <div class="ea-keymsg ea-hint"></div>
@@ -903,7 +905,21 @@ function mountEngAdmin(el, tcall, toastFn){
       </div>`;
     el.querySelector('.ea-file').onchange = async e => {
       const msg = el.querySelector('.ea-msg'); msg.textContent = '바꾸는 중…';
-      try { imgs = await engFilesToImages([...e.target.files], t => msg.textContent = t); msg.textContent = `${imgs.length}장 준비됐어요`; }
+      const files = [...e.target.files];
+      try {
+        imgs = await engFilesToImages(files, t => msg.textContent = t);
+        const onePdf = files.length === 1 && (/pdf$/i.test(files[0].type) || /\.pdf$/i.test(files[0].name));
+        if (onePdf && imgs.length >= 2 && el.querySelector('.ea-splitchk').checked){
+          imgs = imgs.slice(0, -1);
+          const km = el.querySelector('.ea-keymsg'); km.textContent = '마지막 쪽(정답지) 읽는 중…';
+          try {
+            const ans = parseEngKey(await engKeyText(files, t => km.textContent = t, true)), got = ans.filter(Boolean).length;
+            el.querySelectorAll('[data-k]').forEach((inp, i) => { if (ans[i]){ inp.value = ans[i]; inp.classList.add('ea-auto'); } });
+            km.innerHTML = got ? `✅ 마지막 쪽 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 확인</b>하고, 주관식은 비워 주세요.${got < 10 ? `<br>못 읽은 번호: ${ans.map((a, i) => a ? '' : i + 1).filter(Boolean).join(', ')}` : ''}` : '😿 마지막 쪽에서 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
+          } catch(err){ km.textContent = '정답지 쪽을 읽지 못했어요 — 직접 적어 주세요'; }
+          msg.textContent = `시험지 ${imgs.length}장 준비됐어요 (마지막 쪽은 정답지라 학생에게 안 보여요)`;
+        } else msg.textContent = `${imgs.length}장 준비됐어요`;
+      }
       catch(err){ imgs = []; msg.textContent = '파일을 읽지 못했어요 (PDF는 인터넷이 필요해요)'; }
       el.querySelector('.ea-prev').innerHTML = imgs.map(u => `<img src="${u}">`).join('');
     };
@@ -937,7 +953,7 @@ function mountEngAdmin(el, tcall, toastFn){
       .ea-prev{display:flex;gap:6px;overflow-x:auto;} .ea-prev img{height:120px;border:2px solid #5B4636;border-radius:8px;}
       .ea-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;} .ea-up,.ea-del{font-family:inherit;font-size:1rem;padding:6px 14px;border:2px solid #5B4636;border-radius:12px;background:#FFD84D;cursor:pointer;}
       .ea-del{background:#FFC9D3;font-size:.85rem;padding:2px 8px;}
-      .ea-lab{display:flex;flex-direction:column;gap:2px;font-size:.95rem;} .ea-lab small{color:#8A7563;} .ea-keys input.ea-auto{background:#FFF2BF;}
+      .ea-split{font-size:.9rem;background:#FFF2BF;border-radius:10px;padding:4px 8px;} .ea-lab{display:flex;flex-direction:column;gap:2px;font-size:.95rem;} .ea-lab small{color:#8A7563;} .ea-keys input.ea-auto{background:#FFF2BF;}
       .ea-res{display:grid;grid-template-columns:70px 50px 70px 1fr;gap:6px;border-top:1px dashed #E2CFA6;padding:4px 0;font-size:.9rem;align-items:start;}
       .ea-ans i{font-style:normal;margin-right:4px;} .ea-ans .ok{color:#1F8A5F;} .ea-ans .no{color:#D6456E;} .ea-ans .q{color:#7A5FE0;}`;
     document.head.appendChild(st);
