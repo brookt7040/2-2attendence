@@ -4091,20 +4091,20 @@ function mountEngAdmin(el, tcall, toastFn){
     el.innerHTML = `
       <div class="eng-adm">
         <div class="ea-sec"><b>📤 오늘 문제 올리기</b>
-          <div class="ea-hint">PDF나 캡쳐 이미지(여러 장 가능)를 고르고, 정답 10개를 적어요. <b>주관식은 정답 칸을 비워요</b> → 학생 결과지에 '선생님 확인'으로 떠요. 정답이 여러 개면 <b>/</b>로 나눠요 (예: color/colour).</div>
+          <div class="ea-hint">PDF나 캡쳐 이미지(여러 장 가능)를 고르고, 정답 10개를 적어요. <b>주관식도 정답지대로 채점해요</b> (대소문자·띄어쓰기·마침표는 무시). 정답이 여러 개면 <b>/</b>로 나눠요 (예: color/colour). 학생이 억울하면 선생님을 불러 비밀번호로 통과시켜 줄 수 있어요. 칸을 비우면 그 문제는 채점하지 않아요.</div>
           <input type="text" class="ea-title" maxlength="40" placeholder="제목 (예: 3과 단어 테스트)" value="${E(set.title || '')}">
           <label class="ea-lab">📄 시험지 <small>(학생에게 보여요)</small><input type="file" class="ea-file" accept="image/*,application/pdf" multiple></label>
           <label class="ea-split"><input type="checkbox" class="ea-splitchk" checked> 📎 PDF <b>마지막 쪽은 정답지</b>예요 (예: 1쪽 문제 + 2쪽 정답) — 학생에겐 안 보이고 정답만 읽어요</label>
           <div class="ea-prev"></div>
           <label class="ea-lab">🔑 정답지 <small>(선택 · 학생에게 안 보여요 · 읽어서 아래 칸을 채워요)</small><input type="file" class="ea-keyfile" accept="image/*,application/pdf" multiple></label>
           <div class="ea-keymsg ea-hint"></div>
-          <div class="ea-keys">${Array.from({ length: 10 }, (_, i) => `<label>${i + 1}<input type="text" data-k="${i}" value="${E((d.answers || [])[i] || '')}" placeholder="주관식이면 비워요"></label>`).join('')}</div>
+          <div class="ea-keys">${Array.from({ length: 10 }, (_, i) => `<label>${i + 1}<input type="text" data-k="${i}" value="${E((d.answers || [])[i] || '')}" placeholder="정답"></label>`).join('')}</div>
           <div class="ea-row"><button type="button" class="ea-up">📤 올리기</button><span class="ea-msg"></span></div>
           ${set.urls ? `<div class="ea-hint">✅ 오늘 올린 문제: <b>${E(set.title)}</b> (${set.urls.length}장) — 다시 올리면 바뀌어요. <button type="button" class="ea-del">지우기</button></div>` : '<div class="ea-hint">아직 오늘 문제가 없어요.</div>'}
         </div>
         <div class="ea-sec"><b>📊 오늘 결과 (${res.length}명)</b>
           ${res.length ? res.map(r => `<div class="ea-res"><span>${E(r.n)}</span><span>${r.score}점</span><span>${r.pass ? (r.byTeacher ? '👩‍🏫 통과' : '✅ 통과') : '⏳'}</span><span class="ea-ans">${(r.ans || []).map((a, i) => `<i class="${(r.marks || [])[i] === 1 ? 'ok' : (r.marks || [])[i] === 0 ? 'no' : 'q'}">${i + 1}.${E(a || '-')}</i>`).join(' ')}</span></div>`).join('') : '<div class="ea-hint">아직 푼 학생이 없어요</div>'}
-          <div class="ea-hint">학생 결과지의 '👩‍🏫 선생님 통과'에 <b>관리자 비밀번호</b>를 넣으면 80점이 안 돼도 통과돼요.</div>
+          <div class="ea-hint">주관식 철자가 조금 달라 틀린 경우 등, 학생이 부르면 결과지의 '👩‍🏫 선생님 확인'에 <b>관리자 비밀번호</b>를 넣어 통과시켜 주세요.</div>
         </div>
       </div>`;
     el.querySelector('.ea-file').onchange = async e => {
@@ -4119,7 +4119,7 @@ function mountEngAdmin(el, tcall, toastFn){
           try {
             const ans = parseEngKey(await engKeyText(files, t => km.textContent = t, true)), got = ans.filter(Boolean).length;
             el.querySelectorAll('[data-k]').forEach((inp, i) => { if (ans[i]){ inp.value = ans[i]; inp.classList.add('ea-auto'); } });
-            km.innerHTML = got ? `✅ 마지막 쪽 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 확인</b>하고, 주관식은 비워 주세요.${got < 10 ? `<br>못 읽은 번호: ${ans.map((a, i) => a ? '' : i + 1).filter(Boolean).join(', ')}` : ''}` : '😿 마지막 쪽에서 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
+            km.innerHTML = got ? `✅ 마지막 쪽 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 확인</b>해 주세요.${got < 10 ? `<br>못 읽은 번호: ${ans.map((a, i) => a ? '' : i + 1).filter(Boolean).join(', ')}` : ''}` : '😿 마지막 쪽에서 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
           } catch(err){ km.textContent = '정답지 쪽을 읽지 못했어요 — 직접 적어 주세요'; }
           msg.textContent = `시험지 ${imgs.length}장 준비됐어요 (마지막 쪽은 정답지라 학생에게 안 보여요)`;
         } else msg.textContent = `${imgs.length}장 준비됐어요`;
@@ -4132,7 +4132,7 @@ function mountEngAdmin(el, tcall, toastFn){
       try {
         const txt = await engKeyText([...e.target.files], t => km.textContent = t), ans = parseEngKey(txt), got = ans.filter(Boolean).length;
         el.querySelectorAll('[data-k]').forEach((inp, i) => { if (ans[i]){ inp.value = ans[i]; inp.classList.add('ea-auto'); } });
-        km.innerHTML = got ? `✅ 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 꼭 한 번 확인</b>하고, 주관식은 비워 주세요. (정답지 파일은 저장하지 않아요)` : '😿 번호와 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
+        km.innerHTML = got ? `✅ 정답지에서 <b>${got}개</b>를 읽었어요. <b>노란 칸을 꼭 한 번 확인</b>해 주세요. (정답지 파일은 저장하지 않아요)` : '😿 번호와 정답을 찾지 못했어요. 아래 칸에 직접 적어 주세요.';
         if (got < 10 && got) km.innerHTML += `<br>못 읽은 번호: ${ans.map((a, i) => a ? '' : i + 1).filter(Boolean).join(', ')}`;
       } catch(err){ km.textContent = '정답지를 읽지 못했어요 (인터넷 연결 확인) — 직접 적어 주세요'; }
     };
@@ -5053,8 +5053,8 @@ function openVillage(opts){
     const draft = (openEngPanel.draft = openEngPanel.draft || []);
     panel.innerHTML = `<button type="button" class="px">✕</button><h3>📚 ${escV(engSetNow.title)}</h3>
       <div class="eng-imgs">${(engSetNow.urls || []).map(u => `<img src="${escV(u)}" alt="문제" loading="lazy">`).join('')}</div>
-      <div class="eng-ans">${Array.from({ length: 10 }, (_, i) => `<label><b>${i + 1}</b><input type="text" data-eng="${i}" value="${escV(draft[i] || '')}" placeholder="${engSetNow.subj && engSetNow.subj[i] ? '주관식' : '정답'}"></label>`).join('')}</div>
-      <div class="hint">객관식은 번호(①→1)만, 영어는 철자만 맞으면 돼요 (대소문자·띄어쓰기 상관없어요).</div>
+      <div class="eng-ans">${Array.from({ length: 10 }, (_, i) => `<label><b>${i + 1}</b><input type="text" data-eng="${i}" value="${escV(draft[i] || '')}" placeholder="정답"></label>`).join('')}</div>
+      <div class="hint">객관식은 번호(①→1)만, 주관식은 철자만 맞으면 돼요 (대소문자·띄어쓰기·마침표 상관없어요).</div>
       <div style="text-align:center;margin-top:8px;"><button type="button" class="vg-cardgo" id="engSubmit">📝 제출하기</button></div>`;
   }
   function engResult(){
@@ -5063,8 +5063,8 @@ function openVillage(opts){
       <div class="eng-score ${r.pass ? 'pass' : ''}">${r.score}점 ${r.pass ? (r.byTeacher ? '· 👩‍🏫 선생님 통과! 🎉' : '· 통과! 🎉') : '· 아직 통과 전'}</div>
       <div class="eng-marks">${r.marks.map((m, i) => `<span class="${m === 1 ? 'ok' : m === 0 ? 'no' : 'q'}">${i + 1}. ${escV(r.ans[i] || '-')} ${m === 1 ? '⭕' : m === 0 ? '❌' : '❓'}</span>`).join('')}</div>
       ${subj ? `<div class="hint">❓ 주관식 ${subj}개는 선생님이 확인해요.</div>` : ''}
-      ${r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 통과</button></div>
-        <div class="hint" style="text-align:center;">결과지를 선생님께 보여 주고, 선생님이 비밀번호를 넣으면 통과돼요.</div>`}`;
+      ${r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
+        <div class="hint" style="text-align:center;">주관식 답이 맞는 것 같은데 ❌가 나왔나요? 선생님을 불러 결과지를 보여 드려요. 선생님이 비밀번호를 넣으면 통과돼요.</div>`}`;
   }
   panel.addEventListener('click', async e => {
     if (e.target.closest('#engSubmit')){
