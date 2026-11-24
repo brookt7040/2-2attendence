@@ -149,6 +149,10 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 #mcTime small{font-size:1.5rem;color:var(--pink-deep);}
 #mcTier{font-size:1rem;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;white-space:nowrap;}
 
+#syncPill{position:fixed;left:14px;bottom:12px;z-index:60;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:4px 12px;font-size:.92rem;box-shadow:0 3px 0 var(--ink);display:none;cursor:pointer;}
+#syncPill.warn{background:#FFE0E7;}
+.sync-choice{display:none;flex-direction:column;gap:8px;background:#FFF3B0;border:2px solid var(--ink);border-radius:12px;padding:10px;}
+
 /* ===== 지금 보상 패널 ===== */
 .reward-panel{
   width:470px;max-width:100%;background:#fff;border:3px solid var(--ink);border-radius:22px;
@@ -432,6 +436,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
 <canvas id="fx"></canvas>
 <div id="toast"></div>
+<div id="syncPill" title="눌러서 지금 동기화">☁️ 동기화</div>
 <div class="mini-clock" id="miniClock"><span id="mcTime">00:00</span><span id="mcTier"></span></div>
 
 <!-- EXP 리스트 지급 -->
@@ -599,6 +604,28 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
         <button type="button" class="mini-btn" style="background:var(--lav);" data-demo="nod">😪 지각</button>
       </div>
       <div class="form-hint">연출 미리보기는 기록에 남지 않아요.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">☁️ 여러 컴퓨터 동기화 (구글 시트)</div>
+      <div class="form-group">
+        <label>웹 앱 주소</label>
+        <input type="text" id="syncUrlInput" placeholder="https://script.google.com/macros/s/……/exec">
+      </div>
+      <div class="row" style="justify-content:flex-start;">
+        <button type="button" class="mini-btn" id="syncConnectBtn">🔗 연결하기</button>
+        <button type="button" class="mini-btn" style="background:var(--mint);" id="syncNowBtn">🔄 지금 동기화</button>
+        <button type="button" class="mini-btn" style="background:#FFC9D3;" id="syncOffBtn">연결 끊기</button>
+      </div>
+      <div class="sync-choice" id="syncChoice">
+        <div id="syncChoiceText"></div>
+        <div class="row" style="justify-content:flex-start;">
+          <button type="button" class="mini-btn" style="background:var(--mint);" id="syncPullBtn">⬇ 시트 데이터 가져오기 (추천)</button>
+          <button type="button" class="mini-btn" style="background:#FFC9D3;" id="syncPushBtn">⬆ 이 컴퓨터 데이터로 시트 덮어쓰기</button>
+        </div>
+      </div>
+      <div class="sound-status" id="syncStatusText">연결 안 됨 — 이 컴퓨터에만 저장 중</div>
+      <div class="form-hint">연결하면 출석·EXP·청소·설정·알림이 모든 컴퓨터에 공유돼요. 알림은 구글 시트 '알림' 탭(A2칸부터)에서 바로 써도 돼요.<br>알람 음원 파일은 용량이 커서 컴퓨터마다 따로 저장돼요. 연결 방법은 <a href="https://github.com/brookt7040/2-2attendence#readme" target="_blank" rel="noopener">설정 안내</a>를 보세요.</div>
     </div>
 
     <div class="modal-btns">
@@ -964,6 +991,7 @@ function importBackupFile(event){
       if (!confirm('백업을 불러오면 지금의 명단·출결·설정이 백업 내용으로 바뀌어요. 계속할까요?')) return;
       mergeInto(next);
       saveDB();
+      if (sync.url){ syncOp({ op:'import', state: serverStateOf(), notices: db.notices.slice() }); flushSync(); }
       localStorage.setItem(FIRED_KEY, JSON.stringify(payload.fired && typeof payload.fired === 'object' ? payload.fired : {}));
     } catch(e){ alert(`백업을 불러오지 못했어요.\n${e.message}`); return; }
     location.reload();
@@ -972,9 +1000,15 @@ function importBackupFile(event){
 }
 function resetForNewYear(){
   if (!confirm('새 학년 초기화: 학생 명단, 출결 기록, 설정, 알람 파일을 모두 지워요. 계속할까요?')) return;
-  if (!confirm('백업 없이는 되돌릴 수 없어요. 정말 초기화할까요?')) return;
+  if (!confirm('백업 없이는 되돌릴 수 없어요. 정말 초기화할까요?' + (sync.url ? '\n(동기화 중인 구글 시트의 데이터도 함께 지워져요)' : ''))) return;
   [DB_KEY, OLD_DB_KEY, FIRED_KEY, PARTY_KEY].forEach(k => localStorage.removeItem(k));
   stopAlarmSound();
+  if (sync.url){
+    const fresh = { config:null, days:{} };
+    sync.queue = [{ op:'import', state: fresh, notices: [] }]; saveSync();
+    flushSync().finally(() => location.reload());
+    return;
+  }
   location.reload();
 }
 
@@ -1128,7 +1162,7 @@ function handleTouch(name){
   const arrivals = Object.values(day).filter(r => r.status === 'present' || r.status === 'late').length;
   if (arrivals < 3) rec.rank = arrivals + 1;
   day[name] = rec;
-  saveDB();
+  saveDB(); syncOp({ op:'rec', ds, name, rec });
   lastNew = name;
   showReveal(name, rec, ds, () => { renderGrid(); updateStatsBoard(); checkParty(); });
 }
@@ -1166,6 +1200,7 @@ function showReveal(name, rec, ds, done){
     clearTimeout(revealCloseTimer);
     ov.style.display = 'none'; rv.className = 'reveal'; revealing = false; ov.onclick = null;
     done && done();
+    if (pendingRemoteRender){ pendingRemoteRender = false; refreshAfterRemote(); }
   };
   setTimeout(() => {
     rv.classList.remove('shake'); rv.classList.add('open');
@@ -1234,7 +1269,7 @@ function toggleClean(name){
   const ds = getTodayStr();
   db.cleanDone[ds] = db.cleanDone[ds] || {};
   db.cleanDone[ds][name] = !db.cleanDone[ds][name];
-  saveDB(); renderMenuBoard();
+  saveDB(); syncOp({ op:'clean', ds, name, v: !!db.cleanDone[ds][name] }); renderMenuBoard();
   if (db.cleanDone[ds][name]){ sfx('normal'); setBubble(`${name}, 청소 고마워냥! 반짝반짝 ✨`, 3500); }
 }
 
@@ -1259,7 +1294,10 @@ function giveBonus(){
   if (!who.length){ alert('받을 친구를 골라 주세요.'); return; }
   const ds = getTodayStr(), now = new Date(), t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   db.bonus[ds] = db.bonus[ds] || [];
-  who.forEach(n => db.bonus[ds].push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), who:n, item:m.name, exp:m.exp, t }));
+  who.forEach(n => {
+    const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), who:n, item:m.name, exp:m.exp, t };
+    db.bonus[ds].push(entry); syncOp({ op:'bonusAdd', ds, entry });
+  });
   saveDB();
   $('giveOverlay').style.display = 'none';
   renderGrid(); updateStatsBoard();
@@ -1273,7 +1311,7 @@ function undoBonus(id){
   const ds = getTodayStr(), list = db.bonus[ds] || [];
   const i = list.findIndex(b => b.id === id); if (i < 0) return;
   if (!confirm(`${list[i].who} · ${list[i].item} ${fmtExp(list[i].exp)} 를 취소할까요?`)) return;
-  list.splice(i, 1); saveDB(); renderBonusLog(); renderGrid(); updateStatsBoard();
+  list.splice(i, 1); saveDB(); syncOp({ op:'bonusDel', ds, id }); renderBonusLog(); renderGrid(); updateStatsBoard();
 }
 let toastTimer = null;
 function showToast(text){
@@ -1638,24 +1676,26 @@ function sendToDungeon(name){
   const ds = getTodayStr();
   if (!db.records[ds]) db.records[ds] = {};
   db.records[ds][name] = { status:'dungeon', tier:'absent', time:'결석', exp:0 };
-  saveDB(); renderGrid(); updateStatsBoard(); checkParty(); loadStats('today');
+  saveDB(); syncOp({ op:'rec', ds, name, rec: db.records[ds][name] }); renderGrid(); updateStatsBoard(); checkParty(); loadStats('today');
 }
 function cancelRecord(name){
   if (!confirm(`[${name}] 친구의 오늘 기록을 취소할까요?`)) return;
   const ds = getTodayStr();
   if (db.records[ds] && db.records[ds][name]){
     delete db.records[ds][name];
-    saveDB(); renderGrid(); updateStatsBoard(); loadStats('today');
+    saveDB(); syncOp({ op:'rec', ds, name, rec: null }); renderGrid(); updateStatsBoard(); loadStats('today');
   }
 }
 
 /* =========================================================
    ⚙️ 설정
    ========================================================= */
+let noticesAtOpen = '';
 const TIER_FIELDS = ['e1','e1Exp','e2','e2Exp','e3Exp','l1','l1Exp','l2','l2Exp','l3','l3Exp','l4Exp'];
 function openAdminUI(){
   $('mainTitleInput').value = db.mainTitle || '';
   $('noticeInput').value = (db.notices || []).join('\n');
+  noticesAtOpen = $('noticeInput').value;
   $('studentNamesInput').value = db.students.join('\n');
   $('lateTimeInput').value = db.lateTimeSetting;
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
@@ -1675,7 +1715,8 @@ function openAdminUI(){
   $('alarm1FileName').textContent = ac.alarm1AudioName ? `🎵 ${ac.alarm1AudioName} (저장됨)` : '선택된 파일 없음 → 내장 차임음 사용';
   $('alarm2FileName').textContent = ac.alarm2AudioName ? `🎵 ${ac.alarm2AudioName} (저장됨)` : '선택된 파일 없음 → 내장 차임음 사용';
   $('alarm1TimeEcho').textContent = db.lateTimeSetting;
-  updateSoundStatusText();
+  $('syncUrlInput').value = sync.url || ''; $('syncChoice').style.display = 'none';
+  updateSoundStatusText(); updateSyncUI();
   $('adminOverlay').style.display = 'flex';
 }
 function readAudioFile(file){
@@ -1733,6 +1774,8 @@ async function saveAdminData(){
     alarm2Audio: a2 ? a2.data : (old.alarm2Audio || ''), alarm2AudioName: a2 ? a2.name : (old.alarm2AudioName || '')
   };
   saveDB();
+  syncOp({ op:'config', data: configOf() });
+  if ($('noticeInput').value !== noticesAtOpen) syncOp({ op:'notices', list: db.notices.slice() });
   applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
   $('adminOverlay').style.display = 'none';
   setBubble('설정 저장 완료다냥! 💾', 3000);
@@ -1849,6 +1892,167 @@ function closeAlarmOverlay(stopSound){
 }
 
 /* =========================================================
+   ☁️ 구글 시트 동기화
+   ========================================================= */
+const SYNC_KEY = 'nyangSync_v1';
+let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'' };
+let syncBusy = false;
+function loadSync(){ try { Object.assign(sync, JSON.parse(localStorage.getItem(SYNC_KEY)) || {}); } catch(e){} sync.ok = null; }
+function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last })); }
+function configOf(){
+  const ac = Object.assign({}, db.alarmConfig);
+  delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
+  return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac };
+}
+function serverStateOf(){
+  const days = {};
+  const all = new Set([...Object.keys(db.records), ...Object.keys(db.bonus), ...Object.keys(db.cleanDone)]);
+  all.forEach(ds => {
+    const clean = {}; Object.entries(db.cleanDone[ds] || {}).forEach(([k, v]) => { if (v) clean[k] = true; });
+    days[ds] = { records: db.records[ds] || {}, bonus: db.bonus[ds] || [], cleanDone: clean };
+  });
+  return { config: configOf(), days };
+}
+function applyOpLocal(o){
+  const D = ds => { db.records[ds] = db.records[ds] || {}; db.bonus[ds] = db.bonus[ds] || []; db.cleanDone[ds] = db.cleanDone[ds] || {}; };
+  switch (o.op){
+    case 'rec': D(o.ds); if (o.rec) db.records[o.ds][o.name] = o.rec; else delete db.records[o.ds][o.name]; break;
+    case 'bonusAdd': D(o.ds); if (!db.bonus[o.ds].some(b => b.id === o.entry.id)) db.bonus[o.ds].push(o.entry); break;
+    case 'bonusDel': D(o.ds); db.bonus[o.ds] = db.bonus[o.ds].filter(b => b.id !== o.id); break;
+    case 'clean': D(o.ds); db.cleanDone[o.ds][o.name] = !!o.v; break;
+    case 'notices': db.notices = o.list.slice(); break;
+    case 'config': applyConfig(o.data); break;
+  }
+}
+function applyConfig(c){
+  if (!c) return;
+  const keepAudio = { alarm1Audio:db.alarmConfig.alarm1Audio, alarm1AudioName:db.alarmConfig.alarm1AudioName, alarm2Audio:db.alarmConfig.alarm2Audio, alarm2AudioName:db.alarmConfig.alarm2AudioName };
+  if (c.mainTitle) db.mainTitle = c.mainTitle;
+  if (c.students) db.students = normalizeStudents(c.students);
+  if (validTime(c.lateTimeSetting)) db.lateTimeSetting = c.lateTimeSetting;
+  if (c.expTiers) db.expTiers = Object.assign({}, DEFAULT_TIERS, c.expTiers);
+  if (typeof c.sfx === 'boolean') db.sfx = c.sfx;
+  if (Array.isArray(c.menu)) db.menu = c.menu;
+  if (c.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, c.alarmConfig, keepAudio);
+}
+function applyServerState(st){
+  if (st.config) applyConfig(st.config);
+  db.records = {}; db.bonus = {}; db.cleanDone = {};
+  Object.entries(st.days || {}).forEach(([ds, d]) => {
+    db.records[ds] = d.records || {}; db.bonus[ds] = d.bonus || []; db.cleanDone[ds] = d.cleanDone || {};
+  });
+  sync.queue.forEach(applyOpLocal);   // 아직 못 올린 변경은 다시 덮어 적용
+}
+function syncOp(op){
+  if (!sync.url) return;
+  sync.queue.push(op); saveSync();
+  clearTimeout(syncOp.t); syncOp.t = setTimeout(flushSync, 300);
+}
+async function syncFetch(url, opts){
+  const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 25000);
+  try {
+    const r = await fetch(url, Object.assign({ signal: ctl.signal, redirect:'follow' }, opts || {}));
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || '서버 오류');
+    return j;
+  } finally { clearTimeout(tm); }
+}
+async function flushSync(){
+  if (!sync.url || !sync.queue.length) return;
+  const ops = sync.queue.slice();
+  try {
+    await syncFetch(sync.url, { method:'POST', body: JSON.stringify({ ops }) });
+    sync.queue.splice(0, ops.length); saveSync();
+    await pullSync();
+  } catch(e){ sync.ok = false; sync.err = e.message; updateSyncUI(); }
+}
+let pendingRemoteRender = false;
+async function pullSync(force){
+  if (!sync.url || syncBusy) return;
+  syncBusy = true;
+  try {
+    if (sync.queue.length){ syncBusy = false; await flushSync(); return; }
+    const j = await syncFetch(`${sync.url}?since=${force ? -1 : sync.v}&t=${Date.now()}`);
+    let changed = false;
+    if (j.state){ applyServerState(j.state); sync.v = j.v; changed = true; }
+    const nl = (j.notices || []);
+    if (JSON.stringify(nl) !== JSON.stringify(db.notices) && !sync.queue.some(o => o.op === 'notices')){ db.notices = nl; noticeChecked = {}; changed = true; }
+    sync.ok = true; sync.err = ''; sync.last = Date.now(); saveSync();
+    if (changed){ saveDB(); refreshAfterRemote(); }
+  } catch(e){ sync.ok = false; sync.err = e.message; }
+  finally { syncBusy = false; updateSyncUI(); }
+}
+function refreshAfterRemote(){
+  if (revealing){ pendingRemoteRender = true; return; }
+  applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
+  if ($('statsOverlay').style.display === 'flex') loadStats(statsPeriod);
+  if ($('giveOverlay').style.display === 'flex') renderBonusLog();
+}
+function updateSyncUI(){
+  const pill = $('syncPill'), st = $('syncStatusText');
+  if (!sync.url){ pill.style.display = 'none'; st.textContent = '연결 안 됨 — 이 컴퓨터에만 저장 중'; return; }
+  pill.style.display = 'block';
+  const ago = sync.last ? Math.max(0, Math.round((Date.now() - sync.last) / 1000)) : null;
+  const agoTxt = ago == null ? '' : (ago < 60 ? `${ago}초 전` : `${Math.round(ago/60)}분 전`);
+  if (sync.ok === false){
+    pill.className = 'warn';
+    pill.textContent = `⚠️ 연결 안 됨${sync.queue.length ? ` · 대기 ${sync.queue.length}개` : ''}`;
+    st.innerHTML = `⚠️ 시트에 연결하지 못했어요 (${esc(sync.err)}). 이 컴퓨터에 먼저 저장해 두고, 연결되면 자동으로 올려요.`;
+  } else {
+    pill.className = '';
+    pill.textContent = sync.queue.length ? `🔄 올리는 중 (${sync.queue.length})` : `☁️ 동기화됨${agoTxt ? ' · ' + agoTxt : ''}`;
+    st.textContent = `✅ 구글 시트와 연결됨${agoTxt ? ` · 마지막 동기화 ${agoTxt}` : ''}`;
+  }
+}
+let syncCandidate = null;
+async function connectSync(){
+  const url = $('syncUrlInput').value.trim();
+  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url) && !/^http:\/\/localhost/.test(url)){ alert('구글 Apps Script 웹 앱 주소(https://script.google.com/…/exec)를 붙여넣어 주세요.'); return; }
+  $('syncStatusText').textContent = '🔄 연결 확인 중…';
+  try {
+    const j = await syncFetch(`${url}?since=-1&t=${Date.now()}`);
+    const days = Object.keys((j.state && j.state.days) || {}).length;
+    const hasData = !!(j.state && j.state.config) || days > 0;
+    syncCandidate = { url, j };
+    if (!hasData){ await adoptSync('push'); return; }
+    const n = (j.state.config && j.state.config.students || []).length;
+    $('syncChoiceText').innerHTML = `시트에 이미 데이터가 있어요 (친구 ${n}명 · 기록 ${days}일).<br>이 컴퓨터를 처음 연결하는 거라면 <b>가져오기</b>를 누르세요.`;
+    $('syncChoice').style.display = 'flex';
+    $('syncStatusText').textContent = '어떤 데이터를 쓸지 골라 주세요';
+  } catch(e){
+    $('syncStatusText').innerHTML = `⚠️ 연결 실패: ${esc(e.message)}<br>배포할 때 '액세스 권한: 모든 사용자'로 했는지, 주소가 /exec로 끝나는지 확인해 주세요.`;
+  }
+}
+async function adoptSync(mode){
+  if (!syncCandidate) return;
+  if (mode === 'push' && syncCandidate.j.state && syncCandidate.j.state.config && !confirm('시트에 있던 데이터를 지우고 이 컴퓨터 데이터로 덮어쓸까요?')) return;
+  sync.url = syncCandidate.url; sync.v = -1; sync.queue = [];
+  if (mode === 'pull'){
+    downloadLocalSafetyBackup();
+    applyServerState(syncCandidate.j.state); db.notices = syncCandidate.j.notices || []; noticeChecked = {};
+    sync.v = syncCandidate.j.v; sync.ok = true; sync.last = Date.now();
+    saveDB(); saveSync(); refreshAfterRemote();
+  } else {
+    sync.queue = [{ op:'import', state: serverStateOf(), notices: db.notices.slice() }]; saveSync();
+    await flushSync();
+  }
+  syncCandidate = null; $('syncChoice').style.display = 'none';
+  updateSyncUI();
+  setBubble('구글 시트랑 연결됐다냥! ☁️', 3500);
+}
+function downloadLocalSafetyBackup(){
+  const has = Object.keys(db.records).length || Object.keys(db.bonus).length;
+  if (has) downloadBackup();   // 혹시 몰라 이 컴퓨터 기록을 파일로 남겨 둠
+}
+function disconnectSync(){
+  if (!sync.url) return;
+  if (!confirm('동기화를 끊을까요? 이 컴퓨터에는 지금까지의 데이터가 남아 있어요.')) return;
+  sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'' }; saveSync();
+  $('syncUrlInput').value = ''; updateSyncUI();
+}
+
+/* =========================================================
    🚀 시작
    ========================================================= */
 function bindEvents(){
@@ -1863,6 +2067,14 @@ function bindEvents(){
   document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => $(b.dataset.close).style.display = 'none'));
   document.querySelectorAll('[data-demo]').forEach(b => b.addEventListener('click', () => demoReveal(b.dataset.demo)));
   $('saveAdminBtn').addEventListener('click', saveAdminData);
+  $('syncConnectBtn').addEventListener('click', connectSync);
+  $('syncNowBtn').addEventListener('click', () => pullSync(true));
+  $('syncOffBtn').addEventListener('click', disconnectSync);
+  $('syncPullBtn').addEventListener('click', () => adoptSync('pull'));
+  $('syncPushBtn').addEventListener('click', () => adoptSync('push'));
+  $('syncPill').addEventListener('click', () => pullSync(true));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) pullSync(); });
+  window.addEventListener('online', () => pullSync());
   $('menuBoard').addEventListener('click', e => {
     const mi = e.target.closest('[data-mi]'); if (mi){ openGive(Number(mi.dataset.mi)); return; }
     const c = e.target.closest('[data-clean]'); if (c) toggleClean(c.dataset.clean);
@@ -1890,6 +2102,7 @@ function bindEvents(){
 function init(){
   try {
     loadDB();
+    loadSync();
     applyTitle();
     fxInit();
     bindEvents();
@@ -1902,6 +2115,10 @@ function init(){
         .observe(document.querySelector('.clock-panel'));
     }
     updateSoundStatusText();
+    updateSyncUI();
+    if (sync.url){ pullSync(); }
+    setInterval(() => { if (sync.url) pullSync(); }, 15000);
+    setInterval(updateSyncUI, 5000);
   } catch(e){ console.error('초기화 에러:', e); }
 }
 window.addEventListener('load', init);
