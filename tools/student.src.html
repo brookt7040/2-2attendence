@@ -172,14 +172,34 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .hint{font-size:.9rem;color:var(--ink-soft);}
 #toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,160%);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:8px 20px;font-size:1.1rem;box-shadow:0 4px 0 var(--ink);transition:transform .3s;z-index:200;white-space:nowrap;}
 #toast.show{transform:translate(-50%,0);}
+.hana-wrap{position:relative;flex:none;cursor:pointer;}
+.hana-wear{position:absolute;inset:0;pointer-events:none;font-size:72px;}
+.hana-say{position:absolute;left:100%;top:4px;margin-left:6px;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:4px 10px;font-size:1rem;white-space:nowrap;box-shadow:0 3px 0 var(--ink);opacity:0;transform:scale(.6);transform-origin:left center;transition:.2s;pointer-events:none;z-index:5;}
+.hana-say.show{opacity:1;transform:scale(1);}
+#mascot.hop{animation:hop .5s ease-out;}
+@keyframes hop{40%{transform:translateY(-12px) rotate(-6deg)}}
+.ticker.mega{background:#FFF2BF;}
+.checkin{display:block;width:100%;margin-bottom:12px;padding:14px;border:3px solid var(--ink);border-radius:18px;font-family:inherit;font-size:1.3rem;text-align:center;box-shadow:0 4px 0 var(--ink);}
+.checkin.go{background:linear-gradient(135deg,#FFE066,#FFB8CB);cursor:pointer;animation:ckb 1.4s ease-in-out infinite;}
+.checkin.go small{display:block;font-size:.85rem;color:var(--ink-soft);}
+.checkin.done{background:#DFF7EE;font-size:1.05rem;}
+.checkin.wait{background:#E4F3FF;font-size:1.05rem;}
+@keyframes ckb{50%{transform:translateY(-3px)}}
+.cs-row{display:flex;gap:8px;justify-content:space-between;margin-top:6px;}
+.btn-urgent{background:#FF5C7A;color:#fff;}
+.btn-lav{background:#D9CCFF;}
+.my-ask.urg{border-color:#E0334F;background:#FFE3E8;}
+.oath-text{font-size:1.05rem;line-height:1.65;background:#FFF6DA;border:2px dashed var(--ink);border-radius:14px;padding:12px;margin:8px 0;}
+.oath-chk{display:block;font-size:1.05rem;margin:8px 0;}
+#oathGo:disabled{opacity:.45;cursor:not-allowed;}
 .status{position:fixed;left:10px;bottom:10px;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;}
-@media (max-width:560px){ .title{font-size:1.4rem;} #mascot{width:56px;height:56px;} .n-item{font-size:1.15rem;} }
+@media (max-width:560px){ .title{font-size:1.4rem;} #mascot{width:56px;height:56px;} .hana-wear{font-size:56px;} .n-item{font-size:1.15rem;} }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="top">
-    <canvas id="mascot" class="pix" width="16" height="16"></canvas>
+    <div class="hana-wrap" id="hanaBtn" title="하나를 눌러 보세요"><canvas id="mascot" class="pix" width="16" height="16"></canvas><div id="hanaWear" class="hana-wear"></div><div id="hanaSay" class="hana-say"></div></div>
     <div><div class="title" id="title">냥냥 마을</div><div class="sub" id="today"></div></div>
     <div class="me-bar" id="meBar"></div>
   </div>
@@ -192,16 +212,19 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
   </div>
 
   <section class="panel on" id="p-notice">
+    <div id="checkinBox"></div>
     <div id="cleanMe"></div>
     <div class="box"><div class="box-head">📢 오늘의 알림</div><div id="noticeList"></div></div>
     <div class="box"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
     <div class="box"><div class="box-head mint">📮 질문 · 건의</div><div id="askBox"></div></div>
+    <div class="box"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
   </section>
 
   <section class="panel" id="p-village">
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button>
       <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
+    <div class="ticker mega" id="megaTicker" style="display:none;"><span id="megaText"></span></div>
     <div class="ticker" id="ticker" style="display:none;"><span id="tickerText"></span></div>
     <div class="village" id="village"></div>
     <div class="box" style="margin-top:30px;"><div class="box-head pink">💬 우리 반 대화</div><div id="chatBox"></div></div>
@@ -235,6 +258,22 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
     <div class="frame" id="catFrame"><div class="lv-frame"></div><canvas id="catCanvas" class="pix" width="16" height="16"></canvas></div>
     <h2 id="catName"></h2>
     <div id="catWear" class="hint" style="font-size:1rem;line-height:1.6;"></div>
+  </div>
+</div>
+
+<div class="overlay" id="oathOv">
+  <div class="modal" style="text-align:center;">
+    <button type="button" class="x" data-close="oathOv">✕</button>
+    <h2>🚨 잠깐! 원격 출석이에요</h2>
+    <div class="oath-text">
+      지금 <b>교실 출석부 화면을 직접 누르는 게 아니에요.</b><br>
+      진짜로 <b>학교 교실에 도착</b>한 거 맞지?<br>
+      확실해? 집, 버스, 학교 앞 편의점, 복도… 다 안 돼요! 🙅<br><br>
+      📺 교실 화면에 <b>"OO이(가) 원격으로 출석했어요"</b>라고 크게 떠요.<br>
+      선생님이 교실을 둘러보고 없으면… <b>각오해라냥 😾</b>
+    </div>
+    <label class="oath-chk"><input type="checkbox" id="oathChk"> ✋ 저는 지금 <b>교실 안</b>에 있다는 걸 맹세합니다</label>
+    <button type="button" class="btn btn-y" id="oathGo" disabled>✋ 맹세하고 출석하기</button>
   </div>
 </div>
 
@@ -292,6 +331,8 @@ async function pull(force){
     if (!j.ok) throw new Error(j.error || 'error');
     const prevNotice = JSON.stringify([st.notices, st.closing]);
     st.notices = j.notices || []; st.closing = j.closing || [];
+    if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
+    megaNow = j.mega || [];
     if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
     if (j.pub){
       const before = st.pub ? JSON.stringify(st.pub.students.map(s => [s.name, s.lookAt])) : '';
@@ -356,16 +397,33 @@ function logout(){
 
 /* ---------- 화면 ---------- */
 let current = 'notice';
-function enterVillage(){
-  openVillage({ api: API, me: me ? { name: me.name } : null, viewOnly: !me,
+async function enterVillage(){
+  if (me && !coin) await coinCall('coins');
+  const eco = (coin && coin.economy) || {};
+  const lv = me ? ((me.info && me.info.lv) || (studentOf(me.name) || {}).lv || 1) : 1;
+  openVillage({ api: API, me: me ? { name: me.name, lv } : null, viewOnly: !me, eco,
     call: (op, extra) => studentCall(op, extra),
-    sendChat: async text => {
-      const j = await studentCall('chatSend', { to:'', text, after: chat.last });
-      if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢' }[j.error] || '보내지 못했어요') : ''; }
+    sendChat: async (text, to) => {
+      const j = await studentCall('chatSend', { to: to || '', text, after: chat.last });
+      if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요' }[j.error] || '보내지 못했어요') : ''; }
       return '다시 로그인해 주세요';
     },
-    onGame: openGame });
+    getChat: () => chat.msgs,
+    getInv: () => (coin && coin.inv) || {},
+    onCoins: j => { if (j && j.ok){ coin = j; render(); } },
+    onHanaLook: look => { hanaLookNow = look; drawHeaderHana(); },
+    onGame: g => openGame(g),
+    onClose: () => clearInterval(villageChatTimer) });
+  villageChatTimer = setInterval(() => { if (me && !document.hidden) chatPull(); }, 3000);
   if (!me) toast('로그인하면 내 고양이로 걸어 다닐 수 있어요');
+}
+let villageChatTimer = 0, hanaLookNow = {}, megaNow = [];
+/* 🐱 머리 위 하나: 눌러서 말 시키기 + 꾸민 모습 */
+function drawHeaderHana(){ const w = $('hanaWear'); if (w) w.innerHTML = hanaWearHTML(hanaLookNow, null); }
+function hanaTalk(){
+  const b = $('hanaSay'), line = HANA_LINES[Math.floor(Math.random() * HANA_LINES.length)];
+  b.textContent = line; b.classList.add('show'); clearTimeout(hanaTalk.tm); hanaTalk.tm = setTimeout(() => b.classList.remove('show'), 3200);
+  const m = $('mascot'); m.classList.remove('hop'); void m.offsetWidth; m.classList.add('hop');
 }
 function showTab(t){
   if (t === 'coin' && me) coinCall('coins');
@@ -375,6 +433,7 @@ function showTab(t){
   if (t === 'notice') $('dotNotice').classList.remove('on');
   if (t === 'village') $('dotVillage').classList.remove('on');
 }
+function coinText(){ return coin ? (coin.unlimited ? '∞' : coin.balance) : 0; }
 function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
 function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
 function lookFor(s){ return (me && s.name === me.name && me.look) ? me.look : s.look; }
@@ -385,7 +444,7 @@ function render(){
   const d = new Date(), days = ['일','월','화','수','목','금','토'];
   $('today').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
   $('meBar').innerHTML = me
-    ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}${coin ? ` · ${coin.balance}🐾` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
+    ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}${coin ? ` · ${coinText()}🐾` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
     : `<button type="button" class="btn btn-y" id="loginOpenBtn">🔑 로그인</button>`;
 
   // 알림
@@ -397,10 +456,13 @@ function render(){
   $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
     : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span>${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
+  renderCheckin(fresh);
   $('cleanMe').innerHTML = (me && fresh && me.info && me.info.clean) ? '<div class="clean-me">🧹 오늘 청소 당번이에요! 오늘 EXP가 마이너스라서 그래요. 내일은 플러스로 만들어 보자 💪</div>' : '';
 
   // 마을
-  const now = Date.now(), recent = pub.students.filter(s => s.lookAt && now - s.lookAt < 86400000).sort((a, b) => b.lookAt - a.lookAt);
+  const now = Date.now(), recent = pub.students.filter(s => s.lookAt && now - s.lookAt < 3600000).sort((a, b) => b.lookAt - a.lookAt);
+  $('megaTicker').style.display = megaNow.length ? 'block' : 'none';
+  $('megaText').textContent = megaNow.map(m => `📢 ${m.n} : ${m.text}`).join('      ');
   $('ticker').style.display = recent.length ? 'block' : 'none';
   $('tickerText').textContent = recent.map(s => `✨ ${iga(givenName(s.name))} 새로 꾸몄어요!`).join('      ');
   $('village').innerHTML = pub.students.map((s, i) => {
@@ -417,9 +479,35 @@ function render(){
   renderMe();
   renderChat();
   renderAsk();
+  renderCounsel();
   renderCoin();
 }
 
+/* 📱 개인 기기 출석 */
+let checkinSent = '';
+function renderCheckin(fresh){
+  const box = $('checkinBox'); if (!box) return;
+  if (!me){ box.innerHTML = ''; return; }
+  const t = fresh && me.info && me.info.today;
+  if (t){ box.innerHTML = `<div class="checkin done">✅ 오늘 출석 완료 · ${t.icon} ${esc(t.label)} · ${esc(t.time)}${t.rank ? ` · ${t.rank}등` : ''}${t.remote ? ' · 📱 원격' : ''}</div>`; return; }
+  if (checkinSent === todayStr()){ box.innerHTML = '<div class="checkin wait">📱 출석 신청 완료! 교실 출석부에 곧 기록돼요 ⏳</div>'; return; }
+  box.innerHTML = '<button type="button" class="checkin go" id="checkinBtn">📱 출석하기 <small>교실에 도착했으면 눌러요</small></button>';
+}
+function openOath(){ $('oathChk').checked = false; $('oathGo').disabled = true; $('oathOv').style.display = 'flex'; }
+async function doCheckin(){
+  $('oathGo').disabled = true; $('oathGo').textContent = '출석하는 중…';
+  try {
+    const j = await studentCall('checkin');
+    $('oathOv').style.display = 'none';
+    if (!j.ok){ toast('다시 로그인해 주세요'); return; }
+    if (j.error === 'already'){ toast('이미 출석했어요 ✅'); refreshMe(true).then(render); return; }
+    checkinSent = todayStr();
+    toast(j.error === 'pending' ? '이미 출석 신청했어요 ⏳' : `출석 신청 완료! (${j.at}) 📱`);
+    render();
+    setTimeout(() => refreshMe(true).then(render), 25000);
+  } catch(e){ toast('연결이 안 돼요. 다시 눌러 주세요'); }
+  finally { $('oathGo').textContent = '✋ 맹세하고 출석하기'; }
+}
 function wearList(raw, lv){
   const look = lookOfRaw(raw, lv);
   return ['eye','mouth','top','earR','earL','neck','back','fur'].filter(k => look[k]).map(k => `${look[k].it.icon} ${look[k].c.n} ${look[k].it.name}`).join(' · ');
@@ -518,8 +606,8 @@ function renderChat(){
   const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
   const typing = $('chatText') ? $('chatText').value : '';
   const logHtml = chat.msgs.length ? chat.msgs.map(m => {
-      const mine = m.from === me.name, wh = !!m.to, t = /(쌤|샘|선생님)$/.test(m.from);
-      const who = mine ? (wh ? `🤫 ${esc(m.to)}에게` : '나') : (wh ? `🤫 ${esc(m.from)} (귓속말)` : esc(m.from));
+      const mine = m.from === me.name, wh = !!m.to, t = /(쌤|샘|선생님)$/.test(m.from), grp = wh && m.to.charAt(0) === '#';
+      const who = grp ? `🤫 ${esc(m.to.slice(2))}모둠 · ${mine ? '나' : esc(m.from)}` : mine ? (wh ? `🤫 ${esc(m.to)}에게` : '나') : (wh ? `🤫 ${esc(m.from)} (귓속말)` : esc(m.from));
       return `<div class="msg ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${t ? 't' : ''}"><span class="who">${who} · ${esc(m.t.slice(11))}</span><span class="bub">${esc(m.text)}</span></div>`;
     }).join('') : '<div class="chat-off">첫 인사를 남겨 보자! 🐾</div>';
   const sig = JSON.stringify([c, chat.muted, kidsList]);
@@ -558,7 +646,7 @@ async function chatSend(){
 
 /* ---------- 📮 질문·건의 ---------- */
 let asks = [];
-async function askList(){ if (!me) return; try { const j = await studentCall('askList'); if (j.ok){ asks = j.asks || []; renderAsk(); } } catch(e){} }
+async function askList(){ if (!me) return; try { const j = await studentCall('askList'); if (j.ok){ asks = j.asks || []; renderAsk(); renderCounsel(); } } catch(e){} }
 function renderAsk(){
   const box = $('askBox'); if (!box) return;
   if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 질문이나 건의를 보낼 수 있어요</div>'; return; }
@@ -567,13 +655,43 @@ function renderAsk(){
   box.dataset.n = String(asks.length); box.dataset.r = JSON.stringify(asks.map(a => a.reply));
   const kindNow = $('askKind') ? $('askKind').value : '질문', anonNow = $('askAnon') ? $('askAnon').checked : false;
   const draft = $('askText') ? $('askText').value : '';
+  const qa = asks.filter(a => a.kind === '질문' || a.kind === '건의');
   box.innerHTML = `<div class="ask-row"><select id="askKind"><option ${kindNow === '질문' ? 'selected' : ''}>질문</option><option ${kindNow === '건의' ? 'selected' : ''}>건의</option></select>
       <label class="hint"><input type="checkbox" id="askAnon" ${anonNow ? 'checked' : ''}> 🙈 선생님 화면에 이름 없이 보내기</label></div>
     <textarea id="askText" rows="3" maxlength="300" placeholder="궁금한 점이나 우리 반에 바라는 점을 적어 주세요">${esc(draft)}</textarea>
     <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-mint" id="askSend">📮 보내기</button></div>
     <div class="hint" style="margin:8px 0 4px;">내가 보낸 질문 (나만 볼 수 있어요)</div>
-    ${asks.length ? asks.map(a => `<div class="my-ask"><div class="meta">${a.kind === '건의' ? '💡 건의' : '❓ 질문'} · ${esc(a.t)}${a.anon ? ' · 🙈 익명' : ''}</div>
+    ${qa.length ? qa.map(a => `<div class="my-ask"><div class="meta">${a.kind === '건의' ? '💡 건의' : '❓ 질문'} · ${esc(a.t)}${a.anon ? ' · 🙈 익명' : ''}</div>
       <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : '<div class="wait">⏳ 답변을 기다리는 중</div>'}</div>`).join('') : '<div class="empty">아직 보낸 질문이 없어요</div>'}`;
+}
+/* 💬 상담 · 🚨 긴급 */
+function renderCounsel(){
+  const box = $('counselBox'); if (!box) return;
+  if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 상담을 신청할 수 있어요</div>'; return; }
+  const mine = asks.filter(a => a.kind === '상담' || a.kind === '긴급');
+  const sig = JSON.stringify(mine.map(a => [a.id, a.reply, a.done]));
+  if (document.activeElement && document.activeElement.id === 'csText' && box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  const draft = $('csText') ? $('csText').value : '';
+  box.innerHTML = `<div class="hint" style="margin-bottom:6px;">🔒 선생님만 볼 수 있어요. 고민, 친구 문제, 아픈 곳… 뭐든 괜찮아요.</div>
+    <textarea id="csText" rows="3" maxlength="300" placeholder="선생님께 하고 싶은 이야기를 적어 주세요">${esc(draft)}</textarea>
+    <div class="cs-row"><button type="button" class="btn btn-urgent" id="csUrgent">🚨 긴급</button><button type="button" class="btn btn-lav" id="csSend">💬 상담 신청</button></div>
+    <div class="hint" style="margin:2px 0 8px;">🚨 긴급은 지금 바로 도움이 필요할 때만! 선생님 화면이 빨갛게 바뀌어요.</div>
+    ${mine.length ? mine.map(a => `<div class="my-ask ${a.kind === '긴급' ? 'urg' : ''}"><div class="meta">${a.kind === '긴급' ? '🚨 긴급' : '💬 상담'} · ${esc(a.t)}</div>
+      <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : a.done ? '<div class="rep">✔ 선생님이 확인했어요. 곧 이야기해요!</div>' : '<div class="wait">⏳ 선생님이 확인하기 전이에요</div>'}</div>`).join('') : ''}`;
+}
+async function counselSend(urgent){
+  let text = ($('csText').value || '').trim();
+  if (urgent){
+    if (!confirm('🚨 선생님께 긴급 상담을 보낼까요?\n선생님 화면에 바로 빨갛게 알려져요.')) return;
+    if (!text) text = '🚨 지금 선생님 도움이 필요해요!';
+  } else if (!text){ toast('내용을 적어 주세요'); return; }
+  try {
+    const j = await studentCall('askSend', { kind: urgent ? '긴급' : '상담', text });
+    if (j.ok && !j.error){ $('csText').value = ''; toast(urgent ? '🚨 선생님께 긴급으로 알렸어요' : '선생님께 보냈어요 💬'); }
+    else toast(j.error === 'slow' ? '조금 있다가 다시 보내 주세요' : '보내지 못했어요');
+    if (j.ok){ asks = j.asks || []; renderAsk(); renderCounsel(); }
+  } catch(e){ toast('연결이 안 돼서 보내지 못했어요'); }
 }
 async function askSend(){
   const text = $('askText').value.trim();
@@ -594,7 +712,7 @@ async function coinCall(op, extra){
   if (!me) return null;
   try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
-const ERR = { poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
+const ERR = { order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
   closed:'지금은 게임 시간이 아니에요', limit:'오늘은 게임을 다 했어요. 내일 또 만나요!', bet:'걸 수 있는 코인을 확인해 주세요', bad:'다시 해 주세요' };
 function weekStartS(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return todayStr(x); }
 function periodS(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : null; }
@@ -623,21 +741,25 @@ function renderCoin(){
   const shopHtml = items.map(it => {
     const owned = it.cat === 'house' && (inv.houses || []).includes(it.id), living = it.cat === 'house' && inv.house === it.id;
     const left = it.stock ? it.stock - ((coin.sold || {})[it.id] || 0) : null;
+    const HO = ['h_box', 'h_tent', 'h_cabin', 'h_cottage', 'h_castle'], hi = HO.indexOf(it.id);
+    const needPrev = it.cat === 'house' && hi > 1 && !(inv.houses || []).includes(HO[hi - 1]) ? eco.shop.find(x => x.id === HO[hi - 1]) : null;
     const btn = it.cat === 'house' && owned
       ? (living ? '<span class="st">🏠 사는 중</span>' : `<button type="button" data-house="${it.id}">이사하기</button>`)
-      : `<button type="button" data-buy="${it.id}" ${coin.balance < it.price || left === 0 ? 'disabled' : ''}>${left === 0 ? '품절' : '사기'}</button>`;
-    return `<div class="shop-item ${owned ? 'owned' : ''}">${it.cat !== 'coupon' ? `<span data-spr="${it.id}"></span>` : ''}<div>${esc(it.name)}</div><div class="pr">${it.price} 🐾${left != null ? ` · 남은 ${Math.max(0, left)}개` : ''}</div>${btn}</div>`;
+      : needPrev ? `<span class="st">🔒 ${esc(needPrev.name)} 먼저</span>`
+      : `<button type="button" data-buy="${it.id}" ${(!coin.unlimited && coin.balance < it.price) || left === 0 ? 'disabled' : ''}>${left === 0 ? '품절' : '사기'}</button>`;
+    return `<div class="shop-item ${owned ? 'owned' : ''}">${it.cat !== 'coupon' && it.cat !== 'mega' ? `<span data-spr="${it.id}"></span>` : ''}<div>${esc(it.name)}</div><div class="pr">${it.price} 🐾${left != null ? ` · 남은 ${Math.max(0, left)}개` : ''}</div>${btn}</div>`;
   }).join('') || '<div class="empty">상품이 없어요</div>';
   const g = eco.game;
   box.innerHTML = `
     <div class="box"><div class="box-head">🐾 내 냥코인</div>
-      <div class="coin-big">${coin.balance} 🐾</div>
+      <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
     <div class="box"><div class="box-head pink">📋 미션</div>${msHtml}<div class="hint" style="margin-top:6px;">'완료했어요!'를 누르면 선생님이 확인하고 코인을 줘요.</div></div>
     <div class="box"><div class="box-head mint">🛒 상점</div>
-      <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button></div>
-      ${shopTab === 'house' ? `<div class="hint" style="margin-bottom:6px;">처음엔 📦 박스집에 살아요. 집을 사면 마을에 바로 지어져요!${inv.house ? ' <button type="button" data-house="" style="font-size:.85rem;">📦 박스집으로</button>' : ''}</div>` : ''}
+      <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button><button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button></div>
+      ${shopTab === 'mega' ? '<div class="hint" style="margin-bottom:6px;">📢 확성기를 사면 내가 쓴 한 줄이 마을·교실 화면 맨 위에 <b>1시간</b> 동안 떠요! (나쁜 말은 ♡로 바뀌고, 선생님이 내릴 수 있어요)</div>' : ''}
+      ${shopTab === 'house' ? `<div class="hint" style="margin-bottom:6px;">처음엔 📦 박스집에 살아요. 텐트 → 오두막 → 2층 집 → 성 순서로 업그레이드! 집이 클수록 방도 넓어져요. 집 안 꾸미기는 마을에서 내 집을 눌러요.${inv.house ? ' <button type="button" data-house="" style="font-size:.85rem;">📦 박스집으로</button>' : ''}</div>` : ''}
       ${shopTab === 'coupon' ? '<div class="hint" style="margin-bottom:6px;">쿠폰을 사면 선생님께 신청돼요. 실물을 받으면 &quot;지급 완료&quot;로 바뀌어요.</div>' : ''}
       <div class="shop-grid">${shopHtml}</div></div>
     <div class="box"><div class="box-head lav">🎟 내 신청</div>${(coin.reqs || []).length ? coin.reqs.map(r => `<div class="req"><span>${r.type === '미션' ? '✅' : '🎟'} ${esc(r.item)}</span><span class="st">${esc(r.status)}</span></div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
@@ -645,8 +767,17 @@ function renderCoin(){
   box.querySelectorAll('[data-spr]').forEach(el => { const it = eco.shop.find(x => x.id === el.dataset.spr); el.replaceWith(itemSprite(it)); });
 }
 /* 🎮 게임 */
-function openGame(){
+let gameOne = '';
+const GAMES = {
+  rps:  { t:'✊ 하나랑 가위바위보', p: b => `이기면 +${b} · 비기면 그대로 · 지면 -${b}`, btns: () => ['✊', '✌️', '✋'].map(h => `<button type="button" data-play="rps" data-pick="${h}">${h}</button>`).join('') },
+  cups: { t:'🥫 츄르 컵 찾기', p: b => `컵 3개 중 츄르는 하나! 맞히면 +${Math.round(b * 1.5)} · 틀리면 -${b} (1/3)`, btns: () => [0, 1, 2].map(i => `<button type="button" data-play="cups" data-pick="${i}">🥫</button>`).join('') },
+  slot: { t:'🎰 냥냥 슬롯', p: b => `같은 그림 3개 +${b * 4} (🐾🐾🐾 +${b * 9}!) · 2개 +${Math.ceil(b / 2)} · 없으면 -${b}`, btns: () => `<button type="button" data-play="slot" data-pick="1" style="width:auto;padding:0 26px;">🎰 돌리기!</button>` },
+  coin: { t:'🪙 동전 앞뒤', p: b => `앞(🐱)인지 뒤(🐾)인지 맞히면 +${b} · 틀리면 -${b} (1/2)`, btns: () => `<button type="button" data-play="coin" data-pick="head">🐱 앞</button><button type="button" data-play="coin" data-pick="tail">🐾 뒤</button>` },
+  dice: { t:'🎲 주사위 맞히기', p: b => `숫자를 맞히면 +${b * 4} · 틀리면 -${b} (1/6)`, btns: () => [1, 2, 3, 4, 5, 6].map(n => `<button type="button" data-play="dice" data-pick="${n}" style="width:52px;">${'⚀⚁⚂⚃⚄⚅'[n - 1]}</button>`).join('') }
+};
+function openGame(g){
   if (!me){ toast('로그인하면 게임을 할 수 있어요'); return; }
+  gameOne = typeof g === 'string' && GAMES[g] ? g : '';
   $('gameOv').style.display = 'flex'; renderGame(); coinCall('coins');
 }
 function renderGame(res){
@@ -654,13 +785,11 @@ function renderGame(res){
   const g = coin.economy.game, bets = [5, 10, 20, 30, 50].filter(b => b <= g.maxBet);
   if (!bets.includes(betAmt)) betAmt = bets[bets.length - 1] || 1;
   const open = !!g.open;
-  box.innerHTML = `<div class="g-info"><span>🐾 ${coin.balance}</span><span>오늘 남은 판 ${coin.playsLeft}/${g.daily}</span></div>
+  box.innerHTML = `<div class="g-info"><span>🐾 ${coinText()}</span><span>${coin.unlimited ? '👑 무제한' : `오늘 남은 판 ${coin.playsLeft}/${g.daily}`}</span></div>
     ${!open ? `<div class="chat-off">🌙 지금은 게임 시간이 아니에요<br><small>${hoursText(g)}</small></div>` : `
     <div class="bets">${bets.map(b => `<button type="button" data-bet="${b}" class="${b === betAmt ? 'on' : ''}">${b}</button>`).join('')}</div>
-    <div class="g-card"><h3>✊ 하나랑 가위바위보</h3><div class="g-prob">이기면 +${betAmt} · 비기면 그대로 · 지면 -${betAmt}</div>
-      <div class="g-btns"><button type="button" data-rps="✊">✊</button><button type="button" data-rps="✌️">✌️</button><button type="button" data-rps="✋">✋</button></div></div>
-    <div class="g-card"><h3>🥫 츄르 컵 찾기</h3><div class="g-prob">컵 3개 중 츄르는 하나! 맞히면 +${Math.round(betAmt * 1.5)} · 틀리면 -${betAmt} (맞힐 확률 1/3)</div>
-      <div class="g-btns"><button type="button" data-cup="0">🥫</button><button type="button" data-cup="1">🥫</button><button type="button" data-cup="2">🥫</button></div></div>`}
+    ${(gameOne ? [gameOne] : Object.keys(GAMES)).map(k => `<div class="g-card"><h3>${GAMES[k].t}</h3><div class="g-prob">${GAMES[k].p(betAmt)}</div><div class="g-btns">${GAMES[k].btns()}</div></div>`).join('')}
+    ${gameOne ? '<div class="hint" style="text-align:center;">다른 게임은 오락실의 다른 오락기에서!</div>' : ''}`}
     <div class="g-res" id="gRes">${res || ''}</div>`;
 }
 async function playGame(g, pick){
@@ -669,9 +798,12 @@ async function playGame(g, pick){
   if (!j) return;
   if (j.error){ renderGame(ERR[j.error] || '다시 해 주세요'); return; }
   const d = j.result;
-  const msg = g === 'rps'
-    ? `하나: ${d.hana} → ${d.res === 'win' ? `이겼다! 🎉 +${d.net}` : d.res === 'draw' ? '비겼어요 🤝' : `졌어요 😿 ${d.net}`}`
-    : `츄르는 ${['첫', '두', '세'][d.ans]} 번째 컵! ${d.res === 'win' ? `찾았다! 🎉 +${d.net}` : `아쉬워요 😿 ${d.net}`}`;
+  const W = d.res === 'win' || d.res === 'jackpot', tail = W ? `🎉 +${d.net}` : d.res === 'draw' ? '' : `😿 ${d.net}`;
+  const msg = g === 'rps' ? `하나: ${d.hana} → ${d.res === 'win' ? `이겼다! ${tail}` : d.res === 'draw' ? '비겼어요 🤝' : `졌어요 ${tail}`}`
+    : g === 'cups' ? `츄르는 ${['첫', '두', '세'][d.ans]} 번째 컵! ${W ? `찾았다! ${tail}` : `아쉬워요 ${tail}`}`
+    : g === 'slot' ? `[ ${d.reel.join(' ')} ] ${d.res === 'jackpot' ? (d.reel[0] === '🐾' ? '🐾 잭팟!!! ' : '대박! ') : W ? '두 개 같아요! ' : '꽝… '}${tail}`
+    : g === 'coin' ? `${d.ans === 'head' ? '🐱 앞' : '🐾 뒤'}! ${W ? `맞혔다 ${tail}` : `아쉬워요 ${tail}`}`
+    : `🎲 ${d.ans}! ${W ? `맞혔다!! ${tail}` : `아쉬워요 ${tail}`}`;
   renderGame(msg);
 }
 
@@ -696,14 +828,22 @@ document.addEventListener('click', e => {
   if (t.closest('#coinGame')){ openGame(); return; }
   const st2 = t.closest('[data-stab]'); if (st2){ shopTab = st2.dataset.stab; renderCoin(); return; }
   const mr = t.closest('[data-mreq]'); if (mr){ coinCall('missionReq', { mid: mr.dataset.mreq }).then(j => j && toast(j.error ? (ERR[j.error] || '신청하지 못했어요') : '선생님께 신청했어요 ✅')); return; }
-  const by = t.closest('[data-buy]'); if (by){ const it = coin.economy.shop.find(x => x.id === by.dataset.buy); if (!confirm(`${it.name}을(를) ${it.price}🐾에 살까요?`)) return; coinCall('buy', { item: it.id }).then(j => j && toast(j.error ? (ERR[j.error] || '사지 못했어요') : `${it.name} 샀어요! 🎉`)); return; }
+  const by = t.closest('[data-buy]'); if (by){ const it = coin.economy.shop.find(x => x.id === by.dataset.buy);
+    let text = '';
+    if (it.cat === 'mega'){ text = (prompt('📢 확성기로 외칠 말 (30자까지)\n마을과 교실 화면 맨 위에 1시간 동안 떠요!') || '').trim().slice(0, 30); if (!text) return; }
+    if (!confirm(`${it.name}을(를) ${it.price}🐾에 살까요?${text ? `\n\n📢 "${text}"` : ''}`)) return; coinCall('buy', { item: it.id, text }).then(j => j && toast(j.error ? (ERR[j.error] || '사지 못했어요') : `${it.name} 샀어요! 🎉`)); return; }
   const hs = t.closest('[data-house]'); if (hs){ coinCall('equipHouse', { house: hs.dataset.house }).then(j => j && !j.error && toast('이사 완료! 🏠')); return; }
   const bt = t.closest('[data-bet]'); if (bt){ betAmt = +bt.dataset.bet; renderGame(); return; }
-  const rp = t.closest('[data-rps]'); if (rp){ playGame('rps', rp.dataset.rps); return; }
-  const cp = t.closest('[data-cup]'); if (cp){ playGame('cups', +cp.dataset.cup); return; }
+  const pl = t.closest('[data-play]'); if (pl){ const g = pl.dataset.play; playGame(g, g === 'cups' || g === 'dice' ? +pl.dataset.pick : pl.dataset.pick); return; }
   if (t.closest('#askSend')){ askSend(); return; }
+  if (t.closest('#checkinBtn')){ openOath(); return; }
+  if (t.closest('#hanaBtn')){ hanaTalk(); return; }
+  if (t.closest('#csSend')){ counselSend(false); return; }
+  if (t.closest('#csUrgent')){ counselSend(true); return; }
+  if (t.closest('#oathGo')){ doCheckin(); return; }
 });
 $('loginBtn').addEventListener('click', doLogin);
+document.addEventListener('change', e => { if (e.target.id === 'oathChk') $('oathGo').disabled = !e.target.checked; });
 document.addEventListener('change', e => { if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
 document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });
 $('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });

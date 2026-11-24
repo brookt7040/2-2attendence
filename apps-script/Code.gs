@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v6 · 냥코인·마을·게임·쉬는 시간 해제)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v7 · 마을 건물·하나·집 꾸미기·원격 출석·상담)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -25,10 +25,17 @@ const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
 const CLOSING_SHEET = '종례';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 6;
+const API_VERSION = 7;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
-const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾'];
+const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
+// 🪑 앉을 수 있는 자리 수 — 마을 화면(index.html의 V_OBJS · HALL_TABLES)과 같아야 해요
+const SEAT_CAP = {
+  out: { fountain: 4, bench1: 2, bench2: 2, longbench: 4, tower: 3, scratch: 1, hammock: 1, box1: 1, box2: 1, sun: 3, pond: 2, churu: 1, swing: 2, cushions: 3, yarn: 1, photo: 6, slide: 1 },
+  hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5 }
+};
+const HOUSE_ORDER = ['h_box', 'h_tent', 'h_cabin', 'h_cottage', 'h_castle'];
+const HANA_LV = [0, 20, 60, 120, 200, 320];
 const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람', '받는 사람(빈칸=전체)', '내용', '상태'];
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
 // 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 ♡로 바뀌어요
@@ -43,6 +50,7 @@ const ITEM_RULES = {
   sprout:   { lv: 2,  slot: 'top',   n: 6 },
   bow:      { lv: 3,  slot: 'earR',  n: 6 },
   scarf:    { lv: 4,  slot: 'neck',  n: 6 },
+  fur5:     { lv: 5,  slot: 'fur',   n: 11 },
   flower:   { lv: 5,  slot: 'earL',  n: 5 },
   starclip: { lv: 6,  slot: 'earR',  n: 5 },
   wings:    { lv: 7,  slot: 'back',  n: 5 },
@@ -173,9 +181,11 @@ function publicState_(map) {
 }
 function publicGet_(p) {
   if (p.village) return villageState_();
+  if (p.room) return roomState_(String(p.room));
   const v = version_();
   const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
+  res.hanaLook = hanaLook_(); res.mega = megaList_();
   return res;
 }
 
@@ -183,6 +193,8 @@ function publicGet_(p) {
 function teacherPull_(body, auth) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER) };
+  if (body.remoteOk) res.remote = claimRemote_();
+  res.mega = megaList_(); res.hanaLook = hanaLook_();
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
     const st = { config: map.config || null, days: {}, acks: {} };
@@ -191,7 +203,8 @@ function teacherPull_(body, auth) {
       if (k.indexOf('acks:') === 0) st.acks[k.slice(5)] = map[k];
     });
     res.state = st;
-    res.asksOpen = readAsks_(function (a) { return !a.reply && !a.del; }).length;
+    res.asksOpen = readAsks_(function (a) { return !a.reply && !a.del && !a.done; }).length;
+    res.counselUrgent = counselUrgent_();
     res.reqOpen = readReqs_(function (r) { return r.status === '대기'; }).length;
     const all = props_().getProperties(), pinSet = [];
     Object.keys(all).forEach(function (k) { if (k.indexOf('pin:') === 0) pinSet.push(k.slice(4)); });
@@ -280,6 +293,9 @@ function handlePost_(body, auth) {
           break;
         }
         case 'askDel': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '삭제'); break;
+        case 'askDone': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '확인'); break;
+        case 'megaDel': props_().setProperty('mega', JSON.stringify(megaList_().filter(function (m) { return m.ts !== Number(o.ts); }))); break;
+        case 'hanaReset': props_().setProperty('hanaLook', '{}'); break;
         case 'coinAdd': addCoin_(String(o.name), Number(o.amt) || 0, String(o.why || ''), String(o.kind || '선생님'), String(o.key || '')); break;
         case 'reqDone': settleReq_(Number(o.id), !!o.ok, map); break;
         case 'housePlace': {            // 선생님이 집 · 소품을 정리해 줄 때
@@ -358,13 +374,15 @@ function handleStudent_(body) {
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (body.op === 'move' || body.op === 'emote') return studentVillage_(name, body);
-  if (['coins', 'buy', 'equipHouse', 'missionReq', 'game'].indexOf(body.op) >= 0) return studentCoins_(name, body);
+  if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
+  if (['coins', 'buy', 'equipHouse', 'missionReq', 'game', 'buyFurn', 'roomSave'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     const db = readRows_(), map = db.map;
     const pub = map.pub || {}, priv = (pub.priv || {})[name] || null;
     const ds = todayStr_();
+    if (body.op === 'checkin') return studentCheckin_(name, map);
     if (body.op === 'look') {
       const lv = priv ? priv.lv : 1;
       map.config = map.config || {};
@@ -396,6 +414,33 @@ function handleStudent_(body) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ---------------- 📱 개인 기기 원격 출석 ---------------- */
+function remoteList_() {
+  const ds = todayStr_();
+  try { return JSON.parse(props_().getProperty('remote') || '[]').filter(function (x) { return x.ds === ds; }); } catch (e) { return []; }
+}
+// 출석부(교사 화면)가 가져가서 처리해요. 가져간 건 claimed 로 표시해서 두 번 처리하지 않아요.
+function claimRemote_() {
+  const lock = LockService.getScriptLock();
+  try { lock.waitLock(5000); } catch (e) { return []; }
+  try {
+    const list = remoteList_(), out = list.filter(function (x) { return !x.claimed; });
+    if (out.length) { list.forEach(function (x) { x.claimed = true; }); props_().setProperty('remote', JSON.stringify(list)); }
+    return out.map(function (x) { return { n: x.n, ts: x.ts }; });
+  } finally { lock.releaseLock(); }
+}
+function studentCheckin_(name, map) {
+  const ds = todayStr_();
+  const day = map['day:' + ds] || {}, recs = day.records || {};
+  if (recs[name]) return { ok: true, error: 'already' };
+  const list = remoteList_();
+  if (list.some(function (x) { return x.n === name; })) return { ok: true, error: 'pending' };
+  list.push({ n: name, ts: Date.now(), ds: ds });
+  props_().setProperty('remote', JSON.stringify(list));
+  bump_();
+  return { ok: true, done: true, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm') };
 }
 
 /* ---------------- 💬 우리 반 대화 ---------------- */
@@ -461,15 +506,17 @@ function studentChat_(name, body, pub) {
     else if (muted) error = 'muted';
     else if (!text) error = 'empty';
     else if (Date.now() - last < 3000) error = 'slow';
-    else if (to && (!cfg.whisper || names.indexOf(to) < 0 || to === name)) error = 'whisper';
+    else if (to && to.charAt(0) === '#' && myTable_(name) !== to.slice(1)) error = 'group';
+    else if (to && to.charAt(0) !== '#' && (!cfg.whisper || names.indexOf(to) < 0 || to === name)) error = 'whisper';
     else {
       const lock = LockService.getScriptLock(); lock.waitLock(20000);
-      try { appendChat_(name, to, text); props_().setProperty('chatLast:' + name, String(Date.now())); }
+      try { if (!error) { appendChat_(name, to, text); props_().setProperty('chatLast:' + name, String(Date.now())); } }
       finally { lock.releaseLock(); }
     }
   }
-  const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (m.to === '' || m.to === name || m.from === name); });
-  return { ok: true, error: error, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
+  const tb = myTable_(name);
+  const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb)); });
+  return { ok: true, error: error, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
 }
 
 /* ---------------- 📮 질문 · 건의함 ---------------- */
@@ -477,8 +524,12 @@ function readAsks_(keep) {
   const sh = sheet_(ASK_SHEET, ASK_HEADER), n = sh.getLastRow();
   if (n < 2) return [];
   return sh.getRange(2, 1, n - 1, 9).getValues()
-    .map(function (r) { return { id: Number(r[0]), t: String(r[1]), from: String(r[2]), kind: String(r[3]), text: String(r[4]), anon: String(r[5]) === '예', reply: String(r[6] || ''), rt: String(r[7] || ''), del: String(r[8]) === '삭제' }; })
+    .map(function (r) { return { id: Number(r[0]), t: String(r[1]), from: String(r[2]), kind: String(r[3]), text: String(r[4]), anon: String(r[5]) === '예', reply: String(r[6] || ''), rt: String(r[7] || ''), del: String(r[8]) === '삭제', done: String(r[8]) === '확인' }; })
     .filter(keep);
+}
+// 🚨 아직 선생님이 확인하지 않은 긴급 상담 수
+function counselUrgent_() {
+  try { return readAsks_(function (a) { return a.kind === '긴급' && !a.reply && !a.del && !a.done; }).length; } catch (e) { return 0; }
 }
 function studentAsk_(name, body) {
   let error = '';
@@ -486,20 +537,23 @@ function studentAsk_(name, body) {
     const text = String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
     const last = Number(props_().getProperty('askLast:' + name) || 0);
     if (!text) error = 'empty';
-    else if (Date.now() - last < 15000) error = 'slow';
+    else if (Date.now() - last < 15000 && body.kind !== '긴급') error = 'slow';
     else {
       const lock = LockService.getScriptLock(); lock.waitLock(20000);
       try {
         const sh = sheet_(ASK_SHEET, ASK_HEADER);
         const id = Number(props_().getProperty('askSeq') || 0) + 1;
         props_().setProperty('askSeq', String(id));
-        sh.appendRow([id, "'" + nowStr_(), name, body.kind === '건의' ? '건의' : '질문', text, body.anon ? '예' : '', '', '', '']);
+        const kind = ['건의', '상담', '긴급'].indexOf(body.kind) >= 0 ? body.kind : '질문';
+        const counsel = kind === '상담' || kind === '긴급';
+        sh.appendRow([id, "'" + nowStr_(), name, kind, text, body.anon && !counsel ? '예' : '', '', '', '']);
+        if (kind === '긴급') bump_();
         props_().setProperty('askLast:' + name, String(Date.now()));
       } finally { lock.releaseLock(); }
     }
   }
   const mine = readAsks_(function (a) { return a.from === name && !a.del; })
-    .map(function (a) { return { id: a.id, t: a.t, kind: a.kind, text: a.text, anon: a.anon, reply: a.reply, rt: a.rt }; });
+    .map(function (a) { return { id: a.id, t: a.t, kind: a.kind, text: a.text, anon: a.anon, reply: a.reply, rt: a.rt, done: a.done }; });
   return { ok: true, error: error, asks: mine.reverse() };
 }
 
@@ -529,6 +583,7 @@ function villageState_() {
     pos: cacheGet_('v:pos', {}), inv: inv,
     emo: cacheGet_('v:emo', []).filter(function (x) { return x.ts > cut; }),
     chat: cacheGet_('v:chat', []).filter(function (x) { return x.ts > cut; }),
+    hanaLook: hanaLook_(), mega: megaList_(),
     now: Date.now()
   };
 }
@@ -538,8 +593,22 @@ function studentVillage_(name, body) {
   const lock = LockService.getScriptLock(); lock.waitLock(10000);
   try {
     if (body.op === 'move') {
-      const x = Math.max(0, Math.min(1, Number(body.x) || 0)), y = Math.max(0, Math.min(1, Number(body.y) || 0));
-      const pos = cacheGet_('v:pos', {}); pos[name] = [Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000, Date.now()]; cachePut_('v:pos', pos);
+      const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
+      let sc = String(body.sc || 'out');
+      if (!/^(out|hall|arcade|hana|house:.{1,20})$/.test(sc)) sc = 'out';
+      const pos = cacheGet_('v:pos', {}), now = Date.now();
+      const p = { x: x, y: y, sc: sc, ts: now };
+      const sit = String(body.s || ''), seat = Math.floor(Number(body.t));
+      if (sit) {
+        const cap = (SEAT_CAP[sc] || {})[sit];
+        if (!cap || !(seat >= 0 && seat < cap)) return { ok: true, error: 'bad' };
+        const taken = Object.keys(pos).some(function (n) { const q = pos[n]; return n !== name && q && q.sc === sc && q.s === sit && q.t === seat && now - q.ts < 600000; });
+        if (taken) return { ok: true, error: 'full' };
+        p.s = sit; p.t = seat;
+        if (body.a) p.a = String(body.a).slice(0, 12);
+      }
+      Object.keys(pos).forEach(function (n) { if (now - pos[n].ts > 3600000 || !pos[n].sc) delete pos[n]; });   // 오래된 자리 정리
+      pos[name] = p; cachePut_('v:pos', pos);
     } else {
       if ((cfg.muted || []).indexOf(name) >= 0) return { ok: true, error: 'muted' };
       const e = String(body.e || '');
@@ -553,6 +622,115 @@ function studentVillage_(name, body) {
   } finally { lock.releaseLock(); }
 }
 
+/* ---------------- 🏘️ 마을: 모둠 자리 · 집 · 하나 · 확성기 ---------------- */
+function myTable_(name) {
+  const p = cacheGet_('v:pos', {})[name];
+  return (p && p.sc === 'hall' && p.s && Date.now() - p.ts < 600000) ? p.s : '';
+}
+function megaList_() {
+  const cut = Date.now() - 3600000;
+  try { return JSON.parse(props_().getProperty('mega') || '[]').filter(function (m) { return m.ts > cut; }); } catch (e) { return []; }
+}
+function houseReady_(inv, id) {
+  const i = HOUSE_ORDER.indexOf(id);
+  if (i <= 0) return true;
+  return i === 1 || (inv.houses || []).indexOf(HOUSE_ORDER[i - 1]) >= 0;
+}
+function findFurn_(eco, id) {
+  const lists = [['furn', eco.furn || []], ['wall', eco.walls || []], ['floor', eco.floors || []]];
+  for (let i = 0; i < lists.length; i++) {
+    const f = lists[i][1].filter(function (x) { return x.id === id; })[0];
+    if (f) return Object.assign({ kind: lists[i][0] }, f);
+  }
+  return null;
+}
+const ROOM_SIZE = { h_box: [6, 4], h_tent: [7, 4], h_cabin: [8, 5], h_cottage: [9, 6], h_castle: [11, 7] };
+function roomSizeOf_(inv) {
+  let best = 'h_box';
+  (inv.houses || []).forEach(function (h) { if (HOUSE_ORDER.indexOf(h) > HOUSE_ORDER.indexOf(best)) best = h; });
+  return ROOM_SIZE[best];
+}
+function cleanRoom_(room, eco, inv, lv) {
+  const size = roomSizeOf_(inv), out = { wall: '', floor: '', items: [] }, used = {};
+  const okSkin = function (id, list) {
+    if (!id) return true;
+    const f = (list || []).filter(function (x) { return x.id === id; })[0];
+    if (!f) return false;
+    return f.price > 0 ? (inv.skins || []).indexOf(id) >= 0 : (f.lv || 1) <= lv;
+  };
+  if (!okSkin(room.wall, eco.walls)) return { error: 'locked' };
+  if (!okSkin(room.floor, eco.floors)) return { error: 'locked' };
+  out.wall = String(room.wall || ''); out.floor = String(room.floor || '');
+  const items = Array.isArray(room.items) ? room.items.slice(0, 30) : [];
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i], f = (eco.furn || []).filter(function (x) { return x.id === String(it[0]); })[0];
+    const x = Math.floor(Number(it[1])), y = Math.floor(Number(it[2]));
+    if (!f || !(x >= 0 && x < size[0] && y >= 0 && y < size[1])) return { error: 'bad' };
+    if (f.price > 0) { used[f.id] = (used[f.id] || 0) + 1; if (used[f.id] > ((inv.furn || {})[f.id] || 0) && lv < 99) return { error: 'locked' }; }
+    else if ((f.lv || 1) > lv) return { error: 'locked' };
+    out.items.push([f.id, x, y, it[3] ? 1 : 0]);
+  }
+  return { room: out };
+}
+function roomState_(owner) {
+  const hit = cacheGet_('room:' + owner, null);
+  if (hit) return hit;
+  const map = readRows_().map, inv = (map.inv || {})[owner] || {};
+  const st = { ok: true, owner: owner, house: inv.house || 'h_box', houses: inv.houses || [], size: roomSizeOf_(inv), room: inv.room || null };
+  cachePut_('room:' + owner, st);
+  return st;
+}
+function hanaLook_() { try { return JSON.parse(props_().getProperty('hanaLook') || '{}'); } catch (e) { return {}; } }
+function hanaOf_(name) { try { return JSON.parse(props_().getProperty('hana:' + name) || '{}'); } catch (e) { return {}; } }
+function hanaRank_() {
+  const all = props_().getProperties(), out = [];
+  Object.keys(all).forEach(function (k) { if (k.indexOf('hana:') === 0) { try { out.push({ n: k.slice(5), p: JSON.parse(all[k]).p || 0 }); } catch (e) {} } });
+  return out.sort(function (a, b) { return b.p - a.p; }).slice(0, 5);
+}
+function hanaLvOf_(p) { let lv = 0; HANA_LV.forEach(function (t, i) { if (p >= t) lv = i; }); return lv; }
+// 🐱 하나와 놀기 · 하나 꾸미기 (Lv.5 이상)
+function studentHana_(name, body) {
+  const T = isTeacherName_(name), ds = todayStr_();
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const map = readRows_().map, eco = economy_(map), hana = eco.hana || {};
+    const st = hanaOf_(name); st.p = st.p || 0; if (st.d !== ds) { st.d = ds; st.c = {}; }
+    let error = '', gained = 0, line = '';
+    if (body.op === 'hana' && body.act) {
+      const a = (hana.acts || []).filter(function (x) { return x.id === body.act; })[0];
+      if (!a) error = 'bad';
+      else if (hanaLvOf_(st.p) < (a.need || 0) && !T) error = 'locked';
+      else if ((st.c[a.id] || 0) >= (a.day || 1) && !T) error = 'limit';
+      else {
+        if (a.cost && !T) {
+          const rows = readCoins_();
+          if (balanceOf_(rows, name) < a.cost) error = 'poor';
+          else addCoin_(name, -a.cost, '하나: ' + a.name, '하나', '', rows);
+        }
+        if (!error) {
+          st.c[a.id] = (st.c[a.id] || 0) + 1; gained = a.aff || 1; st.p += gained;
+          props_().setProperty('hana:' + name, JSON.stringify(st));
+          cachePush_('v:emo', { n: '하나', e: '💛', ts: Date.now() }, 40);
+        }
+      }
+    } else if (body.op === 'hanaDress') {
+      const lv = (((map.pub || {}).priv || {})[name] || {}).lv || 1;
+      const slot = String(body.slot || ''), item = String(body.item || '');
+      const it = (hana.items || []).filter(function (x) { return x.id === item; })[0];
+      const last = Number(props_().getProperty('hanaDressLast:' + name) || 0);
+      if (lv < 5 && !T) error = 'lv';
+      else if (['head', 'face', 'mouth', 'body'].indexOf(slot) < 0 || (item && (!it || it.slot !== slot))) error = 'bad';
+      else if (Date.now() - last < 20000 && !T) error = 'slow';
+      else {
+        const look = hanaLook_(); look[slot] = item; look.by = name; look.at = Date.now();
+        props_().setProperty('hanaLook', JSON.stringify(look)); props_().setProperty('hanaDressLast:' + name, String(Date.now()));
+        bump_();
+      }
+    }
+    return { ok: true, error: error, gained: gained, aff: st.p, lv: hanaLvOf_(st.p), counts: st.c || {}, rank: hanaRank_(), look: hanaLook_() };
+  } finally { lock.releaseLock(); }
+}
+
 /* ---------------- 🐾 냥코인 ---------------- */
 function economy_(map) { return (map.config && map.config.economy) || { missions: [], shop: [], game: {} }; }
 function readCoins_() {
@@ -562,6 +740,8 @@ function readCoins_() {
     return { id: Number(r[0]), t: String(r[1]), name: String(r[2]), amt: Number(r[3]) || 0, why: String(r[4]), kind: String(r[5]), key: String(r[6] || '') };
   });
 }
+// 'OO쌤'처럼 선생님 이름이면 냥코인 무제한이에요 (잔액·게임 횟수 제한 없음, 기록도 안 남겨요)
+function isTeacherName_(name) { return /(쌤|샘|선생님|교감|교장)$/.test(String(name).trim()); }
 function balanceOf_(rows, name) { return rows.reduce(function (s, r) { return r.name === name ? s + r.amt : s; }, 0); }
 function addCoin_(name, amt, why, kind, key, rows) {
   if (!amt) return false;
@@ -624,27 +804,50 @@ function studentCoins_(name, body) {
     map.inv = map.inv || {};
     const inv = map.inv[name] = map.inv[name] || { house: '', houses: [], decor: [] };
     let error = '', result = null;
-    const bal = function () { return balanceOf_(rows, name); };
+    const T = isTeacherName_(name);
+    const bal = function () { return T ? 1e9 : balanceOf_(rows, name); };
     const ds = todayStr_();
     if (body.op === 'buy') {
       const it = (eco.shop || []).filter(function (x) { return x.id === body.item; })[0];
       if (!it || it.off) error = 'noitem';
       else if (bal() < it.price) error = 'poor';
-      else if (it.stock > 0 && soldCount_(it.id) >= it.stock) error = 'soldout';
+      else if (!T && it.stock > 0 && soldCount_(it.id) >= it.stock) error = 'soldout';
       else if (it.cat === 'house' && (inv.houses || []).indexOf(it.id) >= 0) error = 'owned';
+      else if (it.cat === 'house' && !houseReady_(inv, it.id)) error = 'order';
+      else if (it.cat === 'mega' && !cleanText_(body.text, chatCfg_())) error = 'empty';
       else if (it.cat === 'decor' && (inv.decor || []).length >= 4) error = 'full';
       else {
-        addCoin_(name, -it.price, '구매: ' + it.name, '구매', '', rows);
-        props_().setProperty('sold:' + it.id, String(soldCount_(it.id) + 1));
+        if (!T) {
+          addCoin_(name, -it.price, '구매: ' + it.name, '구매', '', rows);
+          props_().setProperty('sold:' + it.id, String(soldCount_(it.id) + 1));
+        }
         if (it.cat === 'coupon') {
           const sh = sheet_(REQ_SHEET, REQ_HEADER), id = Number(props_().getProperty('reqSeq') || 0) + 1;
           props_().setProperty('reqSeq', String(id));
           sh.appendRow([id, "'" + nowStr_(), name, '쿠폰', it.name, it.price, '대기', '', it.id]);
+        } else if (it.cat === 'mega') {
+          const list = megaList_(); list.push({ n: name, text: cleanText_(body.text, chatCfg_()).slice(0, 60), ts: Date.now() });
+          props_().setProperty('mega', JSON.stringify(list.slice(-5))); bump_();
         } else if (it.cat === 'house') { inv.houses = (inv.houses || []).concat([it.id]); inv.house = it.id; }
         else if (it.cat === 'decor') { inv.decor = (inv.decor || []).concat([it.id]); }
-        if (it.cat !== 'coupon') { writeRows_(db, ['inv']); cacheDrop_(['v:inv']); }
+        if (it.cat !== 'coupon' && it.cat !== 'mega') { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + name]); }
         result = it.name;
       }
+    } else if (body.op === 'buyFurn') {
+      const f = findFurn_(eco, String(body.item || ''));
+      if (!f || !(f.price > 0)) error = 'noitem';
+      else if (bal() < f.price) error = 'poor';
+      else if (f.kind !== 'furn' && (inv.skins || []).indexOf(f.id) >= 0) error = 'owned';
+      else {
+        if (!T) addCoin_(name, -f.price, '구매: ' + f.name, '구매', '', rows);
+        if (f.kind === 'furn') { inv.furn = inv.furn || {}; inv.furn[f.id] = (inv.furn[f.id] || 0) + 1; }
+        else inv.skins = (inv.skins || []).concat([f.id]);
+        writeRows_(db, ['inv']); result = f.name;
+      }
+    } else if (body.op === 'roomSave') {
+      const lv = (((map.pub || {}).priv || {})[name] || {}).lv || 1;
+      const r = cleanRoom_(body.room || {}, eco, inv, T ? 99 : lv);
+      if (r.error) error = r.error; else { inv.room = r.room; writeRows_(db, ['inv']); cacheDrop_(['room:' + name]); result = 'ok'; }
     } else if (body.op === 'equipHouse') {
       if (body.house === '' || (inv.houses || []).indexOf(body.house) >= 0) { inv.house = body.house || ''; writeRows_(db, ['inv']); cacheDrop_(['v:inv']); }
       else error = 'noitem';
@@ -665,8 +868,8 @@ function studentCoins_(name, body) {
       const g = eco.game || {}, bet = Math.floor(Number(body.bet) || 0);
       const playsKey = 'plays:' + name + ':' + ds, plays = Number(props_().getProperty(playsKey) || 0);
       if (!gameOpen_(g)) error = 'closed';
-      else if (plays >= (g.daily || 5)) error = 'limit';
-      else if (!(bet >= 1 && bet <= (g.maxBet || 30))) error = 'bet';
+      else if (!T && plays >= (g.daily || 5)) error = 'limit';
+      else if (!(bet >= 1 && bet <= (T ? 1000 : (g.maxBet || 30)))) error = 'bet';
       else if (bal() < bet) error = 'poor';
       else {
         let net = 0, detail = {};
@@ -682,10 +885,23 @@ function studentCoins_(name, body) {
           const pick = Number(body.pick), ans = Math.floor(Math.random() * 3);
           if (!(pick >= 0 && pick <= 2)) error = 'bad';
           else { const win = pick === ans; net = win ? Math.round(bet * 1.5) : -bet; detail = { pick: pick, ans: ans, res: win ? 'win' : 'lose' }; }
+        } else if (body.g === 'slot') {          // 🎰 같은 그림 3개 +4배 (🐾 3개 +9배) · 2개 +0.5배 · 아니면 -1배
+          const sym = ['🐟', '🧶', '🐭', '🍡', '🐾'], reel = [0, 1, 2].map(function () { return sym[Math.floor(Math.random() * 5)]; });
+          const same = reel[0] === reel[1] && reel[1] === reel[2], pair = !same && (reel[0] === reel[1] || reel[1] === reel[2] || reel[0] === reel[2]);
+          net = same ? bet * (reel[0] === '🐾' ? 9 : 4) : pair ? Math.ceil(bet / 2) : -bet;
+          detail = { reel: reel, res: same ? 'jackpot' : pair ? 'win' : 'lose' };
+        } else if (body.g === 'coin') {          // 🪙 앞/뒤 맞히기 (반반) · 맞히면 +1배
+          const pick = body.pick === 'tail' ? 'tail' : 'head', ans = Math.random() < 0.5 ? 'head' : 'tail';
+          net = pick === ans ? bet : -bet; detail = { pick: pick, ans: ans, res: pick === ans ? 'win' : 'lose' };
+        } else if (body.g === 'dice') {          // 🎲 숫자 맞히기 (1/6) · 맞히면 +4배
+          const pick = Math.floor(Number(body.pick)), ans = 1 + Math.floor(Math.random() * 6);
+          if (!(pick >= 1 && pick <= 6)) error = 'bad';
+          else { net = pick === ans ? bet * 4 : -bet; detail = { pick: pick, ans: ans, res: pick === ans ? 'win' : 'lose' }; }
         } else error = 'bad';
         if (!error) {
           props_().setProperty(playsKey, String(plays + 1));
-          if (net) addCoin_(name, net, body.g === 'rps' ? '게임: 하나랑 가위바위보' : '게임: 츄르 컵 찾기', '게임', '', rows);
+          const GN = { rps: '하나랑 가위바위보', cups: '츄르 컵 찾기', slot: '냥냥 슬롯', coin: '동전 앞뒤', dice: '주사위 맞히기' };
+          if (net && !T) addCoin_(name, net, '게임: ' + GN[body.g], '게임', '', rows);
           result = detail; result.net = net;
         }
       }
@@ -694,11 +910,12 @@ function studentCoins_(name, body) {
     const reqs = readReqs_(function (r) { return r.name === name; }).slice(-40).reverse();
     const sold = {}; (eco.shop || []).forEach(function (it) { if (it.stock > 0) sold[it.id] = soldCount_(it.id); });
     return {
-      ok: true, error: error, result: result, balance: bal(),
+      ok: true, error: error, result: result, balance: T ? 0 : bal(), unlimited: T,
       ledger: rows.filter(function (r) { return r.name === name; }).slice(-30).reverse().map(function (r) { return { t: r.t, amt: r.amt, why: r.why }; }),
       inv: inv, reqs: reqs, sold: sold,
-      economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on, open: gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} } },
-      playsLeft: Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
+      economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on, open: gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} },
+        furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {} },
+      playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; })
     };
   } finally { lock.releaseLock(); }
