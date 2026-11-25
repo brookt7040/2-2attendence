@@ -1404,6 +1404,7 @@ body.view-mode #mealBtn,body.view-mode #hwBtn{pointer-events:auto;}
       <div class="row"><span>👑 <b>관리자</b> (마스터키 · 모든 잠금 해제) <small>비워 두면 잠그지 않아요</small></span><input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" inputmode="numeric" id="adminPinInput" maxlength="12" style="width:130px;"></div>
       <div class="row"><span>📢 <b>부관리자</b> · 화면의 <b>오늘의 알림·중요 공지</b>만 고칠 수 있어요</span><input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" inputmode="numeric" id="subPinInput" maxlength="12" style="width:130px;"></div>
       <div class="row"><span>⏰ <b>지각 관리자</b> · 냥이 카드의 <b>출석·지각·결석</b>만 고칠 수 있어요 (OO쌤 카드 제외)</span><input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" inputmode="numeric" id="latePinInput" maxlength="12" style="width:130px;"></div>
+      <div class="row"><span>🍱 <b>급식 관리자</b> · <b>오늘 급식</b>만 쓸 수 있어요 (학생용 출석부의 🍱에서도 써요)</span><input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" inputmode="numeric" id="mealPinInput" maxlength="12" style="width:130px;"></div>
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
       <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
@@ -2140,6 +2141,7 @@ function mergeInto(parsed){
   if (typeof parsed.guideNotes === 'string') db.guideNotes = parsed.guideNotes;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
   if (typeof parsed.latePin === 'string') db.latePin = parsed.latePin;
+  if (typeof parsed.mealPin === 'string') db.mealPin = parsed.mealPin;
 }
 function loadDB(){
   let saved = localStorage.getItem(DB_KEY), migrated = false;
@@ -2490,17 +2492,22 @@ function renderWeek(){
     return `<div class="${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${now2 ? 'now' : ''} ${VIEW || x.lunch ? '' : 'ed'}" data-ds="${x.ds}" data-i="${x.i}"><small>${esc(x.lunch ? '점심' : x.name)} · ${esc(x.start)}</small><span>${esc(x.lunch ? '점심시간' : (x.label || '·'))}${x.changed ? ' (변경)' : ''}</span></div>`; }).join('')}</div>`;
 }
 /* 🍱 급식 · 📚 숙제: 아이콘을 누르면 보여요 (관리자는 고칠 수 있어요 · 공지사항 탭에도 같이 나와요) */
-let mhKind = 'meal';
+let mhKind = 'meal', mhEdit = false;
 function mhDays(){ const out = [], now = nowD(); let d = new Date(now); if (d.getDay() === 0 || d.getDay() === 6) d = nextSchoolDay(d); for (let i = 0; i < 5; i++){ out.push(getTodayStr(d)); d = nextSchoolDay(d); } return out; }
 function mhLabel(ds){ const [y, m, d] = ds.split('-').map(Number), dt = new Date(y, m - 1, d), t0 = nowD(); t0.setHours(0, 0, 0, 0); const diff = Math.round((dt - t0) / 86400000); return { md: `${m}/${d} (${'일월화수목금토'[dt.getDay()]})`, diff }; }
-function openMH(kind){ mhKind = kind; renderMH(); $('mhOv').style.display = 'flex'; }
+function openMH(kind){ mhKind = kind; mhEdit = false; renderMH(); $('mhOv').style.display = 'flex'; }
 function renderMH(){
   const meal = db.meal || {}, hw = (db.hw || []).slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1), today = getTodayStr(nowD());
   $('mhTitle').textContent = mhKind === 'meal' ? '🍱 급식' : '📚 숙제';
   if (mhKind === 'meal'){
+    if (VIEW && mhEdit){
+      $('mhBody').innerHTML = `<div class="meal-d today"><b>${mhLabel(today).md} · 오늘</b><textarea id="mealText" rows="4" placeholder="메뉴를 한 줄에 하나씩 (비우면 지워요)">${esc(meal[today] || '')}</textarea></div>
+        <div class="row" style="gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap;"><input class="nopw" type="text" inputmode="numeric" id="mealPin" maxlength="12" placeholder="급식 관리자 비번" autocomplete="off" data-lpignore="true" data-1p-ignore style="width:150px;font-family:inherit;font-size:1rem;border:2px solid #CDBBA8;border-radius:10px;padding:6px 8px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div id="mealErr" class="form-hint" style="color:#D94A6A;min-height:1.2em;text-align:right;"></div>`;
+      return;
+    }
     const days = VIEW ? (meal[today] ? [today] : []) : [today];   // 🍱 오늘 것만
     $('mhBody').innerHTML = (days.length ? days.map(d => { const L = mhLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b>${VIEW ? `<div class="mt">${esc(meal[d] || '')}</div>` : `<textarea rows="4" data-meal="${d}" placeholder="메뉴를 한 줄에 하나씩 (비우면 안 보여요)">${esc(meal[d] || '')}</textarea>`}</div>`; }).join('') : '<div class="mh-empty">오늘 급식 메뉴가 아직 없어요 🍚</div>')
-      + (VIEW ? '' : '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요</div>');
+      + (VIEW ? '<div style="text-align:right;margin-top:4px;"><button type="button" class="mini-btn" id="mealEditBtn" style="background:#FFFDF6;">✏️ 급식 관리자</button></div>' : '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요 · 🍱 급식 관리자도 쓸 수 있어요</div>');
   } else {
     const list = VIEW ? hw : hw;
     $('mhBody').innerHTML = (list.length ? list.map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff < 0 ? '지남' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
@@ -2509,11 +2516,23 @@ function renderMH(){
   }
 }
 function mealSave(){
+  if (VIEW){ mealSaveView(); return; }
   requirePin(() => {
     db.meal = Object.assign({}, db.meal || {});
     document.querySelectorAll('#mhBody [data-meal]').forEach(t => { const d = t.dataset.meal, v = t.value.trim(); if ((db.meal[d] || '') === v) return; if (v) db.meal[d] = v; else delete db.meal[d]; syncOp({ op:'meal', ds: d, text: v }); });
     saveDB(); showToast('🍱 급식을 저장했어요'); renderMH();
-  });
+  }, ['meal']);
+}
+/* 학생용 출석부: 🍱 급식 관리자 비밀번호로 오늘 급식 쓰기 */
+async function mealSaveView(){
+  const pin = $('mealPin').value.trim(), text = $('mealText').value.trim();
+  if (!pin){ $('mealErr').textContent = '급식 관리자 비밀번호를 넣어 주세요'; return; }
+  $('mealErr').textContent = '저장 중…';
+  try {
+    const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'mealSet', mpin: pin, text }) }), j = await r.json();
+    if (!j.ok){ $('mealErr').textContent = j.error === 'wrong' ? '❌ 비밀번호가 달라요' : '저장하지 못했어요 (서버 업데이트가 필요할 수 있어요)'; return; }
+    db.meal = j.meal || {}; mhEdit = false; showToast('🍱 오늘 급식을 저장했어요'); renderMH();
+  } catch(e){ $('mealErr').textContent = '연결이 안 돼요'; }
 }
 function hwChange(list){ requirePin(() => { db.hw = list; saveDB(); syncOp({ op:'hw', list }); renderMH(); }); }
 /* 📚 오늘만 과목 바꾸기: 시간표 칸을 누르면 (관리자) */
@@ -3605,7 +3624,7 @@ function renderClosing(){
    ========================================================= */
 let pinUntil = 0, pinNext = null, pinRoles = [];
 const pinRoleUntil = { sub: 0, late: 0 };
-const PIN_ROLE_NAME = { sub:'부관리자', late:'지각 관리자' };
+const PIN_ROLE_NAME = { sub:'부관리자', late:'지각 관리자', meal:'급식 관리자' };
 let kidPin = null;   // 🎨 꾸미기 방: 그 학생의 로그인 비밀번호(또는 관리자 비밀번호)
 function requireKidPin(name, fn, onCancel, title){
   kidPin = { name, fn, onCancel }; pinNext = null;
@@ -4268,7 +4287,7 @@ function openAdminUI(){
   $('sfxInput').checked = !!db.sfx;
   $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
   { const sl = db.sleep || {}; $('sleepOnInput').checked = !!sl.on; $('sleepStartInput').value = sl.start || '22:00'; $('sleepEndInput').value = sl.end || '07:00'; }
-  $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || '';
+  $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || ''; $('mealPinInput').value = db.mealPin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
   const ac = db.alarmConfig;
   $('alarm1EnableInput').checked = !!ac.alarm1Enable;
@@ -4301,9 +4320,10 @@ function readAudioFile(file){
   });
 }
 async function saveAdminData(){
-  { const ap = $('adminPinInput').value.trim(), sp = $('subPinInput').value.trim(), lp = $('latePinInput').value.trim();
-    if ((sp && sp === ap) || (lp && lp === ap) || (sp && sp === lp)){ alert('관리자·부관리자·지각 관리자 비밀번호는 서로 달라야 해요.'); return; }
-    if ((sp || lp) && !ap){ alert('부관리자·지각 관리자 비밀번호를 쓰려면 관리자 비밀번호도 정해 주세요.'); return; } }
+  { const ap = $('adminPinInput').value.trim(), sp = $('subPinInput').value.trim(), lp = $('latePinInput').value.trim(), mp = $('mealPinInput').value.trim();
+    const all = [ap, sp, lp, mp].filter(Boolean);
+    if (new Set(all).size !== all.length){ alert('관리자·부관리자·지각 관리자·급식 관리자 비밀번호는 서로 달라야 해요.'); return; }
+    if ((sp || lp || mp) && !ap){ alert('부관리자·지각 관리자·급식 관리자 비밀번호를 쓰려면 관리자 비밀번호도 정해 주세요.'); return; } }
   const students = normalizeStudents($('studentNamesInput').value);
   if (!students.length){ alert('친구를 한 명 이상 입력해 주세요.'); return; }
   const late = $('lateTimeInput').value;
@@ -4336,7 +4356,7 @@ async function saveAdminData(){
   db.expTiers = tiers;
   db.sfx = $('sfxInput').checked;
   db.adminPin = $('adminPinInput').value.trim();
-  db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
+  db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim(); db.mealPin = $('mealPinInput').value.trim();
   db.accessCode = $('accessCodeInput').value.trim(); db.accessHours = Math.min(12, Math.max(1, parseInt($('accessHoursInput').value, 10) || 3));
   if (db.accessCode) gatePass(db.accessCode);   // 지금 이 기기는 바로 통과
   db.sleep = { on: $('sleepOnInput').checked, start: $('sleepStartInput').value || '22:00', end: $('sleepEndInput').value || '07:00' }; sleepTick();
@@ -4497,7 +4517,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', sleep: db.sleep || null, ticker: db.ticker || null, closingAt: db.closingAt === undefined ? '15:00' : (db.closingAt || ''), economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', mealPin: db.mealPin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', sleep: db.sleep || null, ticker: db.ticker || null, closingAt: db.closingAt === undefined ? '15:00' : (db.closingAt || ''), economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -4551,6 +4571,7 @@ function applyConfig(c){
   if (typeof c.guideVer === 'string') db.guideVer = c.guideVer;
   if (typeof c.guideNotes === 'string') db.guideNotes = c.guideNotes;
   if (typeof c.latePin === 'string') db.latePin = c.latePin;
+  if (typeof c.mealPin === 'string') db.mealPin = c.mealPin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
   if (typeof c.urgent === 'string' && c.urgent !== db.urgent && !(sync.api >= 10)){ db.urgent = c.urgent; setTimeout(renderUrgent, 0); }
@@ -7131,7 +7152,8 @@ function bindEvents(){
   $('mealBtn').addEventListener('click', () => openMH('meal'));
   $('hwBtn').addEventListener('click', () => openMH('hw'));
   $('mhOv').addEventListener('click', e => {
-    if (e.target.closest('#mealSave')) mealSave();
+    if (e.target.closest('#mealEditBtn')){ mhEdit = true; renderMH(); setTimeout(() => $('mealText') && $('mealText').focus(), 50); }
+    else if (e.target.closest('#mealSave')) mealSave();
     else if (e.target.closest('#hwAdd')){ const text = $('hwText').value.trim(); if (!text){ showToast('숙제 내용을 적어 주세요'); return; } hwChange((db.hw || []).concat([{ id: Date.now(), subj: $('hwSubj').value.trim(), text, due: $('hwDue').value || '' }])); }
     else { const d = e.target.closest('[data-hwdel]'); if (d) hwChange((db.hw || []).filter(h => String(h.id) !== d.dataset.hwdel)); }
   });

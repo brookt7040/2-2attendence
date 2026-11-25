@@ -89,7 +89,8 @@ function doPost(e) {
     const mv = props_().getProperty('movedTo'); if (mv) return out_({ ok: false, error: 'moved', movedTo: mv, api: API_VERSION });
     if (body.action === 'student') return out_(handleStudent_(body));
     if (body.action === 'sos') return out_(sos_(body));
-    if (body.action === 'tpass') return out_(tpass_(body));    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
+    if (body.action === 'tpass') return out_(tpass_(body));
+    if (body.action === 'mealSet') return out_(mealSet_(body));   // 🍱 급식 관리자 (오늘 급식만)    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
     let auth;
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
       const c = checkStudent_(String(body.name), body.pin);
@@ -347,6 +348,19 @@ function mealData_() { try { return JSON.parse(props_().getProperty('meal') || '
 function hwData_() { try { return JSON.parse(props_().getProperty('hw') || '[]') || []; } catch (e) { return []; } }
 function mealPub_() { const m = mealData_(), t = todayStr_(), out = {}; if (m[t]) out[t] = m[t]; return out; }   // 🍱 오늘 것만 (급식 알리미가 따로 있어요)
 function hwPub_() { const t = todayStr_(); return hwData_().filter(function (h) { return !h.due || h.due >= t; }); }
+function mealSet_(body) {
+  const c = cache_(), f = Number(c.get('mpfail') || 0);
+  if (f >= 5) Utilities.sleep(Math.min(8000, 1500 * (f - 4)));
+  const cf = readRows_().map.config || {}, pin = String(body.mpin || '');
+  if (!pin || !((cf.mealPin && pin === String(cf.mealPin)) || (cf.adminPin && pin === String(cf.adminPin)))) { try { c.put('mpfail', String(f + 1), 1800); } catch (e) {} return { ok: false, error: 'wrong' }; }
+  const lock = lightLock_(15000);
+  try {
+    const m = mealData_(), t = todayStr_(), text = String(body.text || '').slice(0, 400).trim();
+    if (text) m[t] = text; else delete m[t];
+    props_().setProperty('meal', JSON.stringify(m));
+  } finally { lock.releaseLock(); }
+  return { ok: true, meal: mealPub_() };
+}
 function teacherPull_(body, auth) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER), meeting: readMeeting_() };
