@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v21 · 출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v22 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 21;
+const API_VERSION = 22;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -380,6 +380,15 @@ function handlePost_(body, auth) {
         case 'bonusDel': {
           const d = day(o.ds);
           d.bonus = d.bonus.filter(function (b) { return b.id !== o.id; });
+          break;
+        }
+        case 'noteAdd': {                        // 📓 우리반 관리 수첩 (욕설 · 수업 지각)
+          const d = day(o.ds); d.notes = d.notes || [];
+          if (o.entry && !d.notes.some(function (b) { return b.id === o.entry.id; })) d.notes.push(o.entry);
+          break;
+        }
+        case 'noteDel': {
+          const d = day(o.ds); d.notes = (d.notes || []).filter(function (b) { return b.id !== o.id; });
           break;
         }
         case 'clean': {

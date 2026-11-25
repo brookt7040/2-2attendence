@@ -727,6 +727,24 @@ body.view-mode .mini-menu,body.view-mode .time-add-btn,body.view-mode .absent-bt
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
 body.view-mode #urgentBox{pointer-events:none;}
 body.view-mode .card.waiting{cursor:default;}
+.note-side{grid-column:1 / 3;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#FFFFFF;border:2px solid #CDBBA8;border-radius:16px;padding:8px 10px;box-shadow:0 3px 0 rgba(91,70,54,.12);cursor:pointer;font-size:.9rem;}
+.note-side:hover{border-color:var(--ink);}
+.note-side .t{width:100%;font-size:.95rem;} .note-side .t small{color:var(--ink-soft);}
+.note-side .ns-chip{background:#FFF5D1;border:1.5px solid #E8C35A;border-radius:999px;padding:1px 10px;}
+.att-notes{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 2px;padding-top:8px;border-top:2px dashed #E6D9CA;}
+.att-notes span{font-size:.9rem;color:var(--ink-soft);} .att-notes .btn{font-size:.95rem;padding:6px 12px;} .att-notes small{font-size:.75rem;}
+.notes-modal{max-width:860px;width:94vw;position:relative;}
+.notes-modal .close-x{position:absolute;right:14px;top:14px;border:2px solid var(--ink);border-radius:12px;background:#FFC9D3;width:40px;height:40px;cursor:pointer;font-size:1.1rem;}
+.np{display:flex;gap:6px;margin:6px 0 10px;} .np button{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;cursor:pointer;} .np button.on{background:#FFE58A;}
+.nt-wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;max-height:60vh;}
+.nt{width:100%;border-collapse:collapse;font-size:1rem;display:block;overflow:auto;max-height:60vh;}
+.nt th,.nt td{padding:5px 8px;border-bottom:1px solid #EFE3D3;text-align:left;white-space:nowrap;}
+.nt td.nm{font-weight:700;} .nt b{display:inline-block;min-width:1.4em;} .nt b.hot{color:#D94A6A;}
+.nb{font-family:inherit;font-size:.85rem;border:2px solid var(--ink);border-radius:10px;background:#fff;padding:1px 8px;cursor:pointer;margin-left:4px;}
+.nlog{border:2px solid #EFE3D3;border-radius:12px;padding:8px;overflow:auto;max-height:60vh;font-size:.9rem;}
+.nlog-h{font-weight:700;margin-bottom:6px;} .nl{display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px dashed #EFE3D3;} .nl span:first-child{color:var(--ink-soft);min-width:84px;}
+.nl button{margin-left:auto;border:none;background:none;color:#C9A0A0;cursor:pointer;}
+body.view-mode .note-side{display:none !important;}
 </style>
 </head>
 <body>
@@ -761,6 +779,7 @@ body.view-mode .card.waiting{cursor:default;}
           </div></div>
         <div class="side-clean" id="cleanSide"></div>
         <div class="urgent-box" id="urgentBox"></div>
+        <div class="note-side" id="noteSide" title="눌러서 관리 수첩 열기"></div>
       </div>
     </div>
 
@@ -916,6 +935,10 @@ body.view-mode .card.waiting{cursor:default;}
     </div>
   </div>
 </div>
+<div class="overlay" id="notesOverlay">
+  <div class="modal notes-modal"><button type="button" class="close-x" onclick="document.getElementById('notesOverlay').style.display='none'">✕</button>
+    <h2>📓 우리반 관리 수첩</h2><div id="notesBody"></div></div>
+</div>
 <div class="overlay" id="attEditOv" style="z-index:10001;">
   <div class="modal att-edit">
     <h2 id="attEditTitle">✏️ 출석 고치기</h2>
@@ -928,6 +951,7 @@ body.view-mode .card.waiting{cursor:default;}
     <div class="row" id="attEditTimeRow"><span>⏰ 도착 시간</span><input type="time" id="attEditTime" style="width:150px;"></div>
     <div class="row" id="attEditWhyRow"><span>📝 이유 <small>(선택)</small></span><input type="text" id="attEditWhy" maxlength="40" placeholder="예: 병원, 몸이 아파서" style="flex:1;min-width:0;"></div>
     <div class="att-hint" id="attEditHint"></div>
+    <div class="att-notes" id="attNotes"><span>📓 관리 수첩</span><button type="button" class="btn" data-attnote="swear" style="background:#FFD0D0;">🤬 욕설 <small>(오늘 청소 당번)</small></button><button type="button" class="btn" data-attnote="classlate" style="background:#E3D9FF;">⏰ 수업 지각</button></div>
     <div class="modal-btns"><button type="button" class="btn btn-gray" id="attEditClear" style="margin-right:auto;">🗑 기록 지우기</button><button type="button" class="btn btn-gray" id="attEditCancel">취소</button><button type="button" class="btn btn-y" id="attEditOk">저장</button></div>
   </div>
 </div>
@@ -1854,6 +1878,7 @@ function mergeInto(parsed){
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
   if (typeof parsed.subPin === 'string') db.subPin = parsed.subPin;
+  if (parsed.notes && typeof parsed.notes === 'object') db.notes = parsed.notes;
   if (typeof parsed.accessCode === 'string') db.accessCode = parsed.accessCode;
   if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
@@ -1992,6 +2017,9 @@ function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus'
 
 /* 💬 학생이 학생 페이지에서 적은 내 상태 */
 function statusLine(name){ const st = db.statuses && db.statuses[name]; return st && st.t ? `<div class="card-status" title="${esc(name)}의 상태">💬 ${esc(st.t)}</div>` : ''; }
+/* 🧹 청소 당번: 오늘 EXP가 마이너스이거나, 오늘 욕설로 적힌 친구 */
+function swearToday(n, ds){ return (db.notes && db.notes[ds || getTodayStr()] || []).some(x => x.who === n && x.kind === 'swear'); }
+function isCleaner(n){ return !isTeacherName(n) && (dayTotal(n) < 0 || swearToday(n)); }
 function flipCard(card){
   if (card.classList.contains('flipping')) return;
   card.classList.add('flipping');
@@ -2022,7 +2050,7 @@ function renderGrid(){
       card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
       const streak = tk === 'absent' ? 0 : streakOf(name);
       card.innerHTML =
-        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` +
+        `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${isCleaner(name) ? ' 🧹' : ''}</div>` +
         (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
         (rec.rank ? `<div class="card-rank ${rec.rank <= 3 ? 'r' + rec.rank : ''}" title="오늘 ${rec.rank}번째 도착${rec.rankBonus ? ` · 보너스 +${rec.rankBonus}` : ''}">${rec.rank}</div>` : '') +
         (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
@@ -2144,6 +2172,54 @@ function parseHM(v){
   if (!m) return null; const h = +m[1], mi = +m[2];
   return h < 24 && mi < 60 ? [h, mi] : null;
 }
+/* 📓 우리반 관리 수첩 */
+const NOTE_KIND = { swear:{ icon:'🤬', name:'욕설' }, classlate:{ icon:'⏰', name:'수업 지각' } };
+function addNote(who, kind, memo){
+  const ds = getTodayStr(), now = nowD();
+  const entry = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), who, kind, t: `${pad(now.getHours())}:${pad(now.getMinutes())}`, memo: memo || '' };
+  db.notes = db.notes || {}; db.notes[ds] = db.notes[ds] || []; db.notes[ds].push(entry);
+  saveDB(); syncOp({ op:'noteAdd', ds, entry });
+  renderGrid(); renderMenuBoard(); renderNoteSide(); publishPub();
+  showToast(`${NOTE_KIND[kind].icon} ${who} ${NOTE_KIND[kind].name} 적었어요${kind === 'swear' ? ' → 🧹 오늘 청소 당번' : ''}`);
+}
+function delNote(ds, id){
+  if (!confirm('이 기록을 지울까요?')) return;
+  db.notes[ds] = (db.notes[ds] || []).filter(x => x.id !== id); saveDB(); syncOp({ op:'noteDel', ds, id });
+  renderGrid(); renderMenuBoard(); renderNoteSide(); renderNotes(); publishPub();
+}
+let notePeriod = 'week';
+function noteRange(){
+  const now = nowD(), today = getTodayStr(now);
+  if (notePeriod === 'today') return d => d === today;
+  if (notePeriod === 'week'){ const w = weekStart(now); return d => d >= w && d <= today; }
+  if (notePeriod === 'month'){ const m = today.slice(0, 7); return d => d.startsWith(m); }
+  return () => true;
+}
+function noteCounts(){
+  const inR = noteRange(), c = {};
+  Object.entries(db.notes || {}).forEach(([ds, list]) => { if (!inR(ds)) return; (list || []).forEach(x => { c[x.who] = c[x.who] || { swear:0, classlate:0 }; if (c[x.who][x.kind] != null) c[x.who][x.kind]++; }); });
+  return c;
+}
+function renderNoteSide(){
+  const el = $('noteSide'); if (!el) return;
+  const list = (db.notes && db.notes[getTodayStr()]) || [];
+  const sw = list.filter(x => x.kind === 'swear').length, cl = list.filter(x => x.kind === 'classlate').length;
+  el.innerHTML = `<div class="t">📓 우리반 관리 수첩 <small>오늘</small></div><span class="ns-chip">🤬 욕설 <b>${sw}</b></span><span class="ns-chip">⏰ 수업 지각 <b>${cl}</b></span>`;
+}
+function openNotes(){ renderNotes(); $('notesOverlay').style.display = 'flex'; }
+function renderNotes(){
+  const box = $('notesBody'); if (!box) return;
+  const c = noteCounts(), inR = noteRange();
+  const P = [['today', '오늘'], ['week', '이번 주'], ['month', '이번 달'], ['all', '전체']];
+  const rows = kids().map(n => { const v = c[n] || { swear:0, classlate:0 }; return `<tr><td class="nm">${esc(n)}</td>
+    <td><b class="${v.swear ? 'hot' : ''}">${v.swear}</b> <button type="button" class="nb" data-nadd="swear" data-who="${esc(n)}" title="욕설 +1 (오늘 청소 당번)">🤬 +1</button></td>
+    <td><b class="${v.classlate ? 'hot' : ''}">${v.classlate}</b> <button type="button" class="nb" data-nadd="classlate" data-who="${esc(n)}" title="수업 지각 +1">⏰ +1</button></td></tr>`; }).join('');
+  const log = Object.entries(db.notes || {}).filter(([ds]) => inR(ds)).flatMap(([ds, l]) => (l || []).map(x => ({ ...x, ds }))).sort((a, b) => (b.ds + b.t).localeCompare(a.ds + a.t)).slice(0, 60);
+  box.innerHTML = `<div class="np">${P.map(([k, l]) => `<button type="button" data-np="${k}" class="${notePeriod === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="nt-wrap"><table class="nt"><thead><tr><th>이름</th><th>🤬 욕설</th><th>⏰ 수업 지각</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="nlog"><div class="nlog-h">🕘 최근 기록</div>${log.map(x => `<div class="nl"><span>${x.ds.slice(5).replace('-', '/')} ${esc(x.t)}</span><span>${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].icon : ''} ${esc(x.who)} ${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].name : ''}</span><button type="button" data-ndel="${esc(x.id)}" data-nds="${x.ds}" title="지우기">✕</button></div>`).join('') || '<div class="hint">기록이 없어요</div>'}</div></div>
+    <div class="form-hint">🤬 욕설을 적으면 그 친구는 <b>오늘 청소 당번</b>이 돼요 (EXP는 안 깎여요). 냥이 카드의 출석 고치기 창에서도 적을 수 있어요.</div>`;
+}
 let attEditName = null;
 function editTime(name){
   const ds = getTodayStr(), old = (db.records[ds] || {})[name];
@@ -2156,6 +2232,7 @@ function editTime(name){
   $('attEditTime').value = cur; $('attEditWhy').value = (old && old.why) || '';
   document.querySelectorAll('[name=attMode]').forEach(r => { r.checked = r.value === mode; });
   $('attEditClear').style.display = old ? '' : 'none';
+  $('attNotes').style.display = isTeacherName(name) ? 'none' : '';
   attEditSync(); $('attEditOv').style.display = 'flex';
 }
 function attEditSync(){
@@ -2343,7 +2420,7 @@ function renderMenuBoard(){
   html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += '</div><div class="menu-auto">🎯 미션(코인만큼 EXP) · 📚 영어 학원 +25 · 📖 도감 완성 +30~100 · 🥇 1~5등 +5 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
-  const cleaners = kids().filter(n => dayTotal(n) < 0);
+  const cleaners = kids().filter(isCleaner);
   html += `<div class="clean-row"><span>🧹 오늘의 청소 당번</span>${cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
@@ -2352,6 +2429,7 @@ function renderMenuBoard(){
   if (side) side.innerHTML = `<div class="t">🧹 오늘의 청소 당번</div>` + (cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! ✨</span>');
+  renderNoteSide();
 }
 /* 🐾 냥코인 보기 (교실 화면 · 보기 전용) */
 let cvTab = 'shop', cvData = null;
@@ -2929,9 +3007,9 @@ function renderClosing(){
   $('closingList').innerHTML = list.length
     ? list.map((t, i) => `<div class="closing-item ${closingChecked[i] ? 'done' : ''}" data-ci="${i}"><div class="closing-num">${closingChecked[i] ? '✔' : i + 1}</div><div class="closing-text">${esc(t)}</div></div>`).join('')
     : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>';
-  const cleaners = kids().filter(n => dayTotal(n) < 0);
+  const cleaners = kids().filter(isCleaner);
   $('closingExtra').innerHTML = cleaners.length
-    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> 오늘의 청소 당번 <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스인 친구들! 깨끗하게 부탁해 🐾</div></div>`
+    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> 오늘의 청소 당번 <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}${swearToday(n) ? ' 🤬' : ''}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스이거나 고운 말을 안 쓴 친구들! 깨끗하게 부탁해 🐾</div></div>`
     : `<div class="clean-big none">🧹 오늘은 청소 당번이 없어요! 모두 최고 ✨</div>`;
 }
 
@@ -3810,6 +3888,8 @@ function applyOpLocal(o){
     case 'bonusAdd': D(o.ds); if (!db.bonus[o.ds].some(b => b.id === o.entry.id)) db.bonus[o.ds].push(o.entry); break;
     case 'bonusDel': D(o.ds); db.bonus[o.ds] = db.bonus[o.ds].filter(b => b.id !== o.id); break;
     case 'clean': D(o.ds); db.cleanDone[o.ds][o.name] = !!o.v; break;
+    case 'noteAdd': db.notes = db.notes || {}; db.notes[o.ds] = db.notes[o.ds] || []; if (!db.notes[o.ds].some(b => b.id === o.entry.id)) db.notes[o.ds].push(o.entry); break;
+    case 'noteDel': db.notes = db.notes || {}; db.notes[o.ds] = (db.notes[o.ds] || []).filter(b => b.id !== o.id); break;
     case 'notices': db.notices = o.list.slice(); break;
     case 'config': applyConfig(o.data); break;
     case 'look': db.looks = db.looks || {}; if (o.look) db.looks[o.name] = o.look; else delete db.looks[o.name]; break;
@@ -3843,6 +3923,7 @@ function applyServerState(st){
   Object.entries(st.days || {}).forEach(([ds, d]) => {
     db.records[ds] = d.records || {}; db.bonus[ds] = d.bonus || []; db.cleanDone[ds] = d.cleanDone || {};
   });
+  db.notes = {}; Object.entries(st.days || {}).forEach(([ds, d]) => { if (d.notes && d.notes.length) db.notes[ds] = d.notes; });
   if (st.statuses && typeof st.statuses === 'object') db.statuses = st.statuses;
   sync.queue.forEach(applyOpLocal);   // 아직 못 올린 변경은 다시 덮어 적용
 }
@@ -4007,10 +4088,10 @@ function buildPub(){
     const li = levelInfo(sm[n] || 0), r = day[n], tk = r ? recTier(r) : null;
     priv[n] = { lv: li.lv, lvName: LEVELS[li.lv - 1].name, exp: li.exp, need: li.need, next: li.next, pct: Math.round(li.pct * 100),
       today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0, rank: r.rank || 0, remote: !!r.remote, status: r.status, charId: r.charId || '', fur: r.fur || '', sec: r.sec, why: r.why || '' } : null,
-      total: dayTotal(n), clean: !isTeacherName(n) && dayTotal(n) < 0, dex: myDex(n), dexDone: (db.collect || {})[n] || {} };
+      total: dayTotal(n), clean: isCleaner(n), dex: myDex(n), dexDone: (db.collect || {})[n] || {} };
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
-  return { title: db.mainTitle, ds: getTodayStr(), clean: kids().filter(n => dayTotal(n) < 0), students, priv };
+  return { title: db.mainTitle, ds: getTodayStr(), clean: kids().filter(isCleaner), students, priv };
 }
 function publishPub(){
   if (!sync.url || sync.api < 3) return;
@@ -6382,6 +6463,13 @@ function bindEvents(){
   $('attEditOk').addEventListener('click', () => attEditSave(false));
   $('attEditClear').addEventListener('click', () => attEditSave(true));
   $('attEditCancel').addEventListener('click', () => { $('attEditOv').style.display = 'none'; });
+  $('attNotes').addEventListener('click', e => { const b = e.target.closest('[data-attnote]'); if (!b || !attEditName) return; addNote(attEditName, b.dataset.attnote); $('attEditOv').style.display = 'none'; });
+  $('noteSide').addEventListener('click', () => requirePin(openNotes, ['late']));
+  $('notesBody').addEventListener('click', e => {
+    const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
+    const a = e.target.closest('[data-nadd]'); if (a){ addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
+    const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
+  });
   $('syncPullBtn').addEventListener('click', () => adoptSync('pull'));
   $('syncPushBtn').addEventListener('click', () => adoptSync('push'));
   $('syncPill').addEventListener('click', () => pullSync(true));
