@@ -2657,6 +2657,8 @@ async function statusSave(text){
     toast(me.status ? (me.status !== text ? '🙊 고운 말로 바꿔서 저장했어요' : '💬 상태를 저장했어요! 출석부 카드에 떠요') : '상태를 지웠어요');
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
+const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();   // 📱 2-2😻 앱 안
+function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, location.origin); } catch(e){} }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
 let ideas = [], ideaSort = 'new', ideaT = false, ideaReveal = {};
@@ -3538,6 +3540,7 @@ document.addEventListener('click', e => {
   if (t.closest('.tab')){ showTab(t.closest('.tab').dataset.tab); return; }
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
   if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
+  if (IN_APP && t.closest('.board-link')){ e.preventDefault(); appGo('board'); return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });

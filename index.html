@@ -7068,6 +7068,7 @@ function bindEvents(){
   $('weekBody').addEventListener('keydown', e => { if (e.target.id === 'wkEditIn' && e.key === 'Enter' && !e.isComposing) wkEditSave('day'); });
   document.addEventListener('click', e => { const w = e.target.closest('[data-wk]'); if (!w) return; wkEdit = null; if (w.closest('#weekOv')){ wkMode = w.dataset.wk; renderWeek(); } else openWeek(w.dataset.wk); });
   $('myPageBtn').addEventListener('click', e => {
+    try { if (window.parent !== window && window.parent.location.origin === location.origin){ e.preventDefault(); window.parent.postMessage({ nyang:'go', tab:'me' }, location.origin); return; } } catch(err){}
     const api = (VIEW && VIEW.api) || sync.url;
     if (!api){ e.preventDefault(); showToast('먼저 구글 시트 동기화를 연결해 주세요'); return; }
     e.currentTarget.href = studentLink();
