@@ -3740,7 +3740,7 @@ async function syncFetch(url, opts, ms){
       sync.url = j.movedTo; sync.v = -1; saveSync(); setTimeout(() => { pullSync(true); updateSyncUI(); }, 300);
       showToast('🚚 서버가 새 주소로 이사했어요 — 자동으로 옮겨 탔어요');
     }
-    if (!j.ok) throw new Error(j.error === 'auth' ? '교사 열쇠가 맞지 않아요' : j.error === 'moved' ? '서버가 이사했어요' : (j.error || '서버 오류'));
+    if (!j.ok) throw new Error(j.error === 'auth' ? '교사 열쇠가 맞지 않아요' : j.error === 'moved' ? '서버가 이사했어요' : (j.error === 'busy' || /잠금|Lock/i.test(j.error || '')) ? '서버가 잠깐 바빠요 · 학생들이 동시에 많이 쓰는 중' : (j.error || '서버 오류'));
     return j;
   } finally { clearTimeout(tm); }
 }

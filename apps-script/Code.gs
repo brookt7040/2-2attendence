@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v15 · 선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v16 · 잠금 줄이기(동시 접속에 강하게)·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 15;
+const API_VERSION = 16;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -77,7 +77,7 @@ function doGet(e) {
     const mv = props_().getProperty('movedTo'); if (mv) return out_({ ok: false, error: 'moved', movedTo: mv, api: API_VERSION });
     return out_(publicGet_((e && e.parameter) || {}));
   }
-  catch (err) { return out_({ ok: false, error: String(err) }); }
+  catch (err) { return out_(busyOut_(err)); }
 }
 
 function doPost(e) {
@@ -114,7 +114,7 @@ function doPost(e) {
       return out_({ ok: true, free: free_(), now: Date.now(), chatCfg: chatCfg_() });
     }
     return out_(handlePost_(body, auth));
-  } catch (err) { return out_({ ok: false, error: String(err) }); }
+  } catch (err) { return out_(busyOut_(err)); }
 }
 
 function out_(obj) {
@@ -125,6 +125,21 @@ function out_(obj) {
 /* 속성 저장소: 읽기는 캐시를 먼저 봐서 구글 하루 한도(속성 읽기·쓰기)를 아껴요 */
 const PROPS_NONE_ = '\u0000';
 let propsW_ = null;
+/* 🔒 잠금: 읽기만 하는 요청은 잠그지 않고, 마을 이동·대화처럼 가벼운 일은 출석부 잠금과 따로 써요 (서로 기다리지 않게) */
+const NOLOCK_ = { releaseLock: function () {} };
+function lockFor_(need, ms) {
+  if (!need) return NOLOCK_;
+  const l = LockService.getScriptLock(); l.waitLock(ms); return l;
+}
+function lightLock_(ms) {
+  let l = null; try { l = LockService.getDocumentLock(); } catch (e) {}
+  if (!l) l = LockService.getScriptLock();
+  l.waitLock(ms); return l;
+}
+function busyOut_(err) {
+  const m = String(err);
+  return /잠금|lock|timed out|시간초과/i.test(m) ? { ok: false, error: 'busy', msg: '서버가 잠깐 바빠요' } : { ok: false, error: m };
+}
 function props_() {
   if (propsW_) return propsW_;
   const P = PropertiesService.getScriptProperties(), C = CacheService.getScriptCache(), memo = {};
@@ -476,8 +491,7 @@ function handleStudent_(body) {
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
   if (body.op === 'engSubmit' || body.op === 'engPass' || body.op === 'engMine') return studentEng_(name, body);
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
+  const lock = lockFor_(['checkin', 'look', 'ack'].indexOf(body.op) >= 0, 20000);
   try {
     const db = readRows_(), map = db.map;
     const pub = map.pub || {}, priv = (pub.priv || {})[name] || null;
@@ -613,7 +627,7 @@ function studentChat_(name, body, pub) {
     else if (to && to.charAt(0) === '#' && myTable_(name) !== to.slice(1)) error = 'group';
     else if (to && to.charAt(0) !== '#' && (!cfg.whisper || names.indexOf(to) < 0 || to === name)) error = 'whisper';
     else {
-      const lock = LockService.getScriptLock(); lock.waitLock(20000);
+      const lock = lightLock_(15000);
       try { if (!error) { appendChat_(name, to, text); props_().setProperty('chatLast:' + name, String(Date.now())); } }
       finally { lock.releaseLock(); }
     }
@@ -643,7 +657,7 @@ function studentAsk_(name, body) {
     if (!text) error = 'empty';
     else if (Date.now() - last < 15000 && body.kind !== '긴급') error = 'slow';
     else {
-      const lock = LockService.getScriptLock(); lock.waitLock(20000);
+      const lock = lightLock_(15000);
       try {
         const sh = sheet_(ASK_SHEET, ASK_HEADER);
         const id = Number(props_().getProperty('askSeq') || 0) + 1;
@@ -694,7 +708,7 @@ function villageState_() {
 function studentVillage_(name, body) {
   const cfg = chatCfg_();
   if (!chatOpen_(cfg)) return { ok: true, error: 'closed' };
-  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  const lock = lightLock_(10000);
   try {
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
@@ -822,7 +836,7 @@ function hanaLvOf_(p) { let lv = 0; HANA_LV.forEach(function (t, i) { if (p >= t
 // 🐱 하나와 놀기 · 하나 꾸미기 (Lv.5 이상)
 function studentHana_(name, body) {
   const T = isTeacherName_(name), ds = todayStr_();
-  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  const lock = lightLock_(10000);   // 하나는 출석부 데이터를 쓰지 않아요 (코인은 시트 줄 추가)
   try {
     const map = readRows_().map, eco = economy_(map), hana = eco.hana || {};
     const st = hanaOf_(name); st.p = st.p || 0; if (st.d !== ds) { st.d = ds; st.c = {}; }
@@ -999,7 +1013,7 @@ function engReward_(name, map) {
   if (addCoin_(name, r.coins, '영어 학원 통과', '영어', 'eng:' + todayStr_() + ':' + name)) expQueue_(name, r.exp, '📚 영어 학원 통과');
 }
 function studentEng_(name, body) {
-  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  const lock = body.op === 'engMine' ? NOLOCK_ : lightLock_(10000);
   try {
     const set = engSet_(), k = engResultKey_(name);
     let res = null; try { res = JSON.parse(props_().getProperty(k) || 'null'); } catch (e) {}
@@ -1153,7 +1167,7 @@ function teacherCoins_() {
   return { ok: true, balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [] };
 }
 function studentCoins_(name, body) {
-  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  const lock = lockFor_(body.op !== 'coins', 20000);
   try {
     const db = readRows_(), map = db.map, eco = economy_(map), rows = readCoins_();
     map.inv = map.inv || {};
