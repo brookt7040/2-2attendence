@@ -1729,8 +1729,6 @@ function recFur(rec, ch, name, ds){
 function recColors(rec, name, ds, lv){
   const ch = recChar(rec, name, ds);
   if (!ch) return houseColors();
-  // 🎨 학생이 직접 꾸민 냥이가 있으면 출석한 카드에도 그 모습 그대로 (털빛·눈·입·아이템 전부)
-  if (name && db.looks && db.looks[name]) return lookColors(name, lv || levelInfo(seasonExpMap()[name] || 0).lv);
   const col = catColors(ch, recFur(rec, ch, name, ds));
   // 학생이 꾸미기 방에서 고른 아이템을 뽑힌 냥이에게도 입혀 줘요
   if (name && db.students.includes(name)){
