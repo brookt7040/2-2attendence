@@ -1089,10 +1089,15 @@ function openVillage(opts){
       .vg{position:fixed;inset:0;z-index:20000;background:#BFE8B4;display:flex;flex-direction:column;font-family:'NeoDunggeunmo',sans-serif;color:#5B4636;}
       .vg canvas{flex:1;width:100%;min-height:0;touch-action:manipulation;cursor:pointer;}
       .vg-top{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none;}
-      .vg-title{background:#fff;border:3px solid #5B4636;border-radius:999px;padding:6px 16px;font-size:1.1rem;box-shadow:0 3px 0 #5B4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70vw;}
+      .vg-title{background:#fff;border:3px solid #5B4636;border-radius:999px;padding:6px 16px;font-size:1.1rem;box-shadow:0 3px 0 #5B4636;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 300px);min-width:0;}
       .vg-x,.vg-out{margin-left:auto;pointer-events:auto;height:46px;min-width:46px;border-radius:14px;border:3px solid #5B4636;background:#FFC9D3;font-size:1.2rem;cursor:pointer;box-shadow:0 3px 0 #5B4636;font-family:inherit;}
       .vg-out{margin-left:auto;background:#FFE066;padding:0 12px;display:none;}
       .vg-out + .vg-x{margin-left:0;}
+      .vg-x{padding:0 12px;white-space:nowrap;}
+      .vg-top .vg-x,.vg-top .vg-out{margin-left:0;} .vg-title{margin-right:auto;} .vg.folded .vg-fold{margin-right:auto;}
+      .vg-fold{pointer-events:auto;height:40px;min-width:40px;border-radius:12px;border:3px solid #5B4636;background:#fff;font-size:1rem;cursor:pointer;box-shadow:0 3px 0 #5B4636;font-family:inherit;padding:0 8px;white-space:nowrap;}
+      .vg.folded .vg-title,.vg.folded .vg-hud{display:none !important;}
+      .vg-hud{pointer-events:none;} .vg-hud .vg-move{pointer-events:auto;}
       .vg-bar{display:flex;gap:6px;align-items:center;padding:8px;background:#FFFCF3;border-top:3px solid #5B4636;flex-wrap:wrap;}
       .vg-bar button{border:2px solid #5B4636;border-radius:12px;background:#fff;font-size:1.3rem;padding:4px 8px;cursor:pointer;box-shadow:0 2px 0 #5B4636;font-family:inherit;}
       .vg-bar input{flex:1;min-width:120px;padding:8px 10px;font-size:1.05rem;border:2px solid #5B4636;border-radius:12px;font-family:inherit;}
@@ -1152,7 +1157,7 @@ function openVillage(opts){
   const eco = opts.eco || {}, HANA = eco.hana || { acts: [], items: [], lvNames: [] };
   const root = document.createElement('div'); root.className = 'vg';
   root.innerHTML = `<canvas></canvas>
-    <div class="vg-top"><span class="vg-title"></span><button type="button" class="vg-out">🚪 나가기</button><button type="button" class="vg-x">✕</button></div>
+    <div class="vg-top"><button type="button" class="vg-fold" title="왼쪽 위 정보 접기/펴기">◀ 접기</button><span class="vg-title"></span><button type="button" class="vg-out">🚪 나가기</button><button type="button" class="vg-x">✕ 마을 나가기</button></div>
     <div class="vg-hud"></div><div class="vg-mega"></div><div class="vg-msg"></div><div class="vg-group"></div>
     <div class="vg-acts"></div><div class="vg-panel"></div><div class="vg-edit"></div>
     ${opts.viewOnly ? '' : `<div class="vg-bar">${VILLAGE_EMOTES.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}
@@ -1809,7 +1814,7 @@ function openVillage(opts){
     else if (scene.startsWith('house:')) t.textContent = `🏠 ${scene.slice(6)}네 집${room && room.owner === meName ? ' (우리 집)' : ''}`;
     else t.textContent = SCENE_NAME[scene];
     $q('.vg-out').style.display = scene === 'out' ? 'none' : 'block';
-    $q('.vg-out').textContent = isMap(scene) ? '🏘️ 마을로' : '🚪 나가기';
+    $q('.vg-out').textContent = isMap(scene) ? '🏘️ 마을로' : '🚪 건물 나가기';
     renderHud();
     const hm = scene === 'out' && state && (state.mega || []).length;
     $q('.vg-mega').style.display = hm ? 'block' : 'none'; root.classList.toggle('has-mega', !!hm);
@@ -2284,6 +2289,10 @@ function openVillage(opts){
 
   /* ---------- 아래 바: 이모트 · 말하기 ---------- */
   $q('.vg-x').addEventListener('click', () => close());
+  /* ◀ 접기: 제목·레벨 정보를 숨겨서 그 밑의 집도 누를 수 있게 */
+  const setFold = f => { root.classList.toggle('folded', f); $q('.vg-fold').textContent = f ? '▶ 펴기' : '◀ 접기'; try { localStorage.setItem('nyangVgFold', f ? '1' : ''); } catch(e){} };
+  try { setFold(localStorage.getItem('nyangVgFold') === '1'); } catch(e){}
+  $q('.vg-fold').addEventListener('click', () => setFold(!root.classList.contains('folded')));
   if (!opts.viewOnly){
     const input = $q('.vg-bar input');
     root.querySelectorAll('[data-e]').forEach(b => b.addEventListener('click', async () => {
