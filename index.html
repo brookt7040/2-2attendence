@@ -734,6 +734,15 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 @keyframes sbPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
 
 #fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:10000;}
+/* 👀 학생용 출석부: Must Read 비었으면 숨김 · 청소 당번 ＋ · 종례하기 숨김 · 폰에서는 오른쪽 → 가운데 → 왼쪽 순서 */
+body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openClosingBtn{display:none !important;}
+@media (max-width:760px){
+  body.view-mode .header{display:flex !important;flex-direction:column;}
+  body.view-mode .header-left,body.view-mode .side-btns{display:contents;}
+  body.view-mode .title-row{order:0;} body.view-mode .mini-menu{order:1;}
+  body.view-mode .header-right{order:2;} body.view-mode .header-mid{order:3;}
+  body.view-mode #cleanSide{order:4;} body.view-mode #urgentBox{order:5;}
+}
 
 @media (max-width:1100px){
   .header{display:flex;flex-direction:column;}
@@ -3784,7 +3793,7 @@ function renderNotices(){
   const area = $('noticeArea'); area.classList.toggle('admin-on', noticeAdminActive());
   area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 Notice<button type="button" class="edit-mini" title="알림 고치기" onclick="event.stopPropagation(); editText(\'notices\')">✏️</button></div>';
   const list = (db.notices || []).filter(t => t && t.trim() !== '');
-  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty" onclick="editText(\'notices\')" style="cursor:pointer;">✏️ 눌러서 수정</div>'); return; }
+  if (!list.length){ area.insertAdjacentHTML('beforeend', VIEW ? '<div class="notice-empty">오늘은 알림이 없어요</div>' : '<div class="notice-empty" onclick="editText(\'notices\')" style="cursor:pointer;">✏️ 눌러서 수정</div>'); return; }
   list.forEach((text, idx) => {
     const item = document.createElement('div');
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
