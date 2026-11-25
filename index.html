@@ -1375,6 +1375,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
       <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
+      <div class="row" style="margin-top:12px;"><span>✨ <b>"새로 꾸몄어요" 알림</b> · 학생이 꾸미면 마을 위에 흘러요</span><span><label><input type="checkbox" id="tkLookOn"> 켜기</label> <input type="number" id="tkLookMin" min="1" max="1440" style="width:70px;"> 분 동안</span></div>
+      <div class="row"><span>📢 <b>확성기</b> · 학생이 냥코인으로 사서 마을·교실 화면 맨 위에 띄워요</span><span><label><input type="checkbox" id="tkMegaOn"> 팔기</label> <input type="number" id="tkMegaMin" min="1" max="1440" style="width:70px;"> 분 동안</span></div>
       <div class="row" style="margin-top:12px;"><span>📋 <b>종례가 학생 화면 맨 위로 올라오는 시각</b> · 이때부터 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</span><input type="time" id="closingAtInput"></div>
       <div class="row" style="margin-top:12px;"><span>💤 <b>접속 금지 시간</b> · 교실 출석부·학생 화면·학생용 출석부·안내 사이트가 모두 잠겨요 (선생님 계정은 괜찮아요)</span></div>
       <div class="row"><label><input type="checkbox" id="sleepOnInput"> 사용</label><span><input type="time" id="sleepStartInput"> 부터 <input type="time" id="sleepEndInput"> 까지</span></div>
@@ -2104,6 +2106,7 @@ function mergeInto(parsed){
   if (parsed.accessEpoch) db.accessEpoch = Number(parsed.accessEpoch) || 0;
   if (parsed.sleep) db.sleep = parsed.sleep;
   if (typeof parsed.closingAt === 'string') db.closingAt = parsed.closingAt;
+  if (parsed.ticker) db.ticker = parsed.ticker;
   if (typeof parsed.guideVer === 'string') db.guideVer = parsed.guideVer;
   if (typeof parsed.guideNotes === 'string') db.guideNotes = parsed.guideNotes;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
@@ -2319,7 +2322,7 @@ function presenceHTML(p, names){
 let serverPresence = null;
 function openPres(){ $('presBody').innerHTML = serverPresence ? presenceHTML(serverPresence, kids()) : '<div class="hint">서버 코드를 최신(v29)으로 배포하면 보여요</div>'; $('presOv').style.display = 'flex'; pullSync(true); }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 29;
+const NEED_API = 30;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -4160,6 +4163,7 @@ function openAdminUI(){
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
   $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
+  { const tk = Object.assign({ look: true, lookMin: 60, mega: true, megaMin: 60 }, db.ticker || {}); $('tkLookOn').checked = tk.look; $('tkLookMin').value = tk.lookMin; $('tkMegaOn').checked = tk.mega; $('tkMegaMin').value = tk.megaMin; }
   $('closingAtInput').value = db.closingAt === undefined ? '15:00' : (db.closingAt || '');
   { const sl = db.sleep || {}; $('sleepOnInput').checked = !!sl.on; $('sleepStartInput').value = sl.start || '22:00'; $('sleepEndInput').value = sl.end || '07:00'; }
   $('guideVerInput').value = db.guideVer || ''; $('guideNotesInput').value = db.guideNotes || '';
@@ -4234,6 +4238,7 @@ async function saveAdminData(){
   db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
   db.accessCode = $('accessCodeInput').value.trim(); db.accessHours = Math.min(12, Math.max(1, parseInt($('accessHoursInput').value, 10) || 3));
   if (db.accessCode) gatePass(db.accessCode);   // 지금 이 기기는 바로 통과
+  db.ticker = { look: $('tkLookOn').checked, lookMin: Math.min(1440, Math.max(1, parseInt($('tkLookMin').value, 10) || 60)), mega: $('tkMegaOn').checked, megaMin: Math.min(1440, Math.max(1, parseInt($('tkMegaMin').value, 10) || 60)) };
   db.closingAt = $('closingAtInput').value || '';
   db.sleep = { on: $('sleepOnInput').checked, start: $('sleepStartInput').value || '22:00', end: $('sleepEndInput').value || '07:00' }; sleepTick();
   db.guideVer = $('guideVerInput').value.trim().slice(0, 12); db.guideNotes = $('guideNotesInput').value.trim().slice(0, 1500);
@@ -4394,7 +4399,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', sleep: db.sleep || null, closingAt: db.closingAt === undefined ? '15:00' : (db.closingAt || ''), economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', sleep: db.sleep || null, ticker: db.ticker || null, closingAt: db.closingAt === undefined ? '15:00' : (db.closingAt || ''), economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -4441,6 +4446,7 @@ function applyConfig(c){
   if (c.accessEpoch != null) db.accessEpoch = Number(c.accessEpoch) || 0;
   if (c.sleep !== undefined) db.sleep = c.sleep;
   if (typeof c.closingAt === 'string') db.closingAt = c.closingAt;
+  if (c.ticker) db.ticker = c.ticker;
   if (typeof c.guideVer === 'string') db.guideVer = c.guideVer;
   if (typeof c.guideNotes === 'string') db.guideNotes = c.guideNotes;
   if (typeof c.latePin === 'string') db.latePin = c.latePin;
@@ -4582,7 +4588,7 @@ function renderSongs(){
 /* 📢 확성기 · 🐱 하나 꾸미기 (교실 화면) */
 let megaNow = [], hanaLookNow = {};
 function setMega(list){
-  megaNow = (list || []).filter(m => Date.now() - m.ts < 3600000);
+  megaNow = (list || []).filter(m => Date.now() - m.ts < ((db.ticker && db.ticker.megaMin) || 60) * 60000);
   const el = $('megaBar'); if (!el) return;
   el.style.display = megaNow.length ? 'block' : 'none';
   el.innerHTML = megaNow.length ? `<span class="mega-in">${megaNow.map(m => `📢 <b>${esc(m.n)}</b> : ${esc(m.text)}`).join('&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;')}</span>` : '';
