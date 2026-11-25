@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v19 · 빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v20 · 💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 19;
+const API_VERSION = 20;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -310,7 +310,7 @@ function teacherPull_(body, auth) {
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
-    const st = { config: map.config || null, days: {}, acks: {} };
+    const st = { config: map.config || null, days: {}, acks: {}, statuses: map.statuses || {} };
     Object.keys(map).forEach(function (k) {
       if (k.indexOf('day:') === 0) st.days[k.slice(4)] = map[k];
       if (k.indexOf('acks:') === 0) st.acks[k.slice(5)] = map[k];
@@ -524,16 +524,16 @@ function handleStudent_(body) {
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
   if (body.op === 'engSubmit' || body.op === 'engPass' || body.op === 'engMine') return studentEng_(name, body);
-  if (['checkin', 'look', 'ack'].indexOf(body.op) < 0) {
+  if (['checkin', 'look', 'ack', 'status'].indexOf(body.op) < 0) {
     const v = version_(), ds0 = todayStr_(), sk = 'me:' + v + ':' + ds0;
     let snap = cacheGet_(sk, null);
     if (!snap) {
       const m0 = readRows_().map;
-      snap = { priv: ((m0.pub || {}).priv) || {}, looks: (m0.config && m0.config.looks) || {}, acks: m0['acks:' + ds0] || {} };
+      snap = { priv: ((m0.pub || {}).priv) || {}, looks: (m0.config && m0.config.looks) || {}, acks: m0['acks:' + ds0] || {}, statuses: m0.statuses || {} };
       cachePut_(sk, snap);
     }
     const mine0 = []; Object.keys(snap.acks).forEach(function (t) { if ((snap.acks[t] || []).indexOf(name) >= 0) mine0.push(t); });
-    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0 };
+    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '' };
   }
   const lock = lockFor_(true, 20000);
   try {
@@ -551,6 +551,11 @@ function handleStudent_(body) {
       writeRows_(db, ['config', 'lookAt']);
       cacheDrop_(['v:pub']);
       bump_();
+    } else if (body.op === 'status') {            // 💬 내 상태 (출석부 카드에 떠요)
+      const t = cleanText_(String(body.text || '').replace(/[<>]/g, ''), chatCfg_()).slice(0, 20);
+      map.statuses = map.statuses || {};
+      if (t) map.statuses[name] = { t: t, at: Date.now() }; else delete map.statuses[name];
+      writeRows_(db, ['statuses']); bump_();
     } else if (body.op === 'ack') {
       const notices = readNotices_(), text = String(body.text || '');
       if (notices.indexOf(text) >= 0) {
@@ -567,6 +572,7 @@ function handleStudent_(body) {
     return {
       ok: true, name: name, me: priv,
       look: ((map.config && map.config.looks) || {})[name] || null,
+      status: ((map.statuses || {})[name] || {}).t || '',
       acked: mine
     };
   } finally {

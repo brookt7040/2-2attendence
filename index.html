@@ -718,6 +718,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .cbk-tier{font-size:1.05rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 12px;letter-spacing:1px;}
 .cbk-name{font-size:1.35rem;font-weight:700;margin-top:4px;word-break:keep-all;line-height:1.25;}
 .cbk-sub{font-size:.85rem;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
+.card-status{max-width:92%;margin-top:4px;font-size:.82rem;background:#fff;border:2px solid #CDBBA8;border-radius:12px;padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
 </style>
 </head>
 <body>
@@ -1833,6 +1834,7 @@ function mergeInto(parsed){
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
   if (typeof parsed.subPin === 'string') db.subPin = parsed.subPin;
+  if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
   if (typeof parsed.latePin === 'string') db.latePin = parsed.latePin;
 }
 function loadDB(){
@@ -1966,6 +1968,8 @@ function streakOf(name){
 }
 function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus' : 'minus'}">${fmtExp(exp)}</span>`; }
 
+/* 💬 학생이 학생 페이지에서 적은 내 상태 */
+function statusLine(name){ const st = db.statuses && db.statuses[name]; return st && st.t ? `<div class="card-status" title="${esc(name)}의 상태">💬 ${esc(st.t)}</div>` : ''; }
 function flipCard(card){
   if (card.classList.contains('flipping')) return;
   card.classList.add('flipping');
@@ -1987,7 +1991,7 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
+      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${statusLine(name)}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
       card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name), isTeacherName(name) ? [] : ['late']); });
       card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
@@ -2004,7 +2008,7 @@ function renderGrid(){
       card.append(cv);
       card.insertAdjacentHTML('beforeend',
         `<div class="student-name">${numTag(nums, name)}${esc(name)}</div>` +
-        `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button>${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
+        `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button></div>${statusLine(name)}`);
       card.title = recCharName(rec, name, ds);
       // 🔄 누르면 뒤집혀서 오늘 뽑은 냥이 등급·이름이 나와요
       card.insertAdjacentHTML('beforeend', `<div class="card-back" style="--tc:${meta.color};--tcap:${meta.cap || meta.color}"><div class="cbk-ic">${meta.icon}</div><div class="cbk-tier">${esc(meta.label || meta.short)}</div><div class="cbk-name">${esc(tk === 'absent' ? '집에서 쉬는 중' : recCharName(rec, name, ds))}</div><div class="cbk-sub">${esc(name)} · ${esc(rec.time || '')}${tk === 'absent' ? '' : ` · ${fmtExp(rec.exp)} EXP`}${rec.rank ? ` · ${rec.rank}등` : ''}${rec.why ? `<br>📝 ${esc(rec.why)}` : ''}</div></div>`);
@@ -3811,6 +3815,7 @@ function applyServerState(st){
   Object.entries(st.days || {}).forEach(([ds, d]) => {
     db.records[ds] = d.records || {}; db.bonus[ds] = d.bonus || []; db.cleanDone[ds] = d.cleanDone || {};
   });
+  if (st.statuses && typeof st.statuses === 'object') db.statuses = st.statuses;
   sync.queue.forEach(applyOpLocal);   // 아직 못 올린 변경은 다시 덮어 적용
 }
 /* 🛡️ 명단이 처음 상태(친구1~5)인 출석부는 설정·공개 정보를 서버에 올리지 않아요 (진짜 명단을 덮지 않게) */

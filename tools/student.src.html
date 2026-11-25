@@ -211,6 +211,9 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .checkin.done{background:#DFF7EE;font-size:1.05rem;}
 .checkin.wait{background:#E4F3FF;font-size:1.05rem;}
 @keyframes ckb{50%{transform:translateY(-3px)}}
+.st-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.st-quick button{font-family:inherit;font-size:.9rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 10px;cursor:pointer;}
+.st-row{display:flex;gap:6px;align-items:center;margin-bottom:4px;} .st-row input{flex:1;min-width:0;font-family:inherit;font-size:1rem;padding:8px 10px;border:2px solid var(--ink);border-radius:12px;}
 .cs-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
 .cs-imp{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;border:2px dashed #F0B400;border-radius:12px;background:#FFF8D6;font-weight:700;cursor:pointer;}
 .cs-imp input{width:20px;height:20px;accent-color:#F0B400;}
@@ -407,6 +410,17 @@ async function pull(force){
 function seenMap(){ try { return JSON.parse(localStorage.getItem('nyangSeenLook') || '{}') || {}; } catch(e){ return {}; } }
 function seenLook(n){ return Number(seenMap()[n] || 0); }
 function markSeen(s){ if (!s || !s.lookAt) return; const m = seenMap(); m[s.name] = s.lookAt; try { localStorage.setItem('nyangSeenLook', JSON.stringify(m)); } catch(e){} }
+async function statusSave(text){
+  if (!me) return;
+  try {
+    const j = await studentCall('status', { text });
+    if (!j.ok){ toast(j.error === 'busy' ? '서버가 잠깐 바빠요 · 다시 해 주세요' : '저장하지 못했어요'); return; }
+    me.status = typeof j.status === 'string' ? j.status : text;
+    if ($('stInput')) $('stInput').value = me.status;
+    if ($('stNow')) $('stNow').textContent = me.status ? `지금 상태: 💬 ${me.status}` : '아직 상태가 없어요';
+    toast(me.status ? (me.status !== text ? '🙊 고운 말로 바꿔서 저장했어요' : '💬 상태를 저장했어요! 출석부 카드에 떠요') : '상태를 지웠어요');
+  } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
+}
 async function studentCall(op, extra){
   const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
   return api(API, { method:'POST', body: JSON.stringify(body) });
@@ -418,7 +432,7 @@ async function refreshMe(silent){
     // 비밀번호가 정말 틀렸을 때만 로그아웃해요. 서버가 바쁘거나 잠깐 오류가 난 건 그대로 두고 다음에 다시 확인해요
     if (!j.ok && (j.error === 'wrong' || j.error === 'nopin')){ if (!silent) alert('비밀번호가 바뀌었어요. 다시 로그인해 주세요.'); logout(); return; }
     if (!j.ok){ if (!silent) toast('서버가 잠깐 바빠요 · 조금 있다 다시 확인할게요'); return; }
-    me.info = j.me; me.look = j.look; me.acked = j.acked || [];
+    me.info = j.me; me.look = j.look; me.acked = j.acked || []; if (typeof j.status === 'string') me.status = j.status;
   } catch(e){}
 }
 
@@ -446,7 +460,7 @@ async function doLogin(){
         j.error === 'wrong'  ? (j.until ? '너무 많이 틀려서 10분 동안 잠겼어요' : `비밀번호가 달라요 (남은 기회 ${j.left}번)`) : '잠시 후 다시 해 주세요';
       return;
     }
-    me = { name, pin, info: j.me, look: j.look, acked: j.acked || [] };
+    me = { name, pin, info: j.me, look: j.look, acked: j.acked || [], status: j.status || '' };
     const store = $('loginKeep').checked ? localStorage : sessionStorage;
     localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY);
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
@@ -626,7 +640,7 @@ function openCat(s){
 
 function renderMe(){
   const box = $('meBox');
-  if (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.pf) return;   // 카드 쓰는 중엔 다시 그리지 않아요
+  if (document.activeElement && document.activeElement.dataset && (document.activeElement.dataset.pf || document.activeElement.id === 'stInput')) return;   // 카드 쓰는 중엔 다시 그리지 않아요
   if (!me){
     box.innerHTML = `<div class="box" style="text-align:center;"><div class="box-head">🐱 내 고양이</div>
       <p style="font-size:1.2rem;">내 이름과 비밀번호로 로그인하면<br>고양이를 꾸밀 수 있어요!</p><button type="button" class="btn btn-y" id="loginOpenBtn2">🔑 로그인</button></div>`;
@@ -649,6 +663,12 @@ function renderMe(){
           <div>📅 오늘 출석: ${!fresh ? '아직 출석부가 열리지 않았어요' : (t ? `${t.icon} ${esc(t.label)} · ${esc(t.time)} · ${t.exp >= 0 ? '+' : ''}${t.exp}` : '아직 안 했어요')}</div>
         </div>
       </div>
+    </div>
+    <div class="box"><div class="box-head pink">💬 내 상태</div>
+      <div class="hint" style="margin-bottom:6px;">지금 내 기분이나 한마디를 적으면 교실 출석부 내 카드에 떠요 (20자까지)</div>
+      <div class="st-quick">${['😊 기분 좋아요', '😪 졸려요', '🔥 힘내자!', '🤒 컨디션 별로', '🎉 신나요', '📚 공부 중'].map(q => `<button type="button" data-stq="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+      <div class="st-row"><input id="stInput" maxlength="20" placeholder="예: 오늘 생일이에요 🎂" value="${esc(me.status || '')}"><button type="button" class="btn btn-y" id="stSave">저장</button><button type="button" class="btn" id="stClear" style="background:#fff;">지우기</button></div>
+      <div class="hint" id="stNow">${me.status ? `지금 상태: 💬 ${esc(me.status)}` : '아직 상태가 없어요'}</div>
     </div>
     ${profileBox()}
     ${dexBox(info)}
@@ -1166,6 +1186,9 @@ document.addEventListener('click', e => {
   if (t.closest('#pfSave')){ saveProfile(); return; }
   if (t.closest('#hanaBtn')){ hanaTalk(); return; }
   if (t.closest('#csSend')){ counselSend(); return; }
+  { const q = t.closest('[data-stq]'); if (q){ statusSave(q.dataset.stq); return; } }
+  if (t.closest('#stSave')){ statusSave(($('stInput').value || '').trim()); return; }
+  if (t.closest('#stClear')){ statusSave(''); return; }
   if (t.closest('#csImp')){ $('counselBox').dataset.imp = t.checked ? '1' : ''; }
   if (t.closest('#oathGo')){ doCheckin(); return; }
 });
