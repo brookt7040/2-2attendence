@@ -740,6 +740,7 @@ body.view-mode .card.waiting{cursor:default;}
 .nt{width:100%;border-collapse:collapse;font-size:1rem;display:block;overflow:auto;max-height:60vh;}
 .nt th,.nt td{padding:5px 8px;border-bottom:1px solid #EFE3D3;text-align:left;white-space:nowrap;}
 .nt td.nm{font-weight:700;} .nt b{display:inline-block;min-width:1.4em;} .nt b.hot{color:#D94A6A;}
+.nt small.acc{color:var(--ink-soft);font-size:.78rem;}
 .nb{font-family:inherit;font-size:.85rem;border:2px solid var(--ink);border-radius:10px;background:#fff;padding:1px 8px;cursor:pointer;margin-left:4px;}
 .nlog{border:2px solid #EFE3D3;border-radius:12px;padding:8px;overflow:auto;max-height:60vh;font-size:.9rem;}
 .nlog-h{font-weight:700;margin-bottom:6px;} .nl{display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px dashed #EFE3D3;} .nl span:first-child{color:var(--ink-soft);min-width:84px;}
@@ -951,7 +952,7 @@ body.view-mode .note-side{display:none !important;}
     <div class="row" id="attEditTimeRow"><span>⏰ 도착 시간</span><input type="time" id="attEditTime" style="width:150px;"></div>
     <div class="row" id="attEditWhyRow"><span>📝 이유 <small>(선택)</small></span><input type="text" id="attEditWhy" maxlength="40" placeholder="예: 병원, 몸이 아파서" style="flex:1;min-width:0;"></div>
     <div class="att-hint" id="attEditHint"></div>
-    <div class="att-notes" id="attNotes"><span>📓 관리 수첩</span><button type="button" class="btn" data-attnote="swear" style="background:#FFD0D0;">🤬 욕설 <small>(오늘 청소 당번)</small></button><button type="button" class="btn" data-attnote="classlate" style="background:#E3D9FF;">⏰ 수업 지각</button></div>
+    <div class="att-notes" id="attNotes"><span>📓 관리 수첩</span><button type="button" class="btn" data-attnote="swear" style="background:#FFD0D0;">🤬 욕설 <small>(5번마다 청소 당번)</small></button><button type="button" class="btn" data-attnote="classlate" style="background:#E3D9FF;">⏰ 수업 지각</button></div>
     <div class="modal-btns"><button type="button" class="btn btn-gray" id="attEditClear" style="margin-right:auto;">🗑 기록 지우기</button><button type="button" class="btn btn-gray" id="attEditCancel">취소</button><button type="button" class="btn btn-y" id="attEditOk">저장</button></div>
   </div>
 </div>
@@ -2018,7 +2019,10 @@ function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus'
 /* 💬 학생이 학생 페이지에서 적은 내 상태 */
 function statusLine(name){ const st = db.statuses && db.statuses[name]; return st && st.t ? `<div class="card-status" title="${esc(name)}의 상태">💬 ${esc(st.t)}</div>` : ''; }
 /* 🧹 청소 당번: 오늘 EXP가 마이너스이거나, 오늘 욕설로 적힌 친구 */
-function swearToday(n, ds){ return (db.notes && db.notes[ds || getTodayStr()] || []).some(x => x.who === n && x.kind === 'swear'); }
+/* 🤬 욕설은 누적 5번마다(5·10·15…) 그날 청소 당번 */
+const SWEAR_STEP = 5;
+function swearList(n){ return Object.entries(db.notes || {}).flatMap(([ds, l]) => (l || []).filter(x => x.who === n && x.kind === 'swear').map(x => ({ ...x, ds }))).sort((a, b) => (a.ds + a.t + a.id).localeCompare(b.ds + b.t + b.id)); }
+function swearToday(n, ds){ ds = ds || getTodayStr(); return swearList(n).some((x, i) => (i + 1) % SWEAR_STEP === 0 && x.ds === ds); }
 function isCleaner(n){ return !isTeacherName(n) && (dayTotal(n) < 0 || swearToday(n)); }
 function flipCard(card){
   if (card.classList.contains('flipping')) return;
@@ -2180,7 +2184,8 @@ function addNote(who, kind, memo){
   db.notes = db.notes || {}; db.notes[ds] = db.notes[ds] || []; db.notes[ds].push(entry);
   saveDB(); syncOp({ op:'noteAdd', ds, entry });
   renderGrid(); renderMenuBoard(); renderNoteSide(); publishPub();
-  showToast(`${NOTE_KIND[kind].icon} ${who} ${NOTE_KIND[kind].name} 적었어요${kind === 'swear' ? ' → 🧹 오늘 청소 당번' : ''}`);
+  if (kind === 'swear'){ const k = swearList(who).length; showToast(k % SWEAR_STEP === 0 ? `🤬 ${who} 욕설 ${k}번째! → 🧹 오늘 청소 당번` : `🤬 ${who} 욕설 ${k}번째 (청소 당번까지 ${SWEAR_STEP - k % SWEAR_STEP}번)`); }
+  else showToast(`${NOTE_KIND[kind].icon} ${who} ${NOTE_KIND[kind].name} 적었어요`);
 }
 function delNote(ds, id){
   if (!confirm('이 기록을 지울까요?')) return;
@@ -2212,13 +2217,13 @@ function renderNotes(){
   const c = noteCounts(), inR = noteRange();
   const P = [['today', '오늘'], ['week', '이번 주'], ['month', '이번 달'], ['all', '전체']];
   const rows = kids().map(n => { const v = c[n] || { swear:0, classlate:0 }; return `<tr><td class="nm">${esc(n)}</td>
-    <td><b class="${v.swear ? 'hot' : ''}">${v.swear}</b> <button type="button" class="nb" data-nadd="swear" data-who="${esc(n)}" title="욕설 +1 (오늘 청소 당번)">🤬 +1</button></td>
+    <td><b class="${v.swear ? 'hot' : ''}">${v.swear}</b> <small class="acc" title="전체 누적 (5번마다 청소 당번)">누적 ${swearList(n).length}</small> <button type="button" class="nb" data-nadd="swear" data-who="${esc(n)}" title="욕설 +1 (누적 5번마다 청소 당번)">🤬 +1</button></td>
     <td><b class="${v.classlate ? 'hot' : ''}">${v.classlate}</b> <button type="button" class="nb" data-nadd="classlate" data-who="${esc(n)}" title="수업 지각 +1">⏰ +1</button></td></tr>`; }).join('');
   const log = Object.entries(db.notes || {}).filter(([ds]) => inR(ds)).flatMap(([ds, l]) => (l || []).map(x => ({ ...x, ds }))).sort((a, b) => (b.ds + b.t).localeCompare(a.ds + a.t)).slice(0, 60);
   box.innerHTML = `<div class="np">${P.map(([k, l]) => `<button type="button" data-np="${k}" class="${notePeriod === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="nt-wrap"><table class="nt"><thead><tr><th>이름</th><th>🤬 욕설</th><th>⏰ 수업 지각</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="nlog"><div class="nlog-h">🕘 최근 기록</div>${log.map(x => `<div class="nl"><span>${x.ds.slice(5).replace('-', '/')} ${esc(x.t)}</span><span>${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].icon : ''} ${esc(x.who)} ${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].name : ''}</span><button type="button" data-ndel="${esc(x.id)}" data-nds="${x.ds}" title="지우기">✕</button></div>`).join('') || '<div class="hint">기록이 없어요</div>'}</div></div>
-    <div class="form-hint">🤬 욕설을 적으면 그 친구는 <b>오늘 청소 당번</b>이 돼요 (EXP는 안 깎여요). 냥이 카드의 출석 고치기 창에서도 적을 수 있어요.</div>`;
+    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 표의 <b>누적</b> 칸에서 몇 번째인지 볼 수 있어요. 냥이 카드의 출석 고치기 창에서도 적을 수 있어요.</div>`;
 }
 let attEditName = null;
 function editTime(name){
