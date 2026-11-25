@@ -2375,7 +2375,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 33;
+const NEED_API = 34;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -4469,6 +4469,7 @@ function applyOpLocal(o){
     case 'noteDel': db.notes = db.notes || {}; db.notes[o.ds] = (db.notes[o.ds] || []).filter(b => b.id !== o.id); break;
     case 'notices': db.notices = o.list.slice(); break;
     case 'config': applyConfig(o.data); break;
+    case 'epoch': db.accessEpoch = Number(o.v) || 0; break;
     case 'look': db.looks = db.looks || {}; if (o.look) db.looks[o.name] = o.look; else delete db.looks[o.name]; break;
   }
 }
@@ -7105,7 +7106,7 @@ function bindEvents(){
   $('gateResetBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
     if (!confirm('🔒 지금 출석부를 보고 있는 모든 기기(교실 TV·학생 디벗)가\n시간과 상관없이 입장 코드를 다시 넣어야 해요.\n(코드는 그대로예요 · 이 기기는 바로 통과)\n\n할까요?')) return;
-    db.accessEpoch = Date.now(); saveDB(); syncOp({ op:'config', data: configOf() }); gatePass(db.accessCode);
+    db.accessEpoch = Date.now(); saveDB(); syncOp(sync.api >= 34 ? { op:'epoch', v: db.accessEpoch } : { op:'config', data: configOf() }); gatePass(db.accessCode);   // v34부터는 '다시 입력' 표시만 보내요 (다른 설정을 덮지 않게)
     showToast('🔒 모두 다시 입력하게 했어요 (다른 기기는 1분 안에 바뀌어요)');
   });
   $('gateTestBtn').addEventListener('click', () => {

@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 33;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 34;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -394,7 +394,7 @@ function handlePost_(body, auth) {
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
           try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
-          try { props_().setProperty('sleepCfg', JSON.stringify((o.data && o.data.sleep) || null)); } catch (e) {}
+          if (o.data && o.data.sleep !== undefined) try { props_().setProperty('sleepCfg', JSON.stringify(o.data.sleep || null)); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
         }
@@ -433,6 +433,10 @@ function handlePost_(body, auth) {
         case 'noteDel': {
           const d = day(o.ds); d.notes = (d.notes || []).filter(function (b) { return b.id !== o.id; });
           break;
+        }
+        case 'epoch': {                          // 🔒 모두 다시 입력: 다른 설정은 건드리지 않아요
+          map.config = map.config || {}; map.config.accessEpoch = Number(o.v) || Date.now();
+          cacheDrop_(['v:pub']); dirty.config = true; break;
         }
         case 'clean': {
           const d = day(o.ds);
