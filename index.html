@@ -260,6 +260,20 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .rp-step{flex:1;min-width:0;border:2px solid var(--ink);border-radius:10px;padding:4px 0 3px;font-size:.62rem;line-height:1.3;background:#FBF7EE;opacity:.5;transition:all .25s;}
 .rp-step b{display:block;font-size:.86rem;font-weight:normal;}
 .rp-step.on{opacity:1;transform:translateY(-4px);box-shadow:0 4px 0 var(--ink);}
+/* 📚 출석이 끝나면 EXP 표 대신 시간표 */
+#ttPanel{display:none;}
+#rewardPanel.tt-on > :not(#ttPanel){display:none !important;}
+#rewardPanel.tt-on #ttPanel{display:block;}
+.tt-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+.tt-tag{border:2px solid var(--ink);border-radius:999px;padding:2px 12px;background:#FFF3C4;font-size:1rem;white-space:nowrap;}
+.tt-tag.now{background:#E2EEFF;font-size:1.1rem;} .tt-tag.lunch{background:#FFE1EA;} .tt-tag.done{background:#E4F7EA;}
+.tt-row{display:flex;gap:4px;margin-top:10px;}
+.tt-c{flex:1;min-width:0;border:2px solid #CDBBA8;border-radius:9px;text-align:center;font-size:.7rem;padding:3px 0;opacity:.6;line-height:1.3;background:#FBF7EE;}
+.tt-c b{display:block;font-size:.95rem;font-weight:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px;}
+.tt-c.past{opacity:.35;} .tt-c.past b{text-decoration:line-through;}
+.tt-c.now{opacity:1;border-color:var(--ink);background:#FFE58A;transform:translateY(-3px);box-shadow:0 3px 0 var(--ink);}
+.tt-c.lunch{background:#FFF0F4;}
+.tt-sub{font-size:.95rem;color:var(--ink-soft);text-align:center;margin-top:8px;}
 
 /* ===== 상태바 ===== */
 .toolbar{display:flex;gap:18px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin:26px 0 28px;}
@@ -839,6 +853,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
         <div class="rp-main"><span class="rp-icon" id="rpIcon">👑</span><span class="rp-exp" id="rpExp">+200</span><span class="rp-tier" id="rpTier">LEGEND</span></div>
         <div class="rp-sub" id="rpSub"></div>
         <div class="rp-ladder" id="rpLadder"></div>
+        <div id="ttPanel"></div>
       </div>
       <button type="button" class="closing-big" id="openClosingBtn">📋 종례하기</button>
       <button type="button" class="meeting-big" id="openMeetingBtn">🖍️ 칠판</button>
@@ -1247,6 +1262,19 @@ body{word-break:keep-all;overflow-wrap:break-word;}
         <label>🔔 출석 마감 시각 = 1차 알람 시각</label>
         <input type="time" id="lateTimeInput">
       </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📚 시간표 (출석이 끝나면 오른쪽 EXP 표 자리에 떠요)</div>
+      <div class="form-hint">전원 출석하거나 출석 마감 10분 뒤부터 EXP 표 대신 <b>지금 교시 · 다음 교시</b>가 보여요. 과목을 비워 두면 'N교시'로만 나와요.</div>
+      <div class="form-group"><label>⏰ 교시 시간 (한 줄에 하나 · 예: <code>1교시 09:00-09:45</code>, <code>점심 12:30-13:20</code>)</label>
+        <textarea id="ttTimesInput" style="height:150px;"></textarea></div>
+      <div class="form-group"><label>📖 요일별 과목 (교시 순서대로, 쉼표나 띄어쓰기로 · 점심은 빼고)</label>
+        <div class="row"><span style="width:2em;">월</span><input type="text" id="ttSubj1" style="flex:1;" placeholder="예: 수학, 국어, 과학, 체육, 영어, 음악"></div>
+        <div class="row"><span style="width:2em;">화</span><input type="text" id="ttSubj2" style="flex:1;"></div>
+        <div class="row"><span style="width:2em;">수</span><input type="text" id="ttSubj3" style="flex:1;"></div>
+        <div class="row"><span style="width:2em;">목</span><input type="text" id="ttSubj4" style="flex:1;"></div>
+        <div class="row"><span style="width:2em;">금</span><input type="text" id="ttSubj5" style="flex:1;"></div></div>
     </div>
 
     <div class="section">
@@ -1934,6 +1962,7 @@ function mergeInto(parsed){
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
   if (typeof parsed.subPin === 'string') db.subPin = parsed.subPin;
   if (parsed.bubbleCfg && typeof parsed.bubbleCfg === 'object') db.bubbleCfg = parsed.bubbleCfg;
+  if (parsed.timetable && typeof parsed.timetable === 'object') db.timetable = parsed.timetable;
   if (parsed.notes && typeof parsed.notes === 'object') db.notes = parsed.notes;
   if (typeof parsed.accessCode === 'string') db.accessCode = parsed.accessCode;
   if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
@@ -2041,7 +2070,42 @@ function renderLadder(){
     `<div class="rp-step" data-k="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon}<b>${fmtExp(e)}</b>${w}</div>`).join('');
   $('lateTimeDisplay').textContent = db.lateTimeSetting;
 }
+const TT_DEF = '1교시 09:00-09:45\n2교시 09:55-10:40\n3교시 10:50-11:35\n4교시 11:45-12:30\n점심 12:30-13:20\n5교시 13:20-14:05\n6교시 14:15-15:00';
+function parseTtTimes(txt){
+  return String(txt || '').split('\n').map(l => l.trim()).map(l => { const m = l.match(/^(.+?)\s*(\d{1,2}):(\d{2})\s*[-~–]\s*(\d{1,2}):(\d{2})/); return m ? { name: m[1].trim(), start: `${pad(+m[2])}:${m[3]}`, end: `${pad(+m[4])}:${m[5]}` } : null; }).filter(Boolean).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 14);
+}
+function ttCfg(){ const t = db.timetable || {}; return { times: Array.isArray(t.times) && t.times.length ? t.times : parseTtTimes(TT_DEF), subj: t.subj || {} }; }
+const ttMin = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
+function ttIsLunch(x){ return /점심|lunch/i.test(x.name); }
+/* 전원 출석했거나 마감 10분이 지나면 EXP 표 대신 시간표 */
+function ttActive(now){
+  const wd = now.getDay(); if (wd === 0 || wd === 6) return false;
+  if (allArrived()) return true;
+  const late = validTime(db.lateTimeSetting) ? ttMin(db.lateTimeSetting) : 520;
+  return now.getHours() * 60 + now.getMinutes() >= late + 10;
+}
+let ttKey = '';
+function renderTimetable(now){
+  const tt = ttCfg(), wd = now.getDay(), subj = tt.subj[wd] || [], cur = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  let ci = 0;
+  const items = tt.times.map(x => { const lunch = ttIsLunch(x), num = (x.name.match(/\d+/) || [])[0]; const label = lunch ? '🍱' : (subj[ci++] || (num ? num + '교시' : x.name)); return { ...x, lunch, num, label, s: ttMin(x.start), e: ttMin(x.end) }; });
+  const nowI = items.findIndex(x => cur >= x.s && cur < x.e), nextI = items.findIndex(x => x.s > cur);
+  const L = x => x.lunch ? '점심시간' : `${x.num ? x.num + '교시' : x.name}${x.label && !/교시$/.test(x.label) ? ' · ' + x.label : ''}`;
+  const left = m => { m = Math.max(0, Math.ceil(m)); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
+  let tag, right, sub;
+  if (nowI >= 0){ const x = items[nowI]; tag = `<span class="tt-tag ${x.lunch ? 'lunch' : 'now'}">${x.lunch ? '🍱 점심시간' : '📚 지금 ' + L(x)}</span>`; right = `<span class="tt-tag">⏱ ${left(x.e - cur)} 남음</span>`; }
+  else if (nextI === 0){ tag = `<span class="tt-tag now">☀️ 곧 수업 시작</span>`; right = `<span class="tt-tag">⏱ ${left(items[0].s - cur)} 뒤</span>`; }
+  else if (nextI > 0){ tag = `<span class="tt-tag">🧃 쉬는 시간</span>`; right = `<span class="tt-tag">⏱ ${left(items[nextI].s - cur)} 뒤 종</span>`; }
+  else { tag = `<span class="tt-tag done">🎉 오늘 수업 끝!</span>`; right = `<span class="tt-tag">📋 종례 시간</span>`; }
+  const nx = nextI >= 0 ? items[nextI] : null;
+  sub = nx ? `다음: ${L(nx)} (${nx.start})` : (items.length ? '오늘도 수고했다냥 💛' : '⚙️ 설정의 📚 시간표에 교시 시간을 넣어 주세요');
+  const row = items.map((x, i) => `<div class="tt-c ${x.lunch ? 'lunch' : ''} ${i === nowI ? 'now' : (x.e <= cur ? 'past' : '')}">${x.lunch ? '점심' : (x.num || x.name)}<b>${esc(x.lunch ? '🍱' : (x.label && !/교시$/.test(x.label) ? x.label : '·'))}</b></div>`).join('');
+  const html = `<div class="tt-hd">${tag}${right}</div><div class="tt-row">${row}</div><div class="tt-sub">${esc(sub)}</div>`;
+  if (html !== ttKey){ ttKey = html; $('ttPanel').innerHTML = html; }
+}
 function updateReward(now){
+  const tton = ttActive(now); $('rewardPanel').classList.toggle('tt-on', tton);
+  if (tton){ renderTimetable(now); return; }
   const t = getTier(now), meta = TIER_META[t.key];
   $('rewardPanel').style.background = '#FFFFFF';
   $('rpIcon').textContent = meta.icon;
@@ -3745,6 +3809,7 @@ function openAdminUI(){
   $('mainTitleInput').value = db.mainTitle || '';
   $('studentNamesInput').value = db.students.join('\n');
   $('lateTimeInput').value = db.lateTimeSetting;
+  { const tt = ttCfg(); $('ttTimesInput').value = tt.times.map(x => `${x.name} ${x.start}-${x.end}`).join('\n'); for (let d = 1; d <= 5; d++) $('ttSubj' + d).value = (tt.subj[d] || []).join(', '); }
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
   $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
@@ -3810,6 +3875,9 @@ async function saveAdminData(){
   db.mainTitle = $('mainTitleInput').value.trim() || DEFAULT_TITLE;
   db.students = students;
   db.lateTimeSetting = late;
+  { const times = parseTtTimes($('ttTimesInput').value), subj = {};
+    for (let d = 1; d <= 5; d++) subj[d] = $('ttSubj' + d).value.split(/[,，\s]+/).map(x => x.trim()).filter(Boolean).slice(0, 10);
+    db.timetable = { times, subj }; }
   db.expTiers = tiers;
   db.sfx = $('sfxInput').checked;
   db.adminPin = $('adminPinInput').value.trim();
@@ -3973,7 +4041,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -4013,6 +4081,7 @@ function applyConfig(c){
   if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
   if (typeof c.subPin === 'string') db.subPin = c.subPin;
+  if (c.timetable && typeof c.timetable === 'object') db.timetable = c.timetable;
   if (c.bubbleCfg && typeof c.bubbleCfg === 'object'){ db.bubbleCfg = c.bubbleCfg; setTimeout(renderAdminBubble, 0); }
   if (typeof c.accessCode === 'string') db.accessCode = c.accessCode;
   if (c.accessHours) db.accessHours = Number(c.accessHours) || 3;
@@ -6668,6 +6737,7 @@ function viewApply(j){
   if (j.tiers) db.expTiers = j.tiers;
   db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
   viewClean = Array.isArray(j.clean) ? j.clean : [];
+  if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
   applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();
 }
