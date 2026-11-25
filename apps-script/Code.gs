@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v17 · 선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v18 · 욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 17;
+const API_VERSION = 18;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -51,6 +51,7 @@ const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람'
 const BASE_BAN = ['시발', '씨발', '씨빨', 'ㅅㅂ', 'ㅆㅂ', '병신', 'ㅂㅅ', '븅신', '개새', '새끼', 'ㅅㄲ', '지랄', 'ㅈㄹ', '좆', '존나', 'ㅈㄴ',
   '닥쳐', '꺼져', '미친놈', '미친년', '엠창', '니애미', '느금', '애미', '애비', '꼴통', '찐따', '장애인새', '죽어'];
 const MAX_FAIL = 5, LOCK_MINUTES = 10;
+const VILLAGE_ACT_DAILY = 20;   // 🎣 마을 놀이(츄르 뽑기·낚시·마시멜로 등) 하루 횟수
 
 // 학생이 직접 고를 수 있는 꾸미기 (레벨 · 자리 · 색 개수) — 출석부 화면의 ITEMS와 같아야 해요
 const ITEM_RULES = {
@@ -505,7 +506,7 @@ function handleStudent_(body) {
   if (body.op === 'chatPull') return studentChat_(name, body, null);
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
-  if (body.op === 'move' || body.op === 'emote') return studentVillage_(name, body);
+  if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
   if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
@@ -609,13 +610,61 @@ function chatOpen_(cfg) {
   const t = Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm');
   return cfg.start <= cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
 }
+/* 🙊 욕설·비속어 거르기: 띄어쓰기·숫자·기호를 끼워 넣어도(시 1 발, ㅅ.ㅂ) 찾아서 ♡로 가려요 */
+const BAD_PATTERNS = [
+  // 시발 계열
+  '[시씨쉬쒸싀쓔][이]?[발빨팔벌뻘]', '[씨쒸]파', '[시씨쉬쒸][바빠](?![견다닥람구나퀴위지르로탕뀌라])', '십[새쌔할알팔]', '씹[새쌔년놈창할]', '씹(?![어었다는고을으])', '[ㅅㅆ][ㅂㅃ]', 'ㅅ발', '시ㅂ', '쌉[가소]', '썅', '쌍[년놈]', '시방새',
+  // 병신 계열
+  '[병븅빙벼][엉]?[신씬쉰딱]', 'ㅂㅅ', 'ㅄ', '등신',
+  // 좆·존나 계열
+  '[좆좃졷좇]', '[존졸][나내만]', '졸라', 'ㅈㄴ', 'ㅈ같', '[조좃]까', '좆밥',
+  // 새끼 계열
+  '[개게][새쌔섀][끼기키히ㄲ]?', '[새쌔섀][끼키ㄲ]', '세[끼키]야', '[색섹쌕][기끼히]', 'ㅅㄲ', '개[같색쉐씹뼈소년놈빡]', '개쓰레기',
+  // 지랄·미친
+  '[지쥐][랄럴롤]', 'ㅈㄹ', '미[친쳤칀틴]', 'ㅁㅊ', '[또똘][라롸]이', '똘아이', '돌아이', 'ㄸㄹㅇ',
+  // 꺼져·닥쳐·죽어
+  '닥[쳐치처]', 'ㄷㅊ', '꺼[져저](?![있서요버었])', 'ㄲㅈ', '뒈[져지진질]', '뒤질래', '뒤진다', '디질래', '디져', '죽[어을여](?![도서요야가])', '죽일', '자살', '엿[먹머]',
+  // 엄마·아빠 욕
+  '[니느][애에]?[미비]', '느[금그]', 'ㄴㄱㅁ', '[엠앰엄]창', '[애에][미비](?![나])', '니엄마', 'ㄴㅇㅁ',
+  // 성적인 말
+  '섹[스쓰]', '보지(?![마말않못도요])', '자지(?![마말않못도요])', '야동', '창[녀년]', '걸레', '화냥', '빠구리', '딸[딸치]', '자위',
+  // 비하
+  '찐따', 'ㅉㄸ', '꼴통', '애자', '한남충', '김치녀', '틀딱', '맘충', '급식충', '일베', '운지', 'ㅗㅗ',
+  // 영어·한글 자판
+  'f+u*c+k', 'fxck', 'shit', 'bitch', 'sibal', 'ssibal', 'tlqkf', 'qudtls', 'whssk', 'wlfkf', 'dick', 'pussy'
+];
+let BAD_RE_ = null;
+function badRe_() { if (!BAD_RE_) BAD_RE_ = new RegExp(BAD_PATTERNS.join('|'), 'gi'); return BAD_RE_; }
+const LETTER_RE_ = /[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]/;
+function maskBad_(t, extra) {
+  // 띄어쓰기·숫자·기호를 빼고 글자만 모아서 찾아요 (시 1 발 · ㅅ.ㅂ 도 잡아요)
+  const idx = [], keep = [];
+  for (let i = 0; i < t.length; i++) { const ch = t.charAt(i); if (LETTER_RE_.test(ch)) { keep.push(ch); idx.push(i); } }
+  const norm = keep.join(''), hit = new Array(t.length).fill(false);
+  const mark = function (re) {
+    re.lastIndex = 0; let m;
+    while ((m = re.exec(norm))) {
+      if (!m[0]) { re.lastIndex++; continue; }
+      const a = idx[m.index], b = idx[m.index + m[0].length - 1];
+      // '다시 발표'처럼 단어 중간에서 시작해서 띄어쓰기를 건너뛴 건 욕이 아니에요
+      if (/\s/.test(t.slice(a, b + 1)) && a > 0 && LETTER_RE_.test(t.charAt(a - 1))) { re.lastIndex = m.index + 1; continue; }
+      for (let k = a; k <= b; k++) hit[k] = true;
+    }
+  };
+  mark(badRe_());
+  (extra || []).forEach(function (w) { w = String(w || '').replace(/\s+/g, ''); if (w) mark(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')); });
+  const r18 = /(개\s*)?1\s*8\s*(놈|년|새|련)|개\s*1\s*8/g; let m2;     // 숫자 욕 (18놈 · 개18)
+  while ((m2 = r18.exec(t))) for (let k = m2.index; k < m2.index + m2[0].length; k++) hit[k] = true;
+  let out = '', run = 0;
+  for (let i = 0; i < t.length; i++) {
+    if (hit[i]) { if (run < 3) out += '♡'; run++; } else { out += t.charAt(i); run = 0; }
+  }
+  return out;
+}
+function hasBad_(text) { const t = String(text || ''); return maskBad_(t, []) !== t; }
 function cleanText_(text, cfg) {
-  let t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 100);
-  BASE_BAN.concat(cfg.ban || []).forEach(function (w) {
-    w = String(w || '').trim(); if (!w) return;
-    t = t.split(w).join('♡'.repeat(Math.min(w.length, 3)));
-  });
-  return t;
+  const t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 100);
+  return maskBad_(t, (cfg && cfg.ban) || []);   // BASE_BAN의 말은 모두 BAD_PATTERNS가 잡아요 (+ 선생님이 추가한 금지어)
 }
 function appendChat_(from, to, text) {
   const sh = sheet_(CHAT_SHEET, CHAT_HEADER);
@@ -666,7 +715,7 @@ function studentChat_(name, body, pub) {
   }
   const tb = myTable_(name);
   const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb)); });
-  return { ok: true, error: error, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
+  return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
 }
 
 /* ---------------- 📮 질문 · 건의함 ---------------- */
@@ -742,6 +791,13 @@ function studentVillage_(name, body) {
   if (!chatOpen_(cfg)) return { ok: true, error: 'closed' };
   const lock = lightLock_(10000);
   try {
+    if (body.op === 'act') {                     // 🎣 츄르 뽑기·낚시·마시멜로 같은 마을 놀이는 하루 20번
+      if (isTeacherName_(name)) return { ok: true, left: 999 };
+      const k = 'act:' + name + ':' + todayStr_(), n = Number(props_().getProperty(k) || 0);
+      if (n >= VILLAGE_ACT_DAILY) return { ok: true, error: 'actlimit', left: 0 };
+      props_().setProperty(k, String(n + 1));
+      return { ok: true, left: VILLAGE_ACT_DAILY - n - 1 };
+    }
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
       let sc = String(body.sc || 'out');

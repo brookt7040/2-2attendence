@@ -1803,11 +1803,27 @@ function openVillage(opts){
     if (a === 'chair'){ openChairPanel(); return; }
     if (a === 'photo'){ takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
+    if (['camp', 'fish', 'churu', 'again'].includes(a) && opts.call && !opts.viewOnly){
+      if (actsEl.dataset.busy) return; actsEl.dataset.busy = '1';
+      opts.call('act', { a }).then(j => {
+        delete actsEl.dataset.busy;
+        if (j && j.error === 'actlimit'){ say('🐾 오늘 마을 놀이 20번을 다 했어요! 내일 또 놀아요', 3500); return; }
+        doAct(a, c, j && typeof j.left === 'number' && j.left < 900 ? j.left : null);
+      }).catch(() => { delete actsEl.dataset.busy; doAct(a, c, null); });
+      return;
+    }
+    doAct(a, c, null);
+  });
+  function doAct(a, c, left){
+    const tail = left != null ? ` (오늘 남은 놀이 ${left}번)` : '';
+    const say0 = say; const say1 = (t, ms) => say0(t + tail, ms);
+    { const say = say1;
     if (a === 'camp'){ const f = ['🍡 노릇노릇 완벽해!', '🔥 앗 탔다…', '🍡 말랑말랑 맛있다냥', '✨ 황금빛 마시멜로!'][Math.floor(Math.random() * 4)]; c.bubble = { text: f, until: Date.now() + 4000 }; say(f); emote('🔥'); return; }
     if (a === 'fish'){ emote('🎣'); setTimeout(() => { const f = FISH[Math.floor(Math.random() * FISH.length)]; c.bubble = { text: f, until: Date.now() + 4000 }; say(`🎣 ${f}`); }, 1600); return; }
     if (a === 'churu'){ const f = CHURU[Math.floor(Math.random() * CHURU.length)]; c.bubble = { text: f, until: Date.now() + 4000 }; say(f); emote('🍡'); return; }
-    const o = V_OBJS.find(x => x.id === actsEl.dataset.obj); if (o) emote(o.emo);
-  });
+    const o = V_OBJS.find(x => x.id === actsEl.dataset.obj); if (o){ emote(o.emo); if (left != null) say(`${o.label}${tail}`, 2200); }
+    }
+  }
 
   /* ---------- 장면 바꾸기 ---------- */
   const SCENE_NAME = { out: '', hall: '🏛️ 냥이 시청 · 학급회의실', arcade: '🎮 냥냥 오락실', hana: '🏰 하나네 집' };
@@ -2361,7 +2377,14 @@ function openVillage(opts){
       input.value = '';
       const c = me(), tb = toGroup && c && c.sit && scene === 'hall' ? c.sit.s : '';
       if (c) c.bubble = { text: (tb ? '🤫 ' : '') + (text.length > 26 ? text.slice(0, 25) + '…' : text), until: Date.now() + 7000 };
-      try { const err = await opts.sendChat(text, tb ? '#' + tb : ''); if (err) say(err); } catch(e){}
+      try {
+        const r = await opts.sendChat(text, tb ? '#' + tb : '');
+        if (typeof r === 'string' && r){ say(r); if (c) c.bubble = null; }
+        else if (r && r.sent != null && c){
+          c.bubble = { text: (tb ? '🤫 ' : '') + (r.sent.length > 26 ? r.sent.slice(0, 25) + '…' : r.sent), until: Date.now() + 7000 };
+          if (r.sent.includes('♡') && !text.includes('♡')) say('🙊 고운 말을 써요! 나쁜 말은 ♡로 바뀌어요', 3500);
+        }
+      } catch(e){}
     };
     $q('.vg-bar .send').addEventListener('click', talk);
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); talk(); } });
@@ -2504,6 +2527,7 @@ async function enterVillage(){
     asStudent: () => viewAsStudent,
     sendChat: async (text, to) => {
       const j = await studentCall('chatSend', { to: to || '', text, after: chat.last });
+      if (j && j.ok && !j.error && j.sent != null){ applyChat(j); return { sent: j.sent }; }
       if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요', hallmute:'🔇 회의 중이라 잠시 조용히 해야 해요' }[j.error] || '보내지 못했어요') : ''; }
       return '다시 로그인해 주세요';
     },
