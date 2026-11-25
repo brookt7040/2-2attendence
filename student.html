@@ -2057,6 +2057,7 @@ function openVillage(opts){
     try {
       const j = await opts.call('god', Object.assign({ who: g.name }, extra));
       if (!j || !j.ok || j.error){ say({ notteacher:'선생님만 쓸 수 있어요', taken:'그 자리는 다른 친구 집이 있어요', bad:'다시 해 주세요' }[j && j.error] || (j && j.error === 'unknown' ? '서버 코드를 새 버전으로 배포해 주세요' : '마법이 안 통했어요 😿')); return; }
+      if (j.aff === undefined){ say('😿 서버가 옛날 버전이에요 — 학교 계정 Apps Script에 새 Code.gs(v14)를 붙여넣고 새 버전으로 배포해 주세요', 6000); return; }
       g.aff = j.aff; if (j.inv){ g.house = j.inv.house || 'h_box'; g.title = j.inv.title || ''; if (state){ state.inv = state.inv || {}; state.inv[g.name] = j.inv; } }
       if (g.name === meName) hanaInfo = null;
       say(`✨ ${msg}${j.coins != null && extra.coins ? ` (지금 ${j.coins}🐾)` : ''}`);
