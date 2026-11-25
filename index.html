@@ -2230,7 +2230,7 @@ function renderNotes(){
   box.innerHTML = `<div class="np">${P.map(([k, l]) => `<button type="button" data-np="${k}" class="${notePeriod === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="nt-wrap"><table class="nt"><thead><tr><th>이름</th><th>🤬 욕설</th><th>⏰ 수업 지각</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="nlog"><div class="nlog-h">🕘 최근 기록</div>${log.map(x => `<div class="nl"><span>${x.ds.slice(5).replace('-', '/')} ${esc(x.t)}</span><span>${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].icon : ''} ${esc(x.who)} ${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].name : ''}</span><button type="button" data-ndel="${esc(x.id)}" data-nds="${x.ds}" title="지우기">✕</button></div>`).join('') || '<div class="hint">기록이 없어요</div>'}</div></div>
-    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 표의 <b>누적</b> 칸에서 몇 번째인지 볼 수 있어요. 냥이 카드의 출석 고치기 창에서도 적을 수 있어요.</div>`;
+    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 표의 <b>누적</b> 칸에서 몇 번째인지 볼 수 있어요.</div>`;
 }
 let attEditName = null;
 function editTime(name){
