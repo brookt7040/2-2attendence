@@ -2491,7 +2491,7 @@ function wkEditSave(kind){
   } else {
     const all = db.timetable.chg = db.timetable.chg || {}, day = all[e.ds] = all[e.ds] || {};
     if (kind === 'undo' || !v) delete day[e.i]; else day[e.i] = v;
-    const today = getTodayStr(); Object.keys(all).forEach(d => { if (d < today || !Object.keys(all[d]).length) delete all[d]; });
+    const keep = weekStart(); Object.keys(all).forEach(d => { if (d < keep || !Object.keys(all[d]).length) delete all[d]; });   // 이번 주(월요일)부터는 남겨요 · 지난 요일도 고칠 수 있게
   }
   saveDB(); syncOp({ op:'config', data: configOf() }); ttKey = ''; updateReward(nowD());
   showToast(kind === 'week' ? `🔁 매주 ${['일','월','화','수','목','금','토'][e.wd]}요일 ${e.name} → ${v || '비움'}` : kind === 'undo' ? '↩️ 원래 과목으로 돌렸어요' : `📌 ${e.ds.slice(5).replace('-', '/')} ${e.name} → ${v || '원래대로'} (분홍색)`);
@@ -2617,7 +2617,7 @@ function editTtToday(i){
     const v = prompt(`📚 오늘 ${x.name} (${x.start}) 과목 바꾸기\n\n바뀐 과목을 적어 주세요. 비우고 확인하면 원래 과목으로 돌아가요.`, day[i] || '');
     if (v === null) return;
     const t = v.trim().slice(0, 10); if (t) day[i] = t; else delete day[i];
-    Object.keys(all).forEach(d => { if (d < ds || !Object.keys(all[d]).length) delete all[d]; });   // 지난 날 변경은 지워요
+    const keep = weekStart(); Object.keys(all).forEach(d => { if (d < keep || !Object.keys(all[d]).length) delete all[d]; });   // 지난주 변경은 지워요
     saveDB(); syncOp({ op:'config', data: configOf() }); ttKey = ''; updateReward(nowD());
     showToast(t ? `📚 오늘 ${x.name} → ${t} (분홍색으로 보여요)` : `📚 ${x.name} 원래 과목으로 돌렸어요`);
   }, ['sub']);
