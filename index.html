@@ -4475,8 +4475,8 @@ const V_OBJS = [
   { id:'swing2',map:'east', kind:'treeswing',x:1420, y:760, r:50, act:'swing',   label:'🌳 나무 그네',    emo:'🎉', seats:[[0, 0]] },
   { id:'stump', map:'east', kind:'stump',    x:1150, y:900, r:35, act:'sit',     label:'🪵 그루터기',     emo:'😺', seats:[[0, -8]] },
   // 🏡 주택단지
-  { id:'park',  map:'south', kind:'longbench', x:1400, y:420, r:80, act:'sit',   label:'🪑 공원 벤치',    emo:'😺', seats:[[-54, 0], [0, 0], [54, 0]] },
-  { id:'sandbox',map:'south', kind:'sandbox', x:200, y:420, r:60, act:'build',   label:'🏖️ 모래놀이',     emo:'🏰', seats:[[-30, 0], [30, 0]] }
+  { id:'park',  map:'south', kind:'longbench', x:1400, y:372, r:80, act:'sit',   label:'🪑 공원 벤치',    emo:'😺', seats:[[-54, 0], [0, 0], [54, 0]] },
+  { id:'sandbox',map:'south', kind:'sandbox', x:1060, y:365, r:60, act:'build',   label:'🏖️ 모래놀이',     emo:'🏰', seats:[[-30, 0], [30, 0]] }
 ];
 const objsOf = sc => V_OBJS.filter(o => (o.map || 'out') === sc);
 /* 🏛️ 시청 회의실 테이블 (4 4 4 / 4 4 5) — Code.gs의 SEAT_CAP.hall 과 같아야 해요 */
@@ -5983,7 +5983,7 @@ function openVillage(opts){
     const data = editing; editing = null; editEl.style.display = 'none'; editEl.innerHTML = ''; resize();
     if (save){
       opts.call('roomSave', { room: data }).then(j => {
-        if (j && j.error) say({ locked:'잠긴 가구가 있어요', bad:'다시 해 주세요' }[j.error] || '저장하지 못했어요');
+        if (j && j.error) say({ locked: /(쌤|샘|선생님)$/.test(meName || '') ? '서버가 옛날 버전이에요 — Code.gs v15를 새 버전으로 배포해 주세요' : '잠긴 가구가 있어요', bad:'다시 해 주세요' }[j.error] || '저장하지 못했어요');
         else { room.room = data; say('🏠 집을 저장했어요! 친구들이 놀러 올 수 있어요', 3000); }
       }).catch(() => say('연결이 안 돼요'));
     }
