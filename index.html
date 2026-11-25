@@ -759,6 +759,9 @@ body.view-mode .note-side{display:none !important;}
 #rpSub{display:none !important;}
 /* 제목 글자 테두리가 왼쪽에서 잘리지 않게 여유 */
 #mainTitleDisplay{padding:4px 8px 4px 8px;margin-left:-8px;}
+/* 한글은 단어 중간에서 줄이 넘어가지 않게 */
+body{word-break:keep-all;overflow-wrap:break-word;}
+#pinHint{line-height:1.5;}
 </style>
 </head>
 <body>
@@ -3065,7 +3068,7 @@ function requirePin(fn, roles){
   roles = (roles || []).filter(r => db[r + 'Pin']);
   if (!db.adminPin || Date.now() < pinUntil || roles.some(r => Date.now() < pinRoleUntil[r])){ fn(); return; }
   kidPin = null; $('pinTitle').textContent = '🔒 선생님 확인'; pinRoles = roles;
-  pinNext = fn; $('pinInput').value = ''; $('pinHint').textContent = roles.length ? `관리자 또는 ${roles.map(r => PIN_ROLE_NAME[r]).join('·')} 비밀번호를 입력해 주세요` : '관리자 비밀번호를 입력해 주세요';
+  pinNext = fn; $('pinInput').value = ''; $('pinHint').innerHTML = roles.length ? `관리자 또는 ${roles.map(r => PIN_ROLE_NAME[r]).join('·')}<br>비밀번호를 입력해 주세요` : '관리자 비밀번호를 입력해 주세요';
   $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
 }
 function checkPin(){
