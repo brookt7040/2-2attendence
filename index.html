@@ -754,7 +754,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 #backView{position:fixed;right:10px;bottom:10px;z-index:9400;font-family:inherit;font-size:.85rem;border:2px solid var(--ink);border-radius:999px;background:#E8ECFF;color:var(--ink);padding:4px 12px;cursor:pointer;box-shadow:0 2px 0 var(--ink);opacity:.9;}
 #pinOverlay{z-index:40001 !important;}
 /* 👀 학생용 출석부: Must Read 비었으면 숨김 · 청소 당번 ＋ · 종례하기 숨김 · 폰에서는 오른쪽 → 가운데 → 왼쪽 순서 */
-body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openClosingBtn{display:none !important;}
+body.view-mode #urgentBox.empty,body.view-mode #cleanSide.empty,body.view-mode .clean-add,body.view-mode #openClosingBtn{display:none !important;}
 #myPageBtn{display:none !important;}   /* 🐱 내 화면 보러가기는 이제 안 써요 (2-2😻 앱 탭으로 오가요) */
 @media (max-width:760px){
   .header{display:flex !important;flex-direction:column;}
@@ -3046,6 +3046,7 @@ function renderMenuBoard(){
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
   box.innerHTML = html;
   const side = $('cleanSide');
+  if (side) side.classList.toggle('empty', !cleaners.length);
   if (side) side.innerHTML = `<div class="t">🧹 Cleaning Duty<button type="button" class="clean-add" data-cleanadd title="청소 당번 추가 · 빼기 (관리자)">＋</button></div>` + (cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! ✨</span>');
