@@ -1504,7 +1504,7 @@ function engPublicOf_(set) {
 function engPublic_() { return engPublicOf_(engSet_()); }
 function engResultKey_(name) { return 'engr:' + todayStr_() + ':' + name; }
 function engReward_(name, map) {
-  const eco = economy_(map), r = eco.engReward || { coins: 20, exp: 20 };
+  const eco = economy_(map), r = eco.engReward || { coins: 25, exp: 25 };
   if (addCoin_(name, r.coins, '영어 학원 통과', '영어', 'eng:' + todayStr_() + ':' + name)) expQueue_(name, r.exp, '📚 영어 학원 통과');
 }
 function studentEng_(name, body) {

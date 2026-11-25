@@ -1790,14 +1790,17 @@ function balancePatch6(e){
 const MISSION_EXP7 = { d_attitude:15, d_praise:15, d_board:10, d_word:15, d_read:20, d_story:10, a_allon:10,
   w_allon3:30, w_photo:20, w_menu:25, w_daily:30, w_study:30, w_good:30, w_best:40, w_locker:20, s_streak5:20, s_award:20 };
 const PRICE7 = { c_hotpack:30, c_gimbap:50, c_postit:30, c_iron:40, c_candy:40, c_sticker:40, c_eraser:40, c_pen:50, c_sharp:60, c_gacha:50, c_pass:60, c_escape:80, c_blanket:60, c_locker:120, c_outing:1000,
-  h_tent:80, h_cabin:200, h_cottage:400, h_castle:800, d_pot:30, d_cushion:30, d_flower:40, d_mailbox:50, d_lamp:60, d_tree:70, d_fountain:120,
+  h_tent:60, h_cabin:150, h_cottage:300, h_castle:600, d_pot:20, d_cushion:20, d_flower:30, d_mailbox:40, d_lamp:40, d_tree:50, d_fountain:80,
   c_seat:100, x_song:60, x_banner:120, x_title:200, x_butler:250, x_mega:80,
-  p_fish:60, p_game:80, p_tree:60, p_disco:90, p_ufo:100, p_trophy:120, p_poop:150, p_sushi:90, p_saturn:130, p_throne:220, p_carousel:300, p_snow:70,
-  w_night:60, w_rainbow:90, w_gold:120, fl_marble:60, fl_cloud:90 };
+  p_fish:40, p_game:50, p_tree:40, p_disco:60, p_ufo:70, p_trophy:80, p_poop:120, p_sushi:60, p_saturn:90, p_throne:150, p_carousel:200, p_snow:50,
+  w_night:40, w_rainbow:60, w_gold:80, fl_marble:40, fl_cloud:60 };
+/* 🐾 미션 냥코인 (꾸미기 할 만큼 넉넉하게) */
+const MISSION_COINS7 = { d_attitude:20, d_praise:20, d_board:15, d_word:20, d_read:30, d_story:15, a_allon:15,
+  w_allon3:40, w_photo:40, w_menu:40, w_daily:50, w_study:50, w_good:50, w_best:60, w_locker:30, s_streak5:30, s_award:30 };
 function balancePatch7(e){
-  (e.missions || []).forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; });
+  (e.missions || []).forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; if (MISSION_COINS7[m.id] != null) m.coins = MISSION_COINS7[m.id]; });
   ['shop', 'furn', 'walls', 'floors'].forEach(k => (e[k] || []).forEach(it => { if (PRICE7[it.id] != null && it.price != null) it.price = PRICE7[it.id]; }));
-  e.engReward = { coins: 20, exp: 25 };
+  e.engReward = { coins: 25, exp: 25 };
   db.level = Object.assign({}, db.level, { max: 2450 });
   e.ver = 7;
 }
@@ -1805,7 +1808,7 @@ function balancePatch7(e){
 DEFAULT_ECONOMY.shop.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id]; });
 ['furn', 'walls', 'floors'].forEach(k => (ECONOMY_V2[k] || []).forEach(it => { if (PRICE7[it.id] != null && it.price != null) it.price = PRICE7[it.id]; }));
 SPECIAL_ITEMS.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id]; });
-DEFAULT_ECONOMY.missions.forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; });
+DEFAULT_ECONOMY.missions.forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; if (MISSION_COINS7[m.id] != null) m.coins = MISSION_COINS7[m.id]; });
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
   if ((e.ver || 1) >= 7) return false;
@@ -2457,7 +2460,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 37;
+const NEED_API = 38;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2820,7 +2823,7 @@ function recomputeRanks(ds){
   Object.keys(day).forEach(n => { const r = day[n]; if (r.rank && !list.includes(n)){ const nr = Object.assign({}, r, { exp: (Number(r.exp) || 0) - (r.rankBonus || 0) }); delete nr.rank; delete nr.rankBonus; touch(n, nr); } });
 }
 /* 🐾 출석하면 냥코인도 같이! (지각은 0) */
-const ATT_COINS = { legend:20, unique:15, rare:10, normal:5, safe:3 };
+const ATT_COINS = { legend:30, unique:20, rare:15, normal:10, safe:5 };   // ⚖️ v7: 꾸미기 코인도 넉넉히
 /* 📖 내 냥이 도감 완성 보상 (EXP · 냥코인) */
 const COLLECT_REWARD = { normal:[30, 40, '🐱 노멀'], rare:[40, 60, '💎 레어'], unique:[60, 100, '🦄 유니크'], legend:[80, 150, '👑 레전드'], all:[100, 200, '🌈 모든'] };
 function myDex(name){
@@ -3150,10 +3153,10 @@ function renderCoinView(){
   } else if (cvTab === 'log'){
     box.innerHTML = cvData ? (d.ledger || []).slice(0, 60).map(r => `<div class="cv-row"><span>${esc(r.t.slice(5))} · <b>${esc(r.name)}</b> · ${esc(r.why)}</span><span class="pts ${r.amt >= 0 ? 'plus' : 'minus'}">${r.amt >= 0 ? '+' : ''}${r.amt}</span></div>`).join('') || '<div class="clean-empty">아직 없어요</div>' : '<div class="clean-empty">불러오는 중…</div>';
   } else {
-    box.innerHTML = `<div class="cv-row"><span>⭐ 제시간 출석 (레전드 20 · 유니크 15 · 레어 10 · 노멀 5 · 세이프 3)</span><b>+3~20🐾</b></div>
+    box.innerHTML = `<div class="cv-row"><span>⭐ 제시간 출석 (레전드 30 · 유니크 20 · 레어 15 · 노멀 10 · 세이프 5)</span><b>+5~30🐾</b></div>
       <div class="cv-row"><span>🥇 1~5등 도착</span><b>+5🐾 · +5✨</b></div>
       <div class="cv-row"><span>🎯 미션 (매일 2개 · 매주 3개 직접 골라요)</span><b>코인 + EXP</b></div>
-      <div class="cv-row"><span>📚 냥글리시 아카데미 통과</span><b>+20🐾 · +25✨</b></div>
+      <div class="cv-row"><span>📚 냥글리시 아카데미 통과</span><b>+25🐾 · +25✨</b></div>
       <div class="cv-row"><span>📋 EXP 리스트 (+EXP의 절반)</span><b>+🐾</b></div>
       <div class="cv-row"><span>📖 내 냥이 도감 완성</span><b>+30~100✨ · +40~200🐾</b></div>`;
   }
@@ -5142,7 +5145,7 @@ function renderCoinAdmin(){
 function migrateEco(){
   const e = db.economy; if (!e || (e.mv || 0) >= 3) return false;
   const old = e.missions || [], out = [];
-  DEFAULT_ECONOMY.missions.forEach(dm => { const o = old.find(m => m.id === dm.id); out.push(Object.assign({}, dm, { exp: MISSION_EXP7[dm.id] }, o ? { coins: o.coins } : {})); });
+  DEFAULT_ECONOMY.missions.forEach(dm => { const o = old.find(m => m.id === dm.id); out.push(Object.assign({}, dm, { exp: MISSION_EXP7[dm.id] }, o && (e.ver || 1) >= 7 ? { coins: o.coins } : {})); });
   old.forEach(m => { if (!out.some(x => x.id === m.id) && !['d_clean'].includes(m.id)) out.push(Object.assign({}, m, { name: m.name.replace(/\s*\([^)]*\)\s*$/, '') })); });   // 🧹 종례 전 반 정리는 뺐어요 · 괄호 설명은 지워요
   e.missions = out; e.mv = 3;
   return true;
