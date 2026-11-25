@@ -46,6 +46,15 @@ button,input,select{font-family:inherit;color:var(--ink);}
 html.agit .tab{min-width:0;}
 @media (max-width:480px){ .subs{gap:4px;flex-wrap:nowrap;} .subs button{font-size:.85rem;padding:5px 7px;flex:1;white-space:nowrap;} html.agit .tab{font-size:1rem;padding:9px 2px;} }
 .subs i.se{font-style:normal;}
+.sum-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:inherit;font-size:1.02rem;color:var(--ink);background:none;border:none;border-bottom:2px dashed #EFE3D3;padding:11px 4px;cursor:pointer;}
+.sum-row:last-child{border-bottom:none;}
+.sum-row:hover{background:#FFF8DA;}
+.sum-row .sk{flex:none;width:4.6em;font-size:.95rem;color:var(--ink-soft);white-space:nowrap;}
+.sum-row .sv{flex:1;min-width:0;line-height:1.45;word-break:keep-all;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.sum-row .sv small{color:var(--ink-soft);}
+.sum-row .sv.none{color:#B9A58A;}
+.sum-row .sa{flex:none;color:#B9A58A;font-size:1.2rem;}
+.sum-row .hot{color:#C0365C;}
 @media (max-width:420px){ .subs i.se{display:none;} .subs button{font-size:.88rem;padding:6px 2px;min-width:0;} }
 .meal-d{border:2px dashed #EFE3D3;border-radius:14px;padding:10px 12px;margin-bottom:8px;background:#FFFDF6;}
 .meal-d.today{border:2px solid #E8C35A;background:#FFF8DA;}
@@ -391,6 +400,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div class="subs" data-for="notice"><button type="button" data-sub="all"><i class="se">🗂️ </i>전체</button><button type="button" data-sub="closing"><i class="se">📋 </i>종례</button><button type="button" data-sub="notice"><i class="se">📢 </i>알림</button><button type="button" data-sub="clean"><i class="se">🧹 </i>청소</button><button type="button" data-sub="meal"><i class="se">🍱 </i>급식</button><button type="button" data-sub="hw"><i class="se">📚 </i>숙제</button></div>
     <div id="checkinBox"></div>
+    <div class="box nb-pub ns" data-sec="all"><div class="box-head">🗂️ 한눈에 보기</div><div id="sumList"></div></div>
     <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box nb-pub ns" data-sec="notice"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
     <div class="box nb-pub ns" data-sec="clean"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
@@ -2785,7 +2795,7 @@ const subNow = { notice: '', ask: 'q' }, subPicked = {};
 function showSub(panel, key){
   subNow[panel] = key;
   document.querySelectorAll(`.subs[data-for="${panel}"] button`).forEach(b => b.classList.toggle('on', b.dataset.sub === key));
-  document.querySelectorAll(`#p-${panel} .ns`).forEach(x => x.classList.toggle('on', key === 'all' || x.dataset.sec.split(' ').includes(key)));
+  document.querySelectorAll(`#p-${panel} .ns`).forEach(x => x.classList.toggle('on', x.dataset.sec.split(' ').includes(key)));
   if (panel === 'ask'){ const h = $('askHead'); if (h) h.textContent = key === 's' ? '💡 건의' : '❓ 질문'; if ($('askBox')) $('askBox').dataset.n = ''; renderAsk(); }
 }
 /* 📋 정해진 시각이 지나면 종례를 먼저 보여 줘요 (직접 고른 탭은 그대로) */
@@ -2977,7 +2987,7 @@ function render(){
     const btn = me ? `<button type="button" class="ack ${done ? 'done' : ''}" data-ack="${esc(t)}">${done ? '✔ 확인함' : '확인했어요'}</button>` : '';
     return `<div class="n-item"><span>🐾</span><span class="n-text">${esc(t)}</span>${btn}</div>`;
   }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">알림이 없어요</div>';
-  renderMealHw();
+  renderMealHw(); renderSummary(fresh);
   $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
     : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span class="cw-${(pub.cleanWhy || {})[n] || ''}">${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
@@ -3265,6 +3275,22 @@ async function askList(){ if (!me) return; try { const j = await studentCall('as
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function dLabel(ds){ const [y, m, d] = ds.split('-').map(Number), dt = new Date(y, m - 1, d), t0 = new Date(); t0.setHours(0, 0, 0, 0); const diff = Math.round((dt - t0) / 86400000);
   return { md: `${m}/${d} (${'일월화수목금토'[dt.getDay()]})`, diff }; }
+/* 🗂️ 한눈에 보기: 줄마다 짧게 · 누르면 그 상세 탭으로 */
+function renderSummary(fresh){
+  const box = $('sumList'); if (!box) return;
+  const row = (k, label, html, none) => `<button type="button" class="sum-row" data-gosub="${k}"><span class="sk">${label}</span><span class="sv ${none ? 'none' : ''}">${html}</span><span class="sa">›</span></button>`;
+  const more = n => n > 0 ? ` <small>외 ${n}개</small>` : '';
+  const cl = st.closing || [], nt = st.notices || [], pub = st.pub || { clean: [] };
+  const today = ymd(new Date()), menu = ((st.meal || {})[today] || '').split('\n').map(x => x.trim()).filter(Boolean);
+  const hw = (st.hw || []).filter(h => !h.due || h.due >= today).sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
+  const hwTxt = h => { const L = h.due ? dLabel(h.due) : null, dd = !L ? '' : L.diff === 0 ? '오늘' : L.diff === 1 ? '내일' : `D-${L.diff}`; return `${dd ? `<b class="${L.diff <= 1 ? 'hot' : ''}">${dd}</b> ` : ''}${esc((h.subj ? h.subj + ' ' : '') + h.text)}`; };
+  box.innerHTML =
+    row('closing', '📋 종례', cl.length ? esc(cl.slice(0, 2).join(' · ')) + more(cl.length - 2) : '아직 없어요', !cl.length) +
+    row('notice', '📢 알림', nt.length ? esc(nt[0]) + more(nt.length - 1) : '없어요', !nt.length) +
+    row('clean', '🧹 청소', !fresh ? '아직 안 정해졌어요' : pub.clean.length ? esc(pub.clean.join(', ')) : '없어요! ✨', !fresh || !pub.clean.length) +
+    row('meal', '🍱 급식', menu.length ? esc(menu.join(' · ')) : '아직 없어요', !menu.length) +
+    row('hw', '📚 숙제', hw.length ? hw.slice(0, 2).map(hwTxt).join(' · ') + more(hw.length - 2) : '없어요! 🎉', !hw.length);
+}
 function renderMealHw(){
   const ml = $('mealList'), hl = $('hwList'); if (!ml || !hl) return;
   const meal = st.meal || {}, today = ymd(new Date()), days = meal[today] ? [today] : [];   // 🍱 오늘 것만
@@ -3690,6 +3716,7 @@ document.addEventListener('click', e => {
   if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
   { const w = t.closest('[data-wrep]'); if (w){ if (!confirm('이 귓속말을 신고할까요?\n선생님이 이 대화 앞뒤를 확인해요. (장난 신고는 안 돼요!)')) return;
       studentCall('wReport', { id: Number(w.dataset.wrep) }).then(j => toast(j && j.ok && !j.error ? (j.already ? '이미 신고한 귓속말이에요' : '🚨 신고했어요. 선생님이 확인할게요') : '다시 해 주세요')).catch(() => toast('연결이 안 돼요')); return; } }
+  { const gs = t.closest('[data-gosub]'); if (gs){ subPicked.notice = true; showSub('notice', gs.dataset.gosub); window.scrollTo(0, 0); return; } }
   { const sb = t.closest('.subs [data-sub]'); if (sb){ const pn = sb.closest('.subs').dataset.for; subPicked[pn] = true; showSub(pn, sb.dataset.sub); return; } }
   if (t.closest('#ideaOpen')){ openIdeas(); return; }
   if (t.closest('#ideaSend')){ ideaSend(); return; }
