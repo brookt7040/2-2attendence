@@ -258,7 +258,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div id="specialBox"></div>
     <div id="checkinBox"></div>
     <div id="cleanMe"></div>
-    <div class="box"><div class="box-head">📢 오늘의 알림</div><div id="noticeList"></div></div>
+    <div class="box"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
     <div class="box"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
     <div class="box"><div class="box-head mint">📮 질문 · 건의</div><div id="askBox"></div></div>
@@ -2115,14 +2115,14 @@ function openVillage(opts){
   }
   root.addEventListener('click', e => { if (e.target.closest('.vg-move')) enter('south'); });
   /* 📚 영어 문제 */
-  let engSetNow = null, engRes = null;
+  let engSetNow = null, engRes = null, engPassed = null, engPractice = false;
   async function loadEngSet(){ try { const j = opts.call && opts.me ? await opts.call('engMine', {}) : null; if (j && j.ok){ engSetNow = j.set; engRes = j.result; } else { const r = await fetch(`${opts.api}?eng=1&t=${Date.now()}`, { redirect:'follow' }); engSetNow = await r.json(); } } catch(e){} }
   function openEngPanel(){
     panel.style.display = 'block';
     if (!engSetNow || engSetNow.none){ panel.innerHTML = '<button type="button" class="px">✕</button><h3>📚 오늘의 영어</h3><div class="hint" style="text-align:center;">아직 오늘 문제가 없어요. 선생님이 올리면 풀 수 있어요! 😺</div>'; return; }
     if (engRes) return engResult();
     const draft = (openEngPanel.draft = openEngPanel.draft || []);
-    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📚 ${escV(engSetNow.title)}</h3>
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📚 ${escV(engSetNow.title)}${engPractice ? ' · ✏️ 연습' : ''}</h3>${engPractice ? '<div class="hint" style="text-align:center;color:#C0365C;">이미 통과했어요! 연습으로 다시 풀어요 (EXP·냥코인은 없어요)</div>' : ''}
       <div class="eng-imgs">${(engSetNow.urls || []).map(u => `<img src="${escV(u)}" alt="문제" loading="lazy">`).join('')}</div>
       <div class="eng-ans">${Array.from({ length: 10 }, (_, i) => `<label><b>${i + 1}</b><input type="text" data-eng="${i}" value="${escV(draft[i] || '')}" placeholder="정답"></label>`).join('')}</div>
       <div class="hint">객관식은 번호(①→1)만, 주관식은 철자만 맞으면 돼요 (대소문자·띄어쓰기·마침표 상관없어요).</div>
@@ -2130,21 +2130,24 @@ function openVillage(opts){
   }
   function engResult(){
     const r = engRes, subj = r.marks.filter(m => m === null).length;
-    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📝 결과지</h3>
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📝 ${r.practice ? '연습 결과지' : '결과지'}</h3>
       <div class="eng-score ${r.pass ? 'pass' : ''}">${r.score}점 ${r.pass ? (r.byTeacher ? '· 👩‍🏫 선생님 통과! 🎉' : '· 통과! 🎉') : '· 아직 통과 전'}</div>
       <div class="eng-marks">${r.marks.map((m, i) => `<span class="${m === 1 ? 'ok' : m === 0 ? 'no' : 'q'}">${i + 1}. ${escV(r.ans[i] || '-')} ${m === 1 ? '⭕' : m === 0 ? '❌' : '❓'}</span>`).join('')}</div>
       ${subj ? `<div class="hint">❓ 주관식 ${subj}개는 선생님이 확인해요.</div>` : ''}
-      ${r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
+      ${r.practice ? `<div class="hint" style="text-align:center;">✏️ 연습 결과예요 (EXP·냥코인 없음)</div><div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engMine" style="background:#C9F0D8;">📝 내 통과 결과</button></div>`
+        : r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div><div style="text-align:center;margin-top:8px;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기 (연습 · 보상 없음)</button></div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
         <div class="hint" style="text-align:center;">주관식 답이 맞는 것 같은데 ❌가 나왔나요? 선생님을 불러 결과지를 보여 드려요. 선생님이 비밀번호를 넣으면 통과돼요.</div>`}`;
   }
   panel.addEventListener('click', async e => {
     if (e.target.closest('#engSubmit')){
       const ans = [...panel.querySelectorAll('[data-eng]')].map(i => i.value.trim()); openEngPanel.draft = ans;
       if (ans.filter(Boolean).length < 10 && !confirm('빈 칸이 있어요. 그래도 제출할까요?')) return;
-      try { const j = await opts.call('engSubmit', { answers: ans }); if (j && j.result){ engRes = j.result; engResult(); if (engRes.pass){ emote('🎉'); say('📚 통과! EXP와 냥코인을 받았어요', 3500); opts.refresh && opts.refresh(); } } else say(j && j.error === 'none' ? '오늘 문제가 없어요' : '제출하지 못했어요'); } catch(err){ say('연결이 안 돼요'); }
+      try { const j = await opts.call('engSubmit', { answers: ans, practice: engPractice }); if (j && j.result){ engRes = j.result; engResult(); if (engRes.practice){ say(`✏️ 연습 ${engRes.score}점!`, 2500); return; } if (engRes.pass){ emote('🎉'); say('📚 통과! EXP와 냥코인을 받았어요', 3500); opts.refresh && opts.refresh(); } } else say(j && j.error === 'none' ? '오늘 문제가 없어요' : '제출하지 못했어요'); } catch(err){ say('연결이 안 돼요'); }
       return;
     }
     if (e.target.closest('#engRetry')){ engRes = null; openEngPanel(); return; }
+    if (e.target.closest('#engPractice')){ if (!engRes.practice) engPassed = engRes; engPractice = true; engRes = null; openEngPanel.draft = []; openEngPanel(); return; }
+    if (e.target.closest('#engMine')){ engPractice = false; engRes = engPassed; engResult(); return; }
     if (e.target.closest('#engTeacher')){
       const pin = prompt('👩‍🏫 선생님 비밀번호 (관리자 비밀번호)'); if (!pin) return;
       try { const j = await opts.call('engPass', { pin }); if (j && j.error) say(j.error === 'pin' ? '비밀번호가 달라요' : '다시 해 주세요'); else if (j && j.result){ engRes = j.result; engResult(); emote('🎉'); } } catch(err){ say('연결이 안 돼요'); }
@@ -2634,7 +2637,7 @@ function render(){
     const done = me && me.acked.includes(t);
     const btn = me ? `<button type="button" class="ack ${done ? 'done' : ''}" data-ack="${esc(t)}">${done ? '✔ 확인함' : '확인했어요'}</button>` : '';
     return `<div class="n-item"><span>🐾</span><span class="n-text">${esc(t)}</span>${btn}</div>`;
-  }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">오늘은 알림이 없어요</div>';
+  }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">알림이 없어요</div>';
   $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
     : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span>${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
@@ -2828,7 +2831,7 @@ function renderChat(){
   const typing = $('chatText') ? $('chatText').value : '';
   const logHtml = chat.msgs.length ? chat.msgs.map(m => {
       const mine = m.from === me.name, wh = !!m.to, t = /(쌤|샘|선생님)$/.test(m.from), grp = wh && m.to.charAt(0) === '#';
-      const who = grp ? `🤫 ${esc(m.to.slice(2))}모둠 · ${mine ? '나' : esc(m.from)}` : mine ? (wh ? `🤫 ${esc(m.to)}에게` : '나') : (wh ? `🤫 ${esc(m.from)} (귓속말)` : esc(m.from));
+      const who = grp ? `🤫 ${esc(m.to.slice(2))}모둠 · ${mine ? '나' : esc(m.from)}` : mine ? (wh ? `🤫 ${esc(m.to)}에게` : '나') : (wh ? (m.to === me.name ? `🤫 ${esc(m.from)} (귓속말)` : `🤫 ${esc(m.from)} → ${esc(m.to)}`) : esc(m.from));
       return `<div class="msg ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${t ? 't' : ''}"><span class="who">${who} · ${esc(m.t.slice(11))}</span><span class="bub">${esc(m.text)}</span></div>`;
     }).join('') : '<div class="chat-off">첫 인사를 남겨 보자! 🐾</div>';
   const sig = JSON.stringify([c, chat.muted, kidsList]);
@@ -3146,7 +3149,7 @@ function tRender(){
     return;
   }
   if (tTab === 'board'){
-    box.innerHTML = `<div class="box"><div class="box-head">📢 오늘의 알림 (한 줄에 하나)</div><textarea id="tNotices" rows="5">${esc(st.notices.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="notices">저장</button></div></div>
+    box.innerHTML = `<div class="box"><div class="box-head">📢 알림 (한 줄에 하나)</div><textarea id="tNotices" rows="5">${esc(st.notices.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="notices">저장</button></div></div>
       <div class="box"><div class="box-head pink">📋 종례 (한 줄에 하나)</div><textarea id="tClosing" rows="5">${esc(st.closing.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="closing">저장</button></div></div>`;
     return;
   }

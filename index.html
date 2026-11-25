@@ -6271,14 +6271,14 @@ function openVillage(opts){
   }
   root.addEventListener('click', e => { if (e.target.closest('.vg-move')) enter('south'); });
   /* 📚 영어 문제 */
-  let engSetNow = null, engRes = null;
+  let engSetNow = null, engRes = null, engPassed = null, engPractice = false;
   async function loadEngSet(){ try { const j = opts.call && opts.me ? await opts.call('engMine', {}) : null; if (j && j.ok){ engSetNow = j.set; engRes = j.result; } else { const r = await fetch(`${opts.api}?eng=1&t=${Date.now()}`, { redirect:'follow' }); engSetNow = await r.json(); } } catch(e){} }
   function openEngPanel(){
     panel.style.display = 'block';
     if (!engSetNow || engSetNow.none){ panel.innerHTML = '<button type="button" class="px">✕</button><h3>📚 오늘의 영어</h3><div class="hint" style="text-align:center;">아직 오늘 문제가 없어요. 선생님이 올리면 풀 수 있어요! 😺</div>'; return; }
     if (engRes) return engResult();
     const draft = (openEngPanel.draft = openEngPanel.draft || []);
-    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📚 ${escV(engSetNow.title)}</h3>
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📚 ${escV(engSetNow.title)}${engPractice ? ' · ✏️ 연습' : ''}</h3>${engPractice ? '<div class="hint" style="text-align:center;color:#C0365C;">이미 통과했어요! 연습으로 다시 풀어요 (EXP·냥코인은 없어요)</div>' : ''}
       <div class="eng-imgs">${(engSetNow.urls || []).map(u => `<img src="${escV(u)}" alt="문제" loading="lazy">`).join('')}</div>
       <div class="eng-ans">${Array.from({ length: 10 }, (_, i) => `<label><b>${i + 1}</b><input type="text" data-eng="${i}" value="${escV(draft[i] || '')}" placeholder="정답"></label>`).join('')}</div>
       <div class="hint">객관식은 번호(①→1)만, 주관식은 철자만 맞으면 돼요 (대소문자·띄어쓰기·마침표 상관없어요).</div>
@@ -6286,21 +6286,24 @@ function openVillage(opts){
   }
   function engResult(){
     const r = engRes, subj = r.marks.filter(m => m === null).length;
-    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📝 결과지</h3>
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>📝 ${r.practice ? '연습 결과지' : '결과지'}</h3>
       <div class="eng-score ${r.pass ? 'pass' : ''}">${r.score}점 ${r.pass ? (r.byTeacher ? '· 👩‍🏫 선생님 통과! 🎉' : '· 통과! 🎉') : '· 아직 통과 전'}</div>
       <div class="eng-marks">${r.marks.map((m, i) => `<span class="${m === 1 ? 'ok' : m === 0 ? 'no' : 'q'}">${i + 1}. ${escV(r.ans[i] || '-')} ${m === 1 ? '⭕' : m === 0 ? '❌' : '❓'}</span>`).join('')}</div>
       ${subj ? `<div class="hint">❓ 주관식 ${subj}개는 선생님이 확인해요.</div>` : ''}
-      ${r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
+      ${r.practice ? `<div class="hint" style="text-align:center;">✏️ 연습 결과예요 (EXP·냥코인 없음)</div><div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engMine" style="background:#C9F0D8;">📝 내 통과 결과</button></div>`
+        : r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div><div style="text-align:center;margin-top:8px;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기 (연습 · 보상 없음)</button></div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
         <div class="hint" style="text-align:center;">주관식 답이 맞는 것 같은데 ❌가 나왔나요? 선생님을 불러 결과지를 보여 드려요. 선생님이 비밀번호를 넣으면 통과돼요.</div>`}`;
   }
   panel.addEventListener('click', async e => {
     if (e.target.closest('#engSubmit')){
       const ans = [...panel.querySelectorAll('[data-eng]')].map(i => i.value.trim()); openEngPanel.draft = ans;
       if (ans.filter(Boolean).length < 10 && !confirm('빈 칸이 있어요. 그래도 제출할까요?')) return;
-      try { const j = await opts.call('engSubmit', { answers: ans }); if (j && j.result){ engRes = j.result; engResult(); if (engRes.pass){ emote('🎉'); say('📚 통과! EXP와 냥코인을 받았어요', 3500); opts.refresh && opts.refresh(); } } else say(j && j.error === 'none' ? '오늘 문제가 없어요' : '제출하지 못했어요'); } catch(err){ say('연결이 안 돼요'); }
+      try { const j = await opts.call('engSubmit', { answers: ans, practice: engPractice }); if (j && j.result){ engRes = j.result; engResult(); if (engRes.practice){ say(`✏️ 연습 ${engRes.score}점!`, 2500); return; } if (engRes.pass){ emote('🎉'); say('📚 통과! EXP와 냥코인을 받았어요', 3500); opts.refresh && opts.refresh(); } } else say(j && j.error === 'none' ? '오늘 문제가 없어요' : '제출하지 못했어요'); } catch(err){ say('연결이 안 돼요'); }
       return;
     }
     if (e.target.closest('#engRetry')){ engRes = null; openEngPanel(); return; }
+    if (e.target.closest('#engPractice')){ if (!engRes.practice) engPassed = engRes; engPractice = true; engRes = null; openEngPanel.draft = []; openEngPanel(); return; }
+    if (e.target.closest('#engMine')){ engPractice = false; engRes = engPassed; engResult(); return; }
     if (e.target.closest('#engTeacher')){
       const pin = prompt('👩‍🏫 선생님 비밀번호 (관리자 비밀번호)'); if (!pin) return;
       try { const j = await opts.call('engPass', { pin }); if (j && j.error) say(j.error === 'pin' ? '비밀번호가 달라요' : '다시 해 주세요'); else if (j && j.result){ engRes = j.result; engResult(); emote('🎉'); } } catch(err){ say('연결이 안 돼요'); }

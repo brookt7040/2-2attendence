@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 보기 전용에 말풍선·청소당번·시간표 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -740,8 +740,8 @@ function studentChat_(name, body, pub) {
       finally { lock.releaseLock(); }
     }
   }
-  const tb = myTable_(name);
-  const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb)); });
+  const tb = myTable_(name), isT = /(쌤|샘|선생님)$/.test(name);   // 👑 선생님은 귓속말·모둠 대화도 모두 봐요
+  const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (isT || m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb)); });
   return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
 }
 
@@ -1156,7 +1156,8 @@ function studentEng_(name, body) {
     if (body.op === 'engMine') return { ok: true, result: res, set: engPublicOf_(set) };
     if (!set) return { ok: true, error: 'none' };
     if (body.op === 'engSubmit') {
-      if (res && res.pass) return { ok: true, result: res };
+      const practice = !!(res && res.pass);       // 통과한 뒤 다시 풀기 = 연습 (저장·보상 없음)
+      if (practice && !body.practice) return { ok: true, result: res };
       const ans = (body.answers || []).slice(0, 10).map(function (a) { return String(a || '').slice(0, 60); });
       const marks = [];
       for (let i = 0; i < 10; i++) {
@@ -1166,6 +1167,7 @@ function studentEng_(name, body) {
         marks.push(keys.indexOf(normAns_(ans[i])) >= 0 ? 1 : 0);
       }
       const score = marks.reduce(function (s, m) { return s + (m === 1 ? 10 : 0); }, 0);
+      if (practice) return { ok: true, result: { ans: ans, marks: marks, score: score, pass: score >= 80, practice: true } };
       res = { ans: ans, marks: marks, score: score, pass: score >= 80, tries: ((res && res.tries) || 0) + 1, at: Date.now() };
       props_().setProperty(k, JSON.stringify(res));
       if (res.pass) engReward_(name, readRows_().map);
