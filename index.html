@@ -898,18 +898,16 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #mhBody .mh-empty{color:var(--ink-soft);text-align:center;padding:14px;}
 body.view-mode #mealSide,body.view-mode #hwSide{pointer-events:auto;}
 body.view-mode .mh-side.empty{display:none !important;}
-.mh-side{background:#FFFDF6;border:3px solid var(--ink);border-radius:18px;padding:10px 12px;box-shadow:0 5px 0 var(--ink);cursor:pointer;min-width:0;}
-.mh-side:hover{transform:translateY(-2px);}
-.mh-side .t{font-size:1.05rem;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.mh-side .t .tag{border-radius:999px;padding:2px 12px;border:2px solid var(--ink);}
-#mealSide .t .tag{background:#DFF7EE;} #hwSide .t .tag{background:#E8F4FF;}
+.mh-side{background:rgba(255,253,246,.75);border:none;border-radius:16px;padding:8px 12px;cursor:pointer;min-width:0;}
+.mh-side:hover{background:#FFFDF6;}
+.mh-side .t{font-size:1.05rem;margin-bottom:4px;}
 .mh-side .mm{font-size:1.15rem;line-height:1.5;white-space:pre-line;word-break:keep-all;}
 .mh-side .hl{display:flex;flex-direction:column;gap:4px;font-size:1.02rem;word-break:keep-all;}
-.mh-side .hl span.dd{font-size:.8rem;border-radius:999px;padding:1px 7px;background:#E8F4FF;border:1px solid #9CC8EE;margin-right:5px;white-space:nowrap;}
-.mh-side .hl span.dd.hot{background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
+.mh-side .hl span.dd{font-size:.8rem;border-radius:999px;padding:1px 7px;background:#E8F4FF;margin-right:5px;white-space:nowrap;}
+.mh-side .hl span.dd.hot{background:#FFE1EA;color:#C0365C;}
 .mh-side .hl .sj{color:var(--ink-soft);font-size:.9rem;margin-right:4px;}
-.mh-side.empty{background:#FFFDF6;border:3px dashed #CDBBA8;box-shadow:none;}
-.mh-side.empty .mm,.mh-side.empty .hl{font-size:.95rem;color:var(--ink-soft);}
+.mh-side.empty{background:transparent;}
+.mh-side.empty .mm,.mh-side.empty .hl{font-size:.95rem;color:var(--ink-soft);opacity:.45;}
 </style>
 </head>
 <body>
@@ -4054,11 +4052,11 @@ function renderMHSide(){
   const ms = $('mealSide'), hs = $('hwSide'); if (!ms || !hs) return;
   const today = getTodayStr(nowD()), menu = ((db.meal || {})[today] || '').trim();
   ms.classList.toggle('empty', !menu);
-  ms.innerHTML = `<div class="t"><span class="tag">🍱 오늘 급식</span></div><div class="mm">${menu ? esc(menu) : (VIEW ? '' : '✏️ 눌러서 쓰기')}</div>`;
+  ms.innerHTML = `<div class="t">🍱 급식</div><div class="mm">${menu ? esc(menu) : (VIEW ? '' : '✏️ 눌러서 수정')}</div>`;
   const hw = (db.hw || []).filter(h => !h.due || h.due >= today).sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
   hs.classList.toggle('empty', !hw.length);
-  hs.innerHTML = `<div class="t"><span class="tag">📚 숙제</span>${hw.length > 4 ? `<small style="color:var(--ink-soft);">+${hw.length - 4}</small>` : ''}</div><div class="hl">${hw.length ? hw.slice(0, 4).map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '' : L.diff === 0 ? '오늘' : L.diff === 1 ? '내일' : `D-${L.diff}`;
-    return `<div>${dd ? `<span class="dd ${L.diff <= 1 ? 'hot' : ''}">${dd}</span>` : ''}${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</div>`; }).join('') : (VIEW ? '' : '✏️ 눌러서 쓰기')}</div>`;
+  hs.innerHTML = `<div class="t">📚 숙제${hw.length > 4 ? `<small style="color:var(--ink-soft);"> +${hw.length - 4}</small>` : ''}</div><div class="hl">${hw.length ? hw.slice(0, 4).map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '' : L.diff === 0 ? '오늘' : L.diff === 1 ? '내일' : `D-${L.diff}`;
+    return `<div>${dd ? `<span class="dd ${L.diff <= 1 ? 'hot' : ''}">${dd}</span>` : ''}${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</div>`; }).join('') : (VIEW ? '' : '✏️ 눌러서 수정')}</div>`;
 }
 function renderUrgent(){
   const el = $('urgentBox'); if (!el) return;
