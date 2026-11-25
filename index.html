@@ -806,6 +806,18 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </style>
 </head>
 <body>
+<style>
+#bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
+#bootOv.hide{opacity:0;pointer-events:none;}
+#bootOv .bp{font-size:3.4rem;animation:bootHop .9s ease-in-out infinite;}
+#bootOv .bd span{display:inline-block;animation:bootDot 1.2s infinite;} #bootOv .bd span:nth-child(2){animation-delay:.2s;} #bootOv .bd span:nth-child(3){animation-delay:.4s;}
+#bootOv small{font-size:.9rem;color:#8A7060;}
+#bootOv button{font-family:inherit;font-size:1.05rem;border:3px solid #5B4636;border-radius:14px;background:#FFE58A;padding:8px 18px;cursor:pointer;box-shadow:0 4px 0 #5B4636;}
+@keyframes bootHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes bootDot{0%,60%,100%{opacity:.2}30%{opacity:1}}
+</style>
+<div id="bootOv" style="display:none;"><div class="bp">🐾</div><div>접속 중<span class="bd"><span>.</span><span>.</span><span>.</span></span></div><small>우리 반 정보를 불러오고 있어요</small></div>
+<script>if (/[?&]view=1/.test(location.search)) document.getElementById('bootOv').style.display = 'flex';</script>
 
 <div class="deco" style="left:2%;top:22%;">🐾</div>
 <div class="deco" style="right:2%;top:58%;animation-delay:-2s;">✨</div>
@@ -6742,6 +6754,12 @@ function gateCheckTimer(){
     if ((VIEW || db.accessCode) && code !== '__none__' && !gateOk(code)){ if (VIEW) viewGate(); else showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }); }
   }, 30000);
 }
+/* 🐾 접속 중 화면: 첫 데이터가 오면 사라져요 */
+function bootDone(ok){
+  const o = document.getElementById('bootOv'); if (!o) return;
+  if (ok === false){ o.innerHTML = '<div class="bp" style="animation:none;">😿</div><div>연결이 안 돼요</div><small>인터넷을 확인하고 다시 시도해 주세요</small><button type="button" onclick="location.reload()">🔄 다시 시도</button>'; return; }
+  o.classList.add('hide'); setTimeout(() => o.remove(), 400);
+}
 /* 👀 보기 전용 (학생 페이지 → 출석부 보러가기): 서버에서 오늘 출석만 받아 와서 보여줘요. 아무것도 바꾸지 않아요 */
 let viewCode = '', viewExp = {}, viewClean = [];
 async function viewFetch(code){
@@ -6763,8 +6781,10 @@ function viewApply(j){
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
   applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();
+  bootDone();
 }
 async function viewGate(){
+  bootDone();
   showGate(async v => {
     try { const j = await viewFetch(v); if (!j.ok) return j.error === 'slow' ? '너무 많이 틀렸어요. 1분 뒤에 다시 해 주세요' : '❌ 코드가 달라요'; viewCode = v; gatePass(v, j.hours); viewApply(j); return true; }
     catch(e){ return '연결이 안 돼요'; }
@@ -6777,7 +6797,7 @@ async function viewStart(){
   db.students = []; db.records = {}; renderGrid();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); } catch(e){}
   const tryCode = saved && Date.now() < saved.until ? saved.code : '';
-  try { const j = await viewFetch(tryCode); if (j.ok){ viewCode = tryCode || '__none__'; viewApply(j); } else viewGate(); } catch(e){ viewGate(); }
+  try { const j = await viewFetch(tryCode); if (j.ok){ viewCode = tryCode || '__none__'; viewApply(j); } else viewGate(); } catch(e){ bootDone(false); }
   setInterval(async () => { if (!viewCode || !gateOk(viewCode) && viewCode !== '__none__') return; try { const j = await viewFetch(viewCode === '__none__' ? '' : viewCode); if (j.ok) viewApply(j); else if (j.error === 'gate'){ viewCode = ''; viewGate(); } } catch(e){} }, 20000);
 }
 function init(){
