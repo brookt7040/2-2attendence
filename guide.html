@@ -92,18 +92,27 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 .inst-note{grid-column:1/-1;margin:0;font-size:1.3rem;color:#8A7563;text-align:center;}
 @media (max-width:600px){ .inst-body{grid-template-columns:1fr;} }
 .ios-share{width:1.5em;height:1.5em;vertical-align:-0.35em;background:#fff;border:1px solid #D8D2C8;border-radius:.35em;padding:.1em;margin:0 .1em;}
+.inst-card .num{background:#E8ECFF;}
+.inst-lead{font-size:1.45rem;line-height:1.6;margin:0 0 1rem;word-break:keep-all;}
+.inst-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.inst-c{background:#FBF7EE;border-radius:1rem;padding:1rem 1.2rem;}
+.inst-c h3{margin:0 0 .5rem;font-size:1.55rem;font-weight:normal;} .inst-c h3 small{display:block;font-size:1.15rem;color:#C0365C;}
+.inst-ol{margin:0;padding-left:2rem;font-size:1.35rem;line-height:1.75;word-break:keep-all;} .inst-ol li{padding-left:0;} .inst-ol li::before{content:none;}
+@media (max-width:600px){ .inst-grid{grid-template-columns:1fr;} }
 </style></head><body><div class="wrap">
 <div class="hero"><span class="cl">2학년 2반</span>
 <h1>🐾 온라인 학급<span class="ver" id="gVer"></span></h1><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p>
 <div class="upd" id="gUpd" style="display:none;"><button type="button" id="gUpdBtn">📝 업데이트 내역</button><ul id="gUpdList" hidden></ul></div></div>
 
-<div class="go" id="goTop">
-<a class="a2" href="app.html?tab=board" data-go="board"><span class="ic">📋</span>출석부<small>입장 코드만 넣으면 누구나</small></a>
-<a class="a1" href="app.html?tab=me" data-go="me"><span class="ic">🐱</span>내 화면<small>로그인 · 꾸미기 · 냥이 마을</small></a>
-</div>
+<div class="card inst-card"><h2><span class="num">📲</span>2-2😻 앱 설치하기</h2>
+<p class="inst-lead">설치하면 바탕화면 · 홈 화면에 <b>하나 아이콘</b>이 생기고, 누르면 <b>출석부 · 내 화면 · 안내</b>가 한 창에 열려요.</p>
+<div class="inst-grid">
+<div class="inst-c"><h3>💻 디벗 · 컴퓨터 · 📱 안드로이드</h3><ol class="inst-ol"><li>2-2😻 앱 화면 <b>오른쪽 위 📲 설치</b>를 눌러요</li><li>뜨는 창에서 <b>설치</b>를 눌러요</li><li>버튼이 안 되면 크롬 <b>⋮</b> → <b>전송, 저장, 공유</b> → <b>페이지를 앱으로 설치</b> (엣지는 <b>⋯</b> → <b>앱</b> → <b>이 사이트를 앱으로 설치</b>)</li></ol></div>
+<div class="inst-c"><h3>🍎 아이폰 · 아이패드 <small>버튼으로는 안 돼요! 직접 추가해요</small></h3><ol class="inst-ol"><li><b>사파리</b>로 <b>2-2😻 앱 화면</b>(맨 위에 출석부 · 내 화면 · 안내 탭이 있는 화면)을 열어요</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div>
+</div></div>
 <div class="card"><h2><span class="num">1</span>처음 시작하기</h2>
 <div class="steps">
-<div class="step"><span class="ic">🚪</span>처음 화면에서 <b>입장 코드</b> 넣기 → 📋 출석부</div>
+<div class="step"><span class="ic">🚪</span>앱(또는 출석부)을 열고 <b>입장 코드</b> 넣기</div>
 <div class="step"><span class="ic">🐱</span>위쪽 <b>내 화면</b> 탭 누르고 내 이름 고르기</div>
 <div class="step"><span class="ic">🔢</span>선생님께 받은 <b>비밀번호 4자리</b></div>
 <div class="step"><span class="ic">💻</span>내 디벗이면 <b>로그인 유지</b> 켜기</div>
@@ -146,7 +155,7 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <div class="q"><span class="k">출석부가 교실 TV와 달라요</span><span>약 20초마다 새로 받아 와서 조금 늦게 바뀌어요.</span></div>
 <div class="q"><span class="k">내 카드에 상태가 안 떠요</span><span>🐱 내 고양이 탭 → 💬 내 상태를 적고 저장했는지 확인!</span></div>
 </div></div>
-<div class="go" id="goBottom" style="margin-top:1.5rem;"><a class="a2" href="app.html?tab=board" data-go="board"><span class="ic">📋</span>출석부</a><a class="a1" href="app.html?tab=me" data-go="me"><span class="ic">🐱</span>내 화면</a></div>
+
 </div><script>
 /* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
 function sleepIn(cfg, d){
@@ -165,7 +174,7 @@ function sleepShow(cfg, on){
 <script>
 /* 📱 앱 안에서 열렸으면 버튼이 탭을 바꿔요 */
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();
-if (/inapp=1/.test(location.search)) document.querySelectorAll('#goTop,#goBottom').forEach(x => x.style.display = 'none');
+if (matchMedia('(display-mode: standalone)').matches || navigator.standalone) document.querySelectorAll('.inst-card').forEach(x => x.style.display = 'none');   // 이미 앱이면 설치 안내는 숨겨요
 document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && IN_APP){ e.preventDefault(); window.parent.postMessage({ nyang:'go', tab: a.dataset.go }, location.origin); } });
 </script>
 <script>
