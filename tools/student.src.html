@@ -1554,11 +1554,11 @@ function renderCoin(){
   const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 새벽 5시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 새벽 5시에 새로 골라요']];
   const msHtml = groups.map(([k, t, sl, max, note]) => {
     const list = eco.missions.filter(m => m.cat === k); if (!list.length) return '';
-    const mine = picks[sl].ids || [], full = mine.length >= max;
+    const mine = picks[sl].ids || [], full = !coin.unlimited && mine.length >= max;   // 👑 선생님은 횟수 제한 없이
     const row = m => {
       if (m.flow === 'locker') return lockerRow(m);
       const per = periodS(m.limit), got = per && claimed.has(`m:${m.id}:${me.name}:${per}`), picked = mine.includes(m.id);
-      const used = (coin.capUsed || {})[m.id] || 0, capFull = m.cap && used >= m.cap && !picked;
+      const used = (coin.capUsed || {})[m.id] || 0, capFull = !coin.unlimited && m.cap && used >= m.cap && !picked;
       const capTxt = m.cap ? `<span class="cap">👥 ${used}/${m.cap}명</span>` : '';
       const meta = ((picks[sl].meta || {})[m.id]) || {};
       const AUTO_TXT = { appon:'출석 1등이면 자동', eng:'냥카데미 80점 넘으면 자동', allon:'반 전체 제시간이면 자동', allon3:'주 3일 달성하면 자동', good:'금요일 오후에 자동 확인' };

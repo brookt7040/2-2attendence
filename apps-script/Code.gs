@@ -1896,7 +1896,7 @@ function studentCoins_(name, body) {
       else if (it.cat === 'house' && !T && !houseReady_(inv, it.id)) error = 'order';
       else if (it.cat === 'mega' && !stuCfg_().mega.on) error = 'off';
       else if (['mega', 'song', 'banner', 'title'].indexOf(it.cat) >= 0 && !cleanText_(body.text, chatCfg_())) error = 'empty';
-      else if (it.cat === 'butler' && butlerToday_()) error = 'soldout';
+      else if (it.cat === 'butler' && butlerToday_() && !T) error = 'soldout';
       else if (it.cat === 'decor' && !T && (inv.decor || []).length >= 4) error = 'full';
       else {
         if (!T) {
@@ -1979,7 +1979,7 @@ function studentCoins_(name, body) {
       const sig = String(body.sig || ''), subj = m && m.flow === 'sign' ? String((((pk0.d.meta || {})[m.id]) || {}).subj || body.subj || '').slice(0, 20) : '';
       if (!m || (!m.req && m.flow !== 'sign') || AUTO_FLOWS_[m.flow]) error = m && AUTO_FLOWS_[m.flow] ? 'auto' : 'noitem';
       else if (!T && pk0.d.ids.indexOf(m.id) < 0 && pk0.w.ids.indexOf(m.id) < 0) error = 'nopick';
-      else if (pending) error = 'pending';
+      else if (pending && !T) error = 'pending';
       else if (!T && m.limit !== 'none' && rows.some(function (r) { return r.key === key; })) error = 'done';
       else if (m.flow === 'sign' && (!/^data:image\/png;base64,/.test(sig) || sig.length > 48000 || !body.sure)) error = 'sig';
       else {
