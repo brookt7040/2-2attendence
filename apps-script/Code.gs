@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -46,6 +46,7 @@ const HOUSE_ORDER = ['h_box', 'h_tent', 'h_cabin', 'h_cottage', 'h_castle'];
 const HANA_LV = [0, 20, 60, 120, 200, 320];
 const HANA_DAILY = 5;          // 🐱 하나와는 하루에 5번까지 놀 수 있어요
 const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람', '받는 사람(빈칸=전체)', '내용', '상태'];
+const IDEA_SHEET = '마을의견', IDEA_HEADER = ['번호', '시간', '보낸 사람', '익명', '비밀', '내용', '좋아요', '상태'];
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
 // 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 ♡로 바뀌어요
 const BASE_BAN = ['시발', '씨발', '씨빨', 'ㅅㅂ', 'ㅆㅂ', '병신', 'ㅂㅅ', '븅신', '개새', '새끼', 'ㅅㄲ', '지랄', 'ㅈㄹ', '좆', '존나', 'ㅈㄴ',
@@ -539,6 +540,7 @@ function handleStudent_(body) {
   if (body.op === 'chatPull') return studentChat_(name, body, null);
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
+  if (/^idea/.test(String(body.op || ''))) return studentIdea_(name, body);
   if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
@@ -793,6 +795,52 @@ function studentAsk_(name, body) {
   const mine = readAsks_(function (a) { return a.from === name && !a.del; })
     .map(function (a) { return { id: a.id, t: a.t, kind: a.kind, text: a.text, anon: a.anon, reply: a.reply, rt: a.rt, done: a.done }; });
   return { ok: true, error: error, asks: mine.reverse() };
+}
+
+/* 💡 마을 개선 의견 게시판: 이름 · 익명 · 🔒 비밀 제보(선생님만) · ❤️ 좋아요
+ *  선생님(OO쌤)은 비밀 제보도 보고, 익명을 눌러 누가 썼는지 볼 수 있어요. 시트 '마을의견' 탭에 모두 남아요 */
+function readIdeas_() {
+  const sh = sheet_(IDEA_SHEET, IDEA_HEADER), n = sh.getLastRow();
+  if (n < 2) return [];
+  return sh.getRange(2, 1, n - 1, 8).getValues().map(function (r, i) {
+    let likes = []; try { likes = JSON.parse(String(r[6] || '[]')) || []; } catch (e) {}
+    return { row: i + 2, id: Number(r[0]), t: String(r[1]), from: String(r[2]), anon: String(r[3]) === '예', secret: String(r[4]) === '예', text: String(r[5]), likes: likes, del: String(r[7]) === '삭제' };
+  }).filter(function (x) { return x.id && !x.del; });
+}
+function studentIdea_(name, body) {
+  const isT = isTeacherName_(name);
+  let error = '';
+  if (body.op === 'ideaSend') {
+    const text = maskBad_(String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 300), (chatCfg_().ban) || []);
+    const last = Number(props_().getProperty('ideaLast:' + name) || 0);
+    if (!text) error = 'empty';
+    else if (Date.now() - last < 15000 && !isT) error = 'slow';
+    else {
+      const lock = lightLock_(15000);
+      try {
+        const id = Number(props_().getProperty('ideaSeq') || 0) + 1; props_().setProperty('ideaSeq', String(id));
+        sheet_(IDEA_SHEET, IDEA_HEADER).appendRow([id, "'" + nowStr_(), name, body.anon ? '예' : '', body.secret ? '예' : '', text, '[]', '']);
+        props_().setProperty('ideaLast:' + name, String(Date.now()));
+      } finally { lock.releaseLock(); }
+    }
+  } else if (body.op === 'ideaLike' || body.op === 'ideaDel') {
+    const lock = lightLock_(15000);
+    try {
+      const it = readIdeas_().filter(function (x) { return x.id === Number(body.id); })[0], sh = sheet_(IDEA_SHEET, IDEA_HEADER);
+      if (!it) error = 'none';
+      else if (body.op === 'ideaDel') { if (isT || it.from === name) sh.getRange(it.row, 8).setValue('삭제'); else error = 'auth'; }
+      else if (!(it.secret && !isT && it.from !== name)) {
+        const k = it.likes.indexOf(name); if (k >= 0) it.likes.splice(k, 1); else it.likes.push(name);
+        sh.getRange(it.row, 7).setValue(JSON.stringify(it.likes));
+      }
+    } finally { lock.releaseLock(); }
+  }
+  const list = readIdeas_().filter(function (x) { return !x.secret || isT || x.from === name; }).map(function (x) {
+    const mine = x.from === name;
+    return { id: x.id, t: x.t, text: x.text, anon: x.anon, secret: x.secret, mine: mine, from: x.anon && !mine ? '' : x.from,
+      real: isT ? x.from : undefined, n: x.likes.length, liked: x.likes.indexOf(name) >= 0 };
+  }).reverse();
+  return { ok: true, error: error, ideas: list, teacher: isT };
 }
 
 /* 📨 로그인 못 하는 학생의 연락 (비밀번호 분실 등) → 건의함에 '연락'으로 */
