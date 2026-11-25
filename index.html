@@ -2142,7 +2142,7 @@ function renderTimetable(now){
   if (nowI >= 0){ const x = items[nowI]; tag = `<span class="tt-tag ${x.lunch ? 'lunch' : (x.changed ? 'chg' : 'now')}">${x.lunch ? '점심시간' : '📚 지금 ' + esc(L(x))}${x.changed ? ' (변경)' : ''}</span>`; right = `<span class="tt-tag">⏱ ${left(x.e - cur)} 남음</span>`; }
   else if (nextI === 0){ tag = `<span class="tt-tag now">☀️ 곧 수업 시작</span>`; right = `<span class="tt-tag">⏱ ${left(items[0].s - cur)} 뒤</span>`; }
   else if (nextI > 0){ tag = `<span class="tt-tag">🧃 쉬는 시간</span>`; right = `<span class="tt-tag">⏱ ${left(items[nextI].s - cur)} 뒤 종</span>`; }
-  else { tag = `<span class="tt-tag done">🎉 오늘 수업 끝!</span>`; right = `<span class="tt-tag">📋 종례 시간</span>`; }
+  else { tag = `<span></span>`; right = `<span class="tt-tag">📋 종례 시간</span>`; }
   const nx = nextI >= 0 ? items[nextI] : null;
   sub = nx ? `다음: ${L(nx)}${nx.changed ? ' (변경)' : ''} (${nx.start})` : (items.length ? '' : '⚙️ 설정의 📚 시간표에 교시 시간을 넣어 주세요');
   const row = items.map((x, i) => `<div class="tt-c ${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${i === nowI ? 'now' : (x.e <= cur ? 'past' : '')}" ${x.lunch ? '' : `data-i="${i}" title="눌러서 오늘만 과목 바꾸기 (관리자)"`}>${x.lunch ? '&nbsp;' : (x.changed ? `${x.num || ''} 변경` : (x.num || esc(x.name)))}<b>${x.lunch ? '점심' : esc(x.label && !/교시$/.test(x.label) ? x.label : '·')}</b></div>`).join('');
