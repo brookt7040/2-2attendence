@@ -606,7 +606,7 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .rev-step:has(input:checked) span{text-decoration:line-through;opacity:.6;}
 #revBar{position:fixed;left:12px;bottom:46px;z-index:9500;font-family:inherit;font-size:.95rem;border:2px solid #C0365C;border-radius:999px;background:#FFE1EA;color:#8A2A44;padding:5px 14px;cursor:pointer;box-shadow:0 3px 0 #C0365C;animation:revPulse 1.6s ease-in-out infinite;}
 @keyframes revPulse{50%{transform:translateY(-3px);background:#FFC9D6;}}
-body.view-mode #revBar{display:none !important;}
+body.view-mode #revBar,body.view-mode #sleepAdmin{display:none !important;}
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
 .modal h2{margin:0;text-align:center;font-size:1.7rem;font-weight:normal;padding-bottom:10px;border-bottom:3px dashed #EAD49A;}
@@ -734,14 +734,26 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 @keyframes sbPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
 
 #fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:10000;}
+#remoteBanner:not(.show){visibility:hidden;}
+#pinOverlay{z-index:40001 !important;}
+#sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:20px;}
+#sleepOv.on{display:flex;}
+#sleepOv .sl-cat{font-size:5.5rem;position:relative;line-height:1;}
+#sleepOv .sl-z{position:absolute;right:-18px;top:-6px;font-size:2rem;animation:slZ 2.4s ease-in-out infinite;}
+#sleepOv .sl-z.b{right:-52px;top:-48px;font-size:1.4rem;animation-delay:1.2s;}
+#sleepOv h2{margin:0;font-size:1.8rem;font-weight:normal;}
+#sleepOv p{margin:0;font-size:1.1rem;opacity:.85;}
+#sleepOv .sl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 50% 12%,#fff,transparent);opacity:.7;}
+#sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
+@keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 /* 👀 학생용 출석부: Must Read 비었으면 숨김 · 청소 당번 ＋ · 종례하기 숨김 · 폰에서는 오른쪽 → 가운데 → 왼쪽 순서 */
 body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openClosingBtn{display:none !important;}
 @media (max-width:760px){
   body.view-mode .header{display:flex !important;flex-direction:column;}
   body.view-mode .header-left,body.view-mode .side-btns{display:contents;}
   body.view-mode .title-row{order:0;} body.view-mode .mini-menu{order:1;}
-  body.view-mode .header-right{order:2;} body.view-mode .header-mid{order:3;}
-  body.view-mode #cleanSide{order:4;} body.view-mode #urgentBox{order:5;}
+  body.view-mode .header-right{display:contents;} body.view-mode .header-right > *{order:2;} body.view-mode .header-mid{order:3;}
+  body.view-mode #cleanSide{order:4;margin-top:22px;} body.view-mode #openMeetingBtn{order:5;max-width:none;} body.view-mode #urgentBox{order:6;}
 }
 
 @media (max-width:1100px){
@@ -957,6 +969,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div id="songDock" style="display:none;"></div>
 <div id="remoteBanner" onclick="this.classList.remove('show')"></div>
 <div id="syncPill" title="눌러서 지금 동기화">☁️ 동기화</div>
+<div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat"><canvas id="sleepCat" class="pix" width="16" height="16" style="width:150px;height:150px;image-rendering:pixelated;"></canvas><span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><button type="button" class="sl-admin" id="sleepAdmin">👑 관리자</button></div>
 <button type="button" id="revBar" style="display:none;"></button>
 <div class="overlay" id="revOv">
   <div class="modal rev-modal"><button type="button" class="modal-x" data-close="revOv" title="닫기">✕</button>
@@ -1341,6 +1354,9 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
       <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
+      <div class="row" style="margin-top:12px;"><span>📋 <b>종례가 학생 화면 맨 위로 올라오는 시각</b> · 이때부터 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</span><input type="time" id="closingAtInput"></div>
+      <div class="row" style="margin-top:12px;"><span>💤 <b>접속 금지 시간</b> · 교실 출석부·학생 화면·학생용 출석부·안내 사이트가 모두 잠겨요 (선생님 계정은 괜찮아요)</span></div>
+      <div class="row"><label><input type="checkbox" id="sleepOnInput"> 사용</label><span><input type="time" id="sleepStartInput"> 부터 <input type="time" id="sleepEndInput"> 까지</span></div>
       <div class="row" style="margin-top:12px;"><span>📖 <b>안내 사이트 버전</b> · 가이드 제목 옆에 떠요</span><input type="text" id="guideVerInput" maxlength="12" style="width:110px;" placeholder="예: v1.0"></div>
       <div class="form-group"><label>📝 안내 사이트 업데이트 내역 (한 줄에 하나 · 맨 위가 최신)</label><textarea id="guideNotesInput" style="height:80px;" placeholder="11/25 마을 개선 의견 게시판이 생겼어요&#10;11/25 시간표 보기가 생겼어요"></textarea></div>
     </div>
@@ -2065,6 +2081,8 @@ function mergeInto(parsed){
   if (typeof parsed.accessCode === 'string') db.accessCode = parsed.accessCode;
   if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
   if (parsed.accessEpoch) db.accessEpoch = Number(parsed.accessEpoch) || 0;
+  if (parsed.sleep) db.sleep = parsed.sleep;
+  if (typeof parsed.closingAt === 'string') db.closingAt = parsed.closingAt;
   if (typeof parsed.guideVer === 'string') db.guideVer = parsed.guideVer;
   if (typeof parsed.guideNotes === 'string') db.guideNotes = parsed.guideNotes;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
@@ -2223,8 +2241,23 @@ function strikeSet(name, reset){
   syncOp({ op:'strikeSet', name, reset: !!reset }); renderGrid(); renderNotes();
   showToast(reset ? `🔄 ${name} 횟수를 초기화했어요` : `🔓 ${name} 제한을 풀었어요`);
 }
+
+/* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
+function sleepIn(cfg, d){
+  if (!cfg || !cfg.on || !cfg.start || !cfg.end) return false;
+  const t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return cfg.start < cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
+}
+function sleepShow(cfg, on){
+  const o = document.getElementById('sleepOv'); if (!o) return;
+  o.classList.toggle('on', !!on);
+  if (on && typeof catColors === 'function' && typeof MASCOT !== 'undefined' && document.getElementById('sleepCat')) try { drawColors(document.getElementById('sleepCat'), catColors(MASCOT, null, { blink: true })); } catch(e){}
+  if (on) document.getElementById('sleepMsg').textContent = `${cfg.end}에 다시 만나요! 🌙 (${cfg.start} ~ ${cfg.end}에는 쉬어요)`;
+}
+let sleepBypass = false, viewSleep = null;
+function sleepTick(){ const cfg = VIEW ? viewSleep : db.sleep; sleepShow(cfg, !sleepBypass && sleepIn(cfg, nowD())); }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 25;
+const NEED_API = 26;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -3859,6 +3892,7 @@ function tick(){
     updateDate(now); renderNotices(); renderGrid(); updateStatsBoard();
   }
   updateReward(now);
+  if (now.getSeconds() % 5 === 0) sleepTick();
   graceWarn(now);
   updateMascotBubble(now);
   $('mcTime').innerHTML = `${pad(now.getHours())}:${pad(now.getMinutes())}<small>:${pad(now.getSeconds())}</small>`;
@@ -4062,6 +4096,8 @@ function openAdminUI(){
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
   $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
+  $('closingAtInput').value = db.closingAt === undefined ? '15:00' : (db.closingAt || '');
+  { const sl = db.sleep || {}; $('sleepOnInput').checked = !!sl.on; $('sleepStartInput').value = sl.start || '22:00'; $('sleepEndInput').value = sl.end || '07:00'; }
   $('guideVerInput').value = db.guideVer || ''; $('guideNotesInput').value = db.guideNotes || '';
   $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
@@ -4134,6 +4170,8 @@ async function saveAdminData(){
   db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
   db.accessCode = $('accessCodeInput').value.trim(); db.accessHours = Math.min(12, Math.max(1, parseInt($('accessHoursInput').value, 10) || 3));
   if (db.accessCode) gatePass(db.accessCode);   // 지금 이 기기는 바로 통과
+  db.closingAt = $('closingAtInput').value || '';
+  db.sleep = { on: $('sleepOnInput').checked, start: $('sleepStartInput').value || '22:00', end: $('sleepEndInput').value || '07:00' }; sleepTick();
   db.guideVer = $('guideVerInput').value.trim().slice(0, 12); db.guideNotes = $('guideNotesInput').value.trim().slice(0, 1500);
   db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
@@ -4292,7 +4330,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', sleep: db.sleep || null, closingAt: db.closingAt === undefined ? '15:00' : (db.closingAt || ''), economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -4337,6 +4375,8 @@ function applyConfig(c){
   if (typeof c.accessCode === 'string') db.accessCode = c.accessCode;
   if (c.accessHours) db.accessHours = Number(c.accessHours) || 3;
   if (c.accessEpoch != null) db.accessEpoch = Number(c.accessEpoch) || 0;
+  if (c.sleep !== undefined) db.sleep = c.sleep;
+  if (typeof c.closingAt === 'string') db.closingAt = c.closingAt;
   if (typeof c.guideVer === 'string') db.guideVer = c.guideVer;
   if (typeof c.guideNotes === 'string') db.guideNotes = c.guideNotes;
   if (typeof c.latePin === 'string') db.latePin = c.latePin;
@@ -6792,7 +6832,6 @@ function openVillage(opts){
         if (typeof r === 'string' && r){ say(r); if (c) c.bubble = null; }
         else if (r && r.sent != null && c){
           c.bubble = { text: (tb ? '🤫 ' : '') + (r.sent.length > 26 ? r.sent.slice(0, 25) + '…' : r.sent), until: Date.now() + 7000 };
-          if (r.sent.includes('♡') && !text.includes('♡')) say('🙊 고운 말을 써요! 나쁜 말은 ♡로 바뀌어요', 3500);
         }
       } catch(e){}
     };
@@ -6931,6 +6970,7 @@ function bindEvents(){
     e.currentTarget.href = studentLink();
   });
   $('revBar').addEventListener('click', () => requirePin(openRev));
+  $('sleepAdmin').addEventListener('click', () => { if (VIEW) return; pinUntil = 0; requirePin(() => { sleepBypass = true; sleepTick(); showToast('👑 이 기기만 잠깐 깨웠어요 (새로고침하면 다시 잠겨요)'); }); });
   $('revOv').addEventListener('change', e => { const c = e.target.closest('[data-rev]'); if (c) try { localStorage.setItem('nyangRev:' + NEED_API + ':' + c.dataset.rev, c.checked ? '1' : ''); } catch(err){} });
   $('gateResetBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
@@ -7027,7 +7067,7 @@ function viewApply(j){
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
   db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
-  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {};
+  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {}; viewSleep = j.sleep || null; sleepTick();
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
   applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();

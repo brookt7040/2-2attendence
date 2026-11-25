@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v25 · 🚫 비속어 단계별 제한·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v26 · 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 25;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 26;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -48,7 +48,7 @@ const HANA_DAILY = 5;          // 🐱 하나와는 하루에 5번까지 놀 수
 const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람', '받는 사람(빈칸=전체)', '내용', '상태'];
 const IDEA_SHEET = '마을의견', IDEA_HEADER = ['번호', '시간', '보낸 사람', '익명', '비밀', '내용', '좋아요', '상태'];
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
-// 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 ♡로 바뀌어요
+// 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 민망한 애교 말로 바뀌어요
 const BASE_BAN = ['시발', '씨발', '씨빨', 'ㅅㅂ', 'ㅆㅂ', '병신', 'ㅂㅅ', '븅신', '개새', '새끼', 'ㅅㄲ', '지랄', 'ㅈㄹ', '좆', '존나', 'ㅈㄴ',
   '닥쳐', '꺼져', '미친놈', '미친년', '엠창', '니애미', '느금', '애미', '애비', '꼴통', '찐따', '장애인새', '죽어'];
 const MAX_FAIL = 5, LOCK_MINUTES = 10;
@@ -286,12 +286,19 @@ function publicState_(map) {
     })
   };
 }
+/* 💤 접속 금지 시간 (선생님이 설정) */
+function sleepCfg_() { try { return JSON.parse(props_().getProperty('sleepCfg') || 'null'); } catch (e) { return null; } }
+function sleepNow_() {
+  const s = sleepCfg_(); if (!s || !s.on || !s.start || !s.end) return false;
+  const t = Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm');
+  return s.start < s.end ? (t >= s.start && t < s.end) : (t >= s.start || t < s.end);
+}
 function publicGet_(p) {
   if (p.village) return villageState_();
   if (p.room) return roomState_(String(p.room));
   if (p.card) return cardOf_(String(p.card));
   if (p.board) return boardOf_(String(p.gate || ''));
-  if (p.guide) { const cfg = readRows_().map.config || {}; return { ok: true, api: API_VERSION, ver: String(cfg.guideVer || ''), notes: String(cfg.guideNotes || '') }; }   // 📖 안내 사이트 버전·업데이트 내역
+  if (p.guide) { const cfg = readRows_().map.config || {}; return { ok: true, api: API_VERSION, ver: String(cfg.guideVer || ''), notes: String(cfg.guideNotes || ''), sleep: sleepCfg_(), now: Date.now() }; }   // 📖 안내 사이트 버전·업데이트 내역
   if (p.eng) return engPublic_();
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
@@ -302,6 +309,7 @@ function publicGet_(p) {
   }
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
+  res.sleep = sleepCfg_(); res.closingAt = props_().getProperty('closingAt') || '';
   return res;
 }
 
@@ -356,6 +364,7 @@ function handlePost_(body, auth) {
           const keepLooks = map.config && map.config.looks;
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
+          try { props_().setProperty('sleepCfg', JSON.stringify((o.data && o.data.sleep) || null)); props_().setProperty('closingAt', String((o.data && o.data.closingAt) || '')); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
         }
@@ -540,9 +549,15 @@ function cleanLook_(look, lv, old, name) {
 }
 
 function handleStudent_(body) {
+  const r = handleStudentCore_(body);
+  if (body.__strike && r && typeof r === 'object') r.strike = body.__strike;
+  return r;
+}
+function handleStudentCore_(body) {
   const name = String(body.name || '');
   const chk = checkStudent_(name, body.pin);
   if (!chk.ok) return chk;
+  if (!isTeacherName_(name) && sleepNow_()) return { ok: false, error: 'sleep', sleep: sleepCfg_() };   // 💤 하나가 자는 시간
   { const g = textGuard_(name, body); if (g) return g; }
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
   if (body.op === 'chatPull') return studentChat_(name, body, null);
@@ -659,7 +674,7 @@ function chatOpen_(cfg) {
   const t = Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm');
   return cfg.start <= cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
 }
-/* 🙊 욕설·비속어 거르기: 띄어쓰기·숫자·기호를 끼워 넣어도(시 1 발, ㅅ.ㅂ) 찾아서 ♡로 가려요 */
+/* 🙊 욕설·비속어 거르기: 띄어쓰기·숫자·기호를 끼워 넣어도(시 1 발, ㅅ.ㅂ) 찾아서 애교 말로 바꿔요 */
 const BAD_PATTERNS = [
   // 시발 계열
   '[시씨쉬쒸싀쓔][이]?[발빨팔벌뻘]', '[씨쒸]파', '[시씨쉬쒸][바빠](?![견다닥람구나퀴위지르로탕뀌라])', '십[새쌔할알팔]', '씹[새쌔년놈창할]', '씹(?![어었다는고을으])', '[ㅅㅆ][ㅂㅃ]', 'ㅅ발', '시ㅂ', '쌉[가소]', '썅', '쌍[년놈]', '시방새',
@@ -685,6 +700,8 @@ const BAD_PATTERNS = [
 let BAD_RE_ = null;
 function badRe_() { if (!BAD_RE_) BAD_RE_ = new RegExp(BAD_PATTERNS.join('|'), 'gi'); return BAD_RE_; }
 const LETTER_RE_ = /[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z]/;
+// 🙈 욕은 민망한 애교 말로 바뀌어요 (한 덩어리마다 무작위 하나)
+const AEGYO_ = ['아잉', '뿌잉뿌잉', '우쭈쭈', '꺄르륵', '힝구리퐁퐁', '앙대영', '냥냥펀치', '쪼아쪼아', '뀨잉', '몰랑몰랑', '히잉', '데헷', '오구오구', '부끄부끄', '깜찍깜찍', '꾸잉꾸잉', '하트뿅뿅', '사랑해용', '귀요미', '꼬물꼬물', '헤헤헷', '잉잉잉', '냐앙', '쀼잉'];
 function maskBad_(t, extra) {
   // 띄어쓰기·숫자·기호를 빼고 글자만 모아서 찾아요 (시 1 발 · ㅅ.ㅂ 도 잡아요)
   const idx = [], keep = [];
@@ -706,7 +723,7 @@ function maskBad_(t, extra) {
   while ((m2 = r18.exec(t))) for (let k = m2.index; k < m2.index + m2[0].length; k++) hit[k] = true;
   let out = '', run = 0;
   for (let i = 0; i < t.length; i++) {
-    if (hit[i]) { if (run < 3) out += '♡'; run++; } else { out += t.charAt(i); run = 0; }
+    if (hit[i]) { if (run === 0) out += AEGYO_[Math.floor(Math.random() * AEGYO_.length)]; run++; } else { out += t.charAt(i); run = 0; }
   }
   return out;
 }
@@ -750,7 +767,7 @@ function textGuard_(name, body) {
   const ban = chatCfg_().ban || [];
   const texts = body.op === 'profile' ? Object.keys(body.data || {}).map(function (k) { return body.data[k]; }) : [body.text];
   const bad = texts.filter(function (t) { t = String(t || ''); return t && maskBad_(t, ban) !== t; })[0];
-  if (bad) return { ok: true, error: 'bad', penalty: addStrike_(name, body.op, bad) };
+  if (bad) body.__strike = addStrike_(name, body.op, bad);   // 글은 애교 말로 바뀌어서 올라가고, 횟수만 올라가요
   return null;
 }
 function hasBad_(text) { const t = String(text || ''); return maskBad_(t, []) !== t; }
@@ -1201,7 +1218,7 @@ function boardOf_(code) {
     const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
     return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
   }
-  const out = b.data; out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER);
+  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER);
   return out;
 }
 function cardOf_(name) {

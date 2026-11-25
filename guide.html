@@ -61,6 +61,16 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 .upd ul{list-style:none;max-width:44rem;margin:.8rem auto 0;text-align:left;background:#fff;border:0.19rem solid #5B4636;border-radius:1.2rem;padding:1rem 1.4rem;}
 .upd li{font-size:1.4rem;line-height:1.6;padding:.25rem 0 .25rem 1.8rem;}
 .upd li:first-child{color:#D9466F;}
+#sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:20px;}
+#sleepOv.on{display:flex;}
+#sleepOv .sl-cat{font-size:8rem;position:relative;line-height:1;}
+#sleepOv .sl-z{position:absolute;right:-18px;top:-6px;font-size:2rem;animation:slZ 2.4s ease-in-out infinite;}
+#sleepOv .sl-z.b{right:-52px;top:-48px;font-size:1.4rem;animation-delay:1.2s;}
+#sleepOv h2{margin:0;font-size:2.6rem;font-weight:normal;}
+#sleepOv p{margin:0;font-size:1.6rem;opacity:.85;}
+#sleepOv .sl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 50% 12%,#fff,transparent);opacity:.7;}
+#sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
+@keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 </style></head><body><div class="wrap">
 <div class="hero"><span class="cl">2학년 2반</span>
 <h1>🐾 온라인 학급<span class="ver" id="gVer"></span></h1><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p>
@@ -99,7 +109,7 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 
 <div class="card"><h2><span class="num">4</span>우리 반 약속</h2>
 <div class="rules">
-<div class="rule"><b><span class="ic">💛</span>고운 말만!</b>나쁜 말은 ♡로 바뀌어요. 선생님은 귓속말까지 모든 대화를 볼 수 있어요.</div>
+<div class="rule"><b><span class="ic">💛</span>고운 말만!</b>나쁜 말은 🙈 민망한 애교 말로 바뀌고, 자꾸 쓰면 글쓰기가 막혀요. 선생님은 귓속말까지 모든 대화를 볼 수 있어요.</div>
 <div class="rule"><b><span class="ic">🔒</span>개인 정보 금지</b>주소 · 전화번호 · 비밀번호는 절대 적지 않아요.</div>
 <div class="rule"><b><span class="ic">🧹</span>Cleaning Duty</b>그날 EXP가 마이너스이거나, 욕설이 누적 5·10·15번째인 날은 청소 당번!</div>
 <div class="rule"><b><span class="ic">⏳</span>하루 횟수 제한</b>마을 놀이 하루 20번, 하나와 놀기 하루 5번까지.</div>
@@ -115,10 +125,26 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 </div></div>
 <div class="go" style="margin-top:1.5rem;"><a class="a1" href="student.html?api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">🐱</span>내 화면 가기</a><a class="a2" href="index.html?view=1&amp;api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">📋</span>출석부 보러가기</a></div>
 </div><script>
+/* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
+function sleepIn(cfg, d){
+  if (!cfg || !cfg.on || !cfg.start || !cfg.end) return false;
+  const t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return cfg.start < cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
+}
+function sleepShow(cfg, on){
+  const o = document.getElementById('sleepOv'); if (!o) return;
+  o.classList.toggle('on', !!on);
+  if (on && typeof catColors === 'function' && typeof MASCOT !== 'undefined' && document.getElementById('sleepCat')) try { drawColors(document.getElementById('sleepCat'), catColors(MASCOT, null, { blink: true })); } catch(e){}
+  if (on) document.getElementById('sleepMsg').textContent = `${cfg.end}에 다시 만나요! 🌙 (${cfg.start} ~ ${cfg.end}에는 쉬어요)`;
+}
+</script>
+<div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat">🌙<span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p></div>
+<script>
 (async () => {
   try {
     const r = await fetch('https://script.google.com/macros/s/AKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c/exec' + '?guide=1&t=' + Date.now(), { redirect:'follow' }), j = await r.json();
     if (!j || !j.ok) return;
+    if (j.sleep){ const chk = () => sleepShow(j.sleep, sleepIn(j.sleep, new Date())); chk(); setInterval(chk, 20000); }
     if (j.ver) document.getElementById('gVer').textContent = j.ver;
     const lines = String(j.notes || '').split('\n').map(x => x.trim()).filter(Boolean);
     if (lines.length){

@@ -248,6 +248,20 @@ body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-onl
 .idea .like{font-family:inherit;border:2px solid #E6D9CA;border-radius:999px;background:#fff;padding:2px 12px;cursor:pointer;}
 .idea .like.on{border-color:#E0577A;background:#FFE1EA;color:#C0365C;}
 .idea .idel{font-family:inherit;border:none;background:none;cursor:pointer;color:var(--ink-soft);}
+#sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:20px;}
+#sleepOv.on{display:flex;}
+#sleepOv .sl-cat{font-size:5.5rem;position:relative;line-height:1;}
+#sleepOv .sl-z{position:absolute;right:-18px;top:-6px;font-size:2rem;animation:slZ 2.4s ease-in-out infinite;}
+#sleepOv .sl-z.b{right:-52px;top:-48px;font-size:1.4rem;animation-delay:1.2s;}
+#sleepOv h2{margin:0;font-size:1.8rem;font-weight:normal;}
+#sleepOv p{margin:0;font-size:1.1rem;opacity:.85;}
+#sleepOv .sl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 50% 12%,#fff,transparent);opacity:.7;}
+#sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
+@keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+#closingBox.closing-hot{border-color:#E0577A;box-shadow:0 6px 0 #E0577A,0 0 0 5px #FFE1EA;background:#FFF8FA;padding-top:40px;}
+#closingBox.closing-hot .box-head{font-size:1.35rem;background:#FF8FA6;color:#fff;animation:revPulse 1.8s ease-in-out infinite;}
+#closingBox.closing-hot .n-item{font-size:1.2rem;}
+@keyframes revPulse{50%{transform:translateY(-3px);}}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
@@ -317,7 +331,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div id="checkinBox"></div>
     <div id="cleanMe"></div>
     <div class="box"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
-    <div class="box"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
+    <div class="box" id="closingBox"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
     <div class="box"><div class="box-head mint">📮 질문 · 건의</div><div id="askBox"></div></div>
     <div class="box"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
@@ -386,6 +400,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div id="ideaList"></div>
   </div>
 </div>
+
+<div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat"><canvas id="sleepCat" class="pix" width="16" height="16" style="width:150px;height:150px;image-rendering:pixelated;"></canvas><span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><button type="button" class="sl-admin" id="sleepT">👑 선생님 로그인</button></div>
 
 <div class="overlay" id="penOv">
   <div class="modal pen-modal">
@@ -503,6 +519,7 @@ async function pull(force){
     st.notices = j.notices || []; st.closing = j.closing || [];
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
     megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0);
+    sleepCfgNow = j.sleep || null; sleepTick(); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
     special = { banners: j.banners || [], butler: j.butler || '' };
     if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
     if (j.pub){
@@ -578,9 +595,39 @@ async function sosSend(){
 async function studentCall(op, extra){
   const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
   const j = await api(API, { method:'POST', body: JSON.stringify(body) });
-  if (j && (j.error === 'bad' || j.error === 'penalty')){ if (me) me.penalty = j.penalty; showPenalty(j.error, j.penalty || {}); renderPenBar(); return Object.assign({}, j, { ok: false }); }
+  if (j && j.error === 'sleep'){ sleepCfgNow = j.sleep || sleepCfgNow; sleepShow(sleepCfgNow || { start:'', end:'' }, true); }
+  if (j && j.error === 'penalty'){ if (me) me.penalty = j.penalty; showPenalty('penalty', j.penalty || {}); renderPenBar(); return Object.assign({}, j, { ok: false }); }
+  if (j && j.strike){ if (me) me.penalty = j.strike; setTimeout(() => { showPenalty('bad', j.strike); renderPenBar(); }, 400); }
   return j;
 }
+
+/* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
+function sleepIn(cfg, d){
+  if (!cfg || !cfg.on || !cfg.start || !cfg.end) return false;
+  const t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return cfg.start < cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
+}
+function sleepShow(cfg, on){
+  const o = document.getElementById('sleepOv'); if (!o) return;
+  o.classList.toggle('on', !!on);
+  if (on && typeof catColors === 'function' && typeof MASCOT !== 'undefined' && document.getElementById('sleepCat')) try { drawColors(document.getElementById('sleepCat'), catColors(MASCOT, null, { blink: true })); } catch(e){}
+  if (on) document.getElementById('sleepMsg').textContent = `${cfg.end}에 다시 만나요! 🌙 (${cfg.start} ~ ${cfg.end}에는 쉬어요)`;
+}
+let sleepCfgNow = null, closingAtNow = '';
+/* 📋 정해진 시각이 지나면 종례를 맨 위에 크게 */
+function placeClosing(){
+  const box = $('closingBox'), p = $('p-notice'); if (!box || !p) return;
+  const d = new Date(), t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const hot = !!closingAtNow && t >= closingAtNow && (st.closing || []).length > 0;
+  box.classList.toggle('closing-hot', hot);
+  const first = p.querySelector('.guest-only') ? p.querySelector('.guest-only').nextElementSibling : p.firstElementChild;
+  if (hot && first !== box) p.insertBefore(box, first);
+  if (!hot && box.dataset.moved && $('cleanList')) { const ref = $('cleanList').closest('.box'); p.insertBefore(box, ref); }
+  box.dataset.moved = hot ? '1' : '';
+}
+setInterval(placeClosing, 30000);
+function sleepTick(){ if ($('loginOv').style.display === 'flex') return; const t = me && /(쌤|샘|선생님|교감|교장)$/.test(me.name); sleepShow(sleepCfgNow, !t && sleepIn(sleepCfgNow, new Date())); }
+setInterval(sleepTick, 5000);
 /* 🚫 비속어 단계별 제한 안내 */
 function penLeft(p){ if (p.perm) return '영구 정지'; const s = Math.max(0, Math.ceil((p.until - Date.now()) / 1000)); return s >= 86400 ? `${Math.ceil(s / 86400)}일` : s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.ceil((s % 3600) / 60)}분` : s >= 60 ? `${Math.ceil(s / 60)}분` : `${s}초`; }
 function showPenalty(kind, p){
@@ -588,7 +635,7 @@ function showPenalty(kind, p){
   const n = p.n || 1, NEXT = ['', '1분 동안 아무 글도 쓸 수 없어요', '10분 동안 막히고, 출석부에 모두에게 공개돼요', '1시간 동안 막히고, 출석부에 공개돼요', '10일 동안 막혀요', '영구 정지돼요', '영구 정지 중이에요'];
   let h, body;
   if (kind === 'penalty'){ h = '🚫 지금은 글을 쓸 수 없어요'; body = `비속어 ${n}회 때문에 대화·글쓰기가 막혀 있어요.<br><b>${p.perm ? '영구 정지' : '남은 시간: ' + penLeft(p)}</b>`; }
-  else if (n <= 1){ h = '⚠️ 경고! 비속어를 쓰면 안 돼요'; body = `글이 올라가지 않았어요. <b>선생님께 알림이 갔어요.</b><br>한 번 더 쓰면 <b>${NEXT[1]}</b>.`; }
+  else if (n <= 1){ h = '⚠️ 경고! 비속어를 쓰면 안 돼요'; body = `욕은 <b>🙈 민망한 애교 말</b>로 바뀌어서 올라갔어요.<br><b>선생님께 알림이 갔어요.</b> 한 번 더 쓰면 <b>${NEXT[1]}</b>.`; }
   else { h = `🚫 비속어 ${n}회`; body = `${p.perm ? '<b>영구 정지</b>됐어요. 선생님과 이야기해야 풀 수 있어요.' : `<b>${penLeft(p)}</b> 동안 대화·글쓰기가 모두 막혀요.`}${p.pub ? '<br>📺 출석부에 모두에게 공개돼요.' : ''}<br><span class="soft">선생님께 알림이 갔어요.${n < 6 ? ` 또 쓰면 ${NEXT[Math.min(n, 6)]}.` : ''}</span>`; }
   $('penH').textContent = h; $('penBody').innerHTML = body; $('penOv').style.display = 'flex';
 }
@@ -719,6 +766,7 @@ function render(){
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
     : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span>${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
   renderCheckin(fresh);
+  placeClosing();
   $('specialBox').innerHTML = special.banners.map(b => `<div class="sp-banner">${{ birthday:'🎂', congrats:'🎉', cheer:'💪', praise:'🏆', love:'💛' }[b.style] || '🎉'} <b>${esc(b.text)}</b> <small>from. ${esc(b.n)}</small></div>`).join('') +
     (special.butler ? `<div class="sp-butler">🐱 오늘의 하나 집사: <b>${esc(special.butler)}</b></div>` : '');
   $('cleanMe').innerHTML = (me && fresh && me.info && me.info.clean) ? '<div class="clean-me">🧹 오늘 청소 당번이에요! 오늘 EXP가 마이너스라서 그래요. 내일은 플러스로 만들어 보자 💪</div>' : '';
@@ -794,7 +842,7 @@ function profileBox(){
   return `<div class="box"><div class="box-head lav">🪪 내 냥이 카드</div><div class="hint" style="margin:-4px 0 8px;">마을에서 친구가 나를 누르면 보여요</div>
     <div class="pf-grid">${PROFILE_FORM.map(([k, l, n, ph]) => `<label>${l}<input type="text" data-pf="${k}" maxlength="${n}" placeholder="${ph}" value="${esc(myProfile[k] || '')}"></label>`).join('')}</div>
     <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-y" id="pfSave">저장</button></div>
-    <div class="hint">개인 정보(주소·전화번호 등)는 적지 마세요! 나쁜 말은 ♡로 바뀌어요.</div></div>`;
+    <div class="hint">개인 정보(주소·전화번호 등)는 적지 마세요! 나쁜 말은 🙈 애교 말로 바뀌어요.</div></div>`;
 }
 function dexBox(info){
   const d = info.dex; if (!d) return '';
@@ -1084,7 +1132,7 @@ function renderCoin(){
     <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button><button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button><button type="button" data-stab="special" class="${shopTab === 'special' ? 'on' : ''}">✨ 특별</button></div>
       ${shopTab === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}
-      ${shopTab === 'mega' ? '<div class="hint" style="margin-bottom:6px;">📢 확성기를 사면 내가 쓴 한 줄이 마을·교실 화면 맨 위에 <b>1시간</b> 동안 떠요! (나쁜 말은 ♡로 바뀌고, 선생님이 내릴 수 있어요)</div>' : ''}
+      ${shopTab === 'mega' ? '<div class="hint" style="margin-bottom:6px;">📢 확성기를 사면 내가 쓴 한 줄이 마을·교실 화면 맨 위에 <b>1시간</b> 동안 떠요! (나쁜 말은 🙈 애교 말로 바뀌고, 선생님이 내릴 수 있어요)</div>' : ''}
       ${shopTab === 'house' ? `<div class="hint" style="margin-bottom:6px;">처음엔 📦 박스집에 살아요. 텐트 → 오두막 → 2층 집 → 성 순서로 업그레이드! 집이 클수록 방도 넓어져요. 집 안 꾸미기는 마을에서 내 집을 눌러요.${inv.house ? ' <button type="button" data-house="" style="font-size:.85rem;">📦 박스집으로</button>' : ''}</div>` : ''}
       ${shopTab === 'coupon' ? '<div class="hint" style="margin-bottom:6px;">쿠폰을 사면 선생님께 신청돼요. 실물을 받으면 &quot;지급 완료&quot;로 바뀌어요.</div>' : ''}
       <div class="shop-grid">${shopHtml}</div></div>
@@ -1334,6 +1382,7 @@ document.addEventListener('click', e => {
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
   if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
+  if (t.closest('#sleepT')){ $('sleepOv').classList.remove('on'); openLogin(); return; }
   if (t.closest('#ideaOpen')){ openIdeas(); return; }
   if (t.closest('#ideaSend')){ ideaSend(); return; }
   { const x = t.closest('[data-isort]'); if (x){ ideaSort = x.dataset.isort; renderIdeas(); return; } }
