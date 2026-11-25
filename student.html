@@ -2658,6 +2658,7 @@ async function statusSave(text){
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();   // 📱 2-2😻 앱 안
+addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
 function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, location.origin); } catch(e){} }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
@@ -2881,7 +2882,7 @@ function render(){
   const d = new Date(), days = ['일','월','화','수','목','금','토'];
   $('today').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
   const boardBtn = `<a class="btn btn-mint board-link" href="${boardLink()}" target="_blank" rel="noopener">📋 출석부 보러가기</a>`;
-  $('meBar').innerHTML = boardBtn + (me
+  $('meBar').innerHTML = (me
     ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}${coin ? ` · ${coinText()}🐾` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
     : `<button type="button" class="btn btn-y" id="loginOpenBtn">🔑 로그인</button>`);
 

@@ -17,10 +17,21 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .frames{position:fixed;left:0;right:0;top:50px;bottom:0;}
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;visibility:hidden;}
 .frames iframe.on{visibility:visible;}
-@media (max-width:480px){ .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
+.bar .inst{flex:0 0 auto;max-width:none;background:#E8ECFF;font-size:.9rem;padding:6px 12px;}
+.bar .inst[hidden]{display:none;}
+#iosOv{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(80,60,45,.55);padding:16px;}
+#iosOv.on{display:flex;}
+.io-box{position:relative;background:#FFFDF6;border:3px solid #5B4636;border-radius:20px;box-shadow:0 6px 0 #5B4636;padding:20px 22px;max-width:420px;width:100%;}
+.io-box h3{font-weight:normal;font-size:1.15rem;margin-bottom:10px;}
+.io-ol{padding-left:1.4rem;line-height:1.9;font-size:1rem;word-break:keep-all;}
+.io-x{position:absolute;right:10px;top:10px;font-family:inherit;border:2px solid #5B4636;border-radius:10px;background:#FFC9D3;width:34px;height:34px;cursor:pointer;}
+.ios-share{width:1.4em;height:1.4em;vertical-align:-0.35em;background:#fff;border:1px solid #D8D2C8;border-radius:.35em;padding:.1em;}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#fff;border:2px solid #5B4636;border-radius:999px;padding:6px 16px;z-index:30;display:none;}
+@media (max-width:480px){ .bar .inst{font-size:.82rem;padding:6px 8px;} .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
 </style></head><body>
 <div class="bar"><div class="logo"><img src="icons/favicon-64.png" alt=""><span>2-2😻</span></div>
-  <button type="button" data-t="me">🐱 내 화면</button><button type="button" data-t="board">📋 출석부</button><button type="button" data-t="guide">📖 안내</button></div>
+  <button type="button" data-t="board">📋 출석부</button><button type="button" data-t="me">🐱 내 화면</button><button type="button" data-t="guide">📖 안내</button><span class="sp"></span><button type="button" id="instBtn" class="inst">📲 설치</button></div>
+<div id="iosOv"><div class="io-box"><button type="button" class="io-x" id="iosX">✕</button><h3>🍎 아이폰 · 아이패드는 직접 추가해요</h3><ol class="io-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
 <div class="frames" id="frames"></div>
 <script>
 /* 📱 2-2😻 앱: 한 창 안에서 내 화면 · 출석부 · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
@@ -30,17 +41,30 @@ try { const moved = localStorage.getItem('nyangApi'); if (!q.get('api') && moved
 const SRC = { me: 'student.html?api=' + encodeURIComponent(API), board: 'index.html?view=1&api=' + encodeURIComponent(API), guide: 'guide.html?inapp=1' };
 const frames = {};
 function show(t){
-  if (!SRC[t]) t = 'me';
-  if (!frames[t]){ const f = document.createElement('iframe'); f.src = SRC[t]; f.title = t; document.getElementById('frames').appendChild(f); frames[t] = f; }
+  if (!SRC[t]) t = 'board';
+  if (!frames[t]){ const f = document.createElement('iframe'); f.src = SRC[t]; f.title = t; f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
   Object.entries(frames).forEach(([k, f]) => f.classList.toggle('on', k === t));
+  try { frames[t].contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){}   // 내 화면: 로그인 안 했으면 로그인 창
   document.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-  try { localStorage.setItem('nyangAppTab', t); } catch(e){}
   history.replaceState(null, '', '?tab=' + t + (q.get('api') ? '&api=' + encodeURIComponent(q.get('api')) : ''));
 }
 document.querySelector('.bar').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); });
 addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang === 'go' && SRC[d.tab]) show(d.tab); });
-let first = q.get('tab'); if (!first){ try { first = localStorage.getItem('nyangAppTab'); } catch(e){} }
-show(first || 'me');
+show(q.get('tab') || 'board');   // 처음엔 늘 출석부 (입장 코드 → 출석부)
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+/* 📲 설치: 크롬 · 엣지 · 안드로이드는 버튼 한 번, 아이폰 · 아이패드는 방법 안내 · 이미 앱이면 버튼 숨김 */
+let instEvt = null;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+const ib = document.getElementById('instBtn'); if (isApp) ib.hidden = true;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); instEvt = e; });
+addEventListener('appinstalled', () => { ib.hidden = true; toast('🎉 설치 완료! 바탕화면 · 홈 화면의 2-2😻를 눌러요'); });
+function toast(t){ let el = document.querySelector('.toast'); if (!el){ el = document.createElement('div'); el.className = 'toast'; document.body.appendChild(el); } el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = 'none', 4000); }
+ib.onclick = async () => {
+  if (isIOS){ document.getElementById('iosOv').classList.add('on'); return; }
+  if (instEvt){ instEvt.prompt(); const r = await instEvt.userChoice; instEvt = null; if (r.outcome !== 'accepted') toast('설치를 취소했어요'); return; }
+  toast('이미 설치돼 있거나, 이 브라우저는 메뉴(⋮)에서 직접 설치해요');
+};
+document.getElementById('iosX').onclick = () => document.getElementById('iosOv').classList.remove('on');
 </script>
 </body></html>

@@ -97,31 +97,18 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <h1>🐾 온라인 학급<span class="ver" id="gVer"></span></h1><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p>
 <div class="upd" id="gUpd" style="display:none;"><button type="button" id="gUpdBtn">📝 업데이트 내역</button><ul id="gUpdList" hidden></ul></div></div>
 
-<div class="inst">
-<div class="inst-top"><div><b>📲 2-2😻 앱으로 설치하기</b><small>바탕화면 · 홈 화면에 하나 아이콘이 생겨요. 누르면 <b>내 화면 · 출석부 · 안내</b>를 위쪽 탭으로 오가는 앱이 열려요</small><button type="button" class="inst-ios-link" id="instIosLink">🍎 아이폰 · 아이패드는 여기를 눌러 방법 보기</button></div>
-<button type="button" id="instBtn">📲 설치하기</button></div>
-<div class="inst-msg" id="instMsg" hidden></div>
-<div class="inst-body" id="instIos" hidden>
-<div class="inst-c" style="grid-column:1/-1;"><h3>🍎 아이폰 · 아이패드는 버튼으로 설치가 안 돼요! 아래 순서대로 해 주세요</h3>
-<ol class="inst-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
-<div class="inst-body" id="instManual" hidden>
-<div class="inst-c"><h3>💻 디벗 · 컴퓨터 (크롬)</h3><p>오른쪽 위 <b>⋮</b> → <b>전송, 저장, 공유</b> → <b>페이지를 앱으로 설치</b> (또는 바로가기 만들기 → "창으로 열기" 체크)</p></div>
-<div class="inst-c"><h3>💻 디벗 · 컴퓨터 (엣지)</h3><p>오른쪽 위 <b>⋯</b> → <b>앱</b> → <b>이 사이트를 앱으로 설치</b></p></div>
-<div class="inst-c" style="grid-column:1/-1;"><h3>📱 안드로이드 · 갤럭시탭</h3><p>크롬 오른쪽 위 <b>⋮</b> → <b>홈 화면에 추가</b> 또는 <b>앱 설치</b></p></div>
-</div>
-</div>
-<div class="go">
-<a class="a1" href="app.html?tab=me" data-go="me"><span class="ic">🐱</span>내 화면 가기<small>로그인 · 꾸미기 · 냥이 마을</small></a>
-<a class="a2" href="app.html?tab=board" data-go="board"><span class="ic">📋</span>출석부 보러가기<small>오늘 출석 현황 (입장 코드 필요)</small></a>
+<div class="go" id="goTop">
+<a class="a2" href="app.html?tab=board" data-go="board"><span class="ic">📋</span>출석부<small>입장 코드만 넣으면 누구나</small></a>
+<a class="a1" href="app.html?tab=me" data-go="me"><span class="ic">🐱</span>내 화면<small>로그인 · 꾸미기 · 냥이 마을</small></a>
 </div>
 <div class="card"><h2><span class="num">1</span>처음 시작하기</h2>
 <div class="steps">
-<div class="step"><span class="ic">🔗</span>위의 <b>🐱 내 화면 가기</b> 누르기</div>
-<div class="step"><span class="ic">🔑</span><b>로그인</b> 누르고 내 이름 고르기</div>
+<div class="step"><span class="ic">🚪</span>처음 화면에서 <b>입장 코드</b> 넣기 → 📋 출석부</div>
+<div class="step"><span class="ic">🐱</span>위쪽 <b>내 화면</b> 탭 누르고 내 이름 고르기</div>
 <div class="step"><span class="ic">🔢</span>선생님께 받은 <b>비밀번호 4자리</b></div>
 <div class="step"><span class="ic">💻</span>내 디벗이면 <b>로그인 유지</b> 켜기</div>
 </div>
-<div class="note">🤫 비밀번호는 친구에게 알려 주지 마세요. 잊어버렸으면 선생님께 말씀드리면 새로 만들어 줘요.</div></div>
+<div class="note">🤫 입장 코드는 우리 반만, 비밀번호는 나만 알아요. 잊어버렸으면 선생님께 말씀드려요.</div></div>
 
 <div class="card"><h2><span class="num">2</span>아침 출석</h2>
 <ul>
@@ -133,14 +120,14 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <div class="warn">📱 <b>원격 출석</b>은 TV 터치가 어려울 때만, <b>교실 안에서만</b> 눌러요. 집 · 버스 · 편의점 · 복도에서는 절대 안 돼요! 🙅</div></div>
 
 <div class="card"><h2><span class="num">3</span>탭별 사용법</h2>
+<div class="view" style="background:#FFF3C4;margin:0 0 1rem;">📱 맨 위 탭 <b>[📋 출석부] [🐱 내 화면] [📖 안내]</b>를 눌러 창 하나에서 오가요. 로그인도 그대로 유지돼요!</div>
 <div class="tabs">
-<div class="tab t1"><h3>📢 알림·종례</h3><p>오늘의 알림, 종례, 청소 당번 확인. 읽었으면 <b>확인했어요</b> 누르기. 📮 질문·건의도 여기서!</p></div>
-<div class="tab t2"><h3>🐱 내 고양이</h3><p>액세서리 · 눈 색 · 입 색 꾸미기. 💬 <b>내 상태</b>(20자)는 교실 출석부 내 카드에 떠요. 📖 냥이 도감도 여기!</p></div>
-<div class="tab t3"><h3>🏘️ 냥이 마을</h3><p>땅 누르기 또는 <b>WASD · 방향키</b>로 걷기. 이모트 · 말풍선으로 인사하고 게임 광장에서 놀아요.</p></div>
-<div class="tab t4"><h3>🐾 냥코인</h3><p>내 코인 잔액과 기록 보기. 미션과 상점은 <b>준비 중</b>이에요!</p></div>
-</div>
-<div class="view" style="background:#FFF3C4;">📱 <b>한 창에서 오가기</b>: 위의 내 화면 가기 · 출석부 보러가기나 <b>2-2😻 앱</b>으로 열면, 맨 위 탭 <b>[🐱 내 화면] [📋 출석부] [📖 안내]</b>를 눌러 창 하나에서 왔다 갔다 해요. 로그인도 그대로 유지돼요!</div>
-<div class="view">📋 <b>출석부 보러가기</b>: 교실 출석부를 디벗으로 봐요. 처음엔 <b>입장 코드</b>가 필요해요. 보기만 가능하고 하나 쓰다듬기 · 카드 뒤집기 · 칠판만 눌러져요. 🐱 <b>내 화면 보러가기</b>로 돌아와요.</div></div>
+<div class="tab t1" style="grid-column:1/-1;background:#E4F7EA;"><h3>📋 출석부 <small style="font-size:1.1rem;color:#8A7563;">로그인 없이 볼 수 있어요</small></h3><p>오늘 출석 · 순위 · Notice · Must Read · 청소 당번 · 시간표를 봐요. 하나 쓰다듬기, 출석한 카드 뒤집기, 🖍️ 칠판, 📅 시간표를 쓸 수 있고, 카드의 <b>🎨</b>를 누르면 내 비밀번호로 그 자리에서 꾸밀 수 있어요.</p></div>
+<div class="tab t1"><h3>📢 알림·종례 <small style="font-size:1.1rem;color:#8A7563;">내 화면</small></h3><p>알림 · 종례 · 청소 당번 확인. 읽었으면 <b>확인했어요</b>! 📮 질문·건의도 여기서.</p></div>
+<div class="tab t2"><h3>🐱 내 고양이 <small style="font-size:1.1rem;color:#8A7563;">내 화면</small></h3><p>꾸미기 · 💬 <b>내 상태</b>(출석부 내 카드에 떠요) · 📖 냥이 도감.</p></div>
+<div class="tab t3"><h3>🏘️ 냥이 마을 <small style="font-size:1.1rem;color:#8A7563;">내 화면</small></h3><p>땅 누르기 · <b>WASD · 방향키</b>로 걷고, 친구와 대화 · 게임 · 💡 마을 개선 의견!</p></div>
+<div class="tab t4"><h3>🐾 냥코인 <small style="font-size:1.1rem;color:#8A7563;">내 화면</small></h3><p>내 코인 잔액과 기록. 미션과 상점은 <b>준비 중</b>이에요!</p></div>
+</div></div>
 
 <div class="card"><h2><span class="num">4</span>우리 반 약속</h2>
 <div class="rules">
@@ -155,10 +142,11 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <div class="q"><span class="k">로그인이 안 돼요</span><span>이름과 비밀번호 4자리를 다시 확인! 그래도 안 되면 아래처럼 선생님께 연락해요.</span></div>
 <div class="q"><span class="k">비밀번호를 잊었거나 로그인이 안 돼요</span><span>로그인 없이 <b>🏘️ 냥이 마을</b> 탭 → <b>📨 시내쌤에게 연락하기</b>에서 무슨 일인지 골라 보내요. 출석부에 문제가 있는데 로그인을 못 할 때도 여기로! <b>답장 받을 친구 이름이나 이메일</b>을 꼭 적어요. 친구 이름을 적으면 선생님 답이 그 친구에게 <b>💬 귓속말</b>로 가요.</span></div>
 <div class="q"><span class="k">화면이 멈추거나 느려요</span><span>잠시 기다렸다가 새로고침. 여럿이 동시에 쓰면 조금 느려요.</span></div>
-<div class="q"><span class="k">출석부 보기 화면이 달라요</span><span>약 20초마다 새로 받아 와서 조금 늦게 바뀌어요.</span></div>
+<div class="q"><span class="k">입장 코드를 또 물어봐요</span><span>정해진 시간이 지났거나 선생님이 다시 넣게 한 거예요. 같은 코드를 넣으면 돼요.</span></div>
+<div class="q"><span class="k">출석부가 교실 TV와 달라요</span><span>약 20초마다 새로 받아 와서 조금 늦게 바뀌어요.</span></div>
 <div class="q"><span class="k">내 카드에 상태가 안 떠요</span><span>🐱 내 고양이 탭 → 💬 내 상태를 적고 저장했는지 확인!</span></div>
 </div></div>
-<div class="go" style="margin-top:1.5rem;"><a class="a1" href="app.html?tab=me" data-go="me"><span class="ic">🐱</span>내 화면 가기</a><a class="a2" href="app.html?tab=board" data-go="board"><span class="ic">📋</span>출석부 보러가기</a></div>
+<div class="go" id="goBottom" style="margin-top:1.5rem;"><a class="a2" href="app.html?tab=board" data-go="board"><span class="ic">📋</span>출석부</a><a class="a1" href="app.html?tab=me" data-go="me"><span class="ic">🐱</span>내 화면</a></div>
 </div><script>
 /* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
 function sleepIn(cfg, d){
@@ -175,26 +163,10 @@ function sleepShow(cfg, on){
 </script>
 <div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat">🌙<span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p></div>
 <script>
-/* 📲 앱 설치 (크롬 · 엣지 · 안드로이드는 버튼 한 번 · 아이폰 · 아이패드는 직접) */
-let instEvt = null;
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const isApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-addEventListener('beforeinstallprompt', e => { e.preventDefault(); instEvt = e; });
-addEventListener('appinstalled', () => { instMsg('🎉 설치 완료! 바탕화면 · 홈 화면의 <b>2-2😻</b> 아이콘을 눌러 열어요'); });
-function instMsg(h){ const m = document.getElementById('instMsg'); m.innerHTML = h; m.hidden = false; }
-if (isApp || /inapp=1/.test(location.search)) document.querySelector('.inst').style.display = 'none';
 /* 📱 앱 안에서 열렸으면 버튼이 탭을 바꿔요 */
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();
+if (/inapp=1/.test(location.search)) document.querySelectorAll('#goTop,#goBottom').forEach(x => x.style.display = 'none');
 document.addEventListener('click', e => { const a = e.target.closest('[data-go]'); if (a && IN_APP){ e.preventDefault(); window.parent.postMessage({ nyang:'go', tab: a.dataset.go }, location.origin); } });
-if (isIOS){ document.getElementById('instIos').hidden = false; document.getElementById('instIosLink').hidden = true; }
-document.getElementById('instIosLink').onclick = () => { const x = document.getElementById('instIos'); x.hidden = !x.hidden; };
-document.getElementById('instBtn').onclick = async () => {
-  if (isIOS){ document.getElementById('instIos').hidden = false; instMsg('🍎 아이폰 · 아이패드는 아래 순서대로 직접 추가해 주세요'); return; }
-  if (instEvt){ instEvt.prompt(); const r = await instEvt.userChoice; instEvt = null; if (r.outcome !== 'accepted') instMsg('설치를 취소했어요. 다시 누르면 또 물어봐요'); return; }
-  document.getElementById('instManual').hidden = false;
-  instMsg('이 브라우저는 버튼 설치가 안 되거나, 이미 설치돼 있어요. 아래 방법으로 직접 추가해 주세요');
-};
 </script>
 <script>
 (async () => {
