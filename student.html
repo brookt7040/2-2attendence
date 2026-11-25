@@ -211,6 +211,8 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .checkin.done{background:#DFF7EE;font-size:1.05rem;}
 .checkin.wait{background:#E4F3FF;font-size:1.05rem;}
 @keyframes ckb{50%{transform:translateY(-3px)}}
+.board-link{text-decoration:none;display:inline-flex;align-items:center;}
+#catWear{white-space:pre-line;}
 .st-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .st-quick button{font-family:inherit;font-size:.9rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 10px;cursor:pointer;}
 .st-row{display:flex;gap:6px;align-items:center;margin-bottom:4px;} .st-row input{flex:1;min-width:0;font-family:inherit;font-size:1rem;padding:8px 10px;border:2px solid var(--ink);border-radius:12px;}
@@ -1143,6 +1145,7 @@ function openVillage(opts){
       .idc-lv{font-size:.85rem;margin-top:4px;}
       .idc-info{flex:1;font-size:.95rem;line-height:1.6;} .idc-info b{color:#8A6A4E;font-weight:normal;}
       .idc-name{font-size:1.4rem;margin-bottom:4px;} .idc-name small{font-size:.85rem;color:#7A5FE0;}
+      .idc-status{display:inline-block;background:#fff;border:2px solid #5B4636;border-radius:12px;padding:2px 10px;margin:2px 0 6px;font-size:.95rem;}
       .idc-motto{border-top:2px dashed #5B4636;padding:8px 12px;font-size:1rem;}
       .god-sec{border-top:2px dashed #E3D9FF;padding-top:8px;margin-top:8px;} .god-sec small{color:#8A7563;}
       .vg-cardgo{font-family:inherit;font-size:1.05rem;padding:8px 16px;border:3px solid #5B4636;border-radius:14px;background:#FFD84D;box-shadow:0 3px 0 #5B4636;cursor:pointer;}
@@ -2044,7 +2047,7 @@ function openVillage(opts){
     panel.innerHTML = `<button type="button" class="px">✕</button>
       <div class="idc"><div class="idc-top"><span>🐾 2학년 2반 냥이 ID</span><span>No.${String((kidList().findIndex(s => s.name === name) + 1) || 0).padStart(2, '0')}</span></div>
         <div class="idc-body"><div class="idc-pic"><canvas width="16" height="16" style="width:96px;height:96px;image-rendering:pixelated;"></canvas><div class="idc-lv">Lv.${cd.lv} ${escV(cd.lvName || '')}</div></div>
-          <div class="idc-info"><div class="idc-name">${cd.title ? `<small>«${escV(cd.title)}»</small><br>` : ''}${escV(name)}</div>
+          <div class="idc-info"><div class="idc-name">${cd.title ? `<small>«${escV(cd.title)}»</small><br>` : ''}${escV(name)}</div>${cd.status ? `<div class="idc-status">💬 ${escV(cd.status)}</div>` : ''}
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
@@ -2477,6 +2480,7 @@ async function statusSave(text){
     toast(me.status ? (me.status !== text ? '🙊 고운 말로 바꿔서 저장했어요' : '💬 상태를 저장했어요! 출석부 카드에 떠요') : '상태를 지웠어요');
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
+function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 async function studentCall(op, extra){
   const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
   return api(API, { method:'POST', body: JSON.stringify(body) });
@@ -2587,9 +2591,10 @@ function render(){
   if (pub.title){ $('title').textContent = pub.title; document.title = pub.title + ' · 학생용'; }
   const d = new Date(), days = ['일','월','화','수','목','금','토'];
   $('today').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
-  $('meBar').innerHTML = me
+  const boardBtn = `<a class="btn btn-mint board-link" href="${boardLink()}" target="_blank" rel="noopener">📋 출석부 보러가기</a>`;
+  $('meBar').innerHTML = boardBtn + (me
     ? `<span class="chip">🐱 ${esc(me.name)}${me.info ? ` · Lv.${me.info.lv}` : ''}${coin ? ` · ${coinText()}🐾` : ''}</span><button type="button" class="btn btn-gray" id="logoutBtn">로그아웃</button>`
-    : `<button type="button" class="btn btn-y" id="loginOpenBtn">🔑 로그인</button>`;
+    : `<button type="button" class="btn btn-y" id="loginOpenBtn">🔑 로그인</button>`);
 
   // 알림
   $('noticeList').innerHTML = st.notices.length ? st.notices.map(t => {
@@ -2690,7 +2695,7 @@ function openCat(s){
   $('catFrame').className = 'frame lv-' + s.lv;
   drawColors($('catCanvas'), lookColorsRaw(raw, s.lv));
   $('catName').textContent = `${s.name} · Lv.${s.lv} ${s.lvName || ''}`;
-  $('catWear').textContent = wearList(raw, s.lv) || '아직 꾸미지 않았어요';
+  $('catWear').textContent = (s.status ? `💬 ${s.status}\n` : '') + (wearList(raw, s.lv) || '아직 꾸미지 않았어요');
   $('catOv').style.display = 'flex';
 }
 

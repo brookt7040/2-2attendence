@@ -719,6 +719,14 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .cbk-name{font-size:1.35rem;font-weight:700;margin-top:4px;word-break:keep-all;line-height:1.25;}
 .cbk-sub{font-size:.85rem;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
 .card-status{max-width:92%;margin-top:4px;font-size:.82rem;background:#fff;border:2px solid #CDBBA8;border-radius:12px;padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
+.gate-box{text-align:center;max-width:380px;}
+.gate-box h2{margin:6px 0;}
+.gate-box .pin-input{margin:10px auto 4px;display:block;}
+body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openClosingBtn,body.view-mode #openMeetingBtn,body.view-mode #openVillageBtn,
+body.view-mode .mini-menu,body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .closet-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
+body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
+body.view-mode #urgentBox{pointer-events:none;}
+body.view-mode .card.waiting{cursor:default;}
 </style>
 </head>
 <body>
@@ -872,6 +880,16 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 </div>
 
 <!-- 비밀번호 -->
+<div class="overlay" id="gateOv" style="z-index:20050;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);">
+  <div class="modal gate-box">
+    <div style="font-size:3rem;">🐾🚪</div>
+    <h2>우리 반 출석부</h2>
+    <div class="form-hint">선생님이 알려 준 <b>입장 코드</b>를 넣어 주세요</div>
+    <input type="password" id="gateInput" maxlength="12" autocomplete="off" class="pin-input">
+    <div id="gateErr" class="form-hint" style="min-height:1.4em;color:#D94A6A;"></div>
+    <button type="button" class="btn btn-y" id="gateBtn">들어가기</button>
+  </div>
+</div>
 <div id="graceWarn"><span class="gw-ic">⏰</span><span>출석 마감! <b id="graceLeft">10</b>초 안에 터치하지 않으면 <b>지각</b> 처리됩니다</span></div>
 <div class="overlay" id="meetOv">
   <div class="mt-wrap">
@@ -1131,6 +1149,8 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
       <div class="row"><span>📢 <b>부관리자</b> · 화면의 <b>오늘의 알림·중요 공지</b>만 고칠 수 있어요</span><input type="password" inputmode="numeric" id="subPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
       <div class="row"><span>⏰ <b>지각 관리자</b> · 냥이 카드의 <b>출석·지각·결석</b>만 고칠 수 있어요 (OO쌤 카드 제외)</span><input type="password" inputmode="numeric" id="latePinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
+      <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"></div>
+      <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
     </div>
 
     <div class="section">
@@ -1834,6 +1854,8 @@ function mergeInto(parsed){
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
   if (typeof parsed.subPin === 'string') db.subPin = parsed.subPin;
+  if (typeof parsed.accessCode === 'string') db.accessCode = parsed.accessCode;
+  if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
   if (typeof parsed.latePin === 'string') db.latePin = parsed.latePin;
 }
@@ -2186,6 +2208,7 @@ function attEditSave(clear){
   showToast(r ? `✏️ ${name} → ${TIER_META[recTier(r)].icon} ${TIER_META[recTier(r)].short} · ${r.time}` : `✏️ ${name} 기록을 지웠어요`);
 }
 function handleTouch(name, opt = {}){
+  if (VIEW) return;
   if (revealing && !opt.remote) return;
   const now = opt.at ? new Date(opt.at) : nowD(), ds = getTodayStr(now);
   if (!db.records[ds]) db.records[ds] = {};
@@ -2842,7 +2865,7 @@ function mtApplyRemote(m){
   if (open && !typing){ $('mtTitle').textContent = nd.title; mtRenderList(nd.items); }
 }
 function bindMeeting(){
-  $('openMeetingBtn').addEventListener('click', openMeeting);
+  $('openMeetingBtn').addEventListener('click', () => requirePin(openMeeting));
   $('mtClose').addEventListener('click', () => { mtSave(true); $('meetOv').style.display = 'none'; });
   $('mtTitle').addEventListener('input', () => mtSave());
   $('mtTitle').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); const d = mtRead(); if (!d.items.length){ mtRenderList([''], 0); mtSave(); } else document.querySelector('#mtList .mt-text').focus(); } });
@@ -3543,6 +3566,7 @@ function openAdminUI(){
   $('lateTimeInput').value = db.lateTimeSetting;
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
+  $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
   $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
   const ac = db.alarmConfig;
@@ -3609,6 +3633,8 @@ async function saveAdminData(){
   db.sfx = $('sfxInput').checked;
   db.adminPin = $('adminPinInput').value.trim();
   db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
+  db.accessCode = $('accessCodeInput').value.trim(); db.accessHours = Math.min(12, Math.max(1, parseInt($('accessHoursInput').value, 10) || 3));
+  if (db.accessCode) gatePass(db.accessCode);   // 지금 이 기기는 바로 통과
   db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
   let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
@@ -3766,7 +3792,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -3804,6 +3830,8 @@ function applyConfig(c){
   if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
   if (typeof c.subPin === 'string') db.subPin = c.subPin;
+  if (typeof c.accessCode === 'string') db.accessCode = c.accessCode;
+  if (c.accessHours) db.accessHours = Number(c.accessHours) || 3;
   if (typeof c.latePin === 'string') db.latePin = c.latePin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
@@ -3978,7 +4006,7 @@ function buildPub(){
   const students = db.students.map(n => {
     const li = levelInfo(sm[n] || 0), r = day[n], tk = r ? recTier(r) : null;
     priv[n] = { lv: li.lv, lvName: LEVELS[li.lv - 1].name, exp: li.exp, need: li.need, next: li.next, pct: Math.round(li.pct * 100),
-      today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0, rank: r.rank || 0, remote: !!r.remote } : null,
+      today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0, rank: r.rank || 0, remote: !!r.remote, status: r.status, charId: r.charId || '', fur: r.fur || '', sec: r.sec, why: r.why || '' } : null,
       total: dayTotal(n), clean: !isTeacherName(n) && dayTotal(n) < 0, dex: myDex(n), dexDone: (db.collect || {})[n] || {} };
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
@@ -5000,6 +5028,7 @@ function openVillage(opts){
       .idc-lv{font-size:.85rem;margin-top:4px;}
       .idc-info{flex:1;font-size:.95rem;line-height:1.6;} .idc-info b{color:#8A6A4E;font-weight:normal;}
       .idc-name{font-size:1.4rem;margin-bottom:4px;} .idc-name small{font-size:.85rem;color:#7A5FE0;}
+      .idc-status{display:inline-block;background:#fff;border:2px solid #5B4636;border-radius:12px;padding:2px 10px;margin:2px 0 6px;font-size:.95rem;}
       .idc-motto{border-top:2px dashed #5B4636;padding:8px 12px;font-size:1rem;}
       .god-sec{border-top:2px dashed #E3D9FF;padding-top:8px;margin-top:8px;} .god-sec small{color:#8A7563;}
       .vg-cardgo{font-family:inherit;font-size:1.05rem;padding:8px 16px;border:3px solid #5B4636;border-radius:14px;background:#FFD84D;box-shadow:0 3px 0 #5B4636;cursor:pointer;}
@@ -5901,7 +5930,7 @@ function openVillage(opts){
     panel.innerHTML = `<button type="button" class="px">✕</button>
       <div class="idc"><div class="idc-top"><span>🐾 2학년 2반 냥이 ID</span><span>No.${String((kidList().findIndex(s => s.name === name) + 1) || 0).padStart(2, '0')}</span></div>
         <div class="idc-body"><div class="idc-pic"><canvas width="16" height="16" style="width:96px;height:96px;image-rendering:pixelated;"></canvas><div class="idc-lv">Lv.${cd.lv} ${escV(cd.lvName || '')}</div></div>
-          <div class="idc-info"><div class="idc-name">${cd.title ? `<small>«${escV(cd.title)}»</small><br>` : ''}${escV(name)}</div>
+          <div class="idc-info"><div class="idc-name">${cd.title ? `<small>«${escV(cd.title)}»</small><br>` : ''}${escV(name)}</div>${cd.status ? `<div class="idc-status">💬 ${escV(cd.status)}</div>` : ''}
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
@@ -6303,7 +6332,7 @@ function bindEvents(){
   $('closetItems').addEventListener('click', onClosetClick);
   $('closetDoneBtn').addEventListener('click', closeCloset);
   $('closetXBtn').addEventListener('click', closeCloset);
-  $('openClosingBtn').addEventListener('click', openClosing);
+  $('openClosingBtn').addEventListener('click', () => requirePin(openClosing));
   bindMeeting();
   $('closingCloseBtn').addEventListener('click', () => { $('closingOverlay').style.display = 'none'; });
   $('closingList').addEventListener('click', e => { const it = e.target.closest('[data-ci]'); if (!it) return; closingChecked[it.dataset.ci] = !closingChecked[it.dataset.ci]; renderClosing(); });
@@ -6327,7 +6356,7 @@ function bindEvents(){
   window.addEventListener('online', () => pullSync());
   $('urgentBox').addEventListener('click', () => editText('urgent'));
   $('openMenuBtn').addEventListener('click', () => { $('miniMenuPop').classList.remove('on'); $('menuOverlay').style.display = 'flex'; });
-  $('miniMenuBtn').addEventListener('click', e => { e.stopPropagation(); $('miniMenuPop').classList.toggle('on'); });
+  $('miniMenuBtn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => $('miniMenuPop').classList.toggle('on')); });
   document.addEventListener('click', e => { if (!e.target.closest('.mini-menu')) $('miniMenuPop').classList.remove('on'); });
   $('openCoinViewBtn').addEventListener('click', () => { $('miniMenuPop').classList.remove('on'); openCoinView(); });
   $('cvTabs').addEventListener('click', e => { const b = e.target.closest('[data-cv]'); if (b){ cvTab = b.dataset.cv; renderCoinView(); } });
@@ -6356,10 +6385,74 @@ function bindEvents(){
   $('lateTimeInput').addEventListener('input', function(){ $('alarm1TimeEcho').textContent = this.value; });
   ['click','touchstart','keydown'].forEach(ev => document.addEventListener(ev, () => { if (!audioUnlocked) unlockAudio(false); }));
 }
+/* 🚪 출석부 입장 코드 (기기 기억하기 없이, 정한 시간이 지나면 다시 물어봐요) */
+const GATE_KEY = 'nyangGate';
+const VIEW = (() => { try { const q = new URLSearchParams(location.search); const api = q.get('api'); return q.get('view') === '1' && api && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(api) ? { api } : null; } catch(e){ return null; } })();
+function gateOk(code){ try { const g = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); return g && g.code === code && Date.now() < g.until; } catch(e){ return false; } }
+function gatePass(code, hours){ try { localStorage.setItem(GATE_KEY, JSON.stringify({ code, until: Date.now() + (hours || db.accessHours || 3) * 3600000 })); } catch(e){} }
+function showGate(check){
+  const ov = $('gateOv'); ov.style.display = 'flex'; $('gateErr').textContent = ''; $('gateInput').value = ''; setTimeout(() => $('gateInput').focus(), 80);
+  const go = async () => {
+    const v = $('gateInput').value.trim(); if (!v) return;
+    $('gateErr').textContent = '확인 중…';
+    const r = await check(v);
+    if (r === true){ ov.style.display = 'none'; }
+    else $('gateErr').textContent = r || '❌ 코드가 달라요';
+  };
+  $('gateBtn').onclick = go; $('gateInput').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+function gateCheckTimer(){
+  setInterval(() => {
+    if ($('gateOv').style.display === 'flex') return;
+    const code = VIEW ? (viewCode || '') : (db.accessCode || '');
+    if ((VIEW || db.accessCode) && code !== '__none__' && !gateOk(code)){ if (VIEW) viewGate(); else showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }); }
+  }, 30000);
+}
+/* 👀 보기 전용 (학생 페이지 → 출석부 보러가기): 서버에서 오늘 출석만 받아 와서 보여줘요. 아무것도 바꾸지 않아요 */
+let viewCode = '', viewExp = {};
+async function viewFetch(code){
+  const r = await fetch(`${VIEW.api}?board=1&gate=${encodeURIComponent(code)}&t=${Date.now()}`, { redirect:'follow' });
+  return r.json();
+}
+function viewApply(j){
+  const ds = getTodayStr();
+  db.students = (j.students || []).map(s => s.name);
+  db.looks = {}; db.statuses = {}; viewExp = {};
+  (j.students || []).forEach(s => { db.looks[s.name] = s.look || {}; if (s.status) db.statuses[s.name] = { t: s.status }; viewExp[s.name] = s.exp || 0; });
+  db.records = {}; db.bonus = {};
+  if (j.ds === ds) db.records[ds] = Object.fromEntries(Object.entries(j.board || {}).map(([n, t]) => [n, { status: t.status || (t.tier === 'absent' ? 'dungeon' : 'present'), tier: t.tier, time: t.time, exp: t.exp, rank: t.rank, charId: t.charId, fur: t.fur || undefined, why: t.why || undefined, sec: t.sec }]));
+  if (j.title) db.mainTitle = j.title;
+  if (j.late) db.lateTimeSetting = j.late;
+  if (j.tiers) db.expTiers = j.tiers;
+  db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
+  applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder();
+}
+async function viewGate(){
+  showGate(async v => {
+    try { const j = await viewFetch(v); if (!j.ok) return j.error === 'slow' ? '너무 많이 틀렸어요. 1분 뒤에 다시 해 주세요' : '❌ 코드가 달라요'; viewCode = v; gatePass(v, j.hours); viewApply(j); return true; }
+    catch(e){ return '연결이 안 돼요'; }
+  });
+}
+async function viewStart(){
+  document.body.classList.add('view-mode');
+  seasonExpMap = () => viewExp;
+  saveDB = () => {}; syncOp = () => {}; requirePin = () => {}; checkAlarms = () => {};
+  db.students = []; db.records = {}; renderGrid();
+  let saved = null; try { saved = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); } catch(e){}
+  const tryCode = saved && Date.now() < saved.until ? saved.code : '';
+  try { const j = await viewFetch(tryCode); if (j.ok){ viewCode = tryCode || '__none__'; viewApply(j); } else viewGate(); } catch(e){ viewGate(); }
+  setInterval(async () => { if (!viewCode || !gateOk(viewCode) && viewCode !== '__none__') return; try { const j = await viewFetch(viewCode === '__none__' ? '' : viewCode); if (j.ok) viewApply(j); else if (j.error === 'gate'){ viewCode = ''; viewGate(); } } catch(e){} }, 20000);
+}
 function init(){
   try {
+    if (VIEW){
+      applyTitle(); fxInit(); bindEvents(); drawMascot(false); scheduleBlink(); renderLadder(); tick(); setInterval(tick, 1000);
+      viewStart(); gateCheckTimer(); return;
+    }
     loadDB();
     loadSync();
+    if (db.accessCode && !gateOk(db.accessCode)) setTimeout(() => showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }), 50);
+    gateCheckTimer();
     try { const qa = new URLSearchParams(location.search).get('api'); if (qa && !sync.url && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)) setTimeout(() => { openAdminUI(); $('syncUrlInput').value = qa; $('syncTName').focus(); $('syncStatusText').innerHTML = '🖥 이 기기를 연결해요: <b>선생님 계정(OO쌤 + 비밀번호)</b>을 넣고 <b>🔗 연결하기</b>를 눌러 주세요.'; }, 600); } catch(e){}
     if (upgradeEconomy()){ saveDB(); if (sync.url) syncOp({ op:'config', data: configOf() }); }
     applyTitle();

@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v20 · 💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v21 · 출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 20;
+const API_VERSION = 21;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -280,7 +280,7 @@ function publicState_(map) {
     ds: pub.ds || '',
     clean: pub.clean || [],
     students: (pub.students || []).map(function (s) {
-      return { name: s.name, lv: s.lv, lvName: s.lvName, look: looks[s.name] || s.look || {}, lookAt: lookAt[s.name] || 0 };
+      return { name: s.name, lv: s.lv, lvName: s.lvName, look: looks[s.name] || s.look || {}, lookAt: lookAt[s.name] || 0, status: ((map.statuses || {})[s.name] || {}).t || '' };
     })
   };
 }
@@ -288,6 +288,7 @@ function publicGet_(p) {
   if (p.village) return villageState_();
   if (p.room) return roomState_(String(p.room));
   if (p.card) return cardOf_(String(p.card));
+  if (p.board) return boardOf_(String(p.gate || ''));
   if (p.eng) return engPublic_();
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
@@ -1037,13 +1038,33 @@ function studentGod_(name, body) {
     return { ok: true, error: '', inv: inv, aff: aff != null ? aff : (h.p || 0), hanaLv: hanaLvOf_(aff != null ? aff : (h.p || 0)), coins: balanceOf_(readCoins_(), who) };
   } finally { lock.releaseLock(); }
 }
+/* 👀 출석부 보기 전용 (학생 페이지 → 출석부 보러가기). 선생님이 정한 입장 코드가 맞아야 보여줘요 */
+function boardOf_(code) {
+  const v = version_();
+  let b = cacheGet_('board:' + v, null);
+  if (!b) {
+    const map = readRows_().map, pub = map.pub || {}, priv = pub.priv || {}, cfg = map.config || {}, st = map.statuses || {};
+    b = { code: String(cfg.accessCode || ''), hours: Number(cfg.accessHours) || 3, data: {
+      ok: true, api: API_VERSION, now: Date.now(), title: pub.title || cfg.mainTitle || '', ds: pub.ds || '', late: cfg.lateTimeSetting || '', tiers: cfg.expTiers || null,
+      students: (pub.students || []).map(function (s) { const pv = priv[s.name] || {}; return { name: s.name, lv: s.lv, exp: pv.exp || 0, look: ((cfg.looks || {})[s.name]) || s.look || {}, status: (st[s.name] || {}).t || '' }; }),
+      board: (function () { const o = {}; Object.keys(priv).forEach(function (n) { if (priv[n] && priv[n].today) o[n] = priv[n].today; }); return o; })()
+    } };
+    cachePut_('board:' + v, b);
+  }
+  if (b.code && code !== b.code) {
+    const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
+    return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
+  }
+  const out = b.data; out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER);
+  return out;
+}
 function cardOf_(name) {
   const hit = cacheGet_('card:' + name, null); if (hit) return hit;
   const map = readRows_().map, pub = publicState_(map), s = (pub.students || []).filter(function (x) { return x.name === name; })[0];
   if (!s) return { ok: false, error: 'none' };
   const inv = (map.inv || {})[name] || {}, hana = hanaOf_(name);
   const card = { ok: true, name: name, lv: s.lv, lvName: s.lvName, look: s.look, profile: (map.profiles || {})[name] || {}, title: inv.title || '',
-    house: inv.house || 'h_box', hana: hana.p || 0 };
+    house: inv.house || 'h_box', hana: hana.p || 0, status: ((map.statuses || {})[name] || {}).t || '' };
   try { cache_().put('card:' + name, JSON.stringify(card), 120); } catch (e) {}
   return card;
 }
