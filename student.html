@@ -86,6 +86,13 @@ html.agit .tab{min-width:0;}
 #cafeOv .sheet{text-align:center;background:linear-gradient(180deg,#3B2F2A,#5B4636);color:#FFE8C2;border-color:#2E2420;}
 #cafeOv .timer{font-size:3.6rem;letter-spacing:4px;margin:14px 0;}
 #cafeOv .bar{height:14px;border-radius:999px;background:#2E2420;overflow:hidden;margin:6px 0 14px;} #cafeOv .bar i{display:block;height:100%;background:#FFD08A;width:0;}
+.story-ban{background:linear-gradient(90deg,#FFF2BF,#FFE1EA,#E9E0FF) !important;border-color:#C04BA0 !important;}
+#storyOv .sheet{background:linear-gradient(160deg,#FCE7F3,#FFF7D6 45%,#E8E0FF);}
+.story-q{font-size:1.45rem;line-height:1.5;text-align:center;word-break:keep-all;margin:14px 0 16px;}
+.story-opts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+.story-opts button{font-family:inherit;font-size:1.1rem;border:2px solid var(--ink);border-radius:14px;background:#fff;padding:10px 16px;cursor:pointer;box-shadow:0 3px 0 var(--ink);}
+.story-opts.emo button{font-size:2rem;padding:6px 12px;}
+.vbar{display:flex;align-items:center;gap:8px;margin:6px 0;} .vbar i{display:block;height:14px;border-radius:999px;background:#C04BA0;}
 .mail-ban{display:flex;align-items:center;gap:10px;justify-content:space-between;background:#FFE1EA;border:3px solid #E0577A;border-radius:16px;padding:10px 14px;margin:8px 0;font-size:1.05rem;}
 .sum-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:inherit;font-size:1.02rem;color:var(--ink);background:none;border:none;border-bottom:2px dashed #EFE3D3;padding:11px 4px;cursor:pointer;}
 .sum-row:last-child{border-bottom:none;}
@@ -534,6 +541,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div class="big-ov" id="msOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="msOv">✕</button><div id="msBody"></div></div></div>
 <div class="big-ov" id="mailOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="mailOv">✕</button><div id="mailBody"></div></div></div>
 <div class="big-ov" id="diaryOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="diaryOv">✕</button><div id="diaryBody"></div></div></div>
+<div class="big-ov" id="storyOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="storyOv">✕</button><div id="storyBody"></div></div></div>
 <div class="big-ov" id="cafeOv"><div class="sheet"><div id="cafeBody"></div></div></div>
 <div class="overlay" id="penOv">
   <div class="modal pen-modal">
@@ -1663,6 +1671,16 @@ function openVillage(opts){
     const inside = Object.values(cats).filter(c => c.sc === b.id).length;
     label(b.name + (inside ? ` 👥${inside}` : ''), x + w / 2, y + h + 18, 14, '#FFFFFF');
   }
+  /* 📸 시내T 스토리 게시판 (광장) */
+  const SB = { x: 1090, y: 470 };
+  function drawStoryBoard(t){
+    const on = opts.storyOn && opts.storyOn();
+    ctx.fillStyle = '#8B5A3C'; ctx.fillRect(SB.x - 6, SB.y - 10, 12, 70);
+    if (on){ const g = ctx.createLinearGradient(SB.x - 66, 0, SB.x + 66, 0); ['#F9CE34', '#EE2A7B', '#6228D7'].forEach((c, i) => g.addColorStop(i / 2, c)); ctx.fillStyle = g; ctx.fillRect(SB.x - 66, SB.y - 86, 132, 92); }
+    box(SB.x - 60, SB.y - 80, 120, 80, '#FFFDF6', 10);
+    emoji('📸', SB.x, SB.y - 52, 26); label(on ? 'NEW 스토리!' : '시내T 스토리', SB.x, SB.y - 18, 12, on ? '#FFE1EA' : '#FFFFFF');
+    if (on && Math.floor(t / 500) % 2) emoji('✨', SB.x + 52, SB.y - 82, 18);
+  }
   function drawOut(t){
     ctx.fillStyle = '#CFEFC4'; ctx.fillRect(0, 0, VW, VH);
     ctx.fillStyle = '#C2E8B5'; for (let i = 0; i < 110; i++){ const x = (i * 197) % VW, y = 340 + (i * 113) % (VH - 340); ctx.fillRect(x, y, 6, 6); }
@@ -1672,6 +1690,7 @@ function openVillage(opts){
     [[90, 380], [1580, 900], [40, 960], [520, 400], [1100, 400], [1570, 400], [360, 960]].forEach(([x, y]) => drawDecor(ctx, 'd_tree', x - 16, y - 32));
     ctx.fillStyle = '#F6E3B4'; ctx.fillRect(0, 600, 200, 36); ctx.fillRect(1400, 600, 200, 36);
     V_BUILDINGS.filter(b => b.map === 'out').forEach(b => drawBuilding(b, t));
+    drawStoryBoard(t);
     objsOf('out').forEach(o => drawObj(o, t)); drawSigns('out');
     // 집 줄
     ctx.fillStyle = '#E3F5DA'; ctx.fillRect(0, 0, VW, 300);
@@ -2009,7 +2028,7 @@ function openVillage(opts){
       V_BUILDINGS.filter(b => b.map === scene).forEach(b => add(b.x + b.w - 18, b.y + 18, b.x + b.w / 2, b.y + b.h / 2));
       objsOf(scene).forEach(o => add(o.x + o.r * .55, o.y - o.r - 14, o.x, o.y));
       (V_SIGNS[scene] || []).forEach(g => add(Math.max(40, Math.min(VW - 40, g.x + 44)), g.y - 84, g.x, g.y - 40));
-      if (scene === 'out') add(hana.x + 30, hana.y - 78, hana.x, hana.y - 25);
+      if (scene === 'out'){ add(hana.x + 30, hana.y - 78, hana.x, hana.y - 25); add(SB.x + 56, SB.y - 94, SB.x, SB.y - 30); }
       if (scene === 'south') PLOTS.forEach(pl => add(pl.x + 100, pl.y - 98, pl.x, pl.y - 50));
     } else if (scene === 'hall'){
       HALL_PODIUMS.forEach(pd => add(pd.x + 58, 262, pd.x, 285));
@@ -2246,6 +2265,7 @@ function openVillage(opts){
     }
     // 보기 전용(교실 TV)도 건물·집 구경은 할 수 있어요
     if (scene === 'out'){
+      if (Math.abs(p.x - SB.x) < 70 && p.y > SB.y - 100 && p.y < SB.y + 60){ opts.onStory && opts.onStory(); return; }
       const house = p.y < 300 && kidList().find(s => { const q = plotOf(s.name); return !movedAway(s.name) && Math.abs(q.x - p.x) < q.w / 2 && Math.abs(q.y - 30 - p.y) < 80; });
       if (house){ enter('house:' + house.name); return; }
       const b = V_BUILDINGS.find(b => b.map === 'out' && p.x > b.x && p.x < b.x + b.w && p.y > b.y - 20 && p.y < b.y + b.h + 30);
@@ -2799,7 +2819,7 @@ async function pull(force){
     const j = await api(`${API}?since=${force ? -1 : st.v}&t=${Date.now()}`);
     if (!j.ok) throw new Error(j.error || 'error');
     const prevNotice = JSON.stringify([st.notices, st.closing]);
-    st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : [];
+    st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : []; st.mealEn = j.mealEn || null; st.story = j.story || null; renderMailBan();
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
     megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn; if (j.newsKinds) newsKinds = j.newsKinds;
     sleepCfgNow = j.sleep || null; sleepTick(); if (window.NyLock) NyLock.reload(j.reload); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
@@ -3138,7 +3158,10 @@ async function mailSend(to){
 function renderMailBan(){
   const b = $('mailBan'); if (!b) return;
   const n = me && me.mailNew || 0;
-  b.innerHTML = n ? `<div class="mail-ban"><span>📮 새 편지 <b>${n}</b>통이 왔어요!</span><button type="button" class="btn btn-y" data-mailme="1">열어 보기</button></div>` : '';
+  let seen = ''; try { seen = localStorage.getItem('nyangStorySeen') || ''; } catch(e){}
+  const sNew = me && st.story && String(st.story.id) !== seen;
+  b.innerHTML = (n ? `<div class="mail-ban"><span>📮 새 편지 <b>${n}</b>통이 왔어요!</span><button type="button" class="btn btn-y" data-mailme="1">열어 보기</button></div>` : '')
+    + (sNew ? `<div class="mail-ban story-ban"><span>📸 시내T가 새 스토리를 올렸어요!</span><button type="button" class="btn btn-y" data-mstory="1">보러 가기</button></div>` : '');
 }
 /* 📔 일기장 */
 let diaryData = null;
@@ -3171,6 +3194,47 @@ async function diarySave(){
 async function diaryReadersSave(){
   const list = [...document.querySelectorAll('#diaryReaders .on')].map(b => b.dataset.dread);
   try { diaryData = await studentCall('diaryReaders', { list, owner: me.name }); toast('👀 읽을 수 있는 친구를 저장했어요'); renderDiary(); } catch(e){ toast('연결이 안 돼요'); }
+}
+/* 📸 시내T 스토리 */
+let storyData = null;
+async function openStory(){
+  if (!me){ toast('로그인해 주세요'); return; }
+  bOpen('storyOv', '<h2>📸 시내T 스토리</h2><div class="empty">불러오는 중…</div>');
+  try { storyData = await studentCall('storyGet'); } catch(e){ storyData = null; }
+  renderStory();
+}
+function renderStory(){
+  const d = storyData || {}, s0 = d.story;
+  if (!s0){ bOpen('storyOv', '<h2>📸 시내T 스토리</h2><div class="empty">지금은 올라온 스토리가 없어요 🐾</div>'); return; }
+  try { localStorage.setItem('nyangStorySeen', String(s0.id)); } catch(e){} renderMailBan();
+  const ago = Math.max(1, Math.round((Date.now() - s0.at) / 3600000)), T = /(쌤|샘|선생님|교감|교장)$/.test(me.name);
+  let ans = '';
+  if (!d.mine && !T){
+    ans = s0.type === 'text' ? `<div class="sig-row"><input type="text" id="storyText" maxlength="100" placeholder="답장 보내기…" style="flex:1;"><button type="button" class="btn btn-y" data-sans="1">보내기</button></div>`
+      : `<div class="story-opts ${s0.type === 'emoji' ? 'emo' : ''}">${(s0.opts || []).map(o => `<button type="button" data-sopt="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+  } else if (d.mine) ans = `<div class="sig-q">💌 내 답: <b>${esc(d.mine)}</b></div>`;
+  const total = Object.values(d.votes || {}).reduce((a, b) => a + b, 0) || 1;
+  const votes = d.votes ? (s0.opts || []).map(o => `<div class="vbar"><span style="min-width:64px;">${esc(o)}</span><i style="width:${Math.round((d.votes[o] || 0) / total * 100) * 1.6}px;"></i><small>${d.votes[o] || 0}</small></div>`).join('') : '';
+  const others = d.answers ? `<div style="margin-top:10px;">${d.answers.map(a => `<div class="dia-e"><b>${esc(a.name)}</b><div>${esc(a.ans)}</div></div>`).join('') || '<div class="empty">아직 답이 없어요</div>'}</div>`
+    : d.mine ? `<div class="hint" style="text-align:center;">${s0.pub ? '' : '🔒 답은 시내T만 볼 수 있어요 💌'}</div>` : '';
+  bOpen('storyOv', `<h2>📸 시내T 스토리</h2><div class="hint" style="text-align:center;">${ago}시간 전 · 24시간 동안 볼 수 있어요${T ? ` · 답 ${d.count || 0}개` : ''}</div>
+    <div class="story-q">${esc(s0.q)}</div>${ans}${votes}${others}`);
+}
+async function storyAns(a){
+  if (!a){ toast('답을 적어 주세요'); return; }
+  try { storyData = await studentCall('storyAns', { ans: a }); if (storyData.error){ toast({ none:'스토리가 끝났어요', empty:'답을 적어 주세요' }[storyData.error] || '보내지 못했어요'); } else toast('📸 답장을 보냈어요!'); renderStory(); if (current === 'coin') coinCall('coins'); } catch(e){ toast('연결이 안 돼요'); }
+}
+/* 🇺🇸 급식 영어 번역 (학생 화면) */
+function openMenuTr(){
+  const today = todayStr(), menu = (st.meal || {})[today] || '';
+  bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="mail-body" style="font-size:1rem;">${esc(menu || '급식 관리자가 아직 안 올렸어요. 그래도 번역할 수 있어요!')}</div>
+    <textarea id="menuTrText" rows="4" maxlength="400" placeholder="예: Rice / Kimchi stew / Pork cutlet"></textarea>
+    <button type="button" class="btn btn-y" id="menuTrSend" style="width:100%;margin-top:8px;">🇺🇸 보내기</button>
+    <div class="hint" style="margin-top:6px;">급식 관리자가 승인하면 오늘 번역 완료! 한 주에 2일 승인되면 미션 냥코인 🐾</div>`);
+}
+async function menuTrSend(){
+  const text = $('menuTrText').value.trim(); if (text.replace(/\s/g, '').length < 5){ toast('조금 더 적어 주세요'); return; }
+  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
 }
 /* ☕ 스터디카페: 1시간 집중 (화면을 끄거나 앱을 나가면 실패) */
 let cafe = null;
@@ -3237,7 +3301,7 @@ async function enterVillage(){
     onCoins: j => { if (j && j.ok){ coin = j; render(); } },
     onHanaLook: look => { hanaLookNow = look; drawHeaderHana(); },
     onGame: g => openGame(g),
-    onMail: owner => openMail(owner), onDiary: owner => openDiary(owner), onCafe: () => openCafe(),
+    onMail: owner => openMail(owner), onDiary: owner => openDiary(owner), onCafe: () => openCafe(), onStory: () => openStory(), storyOn: () => { let seen = ''; try { seen = localStorage.getItem('nyangStorySeen') || ''; } catch(e){} return !!(st.story && String(st.story.id) !== seen); },
     onClose: () => clearInterval(villageChatTimer) });
   let vTick = 0;
   villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
@@ -3592,7 +3656,7 @@ function renderSummary(fresh){
 function renderMealHw(){
   const ml = $('mealList'), hl = $('hwList'); if (!ml || !hl) return;
   const meal = st.meal || {}, today = ymd(new Date()), days = meal[today] ? [today] : [];   // 🍱 오늘 것만
-  ml.innerHTML = days.length ? days.map(d => { const L = dLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b><div>${esc(meal[d])}</div></div>`; }).join('') : '<div class="empty">오늘 급식 메뉴가 아직 없어요 🍚</div>';
+  ml.innerHTML = days.length ? days.map(d => { const L = dLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b><div>${esc(meal[d])}</div>${st.mealEn ? `<div style="margin-top:6px;color:#2F6B8F;">🇺🇸 ${esc(st.mealEn.text)} <small>by ${esc(st.mealEn.name)}</small></div>` : ''}</div>`; }).join('') : '<div class="empty">오늘 급식 메뉴가 아직 없어요 🍚</div>';
   const hw = (st.hw || []).slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
   hl.innerHTML = hw.length ? hw.map(h => { const L = h.due ? dLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
     return `<div class="hw-i"><span class="dd ${L && L.diff <= 1 ? 'hot' : ''}">${dd}</span><span>${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</span></div>`; }).join('') : '<div class="empty">숙제가 없어요! 🎉</div>';
@@ -3702,7 +3766,7 @@ function renderCoin(){
   if (!coin){ box.innerHTML = '<div class="box"><div class="box-head">🐾 냥코인</div><div class="empty">불러오는 중…</div></div>'; return; }
   const eco = coin.economy, claimed = new Set(coin.claimed || []), pend = new Set((coin.reqs || []).filter(r => r.status === '대기' && r.type === '미션').map(r => r.itemId));
   const picks = coin.picks || { d:{ ids:[] }, w:{ ids:[] } }, lim = eco.pickLimit || { daily: 2, weekly: 3 };
-  const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 새벽 5시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 새벽 5시에 새로 골라요']];
+  const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 아침 7시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 아침 7시에 새로 골라요']];
   const msHtml = groups.map(([k, t, sl, max, note]) => {
     const list = eco.missions.filter(m => m.cat === k); if (!list.length) return '';
     const mine = picks[sl].ids || [], full = !coin.unlimited && mine.length >= max;   // 👑 선생님은 횟수 제한 없이
@@ -3712,17 +3776,23 @@ function renderCoin(){
       const used = (coin.capUsed || {})[m.id] || 0, capFull = !coin.unlimited && m.cap && used >= m.cap && !picked;
       const capTxt = m.cap ? `<span class="cap">👥 ${used}/${m.cap}명</span>` : '';
       const meta = ((picks[sl].meta || {})[m.id]) || {};
-      const AUTO_TXT = { appon:'출석 1등이면 자동', eng:'냥카데미 80점 넘으면 자동', allon:'반 전체 제시간이면 자동', allon3:'주 3일 달성하면 자동', good:'금요일 오후에 자동 확인' };
-      const right = m.flow === 'teacher' || (!m.flow && !m.req && !m.auto) ? '<span class="st">선생님이 줘요</span>'
+      const AUTO_TXT = { appon:'출석 1등이면 자동', eng:'냥카데미 80점 넘으면 자동' };
+      const CLASS_TXT = { allon:'🏫 반 전체 제시간이면 모두', allon3:'🏫 주 3일 달성하면 모두', good:'🏫 금요일 오후 자동 확인' };
+      const undone = (coin.undone || []).includes(`m:${m.id}:${me.name}:${per}`);
+      const right = undone ? '<span class="st">↩ 취소됨</span>'
+        : m.flow === 'teacher' || (!m.flow && !m.req && !m.auto) ? '<span class="st">선생님이 줘요</span>'
+        : CLASS_TXT[m.flow] ? `<span class="st">${got ? '✔ 받았어요' : CLASS_TXT[m.flow]}</span>`
         : got ? '<span class="st">✔ 받았어요</span>' : pend.has(m.id) ? '<span class="st">⏳ 확인 중</span>'
         : picked ? (m.flow === 'sign' ? `<button type="button" class="go" data-msign="${m.id}">✍️ 서명 받기</button>`
           : m.flow === 'praise' ? `<button type="button" class="go" data-mpraise="${m.id}">💌 편지 쓰기</button>`
           : m.flow === 'diary' ? `<button type="button" class="go" data-mdiary="1">📔 일기 쓰기</button>`
           : m.flow === 'cafe' ? `<button type="button" class="go" data-mcafe="1">☕ 카페 가기</button>`
+          : m.flow === 'story' ? `<button type="button" class="go" data-mstory="1">📸 스토리 보기</button>`
+          : m.flow === 'menu' ? `<button type="button" class="go" data-mmenu="1">🇺🇸 번역하기</button>`
           : AUTO_TXT[m.flow] ? `<span class="st">⏳ ${AUTO_TXT[m.flow]}</span>`
           : `<button type="button" data-mreq="${m.id}">완료했어요!</button>`)
         : capFull ? '<span class="st">🔒 마감</span>' : full ? '<span class="st">🔒</span>' : `<button type="button" class="pick-btn" data-mpick="${m.id}">🎯 고르기</button>`;
-      return `<div class="ms ${picked ? 'picked' : ''} ${!picked && (full || capFull) ? 'dim' : ''}"><span class="nm">${picked ? '🎯 ' : ''}${esc(m.name)}${meta.subj ? ` <span class="prog">📚 ${esc(meta.subj)}</span>` : ''}${capTxt}</span><span class="cn">+${m.coins}🐾 +${m.exp != null ? m.exp : Math.round(m.coins / 2)}✨</span>${right}</div>`;
+      return `<div class="ms ${picked ? 'picked' : ''} ${!picked && !CLASS_TXT[m.flow] && m.flow !== 'teacher' && (full || capFull) ? 'dim' : ''}"><span class="nm">${picked ? '🎯 ' : ''}${esc(m.name)}${meta.subj ? ` <span class="prog">📚 ${esc(meta.subj)}</span>` : ''}${capTxt}</span><span class="cn">+${m.coins}🐾 +${m.exp != null ? m.exp : Math.round(m.coins / 2)}✨</span>${right}</div>`;
     };
     const order = list.slice().sort((a, b) => (mine.includes(b.id) - mine.includes(a.id)) || (!!a.auto - !!b.auto));
     return `<div class="ms-group">${t} <small>(${mine.length}/${max} 골랐어요 · ${note})</small></div>` + order.map(row).join('');
@@ -3747,7 +3817,7 @@ function renderCoin(){
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 모든 미션은 먼저 골라요 (한 번 고르면 바꿀 수 없어요! 👥 표시는 선착순 인원). 자동 미션은 조건을 채우면 저절로, 나머지는 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
+    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 미션은 먼저 골라요 (한 번 고르면 바꿀 수 없어요! 👥 표시는 선착순 인원 · 🏫 반 전체 미션은 안 골라도 돼요). 자동 미션은 조건을 채우면 저절로, 나머지는 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
     <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button>${tickerCfg.mega ? `<button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button>` : ''}<button type="button" data-stab="special" class="${shopTab === 'special' ? 'on' : ''}">✨ 특별</button></div>
       ${shopTab === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}
@@ -3889,6 +3959,7 @@ function tRender(){
     const c = tData.coins || {}, pend = (c.reqs || []).filter(r => r.status === '대기');
     box.innerHTML = `<div class="box"><div class="box-head">⏳ 확인 대기 (${pend.length})</div>${pend.map(r => `<div class="t-line"><span>${r.type === '미션' ? '✅' : '🎟'} <b>${esc(r.name)}</b> ${esc(r.item)} <small>${r.type === '미션' ? '+' : ''}${r.coins}🐾</small></span>
         <span>${(c.sigs || []).includes(r.id) ? `<button type="button" class="btn btn-y" data-tsig="${r.id}">✍️ 서명</button>` : ''}<button type="button" class="btn btn-mint" data-treq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급'}</button><button type="button" class="btn btn-gray" data-treq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '환불'}</button></span></div>`).join('') || '<div class="empty">확인할 게 없어요 ✨</div>'}</div>
+      <div class="box"><div class="box-head mint">🎯 미션 성공 보고</div>${(c.results || []).slice(0, 25).map(x => `<div class="t-line"><span>${x.undone ? '<s>' : ''}<b>${esc(x.name)}</b> ${esc(String(x.why).replace(/^미션:\s*/, ''))} <small>+${x.amt}🐾 · ${esc(x.t.slice(5))}</small>${x.undone ? '</s> ↩' : ''}</span>${x.undone ? '' : `<span><button type="button" class="btn btn-gray" data-tundo="${x.id}">↩ 취소</button></span>`}</div>`).join('') || '<div class="empty">아직 없어요</div>'}</div>
       <div class="box"><div class="box-head pink">🎁 코인 주기</div>
         <select id="tMission">${(c.missions || []).map(m => `<option value="${m.id}">${esc(m.name)} (+${m.coins})</option>`).join('')}<option value="_">✏️ 직접 입력</option></select>
         <div class="t-row" id="tCustom" style="display:none;"><input type="number" id="tAmt" placeholder="코인 (예: 20 또는 -10)"><input type="text" id="tWhy" placeholder="이유"></div>
@@ -4074,6 +4145,7 @@ document.addEventListener('click', e => {
   { const x = t.closest('[data-lhand]'); if (x){ coinCall('lockerHand', { h: x.dataset.lhand }); return; } }
   { const x = t.closest('[data-bclose]'); if (x){ bClose(x.dataset.bclose); return; } }
   { const x = t.closest('[data-subj]'); if (x){ pickSubj(x.dataset.subj); return; } }
+  { const x = t.closest('[data-tundo]'); if (x){ if (!confirm('이 미션 성공을 취소할까요? 냥코인과 EXP가 빠져요')) return; tOps([{ op:'missionUndo', id: Number(x.dataset.tundo) }], '↩ 취소했어요').then(() => tLoad && tLoad()); return; } }
   { const x = t.closest('[data-tsig]'); if (x){ tCall({ action:'sig', id: Number(x.dataset.tsig) }).then(j => bOpen('msOv', `<h2>✍️ 학습태도 서명</h2><div class="hint" style="text-align:center;">📚 ${esc(j.subj || '')} 시간</div>${j.sig ? `<img src="${j.sig}" style="width:100%;background:#fff;border:2px solid #CDBBA8;border-radius:12px;">` : '<div class="empty">서명이 없어요</div>'}`)).catch(() => toast('불러오지 못했어요')); return; } }
   if (t.closest('[data-subjfree]')){ pickSubj(($('subjFree').value || '').trim()); return; }
   { const x = t.closest('[data-praiseto]'); if (x){ bClose('msOv'); mailCompose(x.dataset.praiseto, true); $('mailOv').classList.add('on'); return; } }
@@ -4082,6 +4154,11 @@ document.addEventListener('click', e => {
   if (t.closest('[data-mback]')){ mailInbox(); return; }
   { const x = t.closest('[data-msend]'); if (x){ mailSend(x.dataset.msend); return; } }
   if (t.closest('[data-mailme]')){ openMail(me.name); return; }
+  if (t.closest('[data-mstory]')){ openStory(); return; }
+  { const x = t.closest('[data-sopt]'); if (x){ storyAns(x.dataset.sopt); return; } }
+  if (t.closest('[data-sans]')){ storyAns(($('storyText').value || '').trim()); return; }
+  if (t.closest('[data-mmenu]')){ openMenuTr(); return; }
+  if (t.closest('#menuTrSend')){ menuTrSend(); return; }
   if (t.closest('#diarySave')){ diarySave(); return; }
   if (t.closest('#diaryReadSave')){ diaryReadersSave(); return; }
   { const x = t.closest('[data-dread]'); if (x){ x.classList.toggle('on'); return; } }

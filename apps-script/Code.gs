@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 36;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 37;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -50,6 +50,8 @@ const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람',
 const SIG_SHEET = '서명', SIG_HEADER = ['신청번호', '과목', '서명'];
 const MAIL_SHEET = '편지함', MAIL_HEADER = ['번호', '시간', '보낸 사람', '받는 사람', '종류', '내용(가림)', '읽음', '확인', '미션'];
 const DIARY_SHEET = '일기장', DIARY_HEADER = ['번호', '날짜', '이름', '내용(가림)', '시간'];
+const MENU_SHEET = '급식번역', MENU_HEADER = ['번호', '날짜', '이름', '영어 메뉴', '상태', '시간'];
+const STORY_SHEET = '스토리답', STORY_HEADER = ['스토리', '이름', '답', '시간'];
 const IDEA_SHEET = '마을의견', IDEA_HEADER = ['번호', '시간', '보낸 사람', '익명', '비밀', '내용', '좋아요', '상태'];
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
 // 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 민망한 애교 말로 바뀌어요
@@ -94,7 +96,8 @@ function doPost(e) {
     if (body.action === 'student') return out_(handleStudent_(body));
     if (body.action === 'sos') return out_(sos_(body));
     if (body.action === 'tpass') return out_(tpass_(body));
-    if (body.action === 'mealSet') return out_(mealSet_(body));   // 🍱 급식 관리자 (오늘 급식만)    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
+    if (body.action === 'mealSet') return out_(mealSet_(body));   // 🍱 급식 관리자 (오늘 급식만)
+    if (body.action === 'menuTrList' || body.action === 'menuTrOk') { if (!mealAuth_(body.mpin)) return out_({ ok: false, error: 'wrong' }); if (body.action === 'menuTrOk') menuTrSet_(body.id, !!body.ok); return out_({ ok: true, list: menuTrList_() }); }    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
     let auth;
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
       const c = checkStudent_(String(body.name), body.pin);
@@ -109,6 +112,8 @@ function doPost(e) {
     if (body.action === 'stuCfg') return out_({ ok: true, cfg: stuCfg_(), strikes: strikes_() });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
+    if (body.action === 'story') return out_(storyView_('선생님'));
+    if (body.action === 'menuTr') return out_({ ok: true, list: menuTrList_() });
     if (body.action === 'sig') { const sh = sheet_(SIG_SHEET, SIG_HEADER), n = sh.getLastRow(), r = n < 2 ? null : sh.getRange(2, 1, n - 1, 3).getValues().filter(function (x) { return Number(x[0]) === Number(body.id); })[0]; return out_({ ok: true, subj: r ? String(r[1]) : '', sig: r ? String(r[2]) : '' }); }   // ✍️ 학습태도 서명 보기
     if (body.action === 'engUpload') return out_(engUpload_(body));
     if (body.action === 'engResults') return out_(engResults_());
@@ -343,7 +348,7 @@ function publicGet_(p) {
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
   { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; }
-  res.meal = mealPub_(); res.hw = hwPub_(); res.reload = reloadInfo_();
+  res.meal = mealPub_(); res.hw = hwPub_(); res.reload = reloadInfo_(); res.mealEn = menuEnToday_(); res.story = storyPub_();
   return res;
 }
 
@@ -373,7 +378,7 @@ function teacherPull_(body, auth) {
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER), meeting: readMeeting_() };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
   res.lockdown = props_().getProperty('lockdown') === '1';
-  res.meal = mealData_(); res.hw = hwData_(); res.reload = reloadInfo_();
+  res.meal = mealData_(); res.hw = hwData_(); res.reload = reloadInfo_(); res.mealEn = menuEnToday_(); res.menuTrN = readMenuTr_(function (x) { return x.status === '대기'; }).length; res.story = storyPub_();
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
@@ -474,6 +479,16 @@ function handlePost_(body, auth) {
           }).filter(function (h) { return h.text; });
           props_().setProperty('hw', JSON.stringify(list)); break;
         }
+        case 'missionUndo': missionUndo_(o.id); break;
+        case 'menuTrOk': menuTrSet_(o.id, !!o.ok); break;
+        case 'storySet': {                       // 📸 시내T 스토리 올리기 (24시간)
+          const type = ['text', 'vote', 'emoji'].indexOf(o.type) >= 0 ? o.type : 'text';
+          const opts = type === 'vote' ? (o.opts || []).map(function (x) { return String(x).trim().slice(0, 20); }).filter(String).slice(0, 5) : type === 'emoji' ? ['😍', '😂', '😮', '😢', '👍'] : [];
+          const id = Number(props_().getProperty('storySeq') || 0) + 1; props_().setProperty('storySeq', String(id));
+          props_().setProperty('story', JSON.stringify({ id: id, q: String(o.q || '').slice(0, 120), type: type, opts: opts, pub: !!o.pub, at: Date.now() }));
+          break;
+        }
+        case 'storyDel': props_().deleteProperty('story'); break;
         case 'reloadAll': props_().setProperty('reloadAt', String(Date.now() + 60000)); break;
         case 'reloadCancel': props_().deleteProperty('reloadAt'); break;
         case 'epoch': {                          // 🔒 모두 다시 입력: 다른 설정은 건드리지 않아요
@@ -668,6 +683,8 @@ function handleStudentCore_(body) {
   if (/^diary/.test(String(body.op || ''))) return studentDiary_(name, body);
   if (/^cafe/.test(String(body.op || ''))) return studentCafe_(name, body);
   if (/^locker/.test(String(body.op || ''))) return studentLocker_(name, body);
+  if (body.op === 'menuTr') return studentMenu_(name, body);
+  if (/^story/.test(String(body.op || ''))) return studentStory_(name, body);
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (/^idea/.test(String(body.op || ''))) return studentIdea_(name, body);
@@ -1393,7 +1410,7 @@ function boardOf_(code) {
     const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
     return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
   }
-  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_(); out.reload = reloadInfo_();
+  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_(); out.reload = reloadInfo_(); out.mealEn = menuEnToday_();
   return out;
 }
 function cardOf_(name) {
@@ -1542,11 +1559,12 @@ function economy_(map) {
 }
 /* 🎯 미션 종류: 고른 뒤 어떻게 끝나는지 (sign 서명 · praise 칭찬편지 · appon 출석 1등 · eng 영어 80점 · allon 반 전체 제시간 · allon3 주 3일 · good 바른 한 주 · diary 일기장 5일 · cafe 스터디카페 3일 · locker 사물함 가위바위보 · teacher 선생님이 줌) */
 const MISSION_FLOW_ = {
-  d_attitude: { flow: 'sign', cap: 5 }, d_praise: { flow: 'praise', cap: 10 }, d_board: { flow: 'appon', cap: 2 }, d_word: { flow: 'eng' },
+  d_attitude: { flow: 'sign', cap: 5 }, d_praise: { flow: 'praise', cap: 10 }, d_board: { flow: 'appon', cap: 2 }, d_word: { flow: 'eng' }, d_story: { flow: 'story' }, w_menu: { flow: 'menu' },
   a_allon: { flow: 'allon' }, w_allon3: { flow: 'allon3' }, w_good: { flow: 'good' }, w_daily: { flow: 'diary' }, w_study: { flow: 'cafe' },
   w_locker: { flow: 'locker' }, w_best: { flow: 'teacher' }
 };
-const AUTO_FLOWS_ = { appon: 1, eng: 1, allon: 1, allon3: 1, good: 1, diary: 1, cafe: 1, praise: 1 };
+const AUTO_FLOWS_ = { appon: 1, eng: 1, allon: 1, allon3: 1, good: 1, diary: 1, cafe: 1, praise: 1, story: 1, menu: 1 };
+const NOPICK_FLOWS_ = { allon: 1, allon3: 1, good: 1, teacher: 1, locker: 1 };   // 🏫 반 단위 · 선생님이 주는 미션은 안 골라도 돼요
 function readCoins_() {
   const sh = sheet_(COIN_SHEET, COIN_HEADER), n = sh.getLastRow();
   if (n < 2) return [];
@@ -1580,10 +1598,10 @@ function weekKey_() {
   const wd = d.getDay() === 0 ? 7 : d.getDay(); d.setDate(d.getDate() - wd + 1);
   return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd');
 }
-// 미션은 매일 새벽 5시, 매주 월요일 새벽 5시에 새로 시작해요 (등교 전에 고를 수 있게)
-function missionDay_() { return Utilities.formatDate(new Date(Date.now() - 5 * 3600000), 'Asia/Seoul', 'yyyy-MM-dd'); }
+// 미션은 매일 아침 7시, 매주 월요일 아침 7시에 새로 시작해요
+function missionDay_() { return Utilities.formatDate(new Date(Date.now() - 7 * 3600000), 'Asia/Seoul', 'yyyy-MM-dd'); }
 function missionWeek_() {
-  const d0 = new Date(Date.now() - 5 * 3600000), u = Number(Utilities.formatDate(d0, 'Asia/Seoul', 'u'));
+  const d0 = new Date(Date.now() - 7 * 3600000), u = Number(Utilities.formatDate(d0, 'Asia/Seoul', 'u'));
   return Utilities.formatDate(new Date(d0.getTime() - (u - 1) * 86400000), 'Asia/Seoul', 'yyyy-MM-dd');
 }
 function periodKey_(limit) { return limit === 'day' ? missionDay_() : limit === 'week' ? missionWeek_() : limit === 'once' ? 'all' : String(Date.now()); }
@@ -1669,32 +1687,123 @@ function autoSettle_(name, eco, rows, map) {
   };
   [['d', pk.d], ['w', pk.w]].forEach(function (pair) {
     const sl = pair[1]; (sl.ids || []).forEach(function (id) {
-      const m = (eco.missions || []).filter(function (x) { return x.id === id; })[0]; if (!m || !AUTO_FLOWS_[m.flow] || m.flow === 'praise') return;
+      const m = (eco.missions || []).filter(function (x) { return x.id === id; })[0]; if (!m || !AUTO_FLOWS_[m.flow] || m.flow === 'praise' || NOPICK_FLOWS_[m.flow]) return;
       const at = (sl.at || {})[id] || 0, atDs = at ? kstDs_(at) : '0000';
       try {
         if (m.flow === 'appon') { const r = (((map['day:' + today] || {}).records) || {})[name]; if (r && Number(r.rank) === 1 && (!at || kstHM_(at) <= String(r.time || '99:99'))) pay(m); }
         else if (m.flow === 'eng') { const r = JSON.parse(props_().getProperty(engResultKey_(name)) || 'null'); if (r && r.pass && (!at || !r.at || r.at >= at - 60000)) pay(m); }
-        else if (m.flow === 'allon') { if (dayAllOnTime_(map, today, kids)) pay(m); }
-        else if (m.flow === 'allon3' || m.flow === 'good' || m.flow === 'diary' || m.flow === 'cafe') {
+        else if (m.flow === 'story') { const st = storyNow_(); if (st && storyAnsOf_(st.id, name) && (!at || st.at >= at - 86400000)) pay(m); }
+        else if (m.flow === 'menu') { const days = weekDates_(sl.k), n = menuDays_(name).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs; }).length; if (n >= 2) pay(m, '(' + n + '일)'); }
+        else if (m.flow === 'diary' || m.flow === 'cafe') {
           const days = weekDates_(sl.k), upto = days.filter(function (d) { return d <= today; });
-          if (m.flow === 'allon3') { if (upto.slice(0, 5).filter(function (d) { return dayAllOnTime_(map, d, kids); }).length >= 3) pay(m); }
-          else if (m.flow === 'good') {
-            const wd = Number(Utilities.formatDate(new Date(), 'Asia/Seoul', 'u'));
-            if (!(wd >= 6 || (wd === 5 && kstHM_() >= '15:00'))) return;      // 금요일 오후 3시부터 확인해요
-            const bad = days.slice(0, 5).some(function (d) {
-              const day = map['day:' + d] || {}, r = (day.records || {})[name];
-              return (r && r.status === 'late') || (day.notes || []).some(function (n) { return n.who === name && ['swear', 'classlate', 'attitude'].indexOf(n.kind) >= 0; });
-            });
-            const st = strikes_()[name], wk0 = new Date(sl.k + 'T05:00:00+09:00').getTime();
-            if (!bad && !(st && st.at && st.at >= wk0)) pay(m);
-          }
-          else if (m.flow === 'diary') { const n = diaryDays_(name).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs; }).length; if (n >= 5) pay(m, '(' + n + '일)'); }
+          if (m.flow === 'diary') { const n = diaryDays_(name).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs; }).length; if (n >= 5) pay(m, '(' + n + '일)'); }
           else if (m.flow === 'cafe') { const c = cafeOf_(name), n = Object.keys(c.days || {}).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs && c.days[d] >= 60; }).length; if (n >= 3) pay(m, '(' + n + '일)'); }
         }
       } catch (e) {}
     });
   });
+  // 🏫 반 단위 미션: 고르지 않아도 조건을 채우면 모두에게
+  const wk = missionWeek_(), days = weekDates_(wk), upto = days.filter(function (d) { return d <= today; });
+  (eco.missions || []).forEach(function (m) {
+    try {
+      if (m.flow === 'allon') { const r = (((map['day:' + today] || {}).records) || {})[name]; if (r && r.status === 'present' && dayAllOnTime_(map, today, kids)) pay(m); }
+      else if (m.flow === 'allon3') { if (upto.slice(0, 5).filter(function (d) { return dayAllOnTime_(map, d, kids); }).length >= 3) pay(m); }
+      else if (m.flow === 'good') {
+        const wd = Number(Utilities.formatDate(new Date(), 'Asia/Seoul', 'u'));
+        if (!(wd >= 6 || (wd === 5 && kstHM_() >= '15:00'))) return;      // 금요일 오후 3시부터 확인해요
+        if (!days.slice(0, 5).some(function (d) { return (((map['day:' + d] || {}).records) || {})[name]; })) return;   // 이번 주 출석이 있어야
+        const bad = days.slice(0, 5).some(function (d) {
+          const day = map['day:' + d] || {}, r = (day.records || {})[name];
+          return (r && r.status === 'late') || (day.notes || []).some(function (n) { return n.who === name && ['swear', 'classlate', 'attitude'].indexOf(n.kind) >= 0; });
+        });
+        const st = strikes_()[name], wk0 = new Date(wk + 'T07:00:00+09:00').getTime();
+        if (!bad && !(st && st.at && st.at >= wk0)) pay(m);
+      }
+    } catch (e) {}
+  });
   return paid;
+}
+/* ↩ 선생님이 미션 성공 취소: 코인을 되돌리고 EXP도 빼요 (같은 기간엔 다시 받을 수 없어요) */
+function missionUndo_(id) {
+  const rows = readCoins_(), r = rows.filter(function (x) { return x.id === Number(id); })[0];
+  if (!r || !/^m:/.test(r.key) || r.amt <= 0) return false;
+  if (!addCoin_(r.name, -r.amt, '↩ 미션 취소: ' + String(r.why).replace(/^미션:\s*/, ''), '취소', 'undo:' + r.id, rows)) return false;
+  const mid = r.key.split(':')[1], m = (economy_(readRows_().map).missions || []).filter(function (x) { return x.id === mid; })[0];
+  expQueue_(r.name, -(m && m.exp != null ? Number(m.exp) : Math.round(r.amt / 2)), '↩ 미션 취소');
+  return true;
+}
+function missionResults_(rows) {
+  const undone = {}; rows.forEach(function (r) { if (/^undo:/.test(r.key)) undone[r.key.slice(5)] = 1; });
+  return rows.filter(function (r) { return /^m:/.test(r.key) && r.amt > 0; }).slice(-80).reverse().map(function (r) { return { id: r.id, t: r.t, name: r.name, why: r.why, amt: r.amt, kind: r.kind, undone: !!undone[r.id] }; });
+}
+
+/* ---------------- 🍱 급식 메뉴 영어 번역 (급식 관리자가 승인) ---------------- */
+function readMenuTr_(keep) {
+  const sh = sheet_(MENU_SHEET, MENU_HEADER), n = sh.getLastRow(); if (n < 2) return [];
+  return sh.getRange(2, 1, n - 1, 6).getValues().map(function (r, i) { return { row: i + 2, id: Number(r[0]), ds: String(r[1]).replace(/^'/, ''), name: String(r[2]), text: String(r[3]), status: String(r[4]), t: String(r[5]) }; }).filter(keep);
+}
+function menuDays_(name) { return readMenuTr_(function (x) { return x.name === name && x.status === '승인'; }).map(function (x) { return x.ds; }); }
+function menuEnToday_() { const t = todayStr_(), a = readMenuTr_(function (x) { return x.ds === t && x.status === '승인'; }); return a.length ? { name: a[a.length - 1].name, text: a[a.length - 1].text } : null; }
+function menuTrList_() { const t = todayStr_(); return readMenuTr_(function (x) { return x.status === '대기' || x.ds === t; }).slice(-40).reverse().map(function (x) { return { id: x.id, ds: x.ds, name: x.name, text: x.text, status: x.status }; }); }
+function menuTrSet_(id, ok) {
+  const it = readMenuTr_(function (x) { return x.id === Number(id); })[0]; if (!it) return;
+  sheet_(MENU_SHEET, MENU_HEADER).getRange(it.row, 5).setValue(ok ? '승인' : '반려');
+  if (ok) { try { const map = readRows_().map; autoSettle_(it.name, economy_(map), readCoins_(), map); } catch (e) {} }
+  bump_();
+}
+function studentMenu_(name, body) {
+  const text = maskBad_(String(body.text || '').trim().slice(0, 400), (chatCfg_().ban) || []);
+  if (text.replace(/\s/g, '').length < 5) return { ok: true, error: 'short' };
+  const lock = lightLock_(15000);
+  try {
+    const t = todayStr_(), sh = sheet_(MENU_SHEET, MENU_HEADER), it = readMenuTr_(function (x) { return x.name === name && x.ds === t; })[0];
+    if (it && it.status === '승인') return { ok: true, error: 'done' };
+    if (it) sh.getRange(it.row, 4, 1, 3).setValues([[text, '대기', "'" + nowStr_()]]);
+    else { const id = Number(props_().getProperty('menuSeq') || 0) + 1; props_().setProperty('menuSeq', String(id)); sh.appendRow([id, "'" + t, name, text, '대기', "'" + nowStr_()]); }
+    bump_();
+  } finally { lock.releaseLock(); }
+  return { ok: true };
+}
+function mealAuth_(pin) {
+  const c = cache_(), f = Number(c.get('mpfail') || 0);
+  if (f >= 5) Utilities.sleep(Math.min(8000, 1500 * (f - 4)));
+  const cf = readRows_().map.config || {}; pin = String(pin || '');
+  const ok = !!pin && ((cf.mealPin && pin === String(cf.mealPin)) || (cf.adminPin && pin === String(cf.adminPin)));
+  if (!ok) try { c.put('mpfail', String(f + 1), 1800); } catch (e) {}
+  return ok;
+}
+
+/* ---------------- 📸 시내T 스토리 (마을 게시판 · 24시간) ---------------- */
+function storyNow_() { try { const s = JSON.parse(props_().getProperty('story') || 'null'); return s && Date.now() - s.at < 86400000 ? s : null; } catch (e) { return null; } }
+function storyAnswers_(sid) { const sh = sheet_(STORY_SHEET, STORY_HEADER), n = sh.getLastRow(); if (n < 2) return []; return sh.getRange(2, 1, n - 1, 4).getValues().map(function (r, i) { return { row: i + 2, sid: Number(r[0]), name: String(r[1]), ans: String(r[2]), t: String(r[3]) }; }).filter(function (x) { return x.sid === Number(sid); }); }
+function storyAnsOf_(sid, name) { return storyAnswers_(sid).filter(function (x) { return x.name === name; })[0] || null; }
+function storyPub_() { const s = storyNow_(); return s ? { id: s.id, q: s.q, type: s.type, opts: s.opts || [], pub: !!s.pub, at: s.at } : null; }
+function storyView_(name) {
+  const s = storyNow_(); if (!s) return { ok: true, story: null };
+  const all = storyAnswers_(s.id), mine = all.filter(function (x) { return x.name === name; })[0], T = isTeacherName_(name);
+  const out = { ok: true, story: storyPub_(), mine: mine ? mine.ans : '' };
+  if (s.type === 'vote') { const cnt = {}; all.forEach(function (x) { cnt[x.ans] = (cnt[x.ans] || 0) + 1; }); if (mine || T) out.votes = cnt; }
+  if (T || (s.pub && mine)) out.answers = all.map(function (x) { return { name: x.name, ans: x.ans, t: x.t }; });
+  out.count = all.length;
+  return out;
+}
+function studentStory_(name, body) {
+  let error = '';
+  if (body.op === 'storyAns') {
+    const s = storyNow_(); let ans = maskBad_(String(body.ans || '').trim().slice(0, 100), (chatCfg_().ban) || []);
+    if (!s) error = 'none';
+    else if (!ans) error = 'empty';
+    else if (s.type === 'vote' && (s.opts || []).indexOf(ans) < 0) error = 'bad';
+    else {
+      const lock = lightLock_(15000);
+      try {
+        const sh = sheet_(STORY_SHEET, STORY_HEADER), it = storyAnsOf_(s.id, name);
+        if (it) sh.getRange(it.row, 3, 1, 2).setValues([[ans, "'" + nowStr_()]]); else sh.appendRow([s.id, name, ans, "'" + nowStr_()]);
+      } finally { lock.releaseLock(); }
+      try { const map = readRows_().map; autoSettle_(name, economy_(map), readCoins_(), map); } catch (e) {}
+    }
+  }
+  const v = storyView_(name); v.error = error; return v;
 }
 
 /* ---------------- 💌 편지함 (마을 집 안) · 칭찬편지 미션 ---------------- */
@@ -1872,7 +1981,7 @@ function teacherCoins_() {
   const reqs = readReqs_(function () { return true; }).slice(-300).reverse();
   const map = readRows_().map, sold = {};
   (economy_(map).shop || []).forEach(function (it) { sold[it.id] = soldCount_(it.id); });
-  return { ok: true, balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [], praise: praiseResults_(), sigs: sheet_(SIG_SHEET, SIG_HEADER).getLastRow() > 1 ? sheet_(SIG_SHEET, SIG_HEADER).getRange(2, 1, sheet_(SIG_SHEET, SIG_HEADER).getLastRow() - 1, 1).getValues().map(function (r) { return Number(r[0]); }) : [] };
+  return { ok: true, results: missionResults_(rows), balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [], praise: praiseResults_(), sigs: sheet_(SIG_SHEET, SIG_HEADER).getLastRow() > 1 ? sheet_(SIG_SHEET, SIG_HEADER).getRange(2, 1, sheet_(SIG_SHEET, SIG_HEADER).getLastRow() - 1, 1).getValues().map(function (r) { return Number(r[0]); }) : [] };
 }
 function studentCoins_(name, body) {
   const lock = lockFor_(body.op !== 'coins', 20000);
@@ -1960,7 +2069,7 @@ function studentCoins_(name, body) {
       const m = (eco.missions || []).filter(function (x) { return x.id === body.mid; })[0];
       const pk = picksOf_(name), lim = eco.pickLimit || { daily: 2, weekly: 3 };
       const slot = m && m.cat === 'daily' ? 'd' : m && m.cat === 'weekly' ? 'w' : '';
-      const pickable = m && slot && m.flow !== 'locker' && m.flow !== 'teacher' && (m.flow || m.auto || m.req);   // 🎯 모든 미션은 골라야 해요
+      const pickable = m && slot && !NOPICK_FLOWS_[m.flow] && (m.flow || m.auto || m.req);   // 🎯 반 단위 미션 빼고는 모두 골라요
       if (!pickable) error = 'noitem';
       else if (pk[slot].ids.indexOf(m.id) >= 0) error = 'owned';
       else if (!T && pk[slot].ids.length >= (slot === 'd' ? lim.daily : lim.weekly)) error = 'pickfull';
@@ -2043,6 +2152,7 @@ function studentCoins_(name, body) {
         furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {}, locked: eco.locked || {} },
       playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),
+      undone: (function () { const u = {}; rows.forEach(function (r) { if (r.name === name && /^undo:/.test(r.key)) u[r.key.slice(5)] = 1; }); return rows.filter(function (r) { return u[r.id]; }).map(function (r) { return r.key; }); })(),
       picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }, paid: paid,
       capUsed: capUsed_(eco), locker: lockerView_(name), tt: (map.config && map.config.timetable) || null, kids: kidNames_(map)
     };
