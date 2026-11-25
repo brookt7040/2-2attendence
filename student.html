@@ -298,8 +298,15 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,html.only-notice #cleanMe,html.only-notice #specialBox ~ .box:not(.nb-pub),html.only-notice #p-notice .guest-only,html.only-notice #penBar{display:none !important;}
 html.only-notice body.guest #p-notice > .nb-pub,html.only-notice body.guest #p-notice > #specialBox{display:block !important;}
 html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
+/* 💬 대화 팝업 (앱 위쪽 💬 칩) */
+html.only-chat .top,html.only-chat .tabs,html.only-chat #penBar{display:none !important;}
+html.only-chat .panel:not(#p-chat){display:none !important;} html.only-chat #p-chat{display:block !important;}
+html.only-chat .wrap{padding:8px !important;max-width:none !important;}
+html.only-chat .ch{box-shadow:none;border:none;padding:0;background:transparent;}
+html.only-chat .ch-log{height:calc(100vh - 190px);max-height:none;}
+html.agit .tab[data-tab="chat"]{display:none !important;}
 /* 🧸 아지트 (앱): 알림·종례는 따로 탭이 있어서 빼요 */
-html.agit #p-notice > .nb-pub{display:none !important;}
+html.agit #p-notice > .nb-pub,html.agit #checkinBox{display:none !important;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
@@ -344,7 +351,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <body>
 <script>
 /* 📱 2-2😻 앱 안: ?only=notice 는 📢 알림·종례 탭 (로그인 없이), 아지트에서는 알림·종례 칸을 빼요 */
-(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && q.get('only') !== 'notice' && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (inApp) document.documentElement.classList.add('agit'); })();
+(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && !q.get('only') && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (q.get('only') === 'chat') document.documentElement.classList.add('only-chat'); else if (inApp) document.documentElement.classList.add('agit'); })();
 </script>
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
@@ -366,11 +373,11 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </div>
 
   <div class="tabs">
-    <button type="button" class="tab active" data-tab="notice"><span class="tn-full">📢 알림·종례</span><span class="tn-agit">📮 출석·질문</span><span class="dot" id="dotNotice"></span></button>
-    <button type="button" class="tab" data-tab="village">🏘️ 냥이 마을<span class="dot" id="dotVillage"></span></button>
-    <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
     <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
+    <button type="button" class="tab" data-tab="village">🏘️ 마을<span class="dot" id="dotVillage"></span></button>
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
+    <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
+    <button type="button" class="tab active" data-tab="notice"><span class="tn-full">📢 알림·종례</span><span class="tn-agit">📮 질문·상담</span><span class="dot" id="dotNotice"></span></button>
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
 
@@ -3155,9 +3162,21 @@ function applyChat(j){
   if (fresh.length){
     chat.msgs = chat.msgs.concat(fresh).slice(-200); chat.last = fresh[fresh.length - 1].id;
     if (current !== 'chat' && fresh.some(m => m.from !== me.name)) $('dotChat').classList.add('on');
+    if (C_ONLY && !chatPopOpen) chatUnread += fresh.filter(m => m.from !== me.name).length;
   }
-  renderChat();
+  renderChat(); if (C_ONLY) chatTell();
 }
+/* 💬 앱 위쪽 칩에 안 읽은 수 · 최근 친구 얼굴 알려 주기 */
+const C_ONLY = document.documentElement.classList.contains('only-chat');
+let chatUnread = 0, chatPopOpen = false;
+function chatTell(){
+  if (!C_ONLY) return;
+  const seen = [], faces = [];
+  for (let i = chat.msgs.length - 1; i >= 0 && seen.length < 3; i--){ const n = chat.msgs[i].from; if (me && n !== me.name && !seen.includes(n)) seen.push(n); }
+  seen.forEach(n => { const s = studentOf(n); if (!s) return; try { const c = document.createElement('canvas'); c.width = 16; c.height = 16; drawColors(c, lookColorsRaw(lookFor(s), s.lv)); faces.push(c.toDataURL()); } catch(e){} });
+  try { window.parent.postMessage({ nyang:'chat', unread: chatUnread, faces, login: !!me }, location.origin); } catch(e){}
+}
+addEventListener('message', e => { if (e.origin !== location.origin || !C_ONLY) return; const d = e.data || {}; if (d.nyang === 'chatOpen'){ chatPopOpen = !!d.open; if (chatPopOpen){ chatUnread = 0; chatTell(); if (me) chatPull(); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 50); } } });
 /* 💬 대화 탭: 방(📢 전체 · 🤫 친구와 귓속말 · 👥 우리 모둠)을 골라 보고 보내요 */
 const QUICK = ['👋 안녕!', '😂', '👍', '🙏 고마워', '🎉 축하해!', '😺 냥!'];
 function chatRoomOf(m){ if (!m.to) return ''; if (m.to.charAt(0) === '#') return m.to; return m.from === me.name ? m.to : (m.to === me.name ? m.from : '~' + m.from + '>' + m.to); }
@@ -3731,6 +3750,8 @@ function bootDone(ok){
   bootDone(st.pub ? true : false);
   localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); tKey = '';
   if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
+  if (document.documentElement.classList.contains('agit')) showTab('me');   // 🧸 아지트는 내 고양이부터
+  if (C_ONLY){ showTab('chat'); chatTell(); }
   { // 🎨 출석부(보기 전용)의 꾸미기 방 버튼 → 내 고양이 탭으로, 로그인 안 했으면 이름을 골라 둔 로그인 창
     const q = new URLSearchParams(location.search), who = q.get('who');
     if (q.get('tab') === 'me'){ showTab('me'); if (!me){ openLogin(); if (who) $('loginName').value = who; } }

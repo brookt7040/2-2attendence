@@ -824,14 +824,15 @@ body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openCl
 .gate-box h2{margin:6px 0;}
 .gate-box .pin-input{margin:10px auto 4px;display:block;}
 body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode #presBtn,body.view-mode .closing-reset,
-body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
+body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .edit-mini,body.view-mode #syncPill{display:none !important;}
+body.view-mode .touch-text{font-size:.72rem;opacity:.75;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
 /* 👀 보기 전용: 하나 쓰다듬기 · 내 화면 보러가기 · 고양이 카드 · 칠판만 눌러져요 */
 body.view-mode .wrap{pointer-events:none;}
 body.view-mode .notice-header{pointer-events:auto;cursor:default;}
 body.view-mode #mascotWrap,body.view-mode #myPageBtn,body.view-mode .card,body.view-mode #openMeetingBtn{pointer-events:auto;}
 body.view-mode .notice-item,body.view-mode #urgentBox,body.view-mode #cleanSide,body.view-mode #openClosingBtn,body.view-mode .stat-pill,body.view-mode .ladder{cursor:default !important;}
-body.view-mode .card.waiting{cursor:default;}
+body.view-mode .card.waiting{cursor:pointer;}
 .note-side{grid-column:1 / 3;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#FFFFFF;border:2px solid #CDBBA8;border-radius:16px;padding:8px 10px;box-shadow:0 3px 0 rgba(91,70,54,.12);cursor:pointer;font-size:.9rem;}
 .note-side:hover{border-color:var(--ink);}
 .note-side .t{width:100%;font-size:.95rem;} .note-side .t small{color:var(--ink-soft);}
@@ -1091,6 +1092,13 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div class="overlay" id="presOv">
   <div class="modal" style="max-width:640px;width:92vw;"><button type="button" class="modal-x" data-close="presOv" title="닫기">✕</button>
     <h2>🟢 지금 접속 중</h2><div id="presBody"></div></div>
+</div>
+<div class="overlay" id="rOathOv" style="z-index:20060;">
+  <div class="modal" style="max-width:420px;text-align:center;"><button type="button" class="modal-x" data-close="rOathOv" title="닫기">✕</button>
+    <h2>🚨 잠깐! 원격 출석이에요</h2>
+    <div class="form-hint" style="font-size:1rem;line-height:1.7;">교실 TV 출석부를 <b>직접 누르는 게 아니에요.</b><br>진짜 <b>교실 안</b>에 도착했나요? <span style="color:#C0365C;">집 · 버스 · 편의점 · 복도는 안 돼요 🙅</span><br>📺 교실 화면에 <b>"원격 출석"</b>이라고 크게 떠요.</div>
+    <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0;font-size:1.05rem;"><input type="checkbox" id="rOathChk" style="width:22px;height:22px;"> ✋ 저는 지금 <b>교실 안</b>에 있어요. 맹세해요!</label>
+    <button type="button" class="btn btn-y" id="rOathGo" disabled style="width:100%;">📱 맹세하고 출석하기</button></div>
 </div>
 <div class="overlay" id="cleanAddOv">
   <div class="modal ca-modal"><button type="button" class="modal-x" data-close="cleanAddOv" title="닫기">✕</button>
@@ -2355,6 +2363,26 @@ function showStTab(k){
   document.querySelectorAll('#adminOverlay .section[data-sg]').forEach(sec => sec.classList.toggle('st-hide', sec.dataset.sg !== k));
   const m = $('adminOverlay').querySelector('.modal'); if (m) m.scrollTop = 0;
 }
+/* 📱 학생용 출석부: 아직 출석 안 한 내 카드를 누르면 → 내 비밀번호 → 맹세 → 원격 출석 */
+let rName = '';
+function remoteStart(name){
+  if (todayData()[name]) return;
+  requireKidPin(name, () => { rName = name; $('rOathChk').checked = false; $('rOathGo').disabled = true; $('rOathOv').style.display = 'flex'; }, null, `📱 ${name} 원격 출석`);
+}
+async function remoteGo(){
+  if (!kidAuth || kidAuth.name !== rName) return;
+  const b = $('rOathGo'); b.disabled = true; b.textContent = '출석하는 중…';
+  try {
+    const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: rName, pin: kidAuth.pin, op:'checkin' }) });
+    const j = await r.json();
+    $('rOathOv').style.display = 'none'; kidAuth = null;
+    if (!j.ok){ showToast(j.error === 'sleep' ? '💤 지금은 출석할 수 없는 시간이에요' : '다시 해 주세요'); return; }
+    if (j.error === 'already'){ showToast('이미 출석했어요 ✅'); return; }
+    if (!j.done && !j.error){ showToast('⚠️ 지금은 원격 출석을 쓸 수 없어요. 교실 TV에서 눌러 주세요'); return; }
+    showToast(j.error === 'pending' ? '이미 출석 신청했어요 ⏳' : `📱 출석 신청 완료! (${j.at || ''}) 교실 출석부에 곧 기록돼요`);
+  } catch(e){ showToast('연결이 안 돼요. 다시 눌러 주세요'); }
+  finally { b.textContent = '📱 맹세하고 출석하기'; }
+}
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
 const NEED_API = 32;
 let serverRev = 0;
@@ -2537,8 +2565,8 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${statusLine(name)}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
-      card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
+      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${statusLine(name)}<div class="touch-text">${VIEW ? '📱 내 카드면 눌러서 원격 출석' : '▼ 터치해서 출석 ▼'}</div>`);
+      card.addEventListener('click', () => { if (VIEW){ remoteStart(name); return; } if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
       card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name), isTeacherName(name) ? [] : ['late']); });
       card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
     } else {
@@ -3538,9 +3566,9 @@ let pinUntil = 0, pinNext = null, pinRoles = [];
 const pinRoleUntil = { sub: 0, late: 0 };
 const PIN_ROLE_NAME = { sub:'부관리자', late:'지각 관리자' };
 let kidPin = null;   // 🎨 꾸미기 방: 그 학생의 로그인 비밀번호(또는 관리자 비밀번호)
-function requireKidPin(name, fn, onCancel){
+function requireKidPin(name, fn, onCancel, title){
   kidPin = { name, fn, onCancel }; pinNext = null;
-  $('pinTitle').textContent = `🎨 ${name}의 꾸미기 방`;
+  $('pinTitle').textContent = title || `🎨 ${name}의 꾸미기 방`;
   $('pinInput').value = ''; $('pinHint').textContent = '학생 페이지 로그인 비밀번호(숫자 4자리)를 넣어 주세요';
   $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
 }
@@ -7077,6 +7105,8 @@ function bindEvents(){
   $('revBar').addEventListener('click', () => requirePin(openRev));
   $('noticeArea').addEventListener('click', e => { if (VIEW && e.target.closest('.notice-header')) swTap(); });
   $('swGo').addEventListener('click', swGo);
+  $('rOathChk').addEventListener('change', () => { $('rOathGo').disabled = !$('rOathChk').checked; });
+  $('rOathGo').addEventListener('click', remoteGo);
   $('swPin').addEventListener('keydown', e => { if (e.key === 'Enter') swGo(); });
   $('backView').addEventListener('click', backToView);
   $('sleepAdmin').addEventListener('click', () => { if (VIEW) return; pinUntil = 0; requirePin(() => { sleepBypass = true; sleepTick(); showToast('👑 이 기기만 잠깐 깨웠어요 (새로고침하면 다시 잠겨요)'); }); });

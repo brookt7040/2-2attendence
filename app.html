@@ -17,6 +17,16 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .frames{position:fixed;left:0;right:0;top:50px;bottom:0;}
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;visibility:hidden;}
 .frames iframe.on{visibility:visible;}
+.cchip{position:relative;flex:0 0 auto !important;max-width:none !important;display:flex;align-items:center;gap:4px;font-size:1.05rem !important;border:2px solid #8CCBA2 !important;background:#E4F7EA !important;border-radius:14px !important;padding:4px 10px !important;margin-left:8px;}
+.cchip.on{background:#C9F0D8 !important;border-color:#5B4636 !important;box-shadow:0 3px 0 #5B4636;}
+.cchip .faces{display:inline-flex;} .cchip .faces img{width:22px;height:22px;image-rendering:pixelated;border:2px solid #fff;border-radius:50%;background:#FFF5D1;margin-left:-7px;} .cchip .faces img:first-child{margin-left:2px;}
+.cdot{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;border-radius:999px;background:#E8473A;color:#fff;font-size:11px;line-height:14px;text-align:center;border:2px solid #fff;padding:0 3px;}
+.cdot[hidden]{display:none;}
+#chatPop{position:fixed;right:12px;top:58px;width:min(440px,calc(100vw - 24px));height:min(640px,calc(100vh - 72px));background:#FFFDF6;border:3px solid #5B4636;border-radius:20px;box-shadow:0 8px 0 rgba(91,70,54,.35);z-index:15;display:flex;flex-direction:column;overflow:hidden;transform:translateY(-10px) scale(.98);opacity:0;pointer-events:none;transition:all .18s;}
+#chatPop.on{transform:none;opacity:1;pointer-events:auto;}
+.cp-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#E4F7EA;border-bottom:2px solid #8CCBA2;font-size:1rem;}
+.cp-head b{font-weight:normal;} .cp-head button{font-family:inherit;border:2px solid #5B4636;border-radius:10px;background:#FFC9D3;width:30px;height:30px;cursor:pointer;}
+.cp-body{flex:1;position:relative;} .cp-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;}
 .bar .side{display:flex;align-items:center;gap:6px;margin-left:10px;padding-left:12px;border-left:2px dashed #D9C79A;}
 .bar .sub,.bar .inst{flex:0 0 auto;max-width:none;font-size:.88rem;padding:5px 12px;border-color:#B9A58A;color:#7A6552;}
 .bar .sub{background:#FFFDF6;}
@@ -33,12 +43,13 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .ios-share{width:1.4em;height:1.4em;vertical-align:-0.35em;background:#fff;border:1px solid #D8D2C8;border-radius:.35em;padding:.1em;}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#fff;border:2px solid #5B4636;border-radius:999px;padding:6px 16px;z-index:30;display:none;}
 @media (max-width:560px){ .bar .logo{display:none;} }
-@media (max-width:480px){ .bar > button[data-t]{font-size:.8rem !important;padding:6px 1px !important;} .bar .inst,.bar .sub{font-size:.8rem;padding:5px 7px;} .bar .side{margin-left:4px;padding-left:6px;gap:4px;} .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
+@media (max-width:480px){ .cchip .faces{display:none;} .cchip{margin-left:4px;padding:4px 7px !important;} #chatPop{right:6px;left:6px;width:auto;top:56px;height:calc(100vh - 64px);} .bar > button[data-t]{font-size:.8rem !important;padding:6px 1px !important;} .bar .inst,.bar .sub{font-size:.8rem;padding:5px 7px;} .bar .side{margin-left:4px;padding-left:6px;gap:4px;} .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
 </style></head><body>
 <div class="bar"><div class="logo"><img src="icons/favicon-64.png" alt=""><span>2-2😻</span></div>
-  <button type="button" data-t="board">📋 출석부</button><button type="button" data-t="notice">📢 알림·종례</button><button type="button" data-t="me">🧸 아지트</button><span class="sp"></span><span class="side"><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub">📖 안내</button><button type="button" id="instBtn" class="inst">📲 설치</button></span></div>
+  <button type="button" data-t="board">📋 출석부</button><button type="button" data-t="notice">📢 알림·종례</button><button type="button" data-t="me">🧸 아지트</button><span class="sp"></span><button type="button" id="chatChip" class="cchip" title="우리 반 대화">💬<span class="faces" id="chatFaces"></span><span class="cdot" id="chatDot" hidden></span></button><span class="side"><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub">📖 안내</button><button type="button" id="instBtn" class="inst">📲 설치</button></span></div>
 <div id="iosOv"><div class="io-box"><button type="button" class="io-x" id="iosX">✕</button><h3>🍎 아이폰 · 아이패드는 직접 추가해요</h3><ol class="io-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
 <div class="frames" id="frames"></div>
+<div id="chatPop"><div class="cp-head"><b>💬 우리 반 대화</b><button type="button" id="chatClose">✕</button></div><div class="cp-body" id="chatBody"></div></div>
 <script>
 /* 📱 2-2😻 앱: 한 창 안에서 출석부 · 알림·종례 · 아지트 · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
 const q = new URLSearchParams(location.search);
@@ -61,6 +72,18 @@ document.querySelector('.bar').addEventListener('click', e => { const b = e.targ
 addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang === 'go' && SRC[d.tab]) show(d.tab); });
 show(q.get('tab') || 'board');   // 처음엔 늘 출석부 (입장 코드 → 출석부)
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+/* 💬 대화 팝업: 처음부터 숨겨서 열어 두고(안 읽은 수를 받으려고), 칩을 누르면 보여요 */
+const chatF = document.createElement('iframe'); chatF.src = 'student.html?only=chat&api=' + encodeURIComponent(API); chatF.title = 'chat'; document.getElementById('chatBody').appendChild(chatF);
+function chatToggle(open){
+  const pop = document.getElementById('chatPop'); open = open === undefined ? !pop.classList.contains('on') : open;
+  pop.classList.toggle('on', open); document.getElementById('chatChip').classList.toggle('on', open);
+  try { chatF.contentWindow.postMessage({ nyang:'chatOpen', open }, location.origin); if (open) chatF.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){}
+}
+document.getElementById('chatChip').onclick = () => chatToggle();
+document.getElementById('chatClose').onclick = () => chatToggle(false);
+addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang !== 'chat') return;
+  const dot = document.getElementById('chatDot'); dot.hidden = !d.unread; dot.textContent = d.unread > 9 ? '9+' : d.unread;
+  document.getElementById('chatFaces').innerHTML = (d.faces || []).map(u => `<img src="${u}" alt="">`).join(''); });
 /* 📲 설치: 크롬 · 엣지 · 안드로이드는 버튼 한 번, 아이폰 · 아이패드는 방법 안내 · 이미 앱이면 버튼 숨김 */
 let instEvt = null;
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
