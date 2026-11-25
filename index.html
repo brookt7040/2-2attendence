@@ -726,7 +726,10 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode .closing-reset,
 body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .closet-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
-body.view-mode #urgentBox,body.view-mode #cleanSide,body.view-mode #mascotBubble,body.view-mode #mascot,body.view-mode #closingList,body.view-mode #closingExtra{pointer-events:none;}
+/* 👀 보기 전용: 하나 쓰다듬기 · 내 화면 보러가기 · 고양이 카드 · 칠판만 눌러져요 */
+body.view-mode .wrap{pointer-events:none;}
+body.view-mode #mascotWrap,body.view-mode #myPageBtn,body.view-mode .card,body.view-mode #openMeetingBtn{pointer-events:auto;}
+body.view-mode .notice-item,body.view-mode #urgentBox,body.view-mode #cleanSide,body.view-mode #openClosingBtn,body.view-mode .stat-pill,body.view-mode .ladder{cursor:default !important;}
 body.view-mode .card.waiting{cursor:default;}
 .note-side{grid-column:1 / 3;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#FFFFFF;border:2px solid #CDBBA8;border-radius:16px;padding:8px 10px;box-shadow:0 3px 0 rgba(91,70,54,.12);cursor:pointer;font-size:.9rem;}
 .note-side:hover{border-color:var(--ink);}
