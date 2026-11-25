@@ -360,6 +360,12 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .lv-table-bar i{display:block;height:100%;background:linear-gradient(90deg,#FFD84D,#FF9EC4);}
 
 /* ===== 🎨 꾸미기 방 ===== */
+.att-edit{max-width:460px;}
+.att-modes{display:flex;flex-direction:column;gap:6px;margin:10px 0;}
+.att-modes label{display:flex;align-items:center;gap:8px;padding:8px 10px;border:2px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer;font-weight:700;}
+.att-modes label small{font-weight:400;color:var(--ink-soft);}
+.att-modes label:has(input:checked){background:#FFF2BF;}
+.att-hint{min-height:1.4em;margin:6px 0 2px;font-size:.95rem;color:#7A5FE0;font-weight:700;}
 .time-btn{font:inherit;border:1.5px dashed transparent;border-radius:8px;background:none;padding:0 3px;cursor:pointer;color:inherit;}
 .time-btn i{font-style:normal;font-size:.7em;opacity:.35;margin-left:1px;}
 .time-btn:hover{border-color:var(--ink);background:#fff;} .time-btn:hover i{opacity:1;}
@@ -766,6 +772,21 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 </div>
 
 <!-- 비밀번호 -->
+<div class="overlay" id="attEditOv" style="z-index:10001;">
+  <div class="modal att-edit">
+    <h2 id="attEditTitle">✏️ 출석 고치기</h2>
+    <div class="form-hint" id="attEditNow"></div>
+    <div class="att-modes">
+      <label><input type="radio" name="attMode" value="auto"> ⏱ 출석 · 지각 <small>(시간에 맞춰 자동)</small></label>
+      <label><input type="radio" name="attMode" value="excused"> 🏥 이유 있는 지각 <small>(병지각 등 · EXP 0)</small></label>
+      <label><input type="radio" name="attMode" value="absent"> 🏠 결석 <small>(EXP 0)</small></label>
+    </div>
+    <div class="row" id="attEditTimeRow"><span>⏰ 도착 시간</span><input type="time" id="attEditTime" style="width:150px;"></div>
+    <div class="row" id="attEditWhyRow"><span>📝 이유 <small>(선택)</small></span><input type="text" id="attEditWhy" maxlength="40" placeholder="예: 병원, 몸이 아파서" style="flex:1;min-width:0;"></div>
+    <div class="att-hint" id="attEditHint"></div>
+    <div class="modal-btns"><button type="button" class="btn btn-gray" id="attEditClear" style="margin-right:auto;">🗑 기록 지우기</button><button type="button" class="btn btn-gray" id="attEditCancel">취소</button><button type="button" class="btn btn-y" id="attEditOk">저장</button></div>
+  </div>
+</div>
 <div class="overlay" id="pinOverlay" style="z-index:10002;">
   <div class="modal pin-box">
     <h2 id="pinTitle">🔒 선생님 확인</h2>
@@ -1553,6 +1574,7 @@ const TIER_META = {
   sleep:  { label:'SLEEPY',     short:'쿨쿨',   icon:'💤', color:'#D0D8FF', cap:'#9C8BF0', sleepy:true, msg:n => `쿨쿨… ${n}, 내일은 일찍 오자냥` },
   teacher:{ label:'👩‍🏫 출근 도장', short:'출근', icon:'👩‍🏫', color:'#FFE3EE', cap:'#FF9EC4', pool:'legend', msg:n => `${n} 출근!` },
   burrito:{ label:'SLEEPY',     short:'이불',   icon:'🛌', color:'#C6CDF6', cap:'#8C74F0', sleepy:true, msg:n => `이불 밖은 위험해… ${n}, 내일은 꼭!` },
+  excused:{ label:'사유 지각',  short:'사유 지각', icon:'🏥', color:'#E3F2FF', cap:'#9CCBF5', pool:'normal', msg:n => `${n}, 괜찮아? 몸 잘 챙기라냥 💙` },
   absent: { label:'쉬는 날',    short:'쉬는 날', icon:'🏠', color:'#EFE9E1' }
 };
 const TIER_ORDER = ['legend','unique','rare','normal','safe','yawn','nod','sleep','burrito'];
@@ -1902,6 +1924,22 @@ function pickChar(tierKey, day){
   return rand(avail.length ? avail : pool);
 }
 const RANK_BONUS = 5, RANK_BONUS_TOP = 5;
+/* 🥇 도착 시간 순서대로 1등~끝등까지 다시 매겨요 (선생님·결석 제외). 정시 도착 5등 안은 +5 EXP */
+function recSec(r){ if (r.sec != null) return r.sec; const m = String(r.time || '').match(/^(\d{1,2}):(\d{2})/); return m ? m[1]*3600 + m[2]*60 : 1e9; }
+function recomputeRanks(ds){
+  const day = db.records[ds]; if (!day) return;
+  const list = kids().filter(n => day[n] && (day[n].status === 'present' || day[n].status === 'late'))
+    .sort((a, b) => recSec(day[a]) - recSec(day[b]) || (day[a].rank || 99) - (day[b].rank || 99) || a.localeCompare(b, 'ko'));
+  const touch = (n, r) => { day[n] = r; syncOp({ op:'rec', ds, name:n, rec:r }); };
+  list.forEach((n, i) => {
+    const r = day[n], rank = i + 1, base = (Number(r.exp) || 0) - (r.rankBonus || 0);
+    const bonus = rank <= RANK_BONUS_TOP && r.status === 'present' ? RANK_BONUS : 0;
+    if (r.rank === rank && (r.rankBonus || 0) === bonus) return;
+    const nr = Object.assign({}, r, { rank, exp: base + bonus }); if (bonus) nr.rankBonus = bonus; else delete nr.rankBonus;
+    touch(n, nr);
+  });
+  Object.keys(day).forEach(n => { const r = day[n]; if (r.rank && !list.includes(n)){ const nr = Object.assign({}, r, { exp: (Number(r.exp) || 0) - (r.rankBonus || 0) }); delete nr.rank; delete nr.rankBonus; touch(n, nr); } });
+}
 /* 🐾 출석하면 냥코인도 같이! (지각은 0) */
 const ATT_COINS = { legend:20, unique:15, rare:10, normal:5, safe:3 };
 /* 📖 내 냥이 도감 완성 보상 (EXP · 냥코인) */
@@ -1933,34 +1971,68 @@ function parseHM(v){
   if (!m) return null; const h = +m[1], mi = +m[2];
   return h < 24 && mi < 60 ? [h, mi] : null;
 }
+let attEditName = null;
 function editTime(name){
-  const ds = getTodayStr(), day = db.records[ds] = db.records[ds] || {}, old = day[name];
-  const cur = old && old.time && /^\d/.test(old.time) ? old.time : `${pad(nowD().getHours())}:${pad(nowD().getMinutes())}`;
-  const v = prompt(`${name} ${old && old.status !== 'dungeon' ? '출석 시간을 고쳐요' : '출석 처리할 시간을 넣어요'} (예: 08:39)`, cur);
-  if (v == null) return;
-  const t = parseHM(v); if (!t){ alert('시간은 08:39처럼 넣어 주세요'); return; }
-  const at = nowD(); at.setHours(t[0], t[1], 0, 0);
-  if (!old || old.status === 'dungeon'){
-    if (old) delete day[name];
-    handleTouch(name, { at: at.getTime(), remote: true, edited: true });
-    showToast(`✏️ ${name} ${pad(t[0])}:${pad(t[1])} 출석으로 넣었어요`); return;
-  }
-  const before = levelsNow(), rec = Object.assign({}, old);
-  rec.time = `${pad(t[0])}:${pad(t[1])}`; rec.sec = secOfDay(at); rec.edited = true;
-  if (!isTeacherName(name)){
-    const tier = getTier(at);
-    if (tier.key !== recTier(old)){
+  const ds = getTodayStr(), old = (db.records[ds] || {})[name];
+  attEditName = name;
+  const tk = old ? recTier(old) : '';
+  const cur = old && /^\d/.test(old.time || '') ? old.time : `${pad(nowD().getHours())}:${pad(nowD().getMinutes())}`;
+  const mode = !old ? 'auto' : tk === 'absent' ? 'absent' : tk === 'excused' ? 'excused' : 'auto';
+  $('attEditTitle').textContent = `✏️ ${name} 출석 고치기`;
+  $('attEditNow').textContent = old ? `지금: ${TIER_META[tk].icon} ${TIER_META[tk].short} · ${old.time || ''}${old.why ? ' · ' + old.why : ''}` : '지금: 아직 안 왔어요';
+  $('attEditTime').value = cur; $('attEditWhy').value = (old && old.why) || '';
+  document.querySelectorAll('[name=attMode]').forEach(r => { r.checked = r.value === mode; });
+  $('attEditClear').style.display = old ? '' : 'none';
+  attEditSync(); $('attEditOv').style.display = 'flex';
+}
+function attEditSync(){
+  const m = (document.querySelector('[name=attMode]:checked') || {}).value;
+  $('attEditTimeRow').style.display = m === 'absent' ? 'none' : '';
+  $('attEditWhyRow').style.display = m === 'excused' || m === 'absent' ? '' : 'none';
+  const t = parseHM($('attEditTime').value), at = nowD(); if (t) at.setHours(t[0], t[1], 0, 0);
+  let hint = '';
+  if (m === 'auto' && t){ const g = isTeacherName(attEditName) ? null : getTier(at); hint = g ? `→ ${TIER_META[g.key].icon} ${TIER_META[g.key].short} · ${fmtExp(g.exp)} EXP (+ 정시 5등 안이면 +${RANK_BONUS})` : '→ 출근'; }
+  if (m === 'excused') hint = '→ 🏥 사유 지각 · EXP 가감 없음 (0) · 순위는 도착 순서대로';
+  if (m === 'absent') hint = '→ 🏠 결석 · EXP 가감 없음 (0)';
+  $('attEditHint').textContent = hint;
+}
+function attEditSave(clear){
+  const name = attEditName, ds = getTodayStr(), day = db.records[ds] = db.records[ds] || {}, old = day[name];
+  const m = (document.querySelector('[name=attMode]:checked') || {}).value, why = $('attEditWhy').value.trim().slice(0, 40);
+  const before = levelsNow();
+  if (clear){
+    if (!confirm(`${name}의 오늘 기록을 지울까요? (아직 안 온 걸로 돌아가요)`)) return;
+    delete day[name]; syncOp({ op:'rec', ds, name, rec:null });
+  } else if (m === 'absent'){
+    day[name] = Object.assign({ status:'dungeon', tier:'absent', time:'결석', exp:0, edited:true }, why ? { why } : {});
+    syncOp({ op:'rec', ds, name, rec: day[name] });
+  } else {
+    const t = parseHM($('attEditTime').value); if (!t){ alert('시간은 08:39처럼 넣어 주세요'); return; }
+    const at = nowD(); at.setHours(t[0], t[1], 0, 0);
+    const keep = old && old.status !== 'dungeon' ? old : null;
+    const tier = isTeacherName(name) ? { key:'teacher', exp:0, late:false } : m === 'excused' ? { key:'excused', exp:0, late:true } : getTier(at);
+    if (!keep){
+      if (old) delete day[name];
+      $('attEditOv').style.display = 'none';
+      handleTouch(name, { at: at.getTime(), remote: true, edited: true, tier });
+      if (m === 'excused' && why){ day[name].why = why; syncOp({ op:'rec', ds, name, rec: day[name] }); saveDB(); renderGrid(); }
+      showToast(`✏️ ${name} ${pad(t[0])}:${pad(t[1])} ${TIER_META[tier.key].icon} ${TIER_META[tier.key].short}`); return;
+    }
+    const rec = Object.assign({}, keep, { time: `${pad(t[0])}:${pad(t[1])}`, sec: secOfDay(at), edited: true });
+    if (m === 'excused' && why) rec.why = why; else delete rec.why;
+    if (tier.key !== recTier(keep)){
       const others = Object.assign({}, day); delete others[name];
       const ch = pickChar(tier.key, others);
-      rec.tier = tier.key; rec.status = tier.late ? 'late' : 'present'; rec.charId = ch.id;
-      rec.exp = tier.exp; delete rec.rankBonus; delete rec.fur;
-      if (rec.rank && rec.rank <= RANK_BONUS_TOP && !tier.late){ rec.rankBonus = RANK_BONUS; rec.exp += RANK_BONUS; }
-      if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
+      Object.assign(rec, { tier: tier.key, status: tier.late ? 'late' : 'present', charId: ch.id, exp: tier.exp });
+      delete rec.rankBonus; delete rec.fur; if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
     }
+    day[name] = rec; syncOp({ op:'rec', ds, name, rec });
   }
-  day[name] = rec; saveDB(); syncOp({ op:'rec', ds, name, rec });
+  recomputeRanks(ds); saveDB();
+  $('attEditOv').style.display = 'none';
   renderGrid(); updateStatsBoard(); queueLevelUps(before, null, true);
-  showToast(`✏️ ${name} 출석 시간 → ${rec.time}${rec.tier !== old.tier ? ` (${TIER_META[recTier(rec)].icon} ${TIER_META[recTier(rec)].short})` : ''}`);
+  const r = day[name];
+  showToast(r ? `✏️ ${name} → ${TIER_META[recTier(r)].icon} ${TIER_META[recTier(r)].short} · ${r.time}` : `✏️ ${name} 기록을 지웠어요`);
 }
 function handleTouch(name, opt = {}){
   if (revealing && !opt.remote) return;
@@ -1969,7 +2041,7 @@ function handleTouch(name, opt = {}){
   const day = db.records[ds];
   if (day[name]) return;
   const isT = isTeacherName(name);
-  const tier = isT ? { key:'teacher', exp:0, late:false } : getTier(now);
+  const tier = opt.tier || (isT ? { key:'teacher', exp:0, late:false } : getTier(now));
   const lvBefore = levelsNow();
   const ch = pickChar(tier.key, day);
   const rec = {
@@ -1987,7 +2059,7 @@ function handleTouch(name, opt = {}){
   if (opt.edited) rec.edited = true;
   if (!isT && !tier.late){ rec.coins = (ATT_COINS[tier.key] || 0) + (rec.rankBonus ? 5 : 0); }
   day[name] = rec;
-  saveDB(); syncOp({ op:'rec', ds, name, rec });
+  syncOp({ op:'rec', ds, name, rec }); recomputeRanks(ds); saveDB();
   if (rec.coins && sync.url && sync.api >= 5) syncOp({ op:'coinAdd', name, amt: rec.coins, why: `출석 (${TIER_META[tier.key].short}${rec.rankBonus ? ` · ${rec.rank}등` : ''})`, kind:'출석', key:`att:${ds}:${name}` });
   setTimeout(() => checkCollection(name), 80);
   setTimeout(() => autoMissions(ds, name), 50);
@@ -2072,7 +2144,7 @@ function demoReveal(tierKey){
   if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
   showReveal('미리보기', rec, getTodayStr(), null);
 }
-function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, unique:t.eUExp, rare:t.e2Exp, normal:t.e3Exp, safe:t.eSExp, yawn:t.l1Exp, nod:t.l2Exp, sleep:t.l3Exp, burrito:t.l4Exp }[k]; }
+function getTierExp(k){ const t = db.expTiers; return { legend:t.e1Exp, unique:t.eUExp, rare:t.e2Exp, normal:t.e3Exp, safe:t.eSExp, yawn:t.l1Exp, nod:t.l2Exp, sleep:t.l3Exp, burrito:t.l4Exp, excused:0 }[k]; }
 
 /* =========================================================
    🥇 메달 · 📋 EXP 리스트 · 🧹 청소 당번
@@ -2690,7 +2762,7 @@ function gmSetToday(key){
     if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
     db.records[ds][name] = rec; syncOp({ op:'rec', ds, name, rec });
   }
-  saveDB(); showToast(`👑 ${name} 오늘 출석 → ${key === 'cancel' ? '기록 취소' : TIER_META[key].icon + ' ' + TIER_META[key].short}`);
+  recomputeRanks(ds); saveDB(); showToast(`👑 ${name} 오늘 출석 → ${key === 'cancel' ? '기록 취소' : TIER_META[key].icon + ' ' + TIER_META[key].short}`);
   afterGmChange(before, false);
 }
 function gmUndo(id){
@@ -3195,14 +3267,14 @@ function sendToDungeon(name){
   const ds = getTodayStr();
   if (!db.records[ds]) db.records[ds] = {};
   db.records[ds][name] = { status:'dungeon', tier:'absent', time:'결석', exp:0 };
-  saveDB(); syncOp({ op:'rec', ds, name, rec: db.records[ds][name] }); renderGrid(); updateStatsBoard(); checkParty(); loadStats('today');
+  syncOp({ op:'rec', ds, name, rec: db.records[ds][name] }); recomputeRanks(ds); saveDB(); renderGrid(); updateStatsBoard(); checkParty(); loadStats('today');
 }
 function cancelRecord(name){
   if (!confirm(`[${name}] 친구의 오늘 기록을 취소할까요?`)) return;
   const ds = getTodayStr();
   if (db.records[ds] && db.records[ds][name]){
     delete db.records[ds][name];
-    saveDB(); syncOp({ op:'rec', ds, name, rec: null }); renderGrid(); updateStatsBoard(); loadStats('today');
+    syncOp({ op:'rec', ds, name, rec: null }); recomputeRanks(ds); saveDB(); renderGrid(); updateStatsBoard(); loadStats('today');
   }
 }
 
@@ -5882,6 +5954,11 @@ function bindEvents(){
   $('teacherKeyBtn').addEventListener('click', saveTeacherKey);
   $('studentLinkBtn').addEventListener('click', copyStudentLink);
   $('moveBtn').addEventListener('click', moveServer);
+  document.querySelectorAll('[name=attMode]').forEach(r => r.addEventListener('change', attEditSync));
+  $('attEditTime').addEventListener('input', attEditSync);
+  $('attEditOk').addEventListener('click', () => attEditSave(false));
+  $('attEditClear').addEventListener('click', () => attEditSave(true));
+  $('attEditCancel').addEventListener('click', () => { $('attEditOv').style.display = 'none'; });
   $('syncPullBtn').addEventListener('click', () => adoptSync('pull'));
   $('syncPushBtn').addEventListener('click', () => adoptSync('push'));
   $('syncPill').addEventListener('click', () => pullSync(true));
