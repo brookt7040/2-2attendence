@@ -1603,9 +1603,10 @@ const DEFAULT_MENU = [
 ];
 
 /*@@SHARED:begin*/
-const DEFAULT_LEVEL = { start:'2026-11-24', max:1100, curve:1.5 };
+const DEFAULT_LEVEL = { start:'2026-11-24', max:2450, curve:1.5 };
 // 레벨별로 필요한 누적 EXP (Lv.10 = 1100 기준 · 설정의 'Lv.10까지 필요한 총 EXP'를 바꾸면 비율대로 늘거나 줄어요)
-const LV_TABLE = [0, 60, 150, 250, 350, 450, 600, 780, 950, 1100];
+/* ⚖️ v7 밸런스 (크리스마스까지 약 23일): 출석만 대충 ≈ Lv.5 · 할 건 하면 ≈ Lv.8 · 진심으로 하면 Lv.10 */
+const LV_TABLE = [0, 60, 150, 350, 620, 950, 1250, 1550, 1950, 2450];
 const LEVELS = [
   { name:'아기냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
   { name:'새싹냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
@@ -1767,7 +1768,7 @@ const ECONOMY_V2 = {
   },
   meeting: { pres:'', vice:'', agenda:'' }
 };
-const MEGA_ITEM = { id:'x_mega', cat:'mega', name:'📢 확성기 (1시간 공지)', price:50 };
+const MEGA_ITEM = { id:'x_mega', cat:'mega', name:'📢 확성기 (1시간 공지)', price:80 };
 /* v3: 특별 상품 */
 const SPECIAL_ITEMS = [
   { id:'c_seat',   cat:'coupon', name:'🪑 오늘 자리 선택권 (앉고 싶은 자리에 앉기)', price:60 },
@@ -1783,10 +1784,32 @@ function balancePatch6(e){
   db.expTiers = Object.assign({}, db.expTiers, { e1Exp:60, eUExp:50, e2Exp:45, e3Exp:40, eSExp:30, l1Exp:-10, l2Exp:-30, l3Exp:-50, l4Exp:-80 });
   db.level = Object.assign({}, db.level, { max: 1100 });
   e.ver = 6;
+  balancePatch7(e);
 }
+/* ⚖️ v7 밸런스 패치: 미션 EXP 따로 정하기 · 레벨표 · 상점 가격 (선생님이 바꾼 미션 코인은 그대로) */
+const MISSION_EXP7 = { d_attitude:15, d_praise:15, d_board:10, d_word:15, d_read:20, d_story:10, a_allon:10,
+  w_allon3:30, w_photo:20, w_menu:25, w_daily:30, w_study:30, w_good:30, w_best:40, w_locker:20, s_streak5:20, s_award:20 };
+const PRICE7 = { c_hotpack:30, c_gimbap:50, c_postit:30, c_iron:40, c_candy:40, c_sticker:40, c_eraser:40, c_pen:50, c_sharp:60, c_gacha:50, c_pass:60, c_escape:80, c_blanket:60, c_locker:120, c_outing:1000,
+  h_tent:80, h_cabin:200, h_cottage:400, h_castle:800, d_pot:30, d_cushion:30, d_flower:40, d_mailbox:50, d_lamp:60, d_tree:70, d_fountain:120,
+  c_seat:100, x_song:60, x_banner:120, x_title:200, x_butler:250, x_mega:80,
+  p_fish:60, p_game:80, p_tree:60, p_disco:90, p_ufo:100, p_trophy:120, p_poop:150, p_sushi:90, p_saturn:130, p_throne:220, p_carousel:300, p_snow:70,
+  w_night:60, w_rainbow:90, w_gold:120, fl_marble:60, fl_cloud:90 };
+function balancePatch7(e){
+  (e.missions || []).forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; });
+  ['shop', 'furn', 'walls', 'floors'].forEach(k => (e[k] || []).forEach(it => { if (PRICE7[it.id] != null && it.price != null) it.price = PRICE7[it.id]; }));
+  e.engReward = { coins: 20, exp: 25 };
+  db.level = Object.assign({}, db.level, { max: 2450 });
+  e.ver = 7;
+}
+// 새로 시작하는 반도 v7 가격·EXP로
+DEFAULT_ECONOMY.shop.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id]; });
+['furn', 'walls', 'floors'].forEach(k => (ECONOMY_V2[k] || []).forEach(it => { if (PRICE7[it.id] != null && it.price != null) it.price = PRICE7[it.id]; }));
+SPECIAL_ITEMS.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id]; });
+DEFAULT_ECONOMY.missions.forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; });
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 6) return false;
+  if ((e.ver || 1) >= 7) return false;
+  if ((e.ver || 1) === 6){ balancePatch7(e); return true; }
   if ((e.ver || 1) === 5){ balancePatch6(e); return true; }
   if ((e.ver || 1) === 4){ e.locked = { missions: true, shop: true }; balancePatch6(e); return true; }
   const v4 = () => {
@@ -3094,7 +3117,7 @@ function renderMenuBoard(){
   let html = '<div class="menu-header">📋 EXP 리스트</div><div class="menu-cols">';
   html += `<div><div class="menu-col-title">✨ 얻을 수 있어요</div>${plus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
-  html += '</div><div class="menu-auto">🎯 미션(코인만큼 EXP) · 📚 영어 학원 +25 · 📖 도감 완성 +30~100 · 🥇 1~5등 +5 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
+  html += '</div><div class="menu-auto">🎯 미션 +10~40 · 📚 영어 학원 +25 · 📖 도감 완성 +30~100 · 🥇 1~5등 +5 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
   const cleaners = kids().filter(isCleaner);
   html += `<div class="clean-row"><span>🧹 Cleaning Duty</span>${cleaners.length
@@ -3355,7 +3378,7 @@ function stampClass(n){ return n >= 10 ? 'rainbow' : (n >= 5 ? 'gold' : ''); }
    🏆 레벨 (시즌 EXP)
    ========================================================= */
 function lvThresholds(){
-  const k = (Number(db.level.max) || 1100) / 1100;
+  const k = (Number(db.level.max) || 2450) / LV_TABLE[9];
   return LV_TABLE.map((v, i) => i === 0 ? 0 : Math.max(i, Math.round(v * k / 10) * 10));
 }
 function seasonExpMap(){
@@ -5119,7 +5142,7 @@ function renderCoinAdmin(){
 function migrateEco(){
   const e = db.economy; if (!e || (e.mv || 0) >= 3) return false;
   const old = e.missions || [], out = [];
-  DEFAULT_ECONOMY.missions.forEach(dm => { const o = old.find(m => m.id === dm.id); out.push(Object.assign({}, dm, o ? { coins: o.coins } : {})); });
+  DEFAULT_ECONOMY.missions.forEach(dm => { const o = old.find(m => m.id === dm.id); out.push(Object.assign({}, dm, { exp: MISSION_EXP7[dm.id] }, o ? { coins: o.coins } : {})); });
   old.forEach(m => { if (!out.some(x => x.id === m.id) && !['d_clean'].includes(m.id)) out.push(Object.assign({}, m, { name: m.name.replace(/\s*\([^)]*\)\s*$/, '') })); });   // 🧹 종례 전 반 정리는 뺐어요 · 괄호 설명은 지워요
   e.missions = out; e.mv = 3;
   return true;
@@ -6866,7 +6889,7 @@ function openVillage(opts){
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
-      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
+      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>${opts.onReport && !/(쌤|샘|선생님|교감|교장)$/.test(name) ? `<button type="button" class="vg-cardgo" data-vreport="${escV(name)}" style="background:#FFE1EA;">🚨 신고</button>` : ''}` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
     drawColors(panel.querySelector('canvas'), lookColorsRaw(/(쌤|샘|선생님|교감|교장)$/.test(name) ? Object.assign({}, cd.look || {}, { _free: true }) : (cd.look || {}), cd.lv || 1));
     godInfo = { name, house: cd.house || 'h_box', aff: cd.hana || 0, title: cd.title || '', decor: ((state && state.inv && state.inv[name]) || {}).decor || [] };
   }
@@ -6918,7 +6941,7 @@ function openVillage(opts){
     if (q('[data-gp]')) return godCall({ plot: '' }, '집을 원래 자리로 돌려놨어요');
     if ((b = q('[data-gc]'))) return godCall({ coins: +b.dataset.gc }, `냥코인 ${+b.dataset.gc > 0 ? '+' : ''}${b.dataset.gc}`);
   });
-  panel.addEventListener('click', e => { const h = e.target.closest('[data-house]'); if (h){ closePanel(); enter('house:' + h.dataset.house); } });
+  panel.addEventListener('click', e => { const h = e.target.closest('[data-house]'); if (h){ closePanel(); enter('house:' + h.dataset.house); } const r = e.target.closest('[data-vreport]'); if (r){ closePanel(); opts.onReport && opts.onReport(r.dataset.vreport); } });
   /* 📊 왼쪽 위 내 정보 */
   function renderHud(){
     const el = $q('.vg-hud'); if (!el) return;

@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 37;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 38;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -347,7 +347,7 @@ function publicGet_(p) {
   }
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
-  { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; }
+  { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; res.askOpen = !!sc.askOpen; }
   res.meal = mealPub_(); res.hw = hwPub_(); res.reload = reloadInfo_(); res.mealEn = menuEnToday_(); res.story = storyPub_();
   return res;
 }
@@ -679,6 +679,17 @@ function handleStudentCore_(body) {
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
   if (body.op === 'chatPull') return studentChat_(name, body, null);
   if (body.op === 'wReport') return whisperReport_(name, body);
+  if (body.op === 'msgReport') {                 // 🚨 대화 말풍선 신고 (귓속말이면 앞뒤 대화를 선생님이 볼 수 있게)
+    const id = Number(body.id), m = readChat_(id - 1, function (x) { return x.id === id; })[0];
+    if (!m || m.from === name) return { ok: true, error: 'bad' };
+    if (isWhisper_(m)) return whisperReport_(name, body);
+    const lock = lightLock_(15000);
+    try {
+      const sh = sheet_(ASK_SHEET, ASK_HEADER), aid = Number(props_().getProperty('askSeq') || 0) + 1; props_().setProperty('askSeq', String(aid));
+      sh.appendRow([aid, "'" + nowStr_(), name, '신고', '🚨 대화 신고 · ' + m.from + '의 말 (' + String(m.t).slice(11) + '): ' + String(m.text).slice(0, 150), '', '', '', '']); bump_();
+    } finally { lock.releaseLock(); }
+    return { ok: true };
+  }
   if (/^mail/.test(String(body.op || ''))) return studentMail_(name, body);
   if (/^diary/.test(String(body.op || ''))) return studentDiary_(name, body);
   if (/^cafe/.test(String(body.op || ''))) return studentCafe_(name, body);
@@ -994,6 +1005,7 @@ function studentAsk_(name, body) {
     const text = String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
     const last = Number(props_().getProperty('askLast:' + name) || 0);
     if (!text) error = 'empty';
+    else if (body.kind !== '신고' && !isTeacherName_(name) && !stuCfg_().askOpen) error = 'askoff';     // 💌 지금은 신고만 받아요
     else if (Date.now() - last < 15000 && body.kind !== '긴급' && !isTeacherName_(name)) error = 'slow';
     else {
       const lock = lightLock_(15000);
@@ -1001,10 +1013,10 @@ function studentAsk_(name, body) {
         const sh = sheet_(ASK_SHEET, ASK_HEADER);
         const id = Number(props_().getProperty('askSeq') || 0) + 1;
         props_().setProperty('askSeq', String(id));
-        const kind = ['건의', '상담', '긴급'].indexOf(body.kind) >= 0 ? body.kind : '질문';
-        const counsel = kind === '상담' || kind === '긴급';
+        const kind = ['건의', '상담', '긴급', '신고'].indexOf(body.kind) >= 0 ? body.kind : '질문';
+        const counsel = kind === '상담' || kind === '긴급' || kind === '신고';
         sh.appendRow([id, "'" + nowStr_(), name, kind, text, body.anon && !counsel ? '예' : '', '', '', '']);
-        if (kind === '긴급') bump_();
+        if (kind === '긴급' || kind === '신고') bump_();
         props_().setProperty('askLast:' + name, String(Date.now()));
       } finally { lock.releaseLock(); }
     }
@@ -1206,6 +1218,7 @@ function stuCfg_() {
   }
   s.news = Object.assign({ on: true, min: 60 }, s.news || {}); s.news.kinds = Object.assign({ look: true, play: true, eng: true, hana: true, house: true, idea: true }, s.news.kinds || {});
   s.mega = Object.assign({ on: true, min: 60 }, s.mega || {});
+  s.askOpen = !!s.askOpen;   // 💌 to. 시내T 질문·건의·상담 (기본: 잠금 · 신고만)
   return s;
 }
 function stuCfgSet_(d) {
@@ -1215,6 +1228,7 @@ function stuCfgSet_(d) {
   if (typeof n.closingAt === 'string') s.closingAt = /^\d\d:\d\d$/.test(n.closingAt) ? n.closingAt : '';
   if (typeof n.guideVer === 'string') s.guideVer = n.guideVer.slice(0, 12);
   if (typeof n.guideNotes === 'string') s.guideNotes = n.guideNotes.slice(0, 1500);
+  if ('askOpen' in n) s.askOpen = !!n.askOpen;
   props_().setProperty('stuCfg', JSON.stringify(s)); bump_();
   return s;
 }

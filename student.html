@@ -43,6 +43,8 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .subs button.on{background:var(--y);}
 .subs button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
 .ns{display:none;} .ns.on{display:block;}
+.ask-off-box{display:none;} body.ask-off:not(.guest) #p-ask > .ask-off-box{display:block;} body.ask-off .ask-guest-msg{display:none;} body.ask-off .ask-guest-msg + .box-head{margin-top:0 !important;} body.ask-off #p-ask > .subs, body.ask-off #p-ask > .ns{display:none !important;}
+.mrep{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .mrep:hover{opacity:1;}
 html.agit .tab{min-width:0;}
 @media (max-width:480px){ .subs{gap:4px;flex-wrap:nowrap;} .subs button{font-size:.85rem;padding:5px 7px;flex:1;white-space:nowrap;} html.agit .tab{font-size:1rem;padding:9px 2px;} }
 .subs i.se{font-style:normal;}
@@ -457,8 +459,9 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-ask">
-    <div class="guest-only box guest-box"><p>🔑 로그인하면 시내T에게 질문 · 건의 · 상담을 보낼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button>
+    <div class="guest-only box guest-box"><div class="ask-guest-msg"><p>🔑 로그인하면 시내T에게 질문 · 건의 · 상담을 보낼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
       <div class="box-head pink" style="margin-top:16px;">📨 로그인이 안 될 때</div><div id="sosTeacher"></div></div>
+    <div class="box ask-off-box"><div class="empty" style="line-height:1.7;">💌 <b>to. 시내T</b>는 지금 잠시 쉬고 있어요<br><small>불편한 일이 있으면 💬 대화 말풍선이나 🪪 냥이 카드의 <b>🚨 신고</b>를 눌러요</small></div></div>
     <div class="subs" data-for="ask"><button type="button" data-sub="q"><i class="se">❓ </i>질문</button><button type="button" data-sub="s"><i class="se">💡 </i>건의</button><button type="button" data-sub="c"><i class="se">💬 </i>상담</button></div>
     <div class="box ns" data-sec="q s"><div class="box-head mint" id="askHead">❓ 질문</div><div id="askBox"></div></div>
     <div class="box ns" data-sec="c"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
@@ -611,9 +614,10 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 
 <script>
 /* 이 파일은 tools/build_student.py 가 index.html의 고양이 그림 코드를 넣어서 student.html로 만들어요. */
-const DEFAULT_LEVEL = { start:'2026-11-24', max:1100, curve:1.5 };
+const DEFAULT_LEVEL = { start:'2026-11-24', max:2450, curve:1.5 };
 // 레벨별로 필요한 누적 EXP (Lv.10 = 1100 기준 · 설정의 'Lv.10까지 필요한 총 EXP'를 바꾸면 비율대로 늘거나 줄어요)
-const LV_TABLE = [0, 60, 150, 250, 350, 450, 600, 780, 950, 1100];
+/* ⚖️ v7 밸런스 (크리스마스까지 약 23일): 출석만 대충 ≈ Lv.5 · 할 건 하면 ≈ Lv.8 · 진심으로 하면 Lv.10 */
+const LV_TABLE = [0, 60, 150, 350, 620, 950, 1250, 1550, 1950, 2450];
 const LEVELS = [
   { name:'아기냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
   { name:'새싹냥',   deco:'',   fill:'#FFF0BF', line:'#E6CB7A' },
@@ -2387,7 +2391,7 @@ function openVillage(opts){
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
-      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
+      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>${opts.onReport && !/(쌤|샘|선생님|교감|교장)$/.test(name) ? `<button type="button" class="vg-cardgo" data-vreport="${escV(name)}" style="background:#FFE1EA;">🚨 신고</button>` : ''}` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
     drawColors(panel.querySelector('canvas'), lookColorsRaw(/(쌤|샘|선생님|교감|교장)$/.test(name) ? Object.assign({}, cd.look || {}, { _free: true }) : (cd.look || {}), cd.lv || 1));
     godInfo = { name, house: cd.house || 'h_box', aff: cd.hana || 0, title: cd.title || '', decor: ((state && state.inv && state.inv[name]) || {}).decor || [] };
   }
@@ -2439,7 +2443,7 @@ function openVillage(opts){
     if (q('[data-gp]')) return godCall({ plot: '' }, '집을 원래 자리로 돌려놨어요');
     if ((b = q('[data-gc]'))) return godCall({ coins: +b.dataset.gc }, `냥코인 ${+b.dataset.gc > 0 ? '+' : ''}${b.dataset.gc}`);
   });
-  panel.addEventListener('click', e => { const h = e.target.closest('[data-house]'); if (h){ closePanel(); enter('house:' + h.dataset.house); } });
+  panel.addEventListener('click', e => { const h = e.target.closest('[data-house]'); if (h){ closePanel(); enter('house:' + h.dataset.house); } const r = e.target.closest('[data-vreport]'); if (r){ closePanel(); opts.onReport && opts.onReport(r.dataset.vreport); } });
   /* 📊 왼쪽 위 내 정보 */
   function renderHud(){
     const el = $q('.vg-hud'); if (!el) return;
@@ -2819,7 +2823,7 @@ async function pull(force){
     const j = await api(`${API}?since=${force ? -1 : st.v}&t=${Date.now()}`);
     if (!j.ok) throw new Error(j.error || 'error');
     const prevNotice = JSON.stringify([st.notices, st.closing]);
-    st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : []; st.mealEn = j.mealEn || null; st.story = j.story || null; renderMailBan();
+    st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : []; st.mealEn = j.mealEn || null; st.story = j.story || null; st.askOpen = !!j.askOpen; document.body.classList.toggle('ask-off', !st.askOpen && !(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))); renderMailBan();
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
     megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn; if (j.newsKinds) newsKinds = j.newsKinds;
     sleepCfgNow = j.sleep || null; sleepTick(); if (window.NyLock) NyLock.reload(j.reload); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
@@ -2852,7 +2856,7 @@ async function statusSave(text){
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();   // 📱 2-2😻 앱 안
-addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !document.documentElement.classList.contains('only-notice') && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
+addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !document.documentElement.classList.contains('only-notice') && !(document.documentElement.classList.contains('only-ask') && !st.askOpen) && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
 function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, location.origin); } catch(e){} }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
@@ -3180,7 +3184,7 @@ function renderDiary(){
   bOpen('diaryOv', title + (d.mine ? `<div class="hint">✏️ 오늘(${today.slice(5)}) 일기 · ${d.min || 50}자 이상이면 저장돼요 (하루 한 편, 다시 저장하면 고쳐져요)</div>
       <textarea id="diaryText" rows="6" maxlength="1000" placeholder="오늘 있었던 일, 느낀 점을 자유롭게 적어요">${esc(mineToday ? mineToday.text : '')}</textarea>
       <div class="cnt" id="diaryCnt"></div><button type="button" class="btn btn-y" id="diarySave" style="width:100%;">💾 저장</button>
-      <div style="margin-top:16px;font-size:1.05rem;border-top:2px dashed #EFE3D3;padding-top:12px;">👀 <b>읽을 수 있는 친구</b></div><div class="hint">선생님은 언제나 읽을 수 있어요. 친구는 내가 고른 친구만!</div>
+      <div style="margin-top:16px;font-size:1.05rem;border-top:2px dashed #EFE3D3;padding-top:12px;">👀 <b>읽을 수 있는 친구</b></div><div class="hint">내가 고른 친구만 읽을 수 있어요</div>
       <div class="chips" id="diaryReaders">${kids.map(n => `<button type="button" data-dread="${esc(n)}" class="${readers.has(n) ? 'on' : ''}">${esc(n)}</button>`).join('')}</div>
       <button type="button" class="btn btn-mint" id="diaryReadSave">👀 저장</button>` : '') +
     `<div style="margin-top:12px;">${(d.entries || []).filter(e => !d.mine || e.ds !== today).map(e => `<div class="dia-e"><b>📅 ${esc(e.ds)}</b><div>${esc(e.text)}</div></div>`).join('') || (d.mine ? '' : '<div class="empty">아직 일기가 없어요</div>')}</div>`);
@@ -3195,9 +3199,25 @@ async function diaryReadersSave(){
   const list = [...document.querySelectorAll('#diaryReaders .on')].map(b => b.dataset.dread);
   try { diaryData = await studentCall('diaryReaders', { list, owner: me.name }); toast('👀 읽을 수 있는 친구를 저장했어요'); renderDiary(); } catch(e){ toast('연결이 안 돼요'); }
 }
+/* 🚨 냥이 카드 신고 */
+function openReport(target){
+  if (!me){ toast('로그인해 주세요'); return; }
+  const R = ['😡 나쁜 말 · 욕설', '😢 괴롭힘 · 따돌림', '🙅 불쾌한 행동', '🚧 방해 · 도배', '✏️ 기타'];
+  bOpen('msOv', `<h2>🚨 ${esc(target)} 신고</h2><div class="hint" style="text-align:center;">선생님만 봐요. 장난 신고는 안 돼요!</div>
+    <div class="chips" id="repWhy">${R.map((r, i) => `<button type="button" data-rwhy="${esc(r)}" class="${i === 0 ? 'on' : ''}">${esc(r)}</button>`).join('')}</div>
+    <textarea id="repText" rows="3" maxlength="250" placeholder="무슨 일이 있었는지 적어 주세요 (언제 · 어디서)"></textarea>
+    <button type="button" class="btn btn-y" data-repsend="${esc(target)}" style="width:100%;margin-top:8px;">🚨 선생님께 보내기</button>`);
+}
+async function reportSend(target){
+  const why = (document.querySelector('#repWhy .on') || {}).dataset ? document.querySelector('#repWhy .on').dataset.rwhy : '';
+  const text = `🚨 냥이 카드 신고 · 대상: ${target} · ${why}${$('repText').value.trim() ? ' · ' + $('repText').value.trim() : ''}`;
+  try { const j = await studentCall('askSend', { kind: '신고', text }); if (j.error){ toast({ slow:'조금 있다 다시 보내요 🐢' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🚨 신고했어요. 선생님이 확인할게요'); } catch(e){ toast('연결이 안 돼요'); }
+}
 /* 📸 시내T 스토리 */
 let storyData = null;
-async function openStory(){
+let storyInVillage = false;
+async function openStory(inV){
+  storyInVillage = !!inV;
   if (!me){ toast('로그인해 주세요'); return; }
   bOpen('storyOv', '<h2>📸 시내T 스토리</h2><div class="empty">불러오는 중…</div>');
   try { storyData = await studentCall('storyGet'); } catch(e){ storyData = null; }
@@ -3209,7 +3229,9 @@ function renderStory(){
   try { localStorage.setItem('nyangStorySeen', String(s0.id)); } catch(e){} renderMailBan();
   const ago = Math.max(1, Math.round((Date.now() - s0.at) / 3600000)), T = /(쌤|샘|선생님|교감|교장)$/.test(me.name);
   let ans = '';
-  if (!d.mine && !T){
+  if (!d.mine && !T && !storyInVillage){
+    ans = `<div class="sig-q">🏘️ 답장은 <b>마을 광장 📸 스토리 게시판</b>에서 할 수 있어요!</div><button type="button" class="btn btn-y" data-vgo="1" style="width:100%;">🏘️ 마을로 가기</button>`;
+  } else if (!d.mine && !T){
     ans = s0.type === 'text' ? `<div class="sig-row"><input type="text" id="storyText" maxlength="100" placeholder="답장 보내기…" style="flex:1;"><button type="button" class="btn btn-y" data-sans="1">보내기</button></div>`
       : `<div class="story-opts ${s0.type === 'emoji' ? 'emo' : ''}">${(s0.opts || []).map(o => `<button type="button" data-sopt="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
   } else if (d.mine) ans = `<div class="sig-q">💌 내 답: <b>${esc(d.mine)}</b></div>`;
@@ -3301,7 +3323,7 @@ async function enterVillage(){
     onCoins: j => { if (j && j.ok){ coin = j; render(); } },
     onHanaLook: look => { hanaLookNow = look; drawHeaderHana(); },
     onGame: g => openGame(g),
-    onMail: owner => openMail(owner), onDiary: owner => openDiary(owner), onCafe: () => openCafe(), onStory: () => openStory(), storyOn: () => { let seen = ''; try { seen = localStorage.getItem('nyangStorySeen') || ''; } catch(e){} return !!(st.story && String(st.story.id) !== seen); },
+    onMail: owner => openMail(owner), onDiary: owner => openDiary(owner), onCafe: () => openCafe(), onStory: () => openStory(true), onReport: name => openReport(name), storyOn: () => { let seen = ''; try { seen = localStorage.getItem('nyangStorySeen') || ''; } catch(e){} return !!(st.story && String(st.story.id) !== seen); },
     onClose: () => clearInterval(villageChatTimer) });
   let vTick = 0;
   villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
@@ -3585,7 +3607,7 @@ function renderChat(){
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}${wh && !mine && !T && m.to === me.name ? ` <button type="button" class="wrep" data-wrep="${m.id}" title="불편한 귓속말 신고">🚨 신고</button>` : ''}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}${!mine && !T && m.from !== '📮 우체부' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
@@ -3600,7 +3622,7 @@ function renderChat(){
   box.innerHTML = `<div class="ch">
     <div class="ch-top"><div class="ch-rooms">${rooms.map(([k, l]) => `<button type="button" class="${k === room ? 'on' : ''}" data-room="${esc(k)}">${esc(l)}</button>`).join('')}
       ${c.whisper ? `<select id="chatWho"><option value="">＋ 🤫 귓속말 친구</option>${kidsList.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
-      <div class="ch-warn">${T ? '🤫 귓속말은 학생이 🚨 신고한 대화만 볼 수 있어요' : '🤫 귓속말은 둘만 봐요 · 불편한 귓속말은 🚨 신고하면 선생님이 그 대화를 확인해요 · 고운 말만! 💛'}</div></div>
+      <div class="ch-warn">${T ? '🤫 귓속말은 학생이 🚨 신고한 대화만 볼 수 있어요' : '🤫 귓속말은 둘만 봐요 · 불편한 말은 옆의 🚨를 누르면 선생님이 확인해요 · 고운 말만! 💛'}</div></div>
     <div class="ch-log" id="chatLog">${logHtml}</div>
     ${!c.open ? `<div class="chat-off">🌙 지금은 대화 쉬는 시간이에요 (${esc(c.start)}~${esc(c.end)})</div>`
       : chat.muted ? '<div class="chat-off">🔇 선생님이 잠시 대화 쓰기를 막아 두었어요</div>'
@@ -3933,6 +3955,8 @@ function tRender(){
         <div class="sc-kinds">${K.map(([k, l]) => `<label><input type="checkbox" data-sck="${k}" ${c.news.kinds[k] !== false ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <div class="box sc-box"><div class="box-head">📢 확성기</div><div class="hint">학생이 냥코인으로 사서 마을 · 교실 화면 맨 위에 띄워요</div>
         <label class="sc-row"><input type="checkbox" id="scMegaOn" ${c.mega.on ? 'checked' : ''}> 팔기 · <input type="number" id="scMegaMin" min="1" max="1440" value="${c.mega.min}"> 분 동안 보이기</label></div>
+      <div class="box sc-box"><div class="box-head">💌 to. 시내T</div><div class="hint">끄면 학생은 질문 · 건의 · 상담을 못 보내요 (로그인 안 될 때 연락은 그대로 · 신고는 대화 · 냥이 카드에서)</div>
+        <label class="sc-row"><input type="checkbox" id="scAskOpen" ${c.askOpen ? 'checked' : ''}> 학생에게 열기</label></div>
       <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
         <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
       <div class="box sc-box"><div class="box-head">📖 안내 사이트</div>
@@ -4104,13 +4128,15 @@ document.addEventListener('click', e => {
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
     const data = { news: { on: $('scNewsOn').checked, min: +$('scNewsMin').value || 60, kinds }, mega: { on: $('scMegaOn').checked, min: +$('scMegaMin').value || 60 },
-      closingAt: $('scClosingAt').value || '', guideVer: $('scGuideVer').value.trim(), guideNotes: $('scGuideNotes').value.trim() };
+      askOpen: $('scAskOpen').checked, closingAt: $('scClosingAt').value || '', guideVer: $('scGuideVer').value.trim(), guideNotes: $('scGuideNotes').value.trim() };
     tOps([{ op:'stuCfgSet', data }], '💾 학생 화면 설정을 저장했어요').then(ok => { if (ok){ pull(true); tLoad(); } }); return;
   }
   { const x = t.closest('[data-stk]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stk}의 지금 제한을 풀까요? (횟수는 그대로)`)) tOps([{ op:'strikeSet', name: x.dataset.stk, reset:false }], '🔓 제한을 풀었어요').then(() => tLoad()); return; } }
   { const x = t.closest('[data-stkr]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
   { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
   if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
+  { const w = t.closest('[data-mrep]'); if (w){ if (!confirm('이 말을 신고할까요?\n선생님이 확인해요. (장난 신고는 안 돼요!)')) return;
+      studentCall('msgReport', { id: Number(w.dataset.mrep) }).then(j => toast(j && j.ok && !j.error ? (j.already ? '이미 신고했어요' : '🚨 신고했어요. 선생님이 확인할게요') : '다시 해 주세요')).catch(() => toast('연결이 안 돼요')); return; } }
   { const w = t.closest('[data-wrep]'); if (w){ if (!confirm('이 귓속말을 신고할까요?\n선생님이 이 대화 앞뒤를 확인해요. (장난 신고는 안 돼요!)')) return;
       studentCall('wReport', { id: Number(w.dataset.wrep) }).then(j => toast(j && j.ok && !j.error ? (j.already ? '이미 신고한 귓속말이에요' : '🚨 신고했어요. 선생님이 확인할게요') : '다시 해 주세요')).catch(() => toast('연결이 안 돼요')); return; } }
   { const gs = t.closest('[data-gosub]'); if (gs){ subPicked.notice = true; showSub('notice', gs.dataset.gosub); window.scrollTo(0, 0); return; } }
@@ -4154,6 +4180,9 @@ document.addEventListener('click', e => {
   if (t.closest('[data-mback]')){ mailInbox(); return; }
   { const x = t.closest('[data-msend]'); if (x){ mailSend(x.dataset.msend); return; } }
   if (t.closest('[data-mailme]')){ openMail(me.name); return; }
+  { const x = t.closest('[data-rwhy]'); if (x){ document.querySelectorAll('#repWhy button').forEach(b => b.classList.toggle('on', b === x)); return; } }
+  { const x = t.closest('[data-repsend]'); if (x){ reportSend(x.dataset.repsend); return; } }
+  if (t.closest('[data-vgo]')){ bClose('storyOv'); enterVillage(); return; }
   if (t.closest('[data-mstory]')){ openStory(); return; }
   { const x = t.closest('[data-sopt]'); if (x){ storyAns(x.dataset.sopt); return; } }
   if (t.closest('[data-sans]')){ storyAns(($('storyText').value || '').trim()); return; }
