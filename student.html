@@ -196,6 +196,8 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .sp-banner small{color:var(--ink-soft);font-size:.85rem;}
 .sp-butler{background:#FFE3EE;border:2px solid var(--ink);border-radius:999px;padding:4px 14px;margin-bottom:10px;text-align:center;}
 .lockbox{position:relative;} .lockbox > *:not(.box-head):not(.lock-note){opacity:.35;pointer-events:none;filter:grayscale(.6);}
+#asStuBar{display:none;position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:9000;align-items:center;gap:8px;background:#FFF2BF;border:2px solid var(--ink);border-radius:999px;padding:6px 8px 6px 14px;box-shadow:0 3px 0 var(--ink);font-weight:700;white-space:nowrap;}
+#asStuBar button{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#FFD84D;padding:4px 12px;cursor:pointer;font-weight:700;}
 .lock-note{text-align:center;font-size:1.25rem;background:#FFF2BF;border:2px dashed var(--ink);border-radius:14px;padding:10px;margin:6px 0 10px;}
 .lock-note small{display:block;font-size:.85rem;color:var(--ink-soft);margin-top:2px;}
 .ms.picked{background:#FFF6DA;border-radius:10px;} .ms.dim{opacity:.45;} .ms-group small{font-size:.8rem;color:var(--ink-soft);}
@@ -231,6 +233,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </style>
 </head>
 <body>
+<div id="asStuBar"><span>👀 학생 화면으로 보는 중</span><button type="button" id="asStuBack">👑 선생님 화면으로</button></div>
 <div class="wrap">
   <div class="top">
     <div class="hana-wrap" id="hanaBtn" title="하나를 눌러 보세요"><canvas id="mascot" class="pix" width="16" height="16"></canvas><div id="hanaWear" class="hana-wear"></div><div id="hanaSay" class="hana-say"></div></div>
@@ -2725,13 +2728,12 @@ function renderAsk(){
   const box = $('askBox'); if (!box) return;
   if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 질문이나 건의를 보낼 수 있어요</div>'; return; }
   const ae = document.activeElement && document.activeElement.id;
-  if ((ae === 'askText' || ae === 'askKind' || ae === 'askAnon') && box.dataset.n === String(asks.length) && box.dataset.r === JSON.stringify(asks.map(a => a.reply))) return;
+  if ((ae === 'askText' || ae === 'askKind') && box.dataset.n === String(asks.length) && box.dataset.r === JSON.stringify(asks.map(a => a.reply))) return;
   box.dataset.n = String(asks.length); box.dataset.r = JSON.stringify(asks.map(a => a.reply));
-  const kindNow = $('askKind') ? $('askKind').value : '질문', anonNow = $('askAnon') ? $('askAnon').checked : false;
+  const kindNow = $('askKind') ? $('askKind').value : '질문';
   const draft = $('askText') ? $('askText').value : '';
   const qa = asks.filter(a => a.kind === '질문' || a.kind === '건의');
-  box.innerHTML = `<div class="ask-row"><select id="askKind"><option ${kindNow === '질문' ? 'selected' : ''}>질문</option><option ${kindNow === '건의' ? 'selected' : ''}>건의</option></select>
-      <label class="hint"><input type="checkbox" id="askAnon" ${anonNow ? 'checked' : ''}> 🙈 선생님 화면에 이름 없이 보내기</label></div>
+  box.innerHTML = `<div class="ask-row"><select id="askKind"><option ${kindNow === '질문' ? 'selected' : ''}>질문</option><option ${kindNow === '건의' ? 'selected' : ''}>건의</option></select></div>
     <textarea id="askText" rows="3" maxlength="300" placeholder="궁금한 점이나 우리 반에 바라는 점을 적어 주세요">${esc(draft)}</textarea>
     <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-mint" id="askSend">📮 보내기</button></div>
     <div class="hint" style="margin:8px 0 4px;">내가 보낸 질문 (나만 볼 수 있어요)</div>
@@ -2741,6 +2743,10 @@ function renderAsk(){
 /* 💬 상담 · ⭐ 중요 */
 function renderCounsel(){
   const box = $('counselBox'); if (!box) return;
+  const outer = box.closest('.box'), LKc = (((coin && coin.economy) || {}).locked || {}).counsel !== false && !tLike();
+  if (outer){ outer.classList.toggle('lockbox', LKc); let ln = outer.querySelector('.lock-note');
+    if (LKc && !ln){ ln = document.createElement('div'); ln.className = 'lock-note'; ln.innerHTML = '🔒 아직 사용할 수 없어요<small>준비 중이에요! 선생님께 할 이야기가 있으면 직접 말로 해 주세요 🐾</small>'; outer.querySelector('.box-head').after(ln); }
+    if (!LKc && ln) ln.remove(); }
   if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 상담을 신청할 수 있어요</div>'; return; }
   const mine = asks.filter(a => a.kind === '상담' || a.kind === '긴급');
   const sig = JSON.stringify(mine.map(a => [a.id, a.reply, a.done]));
@@ -2776,7 +2782,7 @@ async function askSend(){
   if (!text){ toast('내용을 적어 주세요'); return; }
   $('askSend').disabled = true;
   try {
-    const j = await studentCall('askSend', { kind: $('askKind').value, text, anon: $('askAnon').checked });
+    const j = await studentCall('askSend', { kind: $('askKind').value, text });
     if (j.ok && !j.error){ $('askText').value = ''; toast('선생님께 보냈어요 📮'); }
     else toast(j.error === 'slow' ? '조금 있다가 다시 보내 주세요' : '보내지 못했어요');
     if (j.ok){ asks = j.asks || []; renderAsk(); }
@@ -2835,7 +2841,7 @@ function renderCoin(){
       : `<button type="button" data-buy="${it.id}" ${(!coin.unlimited && coin.balance < it.price) || left === 0 ? 'disabled' : ''}>${left === 0 ? '품절' : '사기'}</button>`;
     return `<div class="shop-item ${owned ? 'owned' : ''}">${['house', 'decor'].includes(it.cat) ? `<span data-spr="${it.id}"></span>` : ''}<div>${esc(it.name)}</div><div class="pr">${it.price} 🐾${left != null ? ` · 남은 ${Math.max(0, left)}개` : ''}</div>${btn}</div>`;
   }).join('') || '<div class="empty">상품이 없어요</div>';
-  const g = eco.game, LK = eco.locked || {}, TT = coin.unlimited, LKm = LK.missions && !TT, LKs = LK.shop && !TT;
+  const g = eco.game, LK = eco.locked || {}, TT = tLike(), LKm = LK.missions && !TT, LKs = LK.shop && !TT;
   const lockNote = '<div class="lock-note">🔒 아직 사용할 수 없어요<small>준비 중이에요! 냥코인은 출석·영어 등으로 계속 모을 수 있어요 🐾</small></div>';
   box.innerHTML = `
     <div class="box"><div class="box-head">🐾 내 냥코인</div>
@@ -2916,12 +2922,21 @@ async function tLogin(){
     tOn(); showTab('admin'); toast('👑 선생님 모드');
   } catch(e){ tKey = ''; $('tErr').textContent = '연결이 안 돼요'; }
 }
-function tOn(){ document.querySelector('.tab-t').style.display = ''; }
-function tOff(quiet){ tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
+let viewAsStudent = sessionStorage.getItem('nyangAsStudent') === '1';
+function tLike(){ return !!((coin && coin.unlimited) || (me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) && !viewAsStudent; }   // 선생님 특권(잠금 풀림)이 보이는지
+function tOn(){ document.querySelector('.tab-t').style.display = viewAsStudent ? 'none' : ''; $('asStuBar').style.display = viewAsStudent ? 'flex' : 'none'; }
+function setAsStudent(on){
+  viewAsStudent = !!on; sessionStorage.setItem('nyangAsStudent', on ? '1' : '');
+  tOn(); if (on && current === 'admin') showTab('notice');
+  if (!on){ showTab('admin'); }
+  render(); renderCounsel(); if (current === 'coin' && typeof renderCoin === 'function') renderCoin();
+  toast(on ? '👀 학생 화면으로 보는 중이에요' : '👑 선생님 화면으로 돌아왔어요');
+}
+function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsStudent'); $('asStuBar').style.display = 'none'; tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
 const T_TABS = [['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['eng', '📚 영어'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기'], ['safe', '🛟 안전']];
 function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
 async function tLoad(){
-  $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tOffBtn" class="off">로그아웃</button>';
+  $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button>';
   $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
   try {
     if (tTab === 'ask') tData.asks = (await tCall({ action:'asks' })).asks || [];
@@ -3028,7 +3043,9 @@ async function tPoll(){
 function tPeriod(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
 document.addEventListener('click', async e => {
   const t = e.target;
+  if (t.closest('#asStuBack')){ setAsStudent(false); return; }
   if ((!tKey && !tAuthByLogin) || !t.closest('#p-admin')) return;
+  if (t.closest('#tAsStuBtn')){ setAsStudent(true); return; }
   if (t.closest('#tOffBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const tb = t.closest('[data-ttab]'); if (tb){ tTab = tb.dataset.ttab; tLoad(); return; }
   // 상담·질문
