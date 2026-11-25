@@ -1074,7 +1074,10 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
     <div class="section">
       <div class="section-title">🔒 관리자 비밀번호</div>
-      <div class="row"><span>설정·관리자 모드를 열 때 물어봐요 (비워 두면 잠그지 않아요)</span><input type="password" inputmode="numeric" id="adminPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
+      <div class="row"><span>👑 <b>관리자</b> (마스터키 · 모든 잠금 해제) <small>비워 두면 잠그지 않아요</small></span><input type="password" inputmode="numeric" id="adminPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
+      <div class="row"><span>📢 <b>부관리자</b> · 화면의 <b>오늘의 알림·중요 공지</b>만 고칠 수 있어요</span><input type="password" inputmode="numeric" id="subPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
+      <div class="row"><span>⏰ <b>지각 관리자</b> · 냥이 카드의 <b>출석·지각·결석</b>만 고칠 수 있어요 (OO쌤 카드 제외)</span><input type="password" inputmode="numeric" id="latePinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
+      <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
     </div>
 
     <div class="section">
@@ -1729,6 +1732,7 @@ function recFur(rec, ch, name, ds){
 function recColors(rec, name, ds, lv){
   const ch = recChar(rec, name, ds);
   if (!ch) return houseColors();
+  if (name && isTeacherName(name)) return lookColors(name, lv || levelInfo(seasonExpMap()[name] || 0).lv);   // 👑 선생님 냥이는 언제나 직접 꾸민 모습
   const col = catColors(ch, recFur(rec, ch, name, ds));
   // 학생이 꾸미기 방에서 고른 아이템을 뽑힌 냥이에게도 입혀 줘요
   if (name && db.students.includes(name)){
@@ -1773,6 +1777,8 @@ function mergeInto(parsed){
   if (parsed.looks && typeof parsed.looks === 'object') db.looks = parsed.looks;
   if (Array.isArray(parsed.closing)) db.closing = parsed.closing;
   if (typeof parsed.adminPin === 'string') db.adminPin = parsed.adminPin;
+  if (typeof parsed.subPin === 'string') db.subPin = parsed.subPin;
+  if (typeof parsed.latePin === 'string') db.latePin = parsed.latePin;
 }
 function loadDB(){
   let saved = localStorage.getItem(DB_KEY), migrated = false;
@@ -1920,8 +1926,8 @@ function renderGrid(){
       card.append(cv);
       card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
-      card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name)); });
-      card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name)); });
+      card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name), isTeacherName(name) ? [] : ['late']); });
+      card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
     } else {
       const tk = recTier(rec), meta = TIER_META[tk];
       card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
@@ -1937,7 +1943,7 @@ function renderGrid(){
         `<div class="student-name">${numTag(nums, name)}${esc(name)}</div>` +
         `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button>${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
       card.title = recCharName(rec, name, ds);
-      card.querySelector('.time-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name)); });
+      card.querySelector('.time-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
     }
     card.classList.add('lv-' + li.lv);
     card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
@@ -2710,7 +2716,7 @@ function editText(kind){
     $('teHint').textContent = kind === 'notices' ? '한 줄에 하나씩 · 메모지에 순서대로 나타나요 (4줄 이하 권장)' : "한 줄에 하나씩 · '종례하기' 화면과 학생 페이지에 떠요";
     $('teInput').value = (db[kind] || []).join('\n');
     $('textEditOverlay').style.display = 'flex'; setTimeout(() => $('teInput').focus(), 50);
-  });
+  }, kind === 'notices' || kind === 'urgent' ? ['sub'] : []);
 }
 function saveTextEdit(){
   if (teKind === 'urgent'){
@@ -2840,7 +2846,9 @@ function renderClosing(){
 /* =========================================================
    🔒 비밀번호 · 👑 관리자 모드
    ========================================================= */
-let pinUntil = 0, pinNext = null;
+let pinUntil = 0, pinNext = null, pinRoles = [];
+const pinRoleUntil = { sub: 0, late: 0 };
+const PIN_ROLE_NAME = { sub:'부관리자', late:'지각 관리자' };
 let kidPin = null;   // 🎨 꾸미기 방: 그 학생의 로그인 비밀번호(또는 관리자 비밀번호)
 function requireKidPin(name, fn, onCancel){
   kidPin = { name, fn, onCancel }; pinNext = null;
@@ -2866,18 +2874,22 @@ async function checkKidPin(){
     $('pinInput').value = ''; $('pinInput').focus();
   } catch(e){ $('pinHint').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
-function requirePin(fn){
-  if (!db.adminPin || Date.now() < pinUntil){ fn(); return; }
-  kidPin = null; $('pinTitle').textContent = '🔒 선생님 확인';
-  pinNext = fn; $('pinInput').value = ''; $('pinHint').textContent = '관리자 비밀번호를 입력해 주세요';
+/* 🔒 roles: 이 일을 할 수 있는 다른 비밀번호 ('sub' 부관리자 · 'late' 지각 관리자). 관리자(마스터키)는 언제나 돼요 */
+function requirePin(fn, roles){
+  roles = (roles || []).filter(r => db[r + 'Pin']);
+  if (!db.adminPin || Date.now() < pinUntil || roles.some(r => Date.now() < pinRoleUntil[r])){ fn(); return; }
+  kidPin = null; $('pinTitle').textContent = '🔒 선생님 확인'; pinRoles = roles;
+  pinNext = fn; $('pinInput').value = ''; $('pinHint').textContent = roles.length ? `관리자 또는 ${roles.map(r => PIN_ROLE_NAME[r]).join('·')} 비밀번호를 입력해 주세요` : '관리자 비밀번호를 입력해 주세요';
   $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
 }
 function checkPin(){
   if (kidPin) return checkKidPin();
-  if ($('pinInput').value === db.adminPin){
-    pinUntil = Date.now() + 60 * 60 * 1000;      // 1시간 동안 다시 묻지 않아요
+  const v = $('pinInput').value, role = pinRoles.find(r => db[r + 'Pin'] && v === db[r + 'Pin']);
+  if (v === db.adminPin || role){
+    if (v === db.adminPin) pinUntil = Date.now() + 60 * 60 * 1000;      // 1시간 동안 다시 묻지 않아요
+    else pinRoleUntil[role] = Date.now() + 10 * 60 * 1000;               // 부관리자·지각 관리자는 10분
     $('pinOverlay').style.display = 'none';
-    const f = pinNext; pinNext = null; f && f();
+    const f = pinNext; pinNext = null; pinRoles = []; f && f();
   } else { $('pinHint').textContent = '❌ 비밀번호가 달라요'; $('pinInput').value = ''; $('pinInput').focus(); }
 }
 
@@ -3462,7 +3474,7 @@ function openAdminUI(){
   $('lateTimeInput').value = db.lateTimeSetting;
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
-  $('adminPinInput').value = db.adminPin || '';
+  $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
   const ac = db.alarmConfig;
   $('alarm1EnableInput').checked = !!ac.alarm1Enable;
@@ -3495,6 +3507,9 @@ function readAudioFile(file){
   });
 }
 async function saveAdminData(){
+  { const ap = $('adminPinInput').value.trim(), sp = $('subPinInput').value.trim(), lp = $('latePinInput').value.trim();
+    if ((sp && sp === ap) || (lp && lp === ap) || (sp && sp === lp)){ alert('관리자·부관리자·지각 관리자 비밀번호는 서로 달라야 해요.'); return; }
+    if ((sp || lp) && !ap){ alert('부관리자·지각 관리자 비밀번호를 쓰려면 관리자 비밀번호도 정해 주세요.'); return; } }
   const students = normalizeStudents($('studentNamesInput').value);
   if (!students.length){ alert('친구를 한 명 이상 입력해 주세요.'); return; }
   const late = $('lateTimeInput').value;
@@ -3524,6 +3539,7 @@ async function saveAdminData(){
   db.expTiers = tiers;
   db.sfx = $('sfxInput').checked;
   db.adminPin = $('adminPinInput').value.trim();
+  db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
   db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
   let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
@@ -3681,7 +3697,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -3718,6 +3734,8 @@ function applyConfig(c){
   if (c.looks && typeof c.looks === 'object') db.looks = c.looks;
   if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
+  if (typeof c.subPin === 'string') db.subPin = c.subPin;
+  if (typeof c.latePin === 'string') db.latePin = c.latePin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
   if (typeof c.urgent === 'string' && c.urgent !== db.urgent && !(sync.api >= 10)){ db.urgent = c.urgent; setTimeout(renderUrgent, 0); }
