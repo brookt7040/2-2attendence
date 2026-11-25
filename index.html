@@ -1224,7 +1224,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="row"><span>📢 <b>부관리자</b> · 화면의 <b>오늘의 알림·중요 공지</b>만 고칠 수 있어요</span><input type="password" inputmode="numeric" id="subPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
       <div class="row"><span>⏰ <b>지각 관리자</b> · 냥이 카드의 <b>출석·지각·결석</b>만 고칠 수 있어요 (OO쌤 카드 제외)</span><input type="password" inputmode="numeric" id="latePinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
-      <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"></div>
+      <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
     </div>
 
@@ -6576,6 +6576,11 @@ function bindEvents(){
     const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
     const a = e.target.closest('[data-nadd]'); if (a){ if ((a.dataset.nadd === 'swear' || a.dataset.nadd === 'classlate') && !noteRoleOk(a.dataset.nadd)) return; addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
     const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
+  });
+  $('gateTestBtn').addEventListener('click', () => {
+    if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
+    if (!confirm('이 기기의 입장 기록을 지우고 처음 접속한 것처럼 다시 열어요.\n코드를 넣으면 바로 들어올 수 있어요.')) return;
+    try { localStorage.removeItem(GATE_KEY); } catch(e){} location.reload();
   });
   $('syncPullBtn').addEventListener('click', () => adoptSync('pull'));
   $('syncPushBtn').addEventListener('click', () => adoptSync('push'));
