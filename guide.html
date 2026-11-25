@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2-2 온라인 학급 · 사용 안내</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>2-2😻 온라인 학급</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icons/favicon-64.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-title" content="2-2😻"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#FFE58A">
 <style>
 @font-face{font-family:'NeoDunggeunmo';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');font-weight:normal;font-style:normal;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -72,6 +72,15 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 #sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
 @keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 .inst{max-width:100%;margin:0 0 1.6rem;background:#fff;border:0.19rem solid #5B4636;border-radius:1.4rem;box-shadow:0 0.3rem 0 #5B4636;overflow:hidden;}
+.inst-top{display:flex;align-items:center;gap:1rem;padding:1.1rem 1.4rem;background:#E8ECFF;flex-wrap:wrap;}
+.inst-top b{display:block;font-size:1.8rem;font-weight:normal;} .inst-top small{display:block;font-size:1.2rem;color:#8A7563;margin-top:.2rem;}
+.inst-top div{flex:1;min-width:16rem;}
+#instBtn{font-family:inherit;font-size:1.8rem;border:0.19rem solid #5B4636;border-radius:1.2rem;background:#FFE58A;color:#5B4636;padding:.6rem 1.6rem;cursor:pointer;box-shadow:0 0.3rem 0 #5B4636;white-space:nowrap;}
+#instBtn:active{transform:translateY(0.2rem);box-shadow:0 0.1rem 0 #5B4636;}
+.inst-body[hidden],.inst-msg[hidden],.inst-ios-link[hidden]{display:none !important;}
+.inst-ios-link{display:block;margin:.2rem 0 0;font-family:inherit;font-size:1.2rem;background:none;border:none;color:#6B62A0;text-decoration:underline;cursor:pointer;padding:0;}
+.inst-msg{padding:.8rem 1.4rem;font-size:1.35rem;background:#FFF8DA;}
+.inst-ol{margin:.4rem 0 0;padding-left:2rem;font-size:1.4rem;line-height:1.8;} .inst-ol li{padding-left:0;} .inst-ol li::before{content:none;}
 .inst summary{cursor:pointer;list-style:none;padding:1rem 1.4rem;font-size:1.7rem;background:#E8ECFF;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
 .inst summary::-webkit-details-marker{display:none;}
 .inst summary .inst-tip{margin-left:auto;font-size:1.2rem;color:#8A7563;}
@@ -87,14 +96,19 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <h1>🐾 온라인 학급<span class="ver" id="gVer"></span></h1><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p>
 <div class="upd" id="gUpd" style="display:none;"><button type="button" id="gUpdBtn">📝 업데이트 내역</button><ul id="gUpdList" hidden></ul></div></div>
 
-<details class="inst"><summary>📲 이 페이지를 <b>바탕화면 · 홈 화면</b>에 추가하기 <span class="inst-tip">눌러서 보기</span></summary>
-<div class="inst-body">
-<div class="inst-c"><h3>💻 디벗 · 컴퓨터 (크롬)</h3><p>오른쪽 위 <b>⋮</b> → <b>전송, 저장, 공유</b> → <b>바로가기 만들기</b> → <b>"창으로 열기"</b> 체크 → 만들기</p></div>
+<div class="inst">
+<div class="inst-top"><div><b>📲 2-2😻 앱으로 설치하기</b><small>바탕화면 · 홈 화면에 하나 아이콘이 생기고, 누르면 이 안내 페이지가 열려요</small><button type="button" class="inst-ios-link" id="instIosLink">🍎 아이폰 · 아이패드는 여기를 눌러 방법 보기</button></div>
+<button type="button" id="instBtn">📲 설치하기</button></div>
+<div class="inst-msg" id="instMsg" hidden></div>
+<div class="inst-body" id="instIos" hidden>
+<div class="inst-c" style="grid-column:1/-1;"><h3>🍎 아이폰 · 아이패드는 버튼으로 설치가 안 돼요! 아래 순서대로 해 주세요</h3>
+<ol class="inst-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 □↑</b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
+<div class="inst-body" id="instManual" hidden>
+<div class="inst-c"><h3>💻 디벗 · 컴퓨터 (크롬)</h3><p>오른쪽 위 <b>⋮</b> → <b>전송, 저장, 공유</b> → <b>페이지를 앱으로 설치</b> (또는 바로가기 만들기 → "창으로 열기" 체크)</p></div>
 <div class="inst-c"><h3>💻 디벗 · 컴퓨터 (엣지)</h3><p>오른쪽 위 <b>⋯</b> → <b>앱</b> → <b>이 사이트를 앱으로 설치</b></p></div>
-<div class="inst-c"><h3>📱 안드로이드 · 갤럭시탭</h3><p>크롬 오른쪽 위 <b>⋮</b> → <b>홈 화면에 추가</b></p></div>
-<div class="inst-c"><h3>🍎 아이폰 · 아이패드</h3><p>사파리 아래쪽 <b>공유 버튼 □↑</b> → <b>홈 화면에 추가</b></p></div>
-<p class="inst-note">이 안내 페이지 하나만 추가하면 돼요. 여기서 내 화면 · 출석부로 다 갈 수 있어요!</p>
-</div></details>
+<div class="inst-c" style="grid-column:1/-1;"><h3>📱 안드로이드 · 갤럭시탭</h3><p>크롬 오른쪽 위 <b>⋮</b> → <b>홈 화면에 추가</b> 또는 <b>앱 설치</b></p></div>
+</div>
+</div>
 <div class="go">
 <a class="a1" href="student.html?api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">🐱</span>내 화면 가기<small>로그인 · 꾸미기 · 냥이 마을</small></a>
 <a class="a2" href="index.html?view=1&amp;api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">📋</span>출석부 보러가기<small>오늘 출석 현황 (입장 코드 필요)</small></a>
@@ -158,6 +172,25 @@ function sleepShow(cfg, on){
 }
 </script>
 <div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat">🌙<span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p></div>
+<script>
+/* 📲 앱 설치 (크롬 · 엣지 · 안드로이드는 버튼 한 번 · 아이폰 · 아이패드는 직접) */
+let instEvt = null;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isApp = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); instEvt = e; });
+addEventListener('appinstalled', () => { instMsg('🎉 설치 완료! 바탕화면 · 홈 화면의 <b>2-2😻</b> 아이콘을 눌러 열어요'); });
+function instMsg(h){ const m = document.getElementById('instMsg'); m.innerHTML = h; m.hidden = false; }
+if (isApp) document.querySelector('.inst').style.display = 'none';
+if (isIOS){ document.getElementById('instIos').hidden = false; document.getElementById('instIosLink').hidden = true; }
+document.getElementById('instIosLink').onclick = () => { const x = document.getElementById('instIos'); x.hidden = !x.hidden; };
+document.getElementById('instBtn').onclick = async () => {
+  if (isIOS){ document.getElementById('instIos').hidden = false; instMsg('🍎 아이폰 · 아이패드는 아래 순서대로 직접 추가해 주세요'); return; }
+  if (instEvt){ instEvt.prompt(); const r = await instEvt.userChoice; instEvt = null; if (r.outcome !== 'accepted') instMsg('설치를 취소했어요. 다시 누르면 또 물어봐요'); return; }
+  document.getElementById('instManual').hidden = false;
+  instMsg('이 브라우저는 버튼 설치가 안 되거나, 이미 설치돼 있어요. 아래 방법으로 직접 추가해 주세요');
+};
+</script>
 <script>
 (async () => {
   try {
