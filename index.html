@@ -723,10 +723,10 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .gate-box{text-align:center;max-width:380px;}
 .gate-box h2{margin:6px 0;}
 .gate-box .pin-input{margin:10px auto 4px;display:block;}
-body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openClosingBtn,body.view-mode #openVillageBtn,
-body.view-mode .mini-menu,body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .closet-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
+body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode .closing-reset,
+body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .closet-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
-body.view-mode #urgentBox{pointer-events:none;}
+body.view-mode #urgentBox,body.view-mode #cleanSide,body.view-mode #mascotBubble,body.view-mode #mascot,body.view-mode #closingList,body.view-mode #closingExtra{pointer-events:none;}
 body.view-mode .card.waiting{cursor:default;}
 .note-side{grid-column:1 / 3;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#FFFFFF;border:2px solid #CDBBA8;border-radius:16px;padding:8px 10px;box-shadow:0 3px 0 rgba(91,70,54,.12);cursor:pointer;font-size:.9rem;}
 .note-side:hover{border-color:var(--ink);}
@@ -3076,7 +3076,7 @@ function renderClosing(){
   const list = (db.closing || []).filter(t => t && t.trim());
   $('closingList').innerHTML = list.length
     ? list.map((t, i) => `<div class="closing-item ${closingChecked[i] ? 'done' : ''}" data-ci="${i}"><div class="closing-num">${closingChecked[i] ? '✔' : i + 1}</div><div class="closing-text">${esc(t)}</div></div>`).join('')
-    : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>';
+    : (VIEW ? '<div class="closing-empty">오늘 종례 내용이 아직 없어요</div>' : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>');
   const cleaners = kids().filter(isCleaner);
   $('closingExtra').innerHTML = cleaners.length
     ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> Cleaning Duty <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}${swearToday(n) ? ' 🤬' : ''}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스이거나 고운 말을 안 쓴 친구들! 깨끗하게 부탁해 🐾</div></div>`
@@ -6547,7 +6547,7 @@ function bindEvents(){
   $('closetItems').addEventListener('click', onClosetClick);
   $('closetDoneBtn').addEventListener('click', closeCloset);
   $('closetXBtn').addEventListener('click', closeCloset);
-  $('openClosingBtn').addEventListener('click', () => requirePin(openClosing));
+  $('openClosingBtn').addEventListener('click', () => VIEW ? openClosing() : requirePin(openClosing));
   bindMeeting();
   $('closingCloseBtn').addEventListener('click', () => { $('closingOverlay').style.display = 'none'; });
   $('closingList').addEventListener('click', e => { const it = e.target.closest('[data-ci]'); if (!it) return; closingChecked[it.dataset.ci] = !closingChecked[it.dataset.ci]; renderClosing(); });
@@ -6648,7 +6648,7 @@ function gateCheckTimer(){
   }, 30000);
 }
 /* 👀 보기 전용 (학생 페이지 → 출석부 보러가기): 서버에서 오늘 출석만 받아 와서 보여줘요. 아무것도 바꾸지 않아요 */
-let viewCode = '', viewExp = {};
+let viewCode = '', viewExp = {}, viewClean = [];
 async function viewFetch(code){
   const r = await fetch(`${VIEW.api}?board=1&gate=${encodeURIComponent(code)}&t=${Date.now()}`, { redirect:'follow' });
   return r.json();
@@ -6664,7 +6664,9 @@ function viewApply(j){
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
   db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
-  applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder();
+  viewClean = Array.isArray(j.clean) ? j.clean : [];
+  db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
+  applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();
 }
 async function viewGate(){
   showGate(async v => {
@@ -6675,7 +6677,7 @@ async function viewGate(){
 async function viewStart(){
   document.body.classList.add('view-mode');
   seasonExpMap = () => viewExp;
-  saveDB = () => {}; syncOp = () => {}; requirePin = () => {}; checkAlarms = () => {};
+  saveDB = () => {}; syncOp = () => {}; requirePin = () => {}; checkAlarms = () => {}; isCleaner = n => viewClean.includes(n);
   db.students = []; db.records = {}; renderGrid();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); } catch(e){}
   const tryCode = saved && Date.now() < saved.until ? saved.code : '';
