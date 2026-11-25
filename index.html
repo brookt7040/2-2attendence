@@ -309,8 +309,7 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .wk-edit .we-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .wk-edit .we-b button{font-family:inherit;font-size:.95rem;border:2px solid var(--ink);border-radius:999px;background:#FFE58A;padding:4px 12px;cursor:pointer;color:var(--ink);}
 .wk-edit .we-b button.g{background:#fff;margin-left:auto;}
-.clean-add{font-family:inherit;font-size:.9rem;line-height:1;border:2px solid #CDBBA8;border-radius:999px;background:#fff;color:var(--ink);width:24px;height:24px;margin-left:8px;cursor:pointer;vertical-align:middle;padding:0;}
-.clean-add:hover{border-color:var(--ink);background:#FFF3C4;}
+
 .ca-modal{max-width:640px;width:92vw;}
 .ca-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:10px;}
 .ca-grid button{font-family:inherit;font-size:1.05rem;border:2px solid #E6D9CA;border-radius:12px;background:#fff;padding:8px 4px;cursor:pointer;color:var(--ink);}
@@ -3129,7 +3128,7 @@ function renderMenuBoard(){
   box.innerHTML = html;
   const side = $('cleanSide');
   if (side) side.classList.toggle('empty', !cleaners.length);
-  if (side) side.innerHTML = `<div class="t">🧹 Cleaning Duty<button type="button" class="clean-add" data-cleanadd title="청소 당번 추가 · 빼기 (관리자)">＋</button></div>` + (cleaners.length
+  if (side) side.innerHTML = `<div class="t" style="display:flex;align-items:center;">🧹 Cleaning Duty<button type="button" class="clean-add edit-mini" data-cleanadd title="청소 당번 추가 · 빼기 (관리자)" style="margin-left:auto;">✏️</button></div>` + (cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! ✨</span>');
   renderNoteSide();
