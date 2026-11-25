@@ -761,7 +761,7 @@ body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openCl
   .header-left,.side-btns{display:contents;}
   .title-row{order:0;} .mini-menu{order:1;}
   .header-right{display:contents;} .header-right > *{order:4;} .header-right > .date-row,.header-right > .clock-panel{order:2;} #urgentBox{order:3;}
-  .header-mid{order:5;} #cleanSide{order:6;margin-top:22px;} #openMeetingBtn{order:7;max-width:none;} #openClosingBtn{order:7;max-width:none;}
+  .header-mid{order:5;} #cleanSide{order:6;margin-top:22px;} #mealSide,#hwSide{order:6;} #openMeetingBtn{order:7;max-width:none;} #openClosingBtn{order:7;max-width:none;}
 }
 
 @media (max-width:1100px){
@@ -896,7 +896,20 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #mhBody .hw-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:2px dashed #EFE3D3;}
 #mhBody .hw-add input{font-family:inherit;font-size:1rem;border:2px solid #CDBBA8;border-radius:10px;padding:5px 8px;}
 #mhBody .mh-empty{color:var(--ink-soft);text-align:center;padding:14px;}
-body.view-mode #mealBtn,body.view-mode #hwBtn{pointer-events:auto;}
+body.view-mode #mealSide,body.view-mode #hwSide{pointer-events:auto;}
+body.view-mode .mh-side.empty{display:none !important;}
+.mh-side{background:#FFFDF6;border:3px solid var(--ink);border-radius:18px;padding:10px 12px;box-shadow:0 5px 0 var(--ink);cursor:pointer;min-width:0;}
+.mh-side:hover{transform:translateY(-2px);}
+.mh-side .t{font-size:1.05rem;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.mh-side .t .tag{border-radius:999px;padding:2px 12px;border:2px solid var(--ink);}
+#mealSide .t .tag{background:#DFF7EE;} #hwSide .t .tag{background:#E8F4FF;}
+.mh-side .mm{font-size:1.15rem;line-height:1.5;white-space:pre-line;word-break:keep-all;}
+.mh-side .hl{display:flex;flex-direction:column;gap:4px;font-size:1.02rem;word-break:keep-all;}
+.mh-side .hl span.dd{font-size:.8rem;border-radius:999px;padding:1px 7px;background:#E8F4FF;border:1px solid #9CC8EE;margin-right:5px;white-space:nowrap;}
+.mh-side .hl span.dd.hot{background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
+.mh-side .hl .sj{color:var(--ink-soft);font-size:.9rem;margin-right:4px;}
+.mh-side.empty{background:#FFFDF6;border:3px dashed #CDBBA8;box-shadow:none;}
+.mh-side.empty .mm,.mh-side.empty .hl{font-size:.95rem;color:var(--ink-soft);}
 </style>
 </head>
 <body>
@@ -936,13 +949,15 @@ body.view-mode #mealBtn,body.view-mode #hwBtn{pointer-events:auto;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><button type="button" class="mini-menu-btn icon" id="mealBtn" title="급식">🍱</button><button type="button" class="mini-menu-btn icon" id="hwBtn" title="숙제">📚</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
           </div></div>
         <div class="side-clean" id="cleanSide"></div>
         <div class="urgent-box" id="urgentBox"></div>
+        <div class="mh-side" id="mealSide" data-mh="meal"></div>
+        <div class="mh-side" id="hwSide" data-mh="hw"></div>
 
       </div>
     </div>
@@ -2520,7 +2535,7 @@ function mealSave(){
   requirePin(() => {
     db.meal = Object.assign({}, db.meal || {});
     document.querySelectorAll('#mhBody [data-meal]').forEach(t => { const d = t.dataset.meal, v = t.value.trim(); if ((db.meal[d] || '') === v) return; if (v) db.meal[d] = v; else delete db.meal[d]; syncOp({ op:'meal', ds: d, text: v }); });
-    saveDB(); showToast('🍱 급식을 저장했어요'); renderMH();
+    saveDB(); showToast('🍱 급식을 저장했어요'); renderMH(); renderMHSide();
   }, ['meal']);
 }
 /* 학생용 출석부: 🍱 급식 관리자 비밀번호로 오늘 급식 쓰기 */
@@ -2531,10 +2546,10 @@ async function mealSaveView(){
   try {
     const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'mealSet', mpin: pin, text }) }), j = await r.json();
     if (!j.ok){ $('mealErr').textContent = j.error === 'wrong' ? '❌ 비밀번호가 달라요' : '저장하지 못했어요 (서버 업데이트가 필요할 수 있어요)'; return; }
-    db.meal = j.meal || {}; mhEdit = false; showToast('🍱 오늘 급식을 저장했어요'); renderMH();
+    db.meal = j.meal || {}; mhEdit = false; showToast('🍱 오늘 급식을 저장했어요'); renderMH(); renderMHSide();
   } catch(e){ $('mealErr').textContent = '연결이 안 돼요'; }
 }
-function hwChange(list){ requirePin(() => { db.hw = list; saveDB(); syncOp({ op:'hw', list }); renderMH(); }); }
+function hwChange(list){ requirePin(() => { db.hw = list; saveDB(); syncOp({ op:'hw', list }); renderMH(); renderMHSide(); }); }
 /* 📚 오늘만 과목 바꾸기: 시간표 칸을 누르면 (관리자) */
 function editTtToday(i){
   requirePin(() => {
@@ -4034,6 +4049,17 @@ function renderNotices(){
    🕐 시계
    ========================================================= */
 /* 📌 중요 공지 (조금 튀게) */
+/* 🍱 오늘 급식 · 📚 숙제 칸 (Must Read 아래) */
+function renderMHSide(){
+  const ms = $('mealSide'), hs = $('hwSide'); if (!ms || !hs) return;
+  const today = getTodayStr(nowD()), menu = ((db.meal || {})[today] || '').trim();
+  ms.classList.toggle('empty', !menu);
+  ms.innerHTML = `<div class="t"><span class="tag">🍱 오늘 급식</span></div><div class="mm">${menu ? esc(menu) : (VIEW ? '' : '✏️ 눌러서 쓰기')}</div>`;
+  const hw = (db.hw || []).filter(h => !h.due || h.due >= today).sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
+  hs.classList.toggle('empty', !hw.length);
+  hs.innerHTML = `<div class="t"><span class="tag">📚 숙제</span>${hw.length > 4 ? `<small style="color:var(--ink-soft);">+${hw.length - 4}</small>` : ''}</div><div class="hl">${hw.length ? hw.slice(0, 4).map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '' : L.diff === 0 ? '오늘' : L.diff === 1 ? '내일' : `D-${L.diff}`;
+    return `<div>${dd ? `<span class="dd ${L.diff <= 1 ? 'hot' : ''}">${dd}</span>` : ''}${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</div>`; }).join('') : (VIEW ? '' : '✏️ 눌러서 쓰기')}</div>`;
+}
 function renderUrgent(){
   const el = $('urgentBox'); if (!el) return;
   const t = (db.urgent || '').trim();
@@ -4078,7 +4104,7 @@ function tick(){
   const ds = getTodayStr(now);
   if (ds !== currentDayStr){
     currentDayStr = ds; noticeChecked = {};
-    updateDate(now); renderNotices(); renderGrid(); updateStatsBoard();
+    updateDate(now); renderNotices(); renderGrid(); updateStatsBoard(); renderMHSide();
   }
   updateReward(now);
   if (now.getSeconds() % 5 === 0) sleepTick();
@@ -4652,8 +4678,8 @@ async function pullSync(force){
       const u = j.urgent.join('\n');
       if (u !== (db.urgent || '') && !sync.queue.some(o => o.op === 'urgent')){ db.urgent = u; saveDB(); renderUrgent(); }
     }
-    if (j.meal && typeof j.meal === 'object' && !sync.queue.some(o => o.op === 'meal') && JSON.stringify(j.meal) !== JSON.stringify(db.meal || {})){ db.meal = j.meal; saveDB(); if ($('mhOv').style.display === 'flex' && mhKind === 'meal' && !document.activeElement.matches('#mhBody textarea')) renderMH(); }
-    if (Array.isArray(j.hw) && !sync.queue.some(o => o.op === 'hw') && JSON.stringify(j.hw) !== JSON.stringify(db.hw || [])){ db.hw = j.hw; saveDB(); if ($('mhOv').style.display === 'flex' && mhKind === 'hw') renderMH(); }
+    if (j.meal && typeof j.meal === 'object' && !sync.queue.some(o => o.op === 'meal') && JSON.stringify(j.meal) !== JSON.stringify(db.meal || {})){ db.meal = j.meal; saveDB(); renderMHSide(); if ($('mhOv').style.display === 'flex' && mhKind === 'meal' && !document.activeElement.matches('#mhBody textarea')) renderMH(); }
+    if (Array.isArray(j.hw) && !sync.queue.some(o => o.op === 'hw') && JSON.stringify(j.hw) !== JSON.stringify(db.hw || [])){ db.hw = j.hw; saveDB(); renderMHSide(); if ($('mhOv').style.display === 'flex' && mhKind === 'hw') renderMH(); }
     if (j.meeting) mtApplyRemote(j.meeting);
     const nl = (j.notices || []);
     if (JSON.stringify(nl) !== JSON.stringify(db.notices) && !sync.queue.some(o => o.op === 'notices')){ db.notices = nl; noticeChecked = {}; changed = true; }
@@ -7149,8 +7175,8 @@ function bindEvents(){
   $('bbAlarm').addEventListener('click', () => { $('bbColor').value = '#FFFFFF'; $('bbBg').value = '#E8473A'; $('bbSize').value = 10; $('bbText').value = '🚨 '; bubbleEditPreview(); $('bbText').focus(); });
   $('attNotes').addEventListener('click', e => { const b = e.target.closest('[data-attnote]'); if (!b || !attEditName) return; addNote(attEditName, b.dataset.attnote); $('attEditOv').style.display = 'none'; });
   $('noteSide').addEventListener('click', () => requirePin(openNotes, ['sub', 'late']));
-  $('mealBtn').addEventListener('click', () => openMH('meal'));
-  $('hwBtn').addEventListener('click', () => openMH('hw'));
+  $('mealSide').addEventListener('click', () => openMH('meal'));
+  $('hwSide').addEventListener('click', () => openMH('hw'));
   $('mhOv').addEventListener('click', e => {
     if (e.target.closest('#mealEditBtn')){ mhEdit = true; renderMH(); setTimeout(() => $('mealText') && $('mealText').focus(), 50); }
     else if (e.target.closest('#mealSave')) mealSave();
@@ -7281,7 +7307,7 @@ function viewApply(j){
   if (j.title) db.mainTitle = j.title;
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
-  db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n'); db.meal = j.meal || {}; db.hw = Array.isArray(j.hw) ? j.hw : [];
+  db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n'); db.meal = j.meal || {}; db.hw = Array.isArray(j.hw) ? j.hw : []; renderMHSide();
   viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {}; viewCleanWhy = j.cleanWhy || {}; viewSleep = j.sleep || null; sleepTick();
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
