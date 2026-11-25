@@ -414,6 +414,16 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .closing-item.done .closing-text{color:#B8A391;text-decoration:line-through;}
 .closing-empty{font-size:1.6rem;color:var(--ink-soft);}
 .closing-extra{display:flex;flex-wrap:wrap;gap:12px;font-size:1.5rem;}
+.clean-big{width:100%;background:linear-gradient(135deg,#FFE58A,#FFC27A);border:4px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink),0 0 0 8px rgba(255,194,122,.3);padding:12px 18px;text-align:center;animation:cbGlow 1.4s ease-in-out infinite alternate;}
+.clean-big.none{background:#E9F8EE;font-size:1.5rem;animation:none;box-shadow:0 4px 0 var(--ink);}
+.clean-big .cb-head{font-size:2.2rem;letter-spacing:2px;color:#fff;text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink);}
+.closing-extra .clean-big .cb-broom{background:none;border:none;box-shadow:none;padding:0;border-radius:0;}
+.clean-big .cb-broom{display:inline-block;animation:cbSweep .6s ease-in-out infinite alternate;} .clean-big .cb-broom.r{animation-delay:.3s;}
+.clean-big .cb-names{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:10px 0 6px;}
+.clean-big .cb-names span{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 20px;font-size:2rem;font-weight:700;box-shadow:0 4px 0 var(--ink);}
+.clean-big .cb-foot{font-size:1.05rem;color:#7A5A3C;}
+@keyframes cbSweep{from{transform:rotate(-18deg)}to{transform:rotate(18deg)}}
+@keyframes cbGlow{to{box-shadow:0 6px 0 var(--ink),0 0 0 14px rgba(255,194,122,.15);}}
 .closing-extra span{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 18px;box-shadow:0 4px 0 var(--ink);}
 .closing-foot{display:flex;justify-content:center;}
 
@@ -2837,10 +2847,9 @@ function renderClosing(){
     ? list.map((t, i) => `<div class="closing-item ${closingChecked[i] ? 'done' : ''}" data-ci="${i}"><div class="closing-num">${closingChecked[i] ? '✔' : i + 1}</div><div class="closing-text">${esc(t)}</div></div>`).join('')
     : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>';
   const cleaners = kids().filter(n => dayTotal(n) < 0);
-  let exp = 0; kids().forEach(n => exp += dayTotal(n));
-  const extra = [`✨ 오늘 우리 반 EXP ${fmtExp(exp)}`];
-  if (cleaners.length) extra.push(`🧹 청소 당번: ${cleaners.map(esc).join(', ')}`);
-  $('closingExtra').innerHTML = extra.map(x => `<span>${x}</span>`).join('');
+  $('closingExtra').innerHTML = cleaners.length
+    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> 오늘의 청소 당번 <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스인 친구들! 깨끗하게 부탁해 🐾</div></div>`
+    : `<div class="clean-big none">🧹 오늘은 청소 당번이 없어요! 모두 최고 ✨</div>`;
 }
 
 /* =========================================================
