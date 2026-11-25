@@ -1140,6 +1140,7 @@ function openVillage(opts){
       .idc-info{flex:1;font-size:.95rem;line-height:1.6;} .idc-info b{color:#8A6A4E;font-weight:normal;}
       .idc-name{font-size:1.4rem;margin-bottom:4px;} .idc-name small{font-size:.85rem;color:#7A5FE0;}
       .idc-motto{border-top:2px dashed #5B4636;padding:8px 12px;font-size:1rem;}
+      .god-sec{border-top:2px dashed #E3D9FF;padding-top:8px;margin-top:8px;} .god-sec small{color:#8A7563;}
       .vg-cardgo{font-family:inherit;font-size:1.05rem;padding:8px 16px;border:3px solid #5B4636;border-radius:14px;background:#FFD84D;box-shadow:0 3px 0 #5B4636;cursor:pointer;}
       .eng-imgs img{width:100%;border:2px solid #5B4636;border-radius:10px;margin-bottom:6px;background:#fff;min-height:60px;}
       .eng-ans{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0;} .eng-ans label{display:flex;gap:6px;align-items:center;}
@@ -2027,9 +2028,57 @@ function openVillage(opts){
             ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${escV(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
-      ${name !== meName && !opts.viewOnly && opts.me ? `<div style="text-align:center;margin-top:8px;"><button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button></div>` : ''}`;
+      <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
     drawColors(panel.querySelector('canvas'), lookColorsRaw(cd.look || {}, cd.lv || 1));
+    godInfo = { name, house: cd.house || 'h_box', aff: cd.hana || 0, title: cd.title || '', decor: ((state && state.inv && state.inv[name]) || {}).decor || [] };
   }
+  /* 👑 선생님 마법: 'OO쌤'으로 들어오면 아무 친구의 집·하나 친밀도·칭호·꾸밈·위치·냥코인을 바로 바꿔요 */
+  let godInfo = null;
+  const isGod = () => !!(opts.call && opts.me && !opts.viewOnly && /(쌤|샘|선생님|교감|교장)$/.test(meName || '') && !(opts.asStudent && opts.asStudent()));
+  const HANA_STEPS = [0, 20, 60, 120, 200, 320];
+  function openGodPanel(){
+    const g = godInfo; if (!g) return;
+    const hl = HANA_STEPS.reduce((a, t, i) => (g.aff >= t ? i : a), 0);
+    const inv = (state && state.inv && state.inv[g.name]) || {};
+    panel.style.display = 'block';
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>👑 ${escV(g.name)} · 선생님 마법</h3>
+      <div class="god-sec"><b>🏠 집</b><div class="grid" style="grid-template-columns:repeat(5,1fr);">${HOUSE_ORDER.map(h => `<button type="button" data-gh="${h}" class="${(g.house || 'h_box') === h ? 'on' : ''}">${HOUSE_INFO[h].icon}<br><small>${HOUSE_INFO[h].name}</small></button>`).join('')}</div></div>
+      <div class="god-sec"><b>💛 하나 친밀도 ${g.aff} · ${escV((HANA.lvNames || [])[hl] || '')}</b>
+        <div class="grid" style="grid-template-columns:repeat(5,1fr);">${[-50, -10, 10, 50, 100].map(v => `<button type="button" data-ga="${v}">${v > 0 ? '+' : ''}${v}</button>`).join('')}</div>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);">${HANA_STEPS.map((t, i) => `<button type="button" data-gaset="${t}" class="${hl === i ? 'on' : ''}">${escV((HANA.lvNames || [])[i] || 'Lv.' + i)}<br><small>${t}💛</small></button>`).join('')}</div>
+        <div class="grid" style="grid-template-columns:1fr;"><button type="button" data-ghr="1">🔄 오늘 하나랑 논 횟수 다시 0번으로</button></div></div>
+      <div class="god-sec"><b>🏷️ 칭호</b><div style="display:flex;gap:6px;margin:6px 0;"><input id="godTitle" maxlength="8" value="${escV(g.title || '')}" placeholder="8글자까지" style="flex:1;min-width:0;font-family:inherit;font-size:1rem;padding:6px;border:2px solid #5B4636;border-radius:10px;"><button type="button" class="vg-cardgo" data-gt="1" style="font-size:.95rem;padding:4px 12px;">저장</button></div></div>
+      <div class="god-sec"><b>🪴 집 앞 꾸밈</b> <small>${(inv.decor || []).map(d => (DECOR_INFO[d] || {}).icon || '').join(' ') || '없음'}</small><div class="grid" style="grid-template-columns:repeat(4,1fr);">${Object.keys(DECOR_INFO).map(d => `<button type="button" data-gd="${d}">+ ${DECOR_INFO[d].icon}</button>`).join('')}<button type="button" data-gdc="1">🧹 모두 치우기</button></div></div>
+      <div class="god-sec"><b>🚚 집 위치</b> <small>${inv.plot ? '새 주택단지 ' + escV(inv.plot.id) : '원래 자리'}</small><div class="grid" style="grid-template-columns:1fr;"><button type="button" data-gp="1">🏘️ 원래 자리로 돌려놓기</button></div></div>
+      <div class="god-sec"><b>🐾 냥코인 주기·빼기</b><div class="grid" style="grid-template-columns:repeat(5,1fr);">${[-50, -10, 10, 50, 100].map(v => `<button type="button" data-gc="${v}">${v > 0 ? '+' : ''}${v}</button>`).join('')}</div></div>`;
+  }
+  async function godCall(extra, msg){
+    const g = godInfo; if (!g) return;
+    try {
+      const j = await opts.call('god', Object.assign({ who: g.name }, extra));
+      if (!j || !j.ok || j.error){ say({ notteacher:'선생님만 쓸 수 있어요', taken:'그 자리는 다른 친구 집이 있어요', bad:'다시 해 주세요' }[j && j.error] || (j && j.error === 'unknown' ? '서버 코드를 새 버전으로 배포해 주세요' : '마법이 안 통했어요 😿')); return; }
+      g.aff = j.aff; if (j.inv){ g.house = j.inv.house || 'h_box'; g.title = j.inv.title || ''; if (state){ state.inv = state.inv || {}; state.inv[g.name] = j.inv; } }
+      if (g.name === meName) hanaInfo = null;
+      say(`✨ ${msg}${j.coins != null && extra.coins ? ` (지금 ${j.coins}🐾)` : ''}`);
+      openGodPanel(); pull();
+    } catch(e){ say('연결이 안 돼요'); }
+  }
+  panel.addEventListener('click', e => {
+    const t = e.target, q = sel => t.closest(sel);
+    if (q('[data-godme]')){ const iv = (state && state.inv && state.inv[meName]) || {}; godInfo = { name: meName, house: iv.house || 'h_box', aff: (hanaInfo && hanaInfo.aff) || 0, title: iv.title || '', decor: iv.decor || [] }; openGodPanel(); return; }
+    if (q('[data-god]')){ openGodPanel(); return; }
+    if (!godInfo || !panel.querySelector('.god-sec')) return;
+    let b;
+    if ((b = q('[data-gh]'))) return godCall({ house: b.dataset.gh }, `${godInfo.name}의 집 → ${HOUSE_INFO[b.dataset.gh].name}`);
+    if ((b = q('[data-ga]'))) return godCall({ affAdd: +b.dataset.ga }, `하나 친밀도 ${+b.dataset.ga > 0 ? '+' : ''}${b.dataset.ga}`);
+    if ((b = q('[data-gaset]'))) return godCall({ aff: +b.dataset.gaset }, `하나 친밀도 → ${b.dataset.gaset}`);
+    if (q('[data-ghr]')) return godCall({ hanaReset: true }, '오늘 하나랑 논 횟수를 0번으로');
+    if (q('[data-gt]')) return godCall({ title: (panel.querySelector('#godTitle').value || '').trim() }, '칭호를 바꿨어요');
+    if ((b = q('[data-gd]'))) return godCall({ decorAdd: b.dataset.gd }, `${DECOR_INFO[b.dataset.gd].icon} 꾸밈을 놓았어요`);
+    if (q('[data-gdc]')) return godCall({ decorClear: true }, '꾸밈을 모두 치웠어요');
+    if (q('[data-gp]')) return godCall({ plot: '' }, '집을 원래 자리로 돌려놨어요');
+    if ((b = q('[data-gc]'))) return godCall({ coins: +b.dataset.gc }, `냥코인 ${+b.dataset.gc > 0 ? '+' : ''}${b.dataset.gc}`);
+  });
   panel.addEventListener('click', e => { const h = e.target.closest('[data-house]'); if (h){ closePanel(); enter('house:' + h.dataset.house); } });
   /* 📊 왼쪽 위 내 정보 */
   function renderHud(){
@@ -2099,6 +2148,7 @@ function openVillage(opts){
     else if (hanaTab === 'play'){
       const TT0 = /(쌤|샘|선생님)$/.test(meName || ''), dayUsed = Object.values(H.counts || {}).reduce((n, v) => n + (v || 0), 0), dayMax = H.dayMax || 5, dayFull = dayUsed >= dayMax && !TT0;
       body = `<div class="hint" style="text-align:center;margin-bottom:4px;">🐾 오늘 하나랑 논 횟수 <b>${Math.min(dayUsed, dayMax)}/${dayMax}</b>${TT0 ? ' (선생님은 무제한)' : dayFull ? ' · 내일 또 놀아요!' : ''}</div>
+        ${isGod() ? `<div style="text-align:center;margin:4px 0;"><button type="button" class="vg-cardgo" data-godme="1" style="background:#E3D9FF;font-size:.95rem;padding:4px 12px;">👑 친밀도·집 마법 (아무 친구나: 친구 카드에서)</button></div>` : ''}
         <div>💛 친밀도 <b>${H.aff || 0}</b> · <b>${hanaLvName(lv)}</b>${nx ? ` <span class="hint">(다음 단계까지 ${nx - (H.aff || 0)})</span>` : ' 🏆'}</div><div class="bar"><i style="width:${pct}%"></i></div>
         <div class="grid">${(HANA.acts || []).map(a => { const TT = /(쌤|샘|선생님)$/.test(meName || ''), used = (H.counts || {})[a.id] || 0, lock = lv < (a.need || 0) && !TT, done = (used >= (a.day || 1) || dayFull) && !TT;
           return `<button type="button" data-hact="${a.id}" class="${lock || done ? 'lock' : ''}">${lock ? '🔒 ' : ''}${escV(a.name)}<br><small>${lock ? `${hanaLvName(a.need)}부터` : `+${a.aff}💛 · 오늘 ${used}/${a.day || 1}`}</small></button>`; }).join('')}</div>
@@ -2450,6 +2500,7 @@ async function enterVillage(){
   const lv = me ? ((me.info && me.info.lv) || (studentOf(me.name) || {}).lv || 1) : 1;
   openVillage({ api: API, me: me ? { name: me.name, lv } : null, viewOnly: !me, eco,
     call: (op, extra) => studentCall(op, extra),
+    asStudent: () => viewAsStudent,
     sendChat: async (text, to) => {
       const j = await studentCall('chatSend', { to: to || '', text, after: chat.last });
       if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요', hallmute:'🔇 회의 중이라 잠시 조용히 해야 해요' }[j.error] || '보내지 못했어요') : ''; }

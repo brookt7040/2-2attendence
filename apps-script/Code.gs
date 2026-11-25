@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v13 · 서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v14 · 학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -10,6 +10,7 @@
  *  - 중요공지 : A2칸부터 적으면 출석부 '📌 중요 공지' 칸에 떠요. 비우면 내려가요.
  *  - 알림 : A2칸부터 한 줄에 하나씩 적으면 모든 화면의 '오늘의 알림'에 떠요.
  *  - 종례 : A2칸부터 한 줄에 하나씩 적으면 '종례하기' 화면과 학생 페이지에 떠요.
+ *  - 학급회의 : A2칸에 회의 주제, B2칸부터 안건을 한 줄에 하나씩 적으면 출석부 '🗳️ 학급회의' 칠판에 떠요.
  *  - 대화 : 학생 페이지 '우리 반 대화'(귓속말 포함) 기록이에요. 선생님은 모두 볼 수 있어요.
  *  - 건의함 : 학생이 보낸 질문·건의와 선생님 답변이에요.
  *  - 냥코인 : 냥코인이 들어오고 나간 모든 기록(통장)이에요. 잔액은 이 기록을 더해서 계산해요.
@@ -25,9 +26,10 @@ const DATA_SHEET = 'data';
 const NOTICE_SHEET = '알림';
 const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나씩 적으세요 (모든 화면에 자동 반영)';
 const CLOSING_SHEET = '종례';
+const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 13;
+const API_VERSION = 14;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -182,6 +184,21 @@ function writeList_(name, header, list) {
   if (list.length) sh.getRange(2, 1, list.length, 1).setValues(list.map(function (t) { return [String(t)]; }));
 }
 
+/* 🗳️ 학급회의 칠판: A2 = 회의 주제, B2부터 = 안건 (한 줄에 하나) */
+function readMeeting_() {
+  const sh = sheet_(MEETING_SHEET, ['🗳️ 회의 주제 (A2)', '📝 안건 (B2부터 한 줄에 하나)']);
+  const n = sh.getLastRow();
+  if (n < 2) return { title: '', items: [] };
+  const v = sh.getRange(2, 1, n - 1, 2).getDisplayValues();
+  return { title: String(v[0][0] || '').trim(), items: v.map(function (r) { return String(r[1] || '').trim(); }).filter(function (t) { return t; }) };
+}
+function writeMeeting_(title, items) {
+  const sh = sheet_(MEETING_SHEET, ['🗳️ 회의 주제 (A2)', '📝 안건 (B2부터 한 줄에 하나)']);
+  const n = sh.getLastRow();
+  if (n >= 2) sh.getRange(2, 1, n - 1, 2).clearContent();
+  sh.getRange(2, 1).setValue(String(title || '').slice(0, 60));
+  if (items.length) sh.getRange(2, 2, items.length, 1).setValues(items.map(function (t) { return [String(t).slice(0, 80)]; }));
+}
 function readRows_() {
   const sh = sheet_(DATA_SHEET, ['key', 'json', 'updated']);
   const n = sh.getLastRow();
@@ -241,7 +258,7 @@ function publicGet_(p) {
 /* ---------------- 교사: 전체 읽기 ---------------- */
 function teacherPull_(body, auth) {
   const v = version_();
-  const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
+  const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER), meeting: readMeeting_() };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
   res.lockdown = props_().getProperty('lockdown') === '1';
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
@@ -301,6 +318,7 @@ function handlePost_(body, auth) {
         case 'notices': writeNotices_(o.list || []); break;
         case 'closing': writeList_(CLOSING_SHEET, CLOSING_HEADER, o.list || []); break;
         case 'urgent': writeList_(URGENT_SHEET, URGENT_HEADER, (o.list || []).slice(0, 5)); break;
+        case 'meeting': writeMeeting_(o.title, (o.items || []).slice(0, 30)); break;
         case 'rec': {
           const d = day(o.ds);
           if (o.rec) d.records[o.name] = o.rec; else delete d.records[o.name];
@@ -453,6 +471,7 @@ function handleStudent_(body) {
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (body.op === 'move' || body.op === 'emote') return studentVillage_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
+  if (body.op === 'god') return studentGod_(name, body);
   if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
@@ -857,6 +876,47 @@ function studentProfile_(name, body) {
     return { ok: true, profile: out };
   } finally { lock.releaseLock(); }
 }
+/* 👑 선생님 마법 (마을에서 'OO쌤'만): 아무 친구의 집·하나 친밀도·칭호·꾸밈·이사·코인을 바로 바꿔요 */
+function studentGod_(name, body) {
+  if (!isTeacherName_(name)) return { ok: true, error: 'notteacher' };
+  const who = String(body.who || '').trim(); if (!who) return { ok: true, error: 'bad' };
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const db = readRows_(), map = db.map; map.inv = map.inv || {};
+    const inv = map.inv[who] = map.inv[who] || { house: '', houses: [], decor: [] };
+    let invDirty = false;
+    if (body.house != null) {
+      const i = HOUSE_ORDER.indexOf(String(body.house));
+      if (i < 0) return { ok: true, error: 'bad' };
+      inv.houses = HOUSE_ORDER.slice(1, i + 1); inv.house = i === 0 ? '' : HOUSE_ORDER[i]; invDirty = true;
+    }
+    if (body.title != null) { inv.title = String(body.title).replace(/[<>]/g, '').trim().slice(0, 8); invDirty = true; }
+    if (body.decorClear) { inv.decor = []; invDirty = true; }
+    if (body.decorAdd) { const d = String(body.decorAdd); if (/^d_[a-z]+$/.test(d)) { inv.decor = (inv.decor || []).concat([d]).slice(-6); invDirty = true; } }
+    if (body.plot !== undefined) {
+      const plot = String(body.plot || '');
+      if (plot && !/^P([1-9]|1[0-2])$/.test(plot)) return { ok: true, error: 'bad' };
+      if (plot && Object.keys(map.inv).some(function (n) { return n !== who && map.inv[n] && map.inv[n].plot && map.inv[n].plot.id === plot; })) return { ok: true, error: 'taken' };
+      inv.plot = plot ? { id: plot, ready: todayStr_() } : null; invDirty = true;
+    }
+    if (invDirty) { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + who, 'card:' + who]); }
+    let aff = null;
+    if (body.aff != null || body.affAdd != null || body.hanaReset) {
+      const st = hanaOf_(who); st.p = st.p || 0;
+      if (body.aff != null) st.p = Math.max(0, Math.min(9999, Math.round(Number(body.aff) || 0)));
+      if (body.affAdd != null) st.p = Math.max(0, Math.min(9999, st.p + Math.round(Number(body.affAdd) || 0)));
+      if (body.hanaReset) st.c = {};
+      props_().setProperty('hana:' + who, JSON.stringify(st)); cacheDrop_(['card:' + who]); aff = st.p;
+    }
+    if (body.coins) {
+      const amt = Math.round(Number(body.coins) || 0);
+      if (amt) addCoin_(who, amt, '👑 선생님 마법' + (body.why ? ': ' + String(body.why).slice(0, 20) : ''), '선생님', '', readCoins_());
+    }
+    bump_();
+    const h = hanaOf_(who);
+    return { ok: true, error: '', inv: inv, aff: aff != null ? aff : (h.p || 0), hanaLv: hanaLvOf_(aff != null ? aff : (h.p || 0)), coins: balanceOf_(readCoins_(), who) };
+  } finally { lock.releaseLock(); }
+}
 function cardOf_(name) {
   const hit = cacheGet_('card:' + name, null); if (hit) return hit;
   const map = readRows_().map, pub = publicState_(map), s = (pub.students || []).filter(function (x) { return x.name === name; })[0];
@@ -1110,10 +1170,10 @@ function studentCoins_(name, body) {
       else if (bal() < it.price) error = 'poor';
       else if (!T && it.stock > 0 && soldCount_(it.id) >= it.stock) error = 'soldout';
       else if (it.cat === 'house' && (inv.houses || []).indexOf(it.id) >= 0) error = 'owned';
-      else if (it.cat === 'house' && !houseReady_(inv, it.id)) error = 'order';
+      else if (it.cat === 'house' && !T && !houseReady_(inv, it.id)) error = 'order';
       else if (['mega', 'song', 'banner', 'title'].indexOf(it.cat) >= 0 && !cleanText_(body.text, chatCfg_())) error = 'empty';
       else if (it.cat === 'butler' && butlerToday_()) error = 'soldout';
-      else if (it.cat === 'decor' && (inv.decor || []).length >= 4) error = 'full';
+      else if (it.cat === 'decor' && !T && (inv.decor || []).length >= 4) error = 'full';
       else {
         if (!T) {
           addCoin_(name, -it.price, '구매: ' + it.name, '구매', '', rows);

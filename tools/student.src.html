@@ -469,6 +469,7 @@ async function enterVillage(){
   const lv = me ? ((me.info && me.info.lv) || (studentOf(me.name) || {}).lv || 1) : 1;
   openVillage({ api: API, me: me ? { name: me.name, lv } : null, viewOnly: !me, eco,
     call: (op, extra) => studentCall(op, extra),
+    asStudent: () => viewAsStudent,
     sendChat: async (text, to) => {
       const j = await studentCall('chatSend', { to: to || '', text, after: chat.last });
       if (j && j.ok){ applyChat(j); return j.error ? ({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히! 🐢', group:'모둠 자리에 앉아야 모둠 대화를 할 수 있어요', hallmute:'🔇 회의 중이라 잠시 조용히 해야 해요' }[j.error] || '보내지 못했어요') : ''; }
