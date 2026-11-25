@@ -585,6 +585,14 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 #openGmBtn{position:relative;}
 
 /* ===== 오버레이 · 모달 ===== */
+.rev-modal{max-width:620px;width:92vw;}
+.rev-step{display:flex;gap:10px;align-items:flex-start;border:2px solid #EFE3D3;border-radius:12px;padding:10px 12px;margin-top:8px;cursor:pointer;line-height:1.5;word-break:keep-all;}
+.rev-step input{width:22px;height:22px;flex:none;margin-top:2px;}
+.rev-step:has(input:checked){background:#E4F7EA;border-color:#8CCBA2;}
+.rev-step:has(input:checked) span{text-decoration:line-through;opacity:.6;}
+#revBar{position:fixed;left:12px;bottom:46px;z-index:9500;font-family:inherit;font-size:.95rem;border:2px solid #C0365C;border-radius:999px;background:#FFE1EA;color:#8A2A44;padding:5px 14px;cursor:pointer;box-shadow:0 3px 0 #C0365C;animation:revPulse 1.6s ease-in-out infinite;}
+@keyframes revPulse{50%{transform:translateY(-3px);background:#FFC9D6;}}
+body.view-mode #revBar{display:none !important;}
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
 .modal h2{margin:0;text-align:center;font-size:1.7rem;font-weight:normal;padding-bottom:10px;border-bottom:3px dashed #EAD49A;}
@@ -922,6 +930,17 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div id="songDock" style="display:none;"></div>
 <div id="remoteBanner" onclick="this.classList.remove('show')"></div>
 <div id="syncPill" title="눌러서 지금 동기화">☁️ 동기화</div>
+<button type="button" id="revBar" style="display:none;"></button>
+<div class="overlay" id="revOv">
+  <div class="modal rev-modal"><button type="button" class="modal-x" data-close="revOv" title="닫기">✕</button>
+    <h2>🛠️ 서버 코드 업데이트</h2>
+    <div class="form-hint" id="revInfo"></div>
+    <label class="rev-step"><input type="checkbox" data-rev="1"><span><b>최신 Code.gs 복사</b> · <a href="https://github.com/brookt7040/2-2attendence/blob/main/apps-script/Code.gs" target="_blank" rel="noopener">여기</a>를 열고 오른쪽 위 📋 복사 버튼 (또는 Claude가 준 파일)</span></label>
+    <label class="rev-step"><input type="checkbox" data-rev="2"><span><b>학교 계정</b> Apps Script를 열고 Code.gs 내용을 <b>모두 지운 뒤 붙여넣기 → 💾 저장</b></span></label>
+    <label class="rev-step"><input type="checkbox" data-rev="3"><span><b>배포 → 배포 관리 → ✏️ 연필 → 버전: 새 버전 → 배포</b> <small>("새 배포" 말고! 주소가 바뀌어요)</small></span></label>
+    <label class="rev-step"><input type="checkbox" data-rev="4"><span>출석부로 돌아와 <b>☁️ 동기화</b> 누르기 → 이 알림이 사라지면 끝! 🎉</span></label>
+  </div>
+</div>
 <div class="mini-clock" id="miniClock"><span id="mcTime">00:00</span><span id="mcTier"></span></div>
 
 <!-- EXP 리스트 지급 -->
@@ -2148,6 +2167,20 @@ function renderTimetable(now){
   const row = items.map((x, i) => `<div class="tt-c ${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${i === nowI ? 'now' : (x.e <= cur ? 'past' : '')}" ${x.lunch ? '' : `data-i="${i}" title="눌러서 오늘만 과목 바꾸기 (관리자)"`}>${x.lunch ? '&nbsp;' : (x.changed ? `${x.num || ''} 변경` : (x.num || esc(x.name)))}<b>${x.lunch ? '점심' : esc(x.label && !/교시$/.test(x.label) ? x.label : '·')}</b></div>`).join('');
   const html = `<div class="tt-hd">${tag}${right}</div><div class="tt-row">${row}</div><div class="tt-sub">${esc(sub)} <button type="button" class="tt-all-btn" data-wk="tomorrow">📅 내일 · 전체 시간표</button></div>`;
   if (html !== ttKey){ ttKey = html; $('ttPanel').innerHTML = html; }
+}
+/* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
+const NEED_API = 23;
+let serverRev = 0;
+function checkServerRev(v){
+  serverRev = Number(v) || 0;
+  const bar = $('revBar'); if (!bar || VIEW) return;
+  if (serverRev && serverRev < NEED_API){ bar.textContent = `🛠️ 서버 코드 업데이트 필요 (v${serverRev} → v${NEED_API})`; bar.style.display = 'block'; }
+  else { bar.style.display = 'none'; if ($('revOv').style.display === 'flex' && serverRev >= NEED_API){ $('revOv').style.display = 'none'; showToast('🎉 서버 코드가 최신이에요!'); } }
+}
+function openRev(){
+  $('revInfo').innerHTML = `지금 서버는 <b>v${serverRev}</b>, 이 출석부에 맞는 버전은 <b>v${NEED_API}</b>예요. 아래를 하나씩 하고 체크해 주세요.`;
+  document.querySelectorAll('[data-rev]').forEach(c => { try { c.checked = localStorage.getItem('nyangRev:' + NEED_API + ':' + c.dataset.rev) === '1'; } catch(e){} });
+  $('revOv').style.display = 'flex';
 }
 /* 📅 시간표 전체 보기 (오늘 · 내일 · 이번 주) — 보기 전용 출석부에서도 열려요 */
 let wkMode = 'today';
@@ -4238,6 +4271,7 @@ async function pullSync(force){
     if (sync.api < 3 && j.api >= 3){ sync.api = j.api; saveSync(); syncBusy = false; return pullSync(true); }   // 시트 코드가 새 버전으로 바뀌었어요
     sync.needKey = !!j.needKey;
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
+    if (j.api) checkServerRev(j.api);
     if (typeof j.asksOpen === 'number'){ serverAsksOpen = j.asksOpen; updateGmDot(); }
     if (typeof j.reqOpen === 'number'){ serverReqOpen = j.reqOpen; updateGmDot(); }
     if (j.pinSet) serverPinSet = j.pinSet;
@@ -6753,6 +6787,8 @@ function bindEvents(){
     if (!api){ e.preventDefault(); showToast('먼저 구글 시트 동기화를 연결해 주세요'); return; }
     e.currentTarget.href = studentLink();
   });
+  $('revBar').addEventListener('click', openRev);
+  $('revOv').addEventListener('change', e => { const c = e.target.closest('[data-rev]'); if (c) try { localStorage.setItem('nyangRev:' + NEED_API + ':' + c.dataset.rev, c.checked ? '1' : ''); } catch(err){} });
   $('gateResetBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
     if (!confirm('🔒 지금 출석부를 보고 있는 모든 기기(교실 TV·학생 디벗)가\n시간과 상관없이 입장 코드를 다시 넣어야 해요.\n(코드는 그대로예요 · 이 기기는 바로 통과)\n\n할까요?')) return;
