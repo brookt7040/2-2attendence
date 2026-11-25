@@ -6471,7 +6471,7 @@ function bindEvents(){
   $('attEditClear').addEventListener('click', () => attEditSave(true));
   $('attEditCancel').addEventListener('click', () => { $('attEditOv').style.display = 'none'; });
   $('attNotes').addEventListener('click', e => { const b = e.target.closest('[data-attnote]'); if (!b || !attEditName) return; addNote(attEditName, b.dataset.attnote); $('attEditOv').style.display = 'none'; });
-  $('noteSide').addEventListener('click', () => requirePin(openNotes, ['late']));
+  $('noteSide').addEventListener('click', () => requirePin(openNotes, ['sub', 'late']));
   $('notesBody').addEventListener('click', e => {
     const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
     const a = e.target.closest('[data-nadd]'); if (a){ addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
