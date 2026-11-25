@@ -34,10 +34,20 @@
 .nyl-trow input{font-family:inherit;font-size:18px;width:130px;text-align:center;letter-spacing:4px;border:2px solid currentColor;border-radius:10px;padding:5px;background:#fff;color:#5B4636;-webkit-text-security:disc;}
 .nyl-trow button{font-family:inherit;font-size:15px;border:2px solid currentColor;border-radius:10px;padding:5px 12px;background:#FFD96A;color:#5B4636;cursor:pointer;}
 .nyl-tmsg{font-size:13px;min-height:1.2em;}
+#nylReload{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:39000;display:none;align-items:center;gap:10px;max-width:calc(100vw - 20px);background:#FFF3C4;color:#5B4636;border:3px solid #5B4636;border-radius:16px;box-shadow:0 5px 0 #5B4636;padding:10px 16px;font-family:inherit;font-size:16px;line-height:1.45;text-align:left;word-break:keep-all;}
+#nylReload.on{display:flex;}
+#nylReload .rl-ic{font-size:28px;animation:nylSpin 2s linear infinite;}
+#nylReload b.rl-left{display:inline-block;min-width:3.2em;color:#C0365C;font-size:18px;}
+@keyframes nylSpin{to{transform:rotate(360deg)}}
 `;
   function css(){ if (document.getElementById('nylCss')) return; const s = document.createElement('style'); s.id = 'nylCss'; s.textContent = CSS; (document.head || document.documentElement).appendChild(s); }
   const ls = { get(k){ try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e){ return null; } }, set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} } };
-  let lastSleep = null;
+  let lastSleep = null, rlTimer = 0;
+  const LOADED = Date.now();
+  function doReload(){
+    try { if (window.top !== window && window.top.location.origin === location.origin){ window.top.location.reload(); return; } } catch(e){}   // 앱 안이면 앱 전체를
+    location.reload();
+  }
 
   const NyLock = {
     /* 페이지가 서버 주소를 알려 줘요 (기본: 주소의 ?api=) */
@@ -88,6 +98,22 @@
       o.classList.add('on');
     },
     refresh(){ if (lastSleep) NyLock.sleep(lastSleep.cfg, lastSleep.on); },
+    /* 🔄 모든 기기 새로고침 알림: 서버가 정한 시각(1분 뒤)까지 세다가 새로고침 */
+    reload(info){
+      clearInterval(rlTimer); rlTimer = 0;
+      const box = document.getElementById('nylReload');
+      if (!info || !info.at){ if (box) box.classList.remove('on'); return; }
+      const target = Date.now() + (Number(info.at) - Number(info.now || Date.now()));
+      if (LOADED >= target - 2000){ if (box) box.classList.remove('on'); return; }   // 이미 새 화면이에요
+      css(); let b = box;
+      if (!b){ b = document.createElement('div'); b.id = 'nylReload'; b.innerHTML = '<span class="rl-ic">🔄</span><span><b>곧 화면이 새로고침돼요!</b><br>쓰고 있는 글이 있으면 복사해 두세요 · 남은 시간 <b class="rl-left"></b></span>'; document.body.appendChild(b); }
+      const tick = () => {
+        const left = Math.max(0, Math.round((target - Date.now()) / 1000));
+        b.querySelector('.rl-left').textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+        if (left <= 0){ clearInterval(rlTimer); doReload(); }
+      };
+      b.classList.add('on'); tick(); rlTimer = setInterval(tick, 1000);
+    },
     css
   };
   window.NyLock = NyLock;

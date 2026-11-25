@@ -147,7 +147,7 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <div class="q"><span class="k">내 카드에 상태가 안 떠요</span><span>🐱 내 고양이 탭 → 💬 내 상태를 적고 저장했는지 확인!</span></div>
 </div></div>
 
-</div><script src="lock.js?v=34"></script>
+</div><script src="lock.js?v=35"></script>
 <script>
 /* 📱 앱 안에서 열렸으면 버튼이 탭을 바꿔요 */
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();
@@ -161,6 +161,7 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-go]'
     if (window.NyLock) NyLock.api = () => GAPI;
     const r = await fetch(GAPI + '?guide=1&t=' + Date.now(), { redirect:'follow' }), j = await r.json();
     if (!j || !j.ok) return;
+    if (window.NyLock) NyLock.reload(j.reload);
     if (j.sleep && window.NyLock){ const chk = () => NyLock.sleep(j.sleep, NyLock.sleepIn(j.sleep, new Date())); chk(); setInterval(chk, 20000); }
     if (j.ver) document.getElementById('gVer').textContent = j.ver;
     const lines = String(j.notes || '').split('\n').map(x => x.trim()).filter(Boolean);

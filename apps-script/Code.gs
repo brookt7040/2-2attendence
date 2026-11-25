@@ -326,7 +326,7 @@ function publicGet_(p) {
   if (p.room) return roomState_(String(p.room));
   if (p.card) return cardOf_(String(p.card));
   if (p.board) { if (p.cid) touchAnon_(p.cid); return boardOf_(String(p.gate || '')); }
-  if (p.guide) { const sc = stuCfg_(); return { ok: true, api: API_VERSION, ver: String(sc.guideVer || ''), notes: String(sc.guideNotes || ''), sleep: sleepCfg_(), now: Date.now() }; }   // 📖 안내 사이트 버전·업데이트 내역
+  if (p.guide) { const sc = stuCfg_(); return { ok: true, api: API_VERSION, ver: String(sc.guideVer || ''), notes: String(sc.guideNotes || ''), sleep: sleepCfg_(), reload: reloadInfo_(), now: Date.now() }; }   // 📖 안내 사이트 버전·업데이트 내역
   if (p.eng) return engPublic_();
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
@@ -338,12 +338,14 @@ function publicGet_(p) {
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
   { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; }
-  res.meal = mealPub_(); res.hw = hwPub_();
+  res.meal = mealPub_(); res.hw = hwPub_(); res.reload = reloadInfo_();
   return res;
 }
 
 /* ---------------- 교사: 전체 읽기 ---------------- */
 /* 🍱 급식 · 📚 숙제: 출석부와 공지사항 탭에 같이 보여요 (선생님이 출석부에서 써요) */
+/* 🔄 모든 기기 새로고침: 선생님이 누르면 1분 뒤 모든 화면이 새 코드로 바뀌어요 (그 전에 알림) */
+function reloadInfo_() { const at = Number(props_().getProperty('reloadAt') || 0); return at && at > Date.now() - 300000 ? { at: at, now: Date.now() } : null; }
 function mealData_() { try { return JSON.parse(props_().getProperty('meal') || '{}') || {}; } catch (e) { return {}; } }
 function hwData_() { try { return JSON.parse(props_().getProperty('hw') || '[]') || []; } catch (e) { return []; } }
 function mealPub_() { const m = mealData_(), t = todayStr_(), out = {}; if (m[t]) out[t] = m[t]; return out; }   // 🍱 오늘 것만 (급식 알리미가 따로 있어요)
@@ -366,7 +368,7 @@ function teacherPull_(body, auth) {
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER), meeting: readMeeting_() };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
   res.lockdown = props_().getProperty('lockdown') === '1';
-  res.meal = mealData_(); res.hw = hwData_();
+  res.meal = mealData_(); res.hw = hwData_(); res.reload = reloadInfo_();
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
@@ -467,6 +469,8 @@ function handlePost_(body, auth) {
           }).filter(function (h) { return h.text; });
           props_().setProperty('hw', JSON.stringify(list)); break;
         }
+        case 'reloadAll': props_().setProperty('reloadAt', String(Date.now() + 60000)); break;
+        case 'reloadCancel': props_().deleteProperty('reloadAt'); break;
         case 'epoch': {                          // 🔒 모두 다시 입력: 다른 설정은 건드리지 않아요
           map.config = map.config || {}; map.config.accessEpoch = Number(o.v) || Date.now();
           cacheDrop_(['v:pub']); dirty.config = true; break;
@@ -1380,7 +1384,7 @@ function boardOf_(code) {
     const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
     return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
   }
-  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_();
+  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_(); out.reload = reloadInfo_();
   return out;
 }
 function cardOf_(name) {

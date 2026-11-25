@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>냥냥 마을 · 학생용</title>
-<script src="lock.js?v=34"></script>
+<script src="lock.js?v=35"></script>
 <style>
 @font-face{font-family:'NeoDunggeunmo';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');font-weight:normal;font-style:normal;}
 :root{
@@ -2689,7 +2689,7 @@ async function pull(force){
     st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : [];
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
     megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn; if (j.newsKinds) newsKinds = j.newsKinds;
-    sleepCfgNow = j.sleep || null; sleepTick(); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
+    sleepCfgNow = j.sleep || null; sleepTick(); if (window.NyLock) NyLock.reload(j.reload); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
     special = { banners: j.banners || [], butler: j.butler || '' };
     if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
     if (j.pub){
