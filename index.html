@@ -707,6 +707,17 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .meeting-big{font-size:1.1rem;}
 .chip{font-size:.95rem;padding:6px 12px;}
 .student-name{font-size:1.45rem;}
+
+/* 🔄 출석 카드 뒤집기 */
+.card.flipping{animation:cardFlip .36s ease-in-out;}
+@keyframes cardFlip{0%{transform:perspective(700px) rotateY(0)}50%{transform:perspective(700px) rotateY(90deg)}100%{transform:perspective(700px) rotateY(0)}}
+.card-back{display:none;position:absolute;inset:0;z-index:6;border-radius:inherit;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px;text-align:center;
+  background:radial-gradient(circle at 50% 30%,#fff 0%,var(--tc) 70%);border:3px solid var(--ink);}
+.card.show-back .card-back{display:flex;}
+.cbk-ic{font-size:3rem;line-height:1;filter:drop-shadow(0 3px 0 rgba(91,70,54,.25));}
+.cbk-tier{font-size:1.05rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 12px;letter-spacing:1px;}
+.cbk-name{font-size:1.35rem;font-weight:700;margin-top:4px;word-break:keep-all;line-height:1.25;}
+.cbk-sub{font-size:.85rem;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
 </style>
 </head>
 <body>
@@ -1955,6 +1966,14 @@ function streakOf(name){
 }
 function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus' : 'minus'}">${fmtExp(exp)}</span>`; }
 
+function flipCard(card){
+  if (card.classList.contains('flipping')) return;
+  card.classList.add('flipping');
+  setTimeout(() => card.classList.toggle('show-back'), 180);
+  setTimeout(() => card.classList.remove('flipping'), 360);
+  clearTimeout(card._flipT);
+  card._flipT = setTimeout(() => { if (card.classList.contains('show-back')) flipCard(card); }, 6000);
+}
 function renderGrid(){
   const grid = $('studentGrid'); grid.innerHTML = '';
   const ds = getTodayStr(), day = todayData(), sm = seasonExpMap();
@@ -1987,6 +2006,9 @@ function renderGrid(){
         `<div class="student-name">${numTag(nums, name)}${esc(name)}</div>` +
         `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button>${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
       card.title = recCharName(rec, name, ds);
+      // 🔄 누르면 뒤집혀서 오늘 뽑은 냥이 등급·이름이 나와요
+      card.insertAdjacentHTML('beforeend', `<div class="card-back" style="--tc:${meta.color};--tcap:${meta.cap || meta.color}"><div class="cbk-ic">${meta.icon}</div><div class="cbk-tier">${esc(meta.label || meta.short)}</div><div class="cbk-name">${esc(tk === 'absent' ? '집에서 쉬는 중' : recCharName(rec, name, ds))}</div><div class="cbk-sub">${esc(name)} · ${esc(rec.time || '')}${tk === 'absent' ? '' : ` · ${fmtExp(rec.exp)} EXP`}${rec.rank ? ` · ${rec.rank}등` : ''}${rec.why ? `<br>📝 ${esc(rec.why)}` : ''}</div></div>`);
+      card.addEventListener('click', () => flipCard(card));
       card.querySelector('.time-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
     }
     card.classList.add('lv-' + li.lv);
