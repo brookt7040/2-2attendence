@@ -104,21 +104,37 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .ci-on{font-size:.85rem;color:#C0506F;margin-top:5px;min-height:1em;}
 .ci-lock{margin-top:8px;font-size:.95rem;}
 
-/* 대화 */
-.chat{display:flex;flex-direction:column;gap:8px;}
-.chat-warn{font-size:.9rem;background:#FFF0B8;border:2px solid var(--ink);border-radius:10px;padding:5px 10px;}
-.chat-log{height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px;}
-.msg{max-width:82%;display:flex;flex-direction:column;gap:2px;}
-.msg .who{font-size:.8rem;color:var(--ink-soft);}
-.msg .bub{background:#FFF7DA;border:2px solid var(--ink);border-radius:14px 14px 14px 4px;padding:6px 10px;font-size:1.05rem;line-height:1.4;word-break:break-all;}
-.msg.me{align-self:flex-end;align-items:flex-end;}
-.msg.me .bub{background:#FFE3EE;border-radius:14px 14px 4px 14px;}
-.msg.wh .bub{background:var(--lav);border-style:dashed;}
-.msg.t .bub{background:#DFF7EC;}
-.chat-in{display:flex;gap:6px;}
-.chat-in select{width:auto;flex:none;font-size:1rem;padding:8px;}
-.chat-in input{flex:1;font-size:1.05rem;padding:8px 10px;}
-.chat-off{text-align:center;color:var(--ink-soft);padding:10px;}
+/* 💬 대화 탭 */
+.chat-off{text-align:center;color:var(--ink-soft);padding:10px;} .chat-off.big{padding:40px 10px;font-size:1.15rem;}
+.ch{display:flex;flex-direction:column;gap:8px;background:#FFFDF6;border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);padding:12px;}
+.ch-top{display:flex;flex-direction:column;gap:6px;}
+.ch-rooms{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.ch-rooms button{font-family:inherit;font-size:.95rem;border:2px solid #CDBBA8;border-radius:999px;background:#fff;padding:4px 12px;cursor:pointer;color:var(--ink);}
+.ch-rooms button.on{border-color:var(--ink);background:#FFE58A;box-shadow:0 2px 0 var(--ink);}
+.ch-rooms select{font-family:inherit;font-size:.9rem;border:2px dashed #B9A6E8;border-radius:999px;background:#F6F2FF;padding:4px 8px;width:auto;}
+.ch-warn{font-size:.8rem;color:var(--ink-soft);}
+.ch-log{height:calc(100vh - 380px);min-height:300px;max-height:620px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;background:linear-gradient(#FFF9E6,#FFF4F7);border-radius:14px;padding:12px 10px;}
+.cm{display:flex;gap:8px;align-items:flex-end;max-width:86%;margin-top:8px;}
+.cm.same{margin-top:2px;}
+.cm .av{width:34px;flex:none;}
+.cm .av canvas{width:34px;height:34px;image-rendering:pixelated;background:#fff;border:2px solid #E6D9CA;border-radius:10px;}
+.cm .cb{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.cm .who{font-size:.78rem;color:var(--ink-soft);margin-left:4px;}
+.cm .bub{background:#fff;border:2px solid #E6D9CA;border-radius:16px 16px 16px 4px;padding:6px 12px;font-size:1.05rem;line-height:1.45;word-break:break-all;display:inline-block;align-self:flex-start;}
+.cm .tm{font-size:.7rem;color:#B8A795;margin-left:4px;}
+.cm.me{align-self:flex-end;flex-direction:row-reverse;}
+.cm.me .cb{align-items:flex-end;}
+.cm.me .bub{background:#FFE58A;border-color:#E8C35A;border-radius:16px 16px 4px 16px;align-self:flex-end;}
+.cm.wh .bub{background:#F1ECFF;border:2px dashed #B9A6E8;}
+.cm.me.wh .bub{background:#E2DAFF;}
+.cm.grp .bub{background:#E4F7EA;border-color:#8CCBA2;}
+.cm.t .bub{border-color:#9B7BE0;box-shadow:0 0 0 2px #EDE4FF;}
+.ch-quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+.ch-quick button{flex:none;font-family:inherit;font-size:.9rem;border:2px solid #E6D9CA;border-radius:999px;background:#fff;padding:3px 10px;cursor:pointer;}
+.ch-in{display:flex;gap:6px;align-items:center;}
+.ch-to{flex:none;font-size:.8rem;background:#F4EEE4;border-radius:999px;padding:4px 8px;white-space:nowrap;}
+.ch-in input{flex:1;min-width:0;font-family:inherit;font-size:1.05rem;padding:9px 12px;border:2px solid var(--ink);border-radius:14px;}
+@media (max-width:520px){ .ch-to{display:none;} .ch-log{height:calc(100vh - 360px);} .cm{max-width:92%;} }
 /* 건의함 */
 textarea{width:100%;padding:10px;font-size:1.1rem;border:3px solid var(--ink);border-radius:12px;background:#fff;font-family:inherit;color:var(--ink);resize:vertical;}
 .ask-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;}
@@ -216,7 +232,7 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 /* 🔑 로그인 전에는 탭만 보이고, 각 탭엔 로그인 안내만 (마을 탭은 선생님 카드 + 긴급 메시지) */
 .guest-only{display:none;}
 body.guest .guest-only{display:block;}
-body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-only),body.guest #p-me > :not(.guest-only),body.guest #p-coin > :not(.guest-only),body.guest .board-link{display:none !important;}
+body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-only),body.guest #p-me > :not(.guest-only),body.guest #p-coin > :not(.guest-only),body.guest .board-link{display:none !important;}
 .guest-box{text-align:center;padding:30px 16px 22px;}
 .guest-box p{font-size:1.15rem;margin:0 0 12px;line-height:1.6;}
 .sos-t{display:flex;flex-direction:column;align-items:center;gap:6px;margin:6px auto 0;}
@@ -334,6 +350,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   <div class="tabs">
     <button type="button" class="tab active" data-tab="notice">📢 알림·종례<span class="dot" id="dotNotice"></span></button>
     <button type="button" class="tab" data-tab="village">🏘️ 냥이 마을<span class="dot" id="dotVillage"></span></button>
+    <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
     <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
@@ -360,7 +377,11 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="ticker mega" id="megaTicker" style="display:none;"><span id="megaText"></span></div>
     <div class="ticker" id="ticker" style="display:none;position:relative;"><span id="tickerText"></span><button type="button" id="tickerOff" class="ticker-off" title="마을 소식 줄 끄기 (선생님)">🔕 끄기</button></div>
     <div class="village" id="village"></div>
-    <div class="box" style="margin-top:30px;"><div class="box-head pink">💬 우리 반 대화</div><div id="chatBox"></div></div>
+  </section>
+
+  <section class="panel" id="p-chat">
+    <div class="guest-only box guest-box"><p>🔑 로그인하면 반 친구들과 대화할 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
+    <div id="chatBox"></div>
   </section>
 
   <section class="panel" id="p-me">
@@ -776,6 +797,7 @@ function showTab(t){
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
   if (t === 'notice') $('dotNotice').classList.remove('on');
   if (t === 'village') $('dotVillage').classList.remove('on');
+  if (t === 'chat'){ $('dotChat').classList.remove('on'); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 30); }
 }
 function coinText(){ return coin ? (coin.unlimited ? '∞' : coin.balance) : 0; }
 function toast(t){ if (Date.now() < (toast.muteUntil || 0)) return; const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
@@ -988,45 +1010,69 @@ async function chatPull(){
   } catch(e){}
 }
 function applyChat(j){
-  chat.cfg = j.cfg; chat.muted = j.muted;
+  chat.cfg = j.cfg; chat.muted = j.muted; if ('table' in j) chat.table = j.table || '';
   const fresh = (j.msgs || []).filter(m => m.id > chat.last);
   if (fresh.length){
     chat.msgs = chat.msgs.concat(fresh).slice(-200); chat.last = fresh[fresh.length - 1].id;
-    if (current !== 'village' && fresh.some(m => m.from !== me.name)) $('dotVillage').classList.add('on');
+    if (current !== 'chat' && fresh.some(m => m.from !== me.name)) $('dotChat').classList.add('on');
   }
   renderChat();
 }
+/* 💬 대화 탭: 방(📢 전체 · 🤫 친구와 귓속말 · 👥 우리 모둠)을 골라 보고 보내요 */
+const QUICK = ['👋 안녕!', '😂', '👍', '🙏 고마워', '🎉 축하해!', '😺 냥!'];
+function chatRoomOf(m){ if (!m.to) return ''; if (m.to.charAt(0) === '#') return m.to; return m.from === me.name ? m.to : (m.to === me.name ? m.from : '~' + m.from + '>' + m.to); }
 function renderChat(){
   const box = $('chatBox'); if (!box) return;
-  if (!me){ box.innerHTML = '<div class="chat-off">🔑 로그인하면 반 친구들과 대화할 수 있어요</div>'; return; }
+  if (!me){ box.innerHTML = ''; return; }
   const c = chat.cfg;
   if (!c){ box.innerHTML = '<div class="chat-off">대화 불러오는 중…</div>'; return; }
-  if (!c.on){ box.innerHTML = '<div class="chat-off">💤 선생님이 대화를 잠시 꺼 두었어요</div>'; return; }
+  if (!c.on){ box.innerHTML = '<div class="chat-off big">💤 선생님이 대화를 잠시 꺼 두었어요</div>'; return; }
+  const T = /(쌤|샘|선생님|교감|교장)$/.test(me.name);
   const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
+  const room = chat.to || '';
+  // 방마다 안 읽은 표시 · 최근 귓속말 친구
+  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
+  const rooms = [['', '📢 전체']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
+  if (room && !rooms.some(r => r[0] === room)) rooms.push([room, room.charAt(0) === '#' ? `👥 ${room.slice(2)}모둠` : `🤫 ${room}`]);
+  const shown = chat.msgs.filter(m => room === '' ? true : chatRoomOf(m) === room);
+  let prev = null;
+  const logHtml = shown.length ? shown.map(m => {
+    const mine = m.from === me.name, wh = !!m.to && m.to.charAt(0) !== '#', grp = !!m.to && m.to.charAt(0) === '#', tch = /(쌤|샘|선생님)$/.test(m.from);
+    const same = prev && prev.from === m.from && prev.to === m.to && (m.id - prev.id) < 50; prev = m;
+    const tag = grp ? `👥 ${esc(m.to.slice(2))}모둠` : wh ? (mine ? `🤫 → ${esc(m.to)}` : (m.to === me.name ? '🤫 나에게' : `🤫 → ${esc(m.to)}`)) : '';
+    const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
+    return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
+      ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
+      <div class="cb">${same ? '' : head}<div class="bub">${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}</span></div></div>`;
+  }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
-  const logHtml = chat.msgs.length ? chat.msgs.map(m => {
-      const mine = m.from === me.name, wh = !!m.to, t = /(쌤|샘|선생님)$/.test(m.from), grp = wh && m.to.charAt(0) === '#';
-      const who = grp ? `🤫 ${esc(m.to.slice(2))}모둠 · ${mine ? '나' : esc(m.from)}` : mine ? (wh ? `🤫 ${esc(m.to)}에게` : '나') : (wh ? (m.to === me.name ? `🤫 ${esc(m.from)} (귓속말)` : `🤫 ${esc(m.from)} → ${esc(m.to)}`) : esc(m.from));
-      return `<div class="msg ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${t ? 't' : ''}"><span class="who">${who} · ${esc(m.t.slice(11))}</span><span class="bub">${esc(m.text)}</span></div>`;
-    }).join('') : '<div class="chat-off">첫 인사를 남겨 보자! 🐾</div>';
-  const sig = JSON.stringify([c, chat.muted, kidsList]);
-  if (document.activeElement && document.activeElement.id === 'chatText' && box.dataset.sig === sig && $('chatLog')){
-    const log = $('chatLog'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
-    log.innerHTML = logHtml; if (atBottom) log.scrollTop = log.scrollHeight;
+  const sig = JSON.stringify([c, chat.muted, rooms, room]);
+  const focus = document.activeElement && document.activeElement.id === 'chatText';
+  if (box.dataset.sig === sig && $('chatLog')){
+    const log = $('chatLog'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 40;
+    log.innerHTML = logHtml; drawAvatars(log); if (atBottom) log.scrollTop = log.scrollHeight;
     return;
   }
   box.dataset.sig = sig;
-  box.innerHTML = `<div class="chat">
-    <div class="chat-warn">👀 선생님도 모든 대화(귓속말 포함)를 볼 수 있어요. 바르고 고운 말만! 💛</div>
-    <div class="chat-log" id="chatLog">${logHtml}</div>
-    ${!c.open ? `<div class="chat-off">🌙 지금은 대화 쉬는 시간이에요 (${esc(c.start)}~${esc(c.end)}에 할 수 있어요)</div>`
+  const canWrite = c.open && !chat.muted;
+  box.innerHTML = `<div class="ch">
+    <div class="ch-top"><div class="ch-rooms">${rooms.map(([k, l]) => `<button type="button" class="${k === room ? 'on' : ''}" data-room="${esc(k)}">${esc(l)}</button>`).join('')}
+      ${c.whisper ? `<select id="chatWho"><option value="">＋ 🤫 귓속말 친구</option>${kidsList.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
+      <div class="ch-warn">👀 선생님은 귓속말까지 모든 대화를 볼 수 있어요 · 고운 말만! 💛</div></div>
+    <div class="ch-log" id="chatLog">${logHtml}</div>
+    ${!c.open ? `<div class="chat-off">🌙 지금은 대화 쉬는 시간이에요 (${esc(c.start)}~${esc(c.end)})</div>`
       : chat.muted ? '<div class="chat-off">🔇 선생님이 잠시 대화 쓰기를 막아 두었어요</div>'
-      : `<div class="chat-in">
-          ${c.whisper ? `<select id="chatTo"><option value="">📢 전체</option>${kidsList.map(n => `<option value="${esc(n)}" ${chat.to === n ? 'selected' : ''}>🤫 ${esc(n)}</option>`).join('')}</select>` : ''}
-          <input type="text" id="chatText" maxlength="100" placeholder="${chat.to ? '귓속말 보내기' : '메시지 보내기'}" value="${esc(typing)}">
+      : `<div class="ch-quick">${QUICK.map(x => `<button type="button" data-quick="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+        <div class="ch-in"><span class="ch-to">${room ? (room.charAt(0) === '#' ? '👥 모둠에게' : `🤫 ${esc(room)}에게`) : '📢 모두에게'}</span>
+          <input type="text" id="chatText" maxlength="100" placeholder="${room ? '귓속말 보내기…' : '메시지 보내기…'}" value="${esc(typing)}" autocomplete="off">
           <button type="button" class="btn btn-y" id="chatSend">보내기</button></div>`}
   </div>`;
-  const log = $('chatLog'); if (log) log.scrollTop = log.scrollHeight;
+  const log = $('chatLog'); drawAvatars(log); if (log) log.scrollTop = log.scrollHeight;
+  if (focus && canWrite && $('chatText')) $('chatText').focus();
+}
+function drawAvatars(root){
+  if (!root) return;
+  root.querySelectorAll('canvas[data-av]').forEach(cv => { const s = studentOf(cv.dataset.av); if (s) try { drawColors(cv, lookColorsRaw(lookFor(s), s.lv)); } catch(e){} });
 }
 async function chatSend(){
   const input = $('chatText'); if (!input) return;
@@ -1448,6 +1494,8 @@ document.addEventListener('click', e => {
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
   if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
   if (IN_APP && t.closest('.board-link')){ e.preventDefault(); appGo('board'); return; }
+  { const r = t.closest('[data-room]'); if (r){ chat.to = r.dataset.room; renderChat(); return; } }
+  { const qk = t.closest('[data-quick]'); if (qk){ const i = $('chatText'); if (i){ i.value = (i.value ? i.value + ' ' : '') + qk.dataset.quick; i.focus(); } return; } }
   if (t.closest('#sosGo')){ sosSend(); return; }
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
@@ -1512,7 +1560,7 @@ $('loginBtn').addEventListener('click', doLogin);
 document.addEventListener('change', e => { if (e.target.name === 'ideaM') $('ideaModeHint').textContent = IDEA_HINT[e.target.value]; });
 document.addEventListener('change', e => { if (e.target.name === 'sosR') $('sosGo').disabled = false; });
 document.addEventListener('change', e => { if (e.target.id === 'oathChk') $('oathGo').disabled = !e.target.checked; });
-document.addEventListener('change', e => { if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
+document.addEventListener('change', e => { if (e.target.id === 'chatWho' && e.target.value){ chat.to = e.target.value; renderChat(); const i = $('chatText'); if (i) i.focus(); return; } if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
 document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });
 $('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
