@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 32;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 33;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -88,7 +88,8 @@ function doPost(e) {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     const mv = props_().getProperty('movedTo'); if (mv) return out_({ ok: false, error: 'moved', movedTo: mv, api: API_VERSION });
     if (body.action === 'student') return out_(handleStudent_(body));
-    if (body.action === 'sos') return out_(sos_(body));          // 🚨 로그인 없이 선생님께 긴급 메시지
+    if (body.action === 'sos') return out_(sos_(body));
+    if (body.action === 'tpass') return out_(tpass_(body));    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
     let auth;
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
       const c = checkStudent_(String(body.name), body.pin);
@@ -272,7 +273,7 @@ function writeRows_(db, keys) {
 /* 👑 학생용 출석부 → 관리자 출석부: 관리자 · 부관리자 · 지각 관리자 비밀번호로도 열 수 있어요 (틀리면 10분에 10번까지) */
 function apinAuth_(pin) {
   const c = cache_(), f = Number(c.get('apinfail') || 0);
-  if (f >= 10) return { ok: false };
+  if (f >= 10) Utilities.sleep(3000);   // 많이 틀리면 느려지기만 해요 (선생님은 맞는 비밀번호로 언제든 들어와요)
   let list = null; try { list = JSON.parse(props_().getProperty('apins') || 'null'); } catch (e) {}
   if (!list) {      // 처음 한 번: 설정에서 비밀번호를 읽어 와요
     const cf = readRows_().map.config || {};
@@ -282,6 +283,14 @@ function apinAuth_(pin) {
   if (pin && list.indexOf(hash_('P:' + String(pin))) >= 0) return { ok: true, needKey: false };
   try { c.put('apinfail', String(f + 1), 600); } catch (e) {}
   return { ok: false };
+}
+/* 👑 선생님 통과: 마스터 관리자 비밀번호면 이 기기는 잠자는 시간·입장 코드를 건너뛰어요 */
+function tpass_(body) {
+  const c = cache_(), f = Number(c.get('tpassfail') || 0);
+  if (f >= 5) Utilities.sleep(Math.min(8000, 1500 * (f - 4)));
+  const cf = readRows_().map.config || {}, pin = String(body.tpin || '');
+  if (!cf.adminPin || !pin || pin !== String(cf.adminPin)) { try { c.put('tpassfail', String(f + 1), 1800); } catch (e) {} return { ok: false, error: 'wrong' }; }
+  return { ok: true, api: API_VERSION, code: String(cf.accessCode || ''), hours: Number(cf.accessHours) || 3, epoch: Number(cf.accessEpoch) || 0 };
 }
 function teacherAuth_(key) {
   const stored = props_().getProperty('teacherKey');
@@ -545,7 +554,8 @@ function checkStudent_(name, pin) {
   if (!stored) return { ok: false, error: 'nopin' };
   const failRaw = p.getProperty('fail:' + name);
   const fail = failRaw ? JSON.parse(failRaw) : { n: 0, until: 0 };
-  if (fail.until && Date.now() < fail.until) return { ok: false, error: 'locked', until: fail.until };
+  const tch = isTeacherName_(name);
+  if (fail.until && Date.now() < fail.until) { if (!tch) return { ok: false, error: 'locked', until: fail.until }; Utilities.sleep(2000); }   // 👑 선생님 계정은 잠기지 않아요 (느려지기만)
   if (hash_('S:' + name + ':' + String(pin || '')) !== stored) {
     fail.n = (fail.n || 0) + 1;
     if (fail.n >= MAX_FAIL) { fail.until = Date.now() + LOCK_MINUTES * 60000; fail.n = 0; }
@@ -850,7 +860,8 @@ function markRow_(name, header, id, col, value) {
   if (r) r.sh.getRange(r.row, col).setValue(value);
 }
 function studentChat_(name, body, pub) {
-  const cfg = chatCfg_(), muted = (cfg.muted || []).indexOf(name) >= 0, open = chatOpen_(cfg);
+  const T = isTeacherName_(name);   // 👑 선생님은 쉬는 시간·잠금·속도 제한 없이
+  const cfg = chatCfg_(), muted = !T && (cfg.muted || []).indexOf(name) >= 0, open = T || chatOpen_(cfg);
   const names = ((pub && pub.students) || []).map(function (s) { return s.name; });
   let error = '';
   if (body.op === 'chatSend') {
@@ -858,11 +869,11 @@ function studentChat_(name, body, pub) {
     const last = Number(props_().getProperty('chatLast:' + name) || 0);
     if (!open) error = 'closed';
     else if (muted) error = 'muted';
-    else if (hallMuted_(name)) error = 'hallmute';
+    else if (!T && hallMuted_(name)) error = 'hallmute';
     else if (!text) error = 'empty';
-    else if (Date.now() - last < 3000) error = 'slow';
-    else if (to && to.charAt(0) === '#' && myTable_(name) !== to.slice(1)) error = 'group';
-    else if (to && to.charAt(0) !== '#' && (!cfg.whisper || names.indexOf(to) < 0 || to === name)) error = 'whisper';
+    else if (!T && Date.now() - last < 3000) error = 'slow';
+    else if (!T && to && to.charAt(0) === '#' && myTable_(name) !== to.slice(1)) error = 'group';
+    else if (to && to.charAt(0) !== '#' && ((!cfg.whisper && !T) || names.indexOf(to) < 0 || to === name)) error = 'whisper';
     else {
       const lock = lightLock_(15000);
       try { if (!error) { appendChat_(name, to, text); props_().setProperty('chatLast:' + name, String(Date.now())); } }
@@ -871,7 +882,7 @@ function studentChat_(name, body, pub) {
   }
   const tb = myTable_(name), isT = /(쌤|샘|선생님)$/.test(name);   // 👑 선생님은 귓속말·모둠 대화도 모두 봐요
   const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (isT || m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb)); });
-  return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
+  return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper || T, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
 }
 
 /* ---------------- 📮 질문 · 건의함 ---------------- */
@@ -892,7 +903,7 @@ function studentAsk_(name, body) {
     const text = String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 300);
     const last = Number(props_().getProperty('askLast:' + name) || 0);
     if (!text) error = 'empty';
-    else if (Date.now() - last < 15000 && body.kind !== '긴급') error = 'slow';
+    else if (Date.now() - last < 15000 && body.kind !== '긴급' && !isTeacherName_(name)) error = 'slow';
     else {
       const lock = lightLock_(15000);
       try {
@@ -1015,8 +1026,8 @@ function villageState_() {
   };
 }
 function studentVillage_(name, body) {
-  const cfg = chatCfg_();
-  if (!chatOpen_(cfg)) return { ok: true, error: 'closed' };
+  const cfg = chatCfg_(), T = isTeacherName_(name);
+  if (!T && !chatOpen_(cfg)) return { ok: true, error: 'closed' };
   const lock = lightLock_(10000);
   try {
     if (body.op === 'act') {                     // 🎣 츄르 뽑기·낚시·마시멜로 같은 마을 놀이는 하루 20번
@@ -1044,12 +1055,12 @@ function studentVillage_(name, body) {
       Object.keys(pos).forEach(function (n) { if (now - pos[n].ts > 3600000 || !pos[n].sc) delete pos[n]; });   // 오래된 자리 정리
       pos[name] = p; cachePut_('v:pos', pos);
     } else {
-      if ((cfg.muted || []).indexOf(name) >= 0) return { ok: true, error: 'muted' };
-      if (hallMuted_(name)) return { ok: true, error: 'hallmute' };
+      if (!T && (cfg.muted || []).indexOf(name) >= 0) return { ok: true, error: 'muted' };
+      if (!T && hallMuted_(name)) return { ok: true, error: 'hallmute' };
       const e = String(body.e || '');
       if (EMOTES.indexOf(e) < 0) return { ok: true, error: 'bad' };
       const last = Number(props_().getProperty('emoLast:' + name) || 0);
-      if (Date.now() - last < 1500) return { ok: true, error: 'slow' };
+      if (!T && Date.now() - last < 1500) return { ok: true, error: 'slow' };
       props_().setProperty('emoLast:' + name, String(Date.now()));
       cachePush_('v:emo', { n: name, e: e, ts: Date.now() }, 40);
     }
@@ -1635,7 +1646,7 @@ function studentCoins_(name, body) {
       const slot = m && m.cat === 'daily' ? 'd' : m && m.cat === 'weekly' ? 'w' : '';
       if (!m || m.auto || !m.req || !slot) error = 'noitem';
       else if (pk[slot].ids.indexOf(m.id) >= 0) error = 'owned';
-      else if (pk[slot].ids.length >= (slot === 'd' ? lim.daily : lim.weekly)) error = 'pickfull';
+      else if (!T && pk[slot].ids.length >= (slot === 'd' ? lim.daily : lim.weekly)) error = 'pickfull';
       else { pk[slot].ids.push(m.id); props_().setProperty('pick:' + name, JSON.stringify(pk)); result = m.name; }
     } else if (body.op === 'missionReq') {
       const m = (eco.missions || []).filter(function (x) { return x.id === body.mid; })[0];
@@ -1643,9 +1654,9 @@ function studentCoins_(name, body) {
       const key = m ? 'm:' + m.id + ':' + name + ':' + periodKey_(m.limit) : '';
       const pending = readReqs_(function (r) { return r.name === name && r.itemId === body.mid && r.status === '대기'; }).length;
       if (!m || !m.req) error = 'noitem';
-      else if (eco.pickLimit && pk0.d.ids.indexOf(m.id) < 0 && pk0.w.ids.indexOf(m.id) < 0) error = 'nopick';
+      else if (!T && eco.pickLimit && pk0.d.ids.indexOf(m.id) < 0 && pk0.w.ids.indexOf(m.id) < 0) error = 'nopick';
       else if (pending) error = 'pending';
-      else if (m.limit !== 'none' && rows.some(function (r) { return r.key === key; })) error = 'done';
+      else if (!T && m.limit !== 'none' && rows.some(function (r) { return r.key === key; })) error = 'done';
       else {
         const sh = sheet_(REQ_SHEET, REQ_HEADER), id = Number(props_().getProperty('reqSeq') || 0) + 1;
         props_().setProperty('reqSeq', String(id));
@@ -1655,7 +1666,7 @@ function studentCoins_(name, body) {
     } else if (body.op === 'game') {
       const g = eco.game || {}, bet = Math.floor(Number(body.bet) || 0);
       const playsKey = 'plays:' + name + ':' + ds, plays = Number(props_().getProperty(playsKey) || 0);
-      if (!gameOpen_(g)) error = 'closed';
+      if (!T && !gameOpen_(g)) error = 'closed';
       else if (!T && plays >= (g.daily || 5)) error = 'limit';
       else if (!(bet >= 1 && bet <= (T ? 1000 : (g.maxBet || 30)))) error = 'bet';
       else if (bal() < bet) error = 'poor';
@@ -1701,7 +1712,7 @@ function studentCoins_(name, body) {
       ok: true, error: error, result: result, balance: T ? 0 : bal(), unlimited: T,
       ledger: rows.filter(function (r) { return r.name === name; }).slice(-30).reverse().map(function (r) { return { t: r.t, amt: r.amt, why: r.why }; }),
       inv: inv, reqs: reqs, sold: sold,
-      economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on, open: gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} },
+      economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on || T, open: T || gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} },
         furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {}, locked: eco.locked || {} },
       playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),

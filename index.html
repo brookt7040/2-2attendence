@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2-2 냥냥 출석 아일랜드</title>
+<script src="lock.js"></script>
 <style>
 @font-face{
   font-family:'NeoDunggeunmo';
@@ -621,7 +622,7 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .rev-step:has(input:checked) span{text-decoration:line-through;opacity:.6;}
 #revBar{position:fixed;left:12px;bottom:46px;z-index:9500;font-family:inherit;font-size:.95rem;border:2px solid #C0365C;border-radius:999px;background:#FFE1EA;color:#8A2A44;padding:5px 14px;cursor:pointer;box-shadow:0 3px 0 #C0365C;animation:revPulse 1.6s ease-in-out infinite;}
 @keyframes revPulse{50%{transform:translateY(-3px);background:#FFC9D6;}}
-body.view-mode #revBar,body.view-mode #sleepAdmin{display:none !important;}
+body.view-mode #revBar{display:none !important;}
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:9999;}
 .modal{background:var(--cream);border:4px solid var(--ink);border-radius:26px;box-shadow:0 8px 0 var(--ink);padding:24px 26px;display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow-y:auto;animation:popIn .22s ease-out;}
 .modal h2{margin:0;text-align:center;font-size:1.7rem;font-weight:normal;padding-bottom:10px;border-bottom:3px dashed #EAD49A;}
@@ -752,16 +753,6 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 #remoteBanner:not(.show){visibility:hidden;}
 #backView{position:fixed;right:10px;bottom:10px;z-index:9400;font-family:inherit;font-size:.85rem;border:2px solid var(--ink);border-radius:999px;background:#E8ECFF;color:var(--ink);padding:4px 12px;cursor:pointer;box-shadow:0 2px 0 var(--ink);opacity:.9;}
 #pinOverlay{z-index:40001 !important;}
-#sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:20px;}
-#sleepOv.on{display:flex;}
-#sleepOv .sl-cat{font-size:5.5rem;position:relative;line-height:1;}
-#sleepOv .sl-z{position:absolute;right:-18px;top:-6px;font-size:2rem;animation:slZ 2.4s ease-in-out infinite;}
-#sleepOv .sl-z.b{right:-52px;top:-48px;font-size:1.4rem;animation-delay:1.2s;}
-#sleepOv h2{margin:0;font-size:1.8rem;font-weight:normal;}
-#sleepOv p{margin:0;font-size:1.1rem;opacity:.85;}
-#sleepOv .sl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 50% 12%,#fff,transparent);opacity:.7;}
-#sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
-@keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 /* 👀 학생용 출석부: Must Read 비었으면 숨김 · 청소 당번 ＋ · 종례하기 숨김 · 폰에서는 오른쪽 → 가운데 → 왼쪽 순서 */
 body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openClosingBtn{display:none !important;}
 #myPageBtn{display:none !important;}   /* 🐱 내 화면 보러가기는 이제 안 써요 (2-2😻 앱 탭으로 오가요) */
@@ -989,7 +980,6 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div id="songDock" style="display:none;"></div>
 <div id="remoteBanner" onclick="this.classList.remove('show')"></div>
 <div id="syncPill" title="눌러서 지금 동기화">☁️ 동기화</div>
-<div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat"><canvas id="sleepCat" class="pix" width="16" height="16" style="width:150px;height:150px;image-rendering:pixelated;"></canvas><span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><button type="button" class="sl-admin" id="sleepAdmin">👑 관리자</button></div>
 <button type="button" id="revBar" style="display:none;"></button>
 <div class="overlay" id="revOv">
   <div class="modal rev-modal"><button type="button" class="modal-x" data-close="revOv" title="닫기">✕</button>
@@ -1071,14 +1061,15 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </div>
 
 <!-- 비밀번호 -->
-<div class="overlay" id="gateOv" style="z-index:20050;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);">
-  <div class="modal gate-box">
-    <div style="font-size:3rem;">🔐</div>
+<div class="overlay nyl-gate" id="gateOv">
+  <div class="nyl-box">
+    <div class="nyl-ic">🔐</div>
     <h2>입장 코드를 넣어 주세요</h2>
-    <div class="form-hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
-    <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="text" id="gateInput" maxlength="12" class="nopw pin-input">
-    <div id="gateErr" class="form-hint" style="min-height:1.4em;color:#D94A6A;"></div>
-    <button type="button" class="btn btn-y" id="gateBtn">들어가기</button>
+    <div class="nyl-hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
+    <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="text" id="gateInput" maxlength="12" inputmode="numeric" class="nopw nyl-in">
+    <div id="gateErr" class="nyl-err"></div>
+    <button type="button" class="nyl-go" id="gateBtn">들어가기</button>
+    <div id="gateT"></div>
   </div>
 </div>
 <div id="graceWarn"><span class="gw-ic">⏰</span><span>출석 마감! <b id="graceLeft">10</b>초 안에 터치하지 않으면 <b>지각</b> 처리됩니다</span></div>
@@ -1395,7 +1386,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
       <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
-      <div class="row" style="margin-top:12px;"><span>💤 <b>접속 금지 시간</b> · 교실 출석부·학생 화면·학생용 출석부·안내 사이트가 모두 잠겨요 (선생님 계정은 괜찮아요)</span></div>
+      <div class="row" style="margin-top:12px;"><span>💤 <b>접속 금지 시간</b> · 학생용 출석부·알림·아지트·대화·안내가 잠겨요<br><small style="color:var(--ink-soft);">관리자 출석부는 안 잠겨요 · 잠긴 화면의 <b>👑 선생님</b>에 마스터 비번을 넣으면 그 기기는 30일 동안 통과</small></span></div>
       <div class="row"><label><input type="checkbox" id="sleepOnInput"> 사용</label><span><input type="time" id="sleepStartInput"> 부터 <input type="time" id="sleepEndInput"> 까지</span></div>
     </div>
 
@@ -2288,19 +2279,10 @@ function strikeSet(name, reset){
 }
 
 /* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
-function sleepIn(cfg, d){
-  if (!cfg || !cfg.on || !cfg.start || !cfg.end) return false;
-  const t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  return cfg.start < cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
-}
-function sleepShow(cfg, on){
-  const o = document.getElementById('sleepOv'); if (!o) return;
-  o.classList.toggle('on', !!on);
-  if (on && typeof catColors === 'function' && typeof MASCOT !== 'undefined' && document.getElementById('sleepCat')) try { drawColors(document.getElementById('sleepCat'), catColors(MASCOT, null, { blink: true })); } catch(e){}
-  if (on) document.getElementById('sleepMsg').textContent = `${cfg.end}에 다시 만나요! 🌙 (${cfg.start} ~ ${cfg.end}에는 쉬어요)`;
-}
-let sleepBypass = false, viewSleep = null;
-function sleepTick(){ const cfg = VIEW ? viewSleep : db.sleep; sleepShow(cfg, !sleepBypass && sleepIn(cfg, nowD())); }
+/* 💤 하나가 자는 시간: 학생용 출석부(보기 화면)만 잠겨요. 관리자 출석부는 늘 열려 있어요 · 화면 모양은 lock.js */
+let viewSleep = null;
+function sleepTick(){ if (window.NyLock) NyLock.sleep(viewSleep, !!VIEW && NyLock.sleepIn(viewSleep, nowD())); }
+if (window.NyLock) NyLock.api = () => VIEW ? VIEW.api : (sync && sync.url) || '';
 /* 👑 비밀 버튼: 학생용 출석부에서 Notice를 5번 연달아 누르면 관리자 비밀번호 → 관리자 출석부 */
 let swTaps = [];
 function swTap(){
@@ -2316,6 +2298,7 @@ async function swGo(){
     const j = await r.json();
     if (!j.ok){ $('swErr').textContent = '❌ 비밀번호가 달라요'; $('swPin').value = ''; return; }
     localStorage.setItem(SYNC_KEY, JSON.stringify({ url: VIEW.api, v: -1, queue: [], last: 0, api: j.api || 3, key: '', pubHash: '', tname: '', tpin: '', apin: pin }));
+    if (window.NyLock) await NyLock.teacherPass(pin);   // 마스터 비번이면 👑 선생님 통과도
     try { localStorage.setItem('nyangBackView', location.href); } catch(e){}
     location.href = location.pathname;
   } catch(e){ $('swErr').textContent = '연결이 안 돼요'; }
@@ -2392,7 +2375,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 32;
+const NEED_API = 33;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -5761,7 +5744,8 @@ function openVillage(opts){
   const T0 = Date.now();
   const hana = { x: 800, y: 640, tx: null, ty: null, face: 1, wanderAt: 0, bubble: null, img: null, look: {} };
   const say = (t, ms) => { msgEl.textContent = t; msgEl.style.display = 'block'; clearTimeout(say.tm); say.tm = setTimeout(() => msgEl.style.display = 'none', ms || 2500); };
-  const isOpen = () => !state || state.open;
+  const meT = /(쌤|샘|선생님|교감|교장)$/.test(meName || '');   // 👑 선생님은 쉬는 시간에도 마을을 써요
+  const isOpen = () => meT || !state || state.open;
 
   /* ---------- 화면 크기 · 카메라 ---------- */
   function resize(){
@@ -6287,7 +6271,7 @@ function openVillage(opts){
       else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
     }
     drawPaws(t);
-    if (state && !state.open && !opts.viewOnly) label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF');
+    if (state && !state.open && !meT && !opts.viewOnly) label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF');
     if (scene === 'hall') renderGroup();
     raf = requestAnimationFrame(frame);
   }
@@ -7117,7 +7101,6 @@ function bindEvents(){
   $('rOathGo').addEventListener('click', remoteGo);
   $('swPin').addEventListener('keydown', e => { if (e.key === 'Enter') swGo(); });
   $('backView').addEventListener('click', backToView);
-  $('sleepAdmin').addEventListener('click', () => { if (VIEW) return; pinUntil = 0; requirePin(() => { sleepBypass = true; sleepTick(); showToast('👑 이 기기만 잠깐 깨웠어요 (새로고침하면 다시 잠겨요)'); }); });
   $('revOv').addEventListener('change', e => { const c = e.target.closest('[data-rev]'); if (c) try { localStorage.setItem('nyangRev:' + NEED_API + ':' + c.dataset.rev, c.checked ? '1' : ''); } catch(err){} });
   $('gateResetBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
@@ -7174,7 +7157,7 @@ const gateEpoch = () => Number(VIEW ? viewEpoch : db.accessEpoch) || 0;   // �
 function gateOk(code){ try { const g = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); return g && g.code === code && Date.now() < g.until && (Number(g.ep) || 0) === gateEpoch(); } catch(e){ return false; } }
 function gatePass(code, hours){ try { localStorage.setItem(GATE_KEY, JSON.stringify({ code, until: Date.now() + (hours || db.accessHours || 3) * 3600000, ep: gateEpoch() })); } catch(e){} }
 function showGate(check){
-  const ov = $('gateOv'); ov.style.display = 'flex'; $('gateErr').textContent = ''; $('gateInput').value = ''; setTimeout(() => $('gateInput').focus(), 80);
+  const ov = $('gateOv'); ov.style.display = 'flex'; $('gateErr').textContent = ''; if (window.NyLock) NyLock.teacherUI($('gateT'), () => location.reload()); $('gateInput').value = ''; setTimeout(() => $('gateInput').focus(), 80);
   const go = async () => {
     const v = $('gateInput').value.trim(); if (!v) return;
     $('gateErr').textContent = '확인 중…';
@@ -7188,7 +7171,7 @@ function gateCheckTimer(){
   setInterval(() => {
     if ($('gateOv').style.display === 'flex') return;
     const code = VIEW ? (viewCode || '') : (db.accessCode || '');
-    if ((VIEW || db.accessCode) && code !== '__none__' && !gateOk(code)){ if (VIEW) viewGate(); else showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }); }
+    if ((VIEW || db.accessCode) && code !== '__none__' && !gateOk(code) && !(!VIEW && window.NyLock && NyLock.isTeacher())){ if (VIEW) viewGate(); else showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }); }
   }, 30000);
 }
 /* 🐾 접속 중 화면: 첫 데이터가 오면 사라져요 */
@@ -7247,7 +7230,7 @@ function init(){
     loadDB();
     loadSync();
     if (sync.apin) $('backView').style.display = 'block';
-    if (db.accessCode && !gateOk(db.accessCode)) setTimeout(() => showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }), 50);
+    if (db.accessCode && !gateOk(db.accessCode) && !(window.NyLock && NyLock.isTeacher())) setTimeout(() => showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }), 50);
     gateCheckTimer();
     try { const qa = new URLSearchParams(location.search).get('api'); if (qa && !sync.url && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)) setTimeout(() => { openAdminUI(); $('syncUrlInput').value = qa; $('syncTName').focus(); $('syncStatusText').innerHTML = '🖥 이 기기를 연결해요: <b>선생님 계정(OO쌤 + 비밀번호)</b>을 넣고 <b>🔗 연결하기</b>를 눌러 주세요.'; }, 600); } catch(e){}
     if (upgradeEconomy()){ saveDB(); if (sync.url) syncOp({ op:'config', data: configOf() }); }

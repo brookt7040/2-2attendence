@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>냥냥 마을 · 학생용</title>
+<script src="lock.js"></script>
 <style>
 @font-face{font-family:'NeoDunggeunmo';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');font-weight:normal;font-style:normal;}
 :root{
@@ -266,16 +267,6 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 .idea .like{font-family:inherit;border:2px solid #E6D9CA;border-radius:999px;background:#fff;padding:2px 12px;cursor:pointer;}
 .idea .like.on{border-color:#E0577A;background:#FFE1EA;color:#C0365C;}
 .idea .idel{font-family:inherit;border:none;background:none;cursor:pointer;color:var(--ink-soft);}
-#sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:20px;}
-#sleepOv.on{display:flex;}
-#sleepOv .sl-cat{font-size:5.5rem;position:relative;line-height:1;}
-#sleepOv .sl-z{position:absolute;right:-18px;top:-6px;font-size:2rem;animation:slZ 2.4s ease-in-out infinite;}
-#sleepOv .sl-z.b{right:-52px;top:-48px;font-size:1.4rem;animation-delay:1.2s;}
-#sleepOv h2{margin:0;font-size:1.8rem;font-weight:normal;}
-#sleepOv p{margin:0;font-size:1.1rem;opacity:.85;}
-#sleepOv .sl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 50% 12%,#fff,transparent);opacity:.7;}
-#sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
-@keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
 #closingBox.closing-hot{border-color:#E0577A;box-shadow:0 6px 0 #E0577A,0 0 0 5px #FFE1EA;background:#FFF8FA;padding-top:40px;}
 #closingBox.closing-hot .box-head{font-size:1.35rem;background:#FF8FA6;color:#fff;animation:revPulse 1.8s ease-in-out infinite;}
 #closingBox.closing-hot .n-item{font-size:1.2rem;}
@@ -310,13 +301,6 @@ html.agit #p-notice > .nb-pub,html.agit #checkinBox{display:none !important;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
-#nGate{display:none;position:fixed;inset:0;z-index:20050;align-items:center;justify-content:center;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);padding:16px;}
-#nGate.on{display:flex;}
-.ng-box{background:#FFFDF6;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);padding:24px 26px;text-align:center;max-width:380px;width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;}
-.ng-box h2{margin:2px 0;font-size:1.4rem;}
-#ngInput{font-family:inherit;font-size:2rem;text-align:center;letter-spacing:10px;width:220px;border:3px solid var(--ink);border-radius:14px;padding:6px;}
-#ngErr{min-height:1.3em;color:#D94A6A;font-size:.95rem;}
-#ngBtn{width:100%;}
 .sos-q{font-size:1rem;margin-top:4px;}
 .sos-rs{display:grid;grid-template-columns:1fr;gap:5px;}
 .sos-r{display:flex;align-items:center;gap:6px;border:2px solid #E6D9CA;border-radius:12px;padding:7px 10px;cursor:pointer;font-size:.95rem;background:#fff;}
@@ -463,10 +447,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </div>
 </div>
 
-<div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat"><canvas id="sleepCat" class="pix" width="16" height="16" style="width:150px;height:150px;image-rendering:pixelated;"></canvas><span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><button type="button" class="sl-admin" id="sleepT">👑 선생님 로그인</button></div>
-
-<div id="nGate"><div class="ng-box"><div style="font-size:3rem;">🔐</div><h2>입장 코드를 넣어 주세요</h2><div class="hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
-  <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" id="ngInput" maxlength="12"><div id="ngErr"></div><button type="button" class="btn btn-y" id="ngBtn">들어가기</button></div></div>
+<div id="nGate" class="nyl-gate"><div class="nyl-box"><div class="nyl-ic">🔐</div><h2>입장 코드를 넣어 주세요</h2><div class="nyl-hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
+  <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw nyl-in" type="text" id="ngInput" maxlength="12" inputmode="numeric"><div id="ngErr" class="nyl-err"></div><button type="button" class="nyl-go" id="ngBtn">들어가기</button><div id="ngT"></div></div></div>
 
 <div class="overlay" id="penOv">
   <div class="modal pen-modal">
@@ -1373,7 +1355,8 @@ function openVillage(opts){
   const T0 = Date.now();
   const hana = { x: 800, y: 640, tx: null, ty: null, face: 1, wanderAt: 0, bubble: null, img: null, look: {} };
   const say = (t, ms) => { msgEl.textContent = t; msgEl.style.display = 'block'; clearTimeout(say.tm); say.tm = setTimeout(() => msgEl.style.display = 'none', ms || 2500); };
-  const isOpen = () => !state || state.open;
+  const meT = /(쌤|샘|선생님|교감|교장)$/.test(meName || '');   // 👑 선생님은 쉬는 시간에도 마을을 써요
+  const isOpen = () => meT || !state || state.open;
 
   /* ---------- 화면 크기 · 카메라 ---------- */
   function resize(){
@@ -1899,7 +1882,7 @@ function openVillage(opts){
       else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
     }
     drawPaws(t);
-    if (state && !state.open && !opts.viewOnly) label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF');
+    if (state && !state.open && !meT && !opts.viewOnly) label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF');
     if (scene === 'hall') renderGroup();
     raf = requestAnimationFrame(frame);
   }
@@ -2763,18 +2746,9 @@ async function studentCall(op, extra){
   return j;
 }
 
-/* 💤 접속 금지 시간: 하나가 자는 시간에는 화면이 잠겨요 */
-function sleepIn(cfg, d){
-  if (!cfg || !cfg.on || !cfg.start || !cfg.end) return false;
-  const t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-  return cfg.start < cfg.end ? (t >= cfg.start && t < cfg.end) : (t >= cfg.start || t < cfg.end);
-}
-function sleepShow(cfg, on){
-  const o = document.getElementById('sleepOv'); if (!o) return;
-  o.classList.toggle('on', !!on);
-  if (on && typeof catColors === 'function' && typeof MASCOT !== 'undefined' && document.getElementById('sleepCat')) try { drawColors(document.getElementById('sleepCat'), catColors(MASCOT, null, { blink: true })); } catch(e){}
-  if (on) document.getElementById('sleepMsg').textContent = `${cfg.end}에 다시 만나요! 🌙 (${cfg.start} ~ ${cfg.end}에는 쉬어요)`;
-}
+/* 💤 접속 금지 시간: 화면 모양·👑 선생님 통과는 lock.js (모든 탭 공통) */
+function sleepShow(cfg, on){ if (window.NyLock) NyLock.sleep(cfg, on); }
+if (window.NyLock) NyLock.api = () => API;
 let sleepCfgNow = null, closingAtNow = '';
 /* 📋 정해진 시각이 지나면 종례를 맨 위에 크게 */
 function placeClosing(){
@@ -2788,7 +2762,7 @@ function placeClosing(){
   box.dataset.moved = hot ? '1' : '';
 }
 setInterval(placeClosing, 30000);
-function sleepTick(){ if ($('loginOv').style.display === 'flex') return; const t = me && /(쌤|샘|선생님|교감|교장)$/.test(me.name); sleepShow(sleepCfgNow, !t && sleepIn(sleepCfgNow, new Date())); }
+function sleepTick(){ const t = me && /(쌤|샘|선생님|교감|교장)$/.test(me.name); if (t && window.NyLock && !NyLock.isTeacher()) NyLock.setTeacher(30); sleepShow(sleepCfgNow, !t && !!window.NyLock && NyLock.sleepIn(sleepCfgNow, new Date())); }
 setInterval(sleepTick, 5000);
 
 /* 🟢 지금 접속 중 (마스터 관리자 · 선생님만) */
@@ -2816,7 +2790,7 @@ async function nGateCheck(){
   try {
     const j = await nGateFetch(g ? g.code : '');
     if (j.ok && (!g || (Number(g.ep) || 0) === (Number(j.epoch) || 0) || !g.code)){ $('nGate').classList.remove('on'); nGateCode = g ? g.code : ''; return; }
-    $('nGate').classList.add('on'); setTimeout(() => $('ngInput').focus(), 60);
+    $('nGate').classList.add('on'); if (window.NyLock) NyLock.teacherUI($('ngT'), () => location.reload()); setTimeout(() => $('ngInput').focus(), 60);
   } catch(e){}
 }
 async function nGateGo(){
@@ -3668,7 +3642,6 @@ document.addEventListener('click', e => {
   { const x = t.closest('[data-stkr]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
   { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
   if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
-  if (t.closest('#sleepT')){ $('sleepOv').classList.remove('on'); openLogin(); return; }
   if (t.closest('#ideaOpen')){ openIdeas(); return; }
   if (t.closest('#ideaSend')){ ideaSend(); return; }
   { const x = t.closest('[data-isort]'); if (x){ ideaSort = x.dataset.isort; renderIdeas(); return; } }
