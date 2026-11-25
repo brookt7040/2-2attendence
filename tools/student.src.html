@@ -226,8 +226,10 @@ body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-onl
 .idea-modal{max-width:640px;width:94vw;max-height:92vh;overflow:auto;}
 .idea-modal>*{flex:none;}
 .idea-modal textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;min-height:70px;}
-.idea-intro{text-align:center;background:#FFF8DA;border-radius:14px;padding:10px 12px;line-height:1.6;font-size:1rem;word-break:keep-all;text-wrap:balance;}
-.idea-intro small{color:var(--ink-soft);font-size:.9rem;}
+.idea-intro{text-align:center;background:#FFF8DA;border-radius:14px;padding:12px 12px 10px;line-height:1.7;font-size:1rem;word-break:keep-all;}
+.idea-intro .ii-t{font-size:1.12rem;margin-bottom:2px;}
+.idea-intro .ii-s{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin-top:6px;padding-top:6px;border-top:2px dotted #EAD9A8;color:var(--ink-soft);font-size:.9rem;}
+.idea-intro .ii-s span{white-space:nowrap;}
 .idea-mode{display:flex;gap:6px;flex-wrap:wrap;}
 .idea-mode label{flex:1;min-width:110px;display:flex;align-items:center;justify-content:center;gap:4px;border:2px solid #E6D9CA;border-radius:12px;padding:7px 6px;cursor:pointer;background:#fff;white-space:nowrap;}
 .idea-mode label:has(input:checked){border-color:var(--ink);background:#FFF3C4;}
@@ -363,7 +365,10 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   <div class="modal idea-modal">
     <button type="button" class="x" data-close="ideaOv">✕</button>
     <h2>💡 마을 개선 의견</h2>
-    <div class="idea-intro">🏗️ 냥이 마을은 <b>우리가 같이 만드는 곳</b>이에요!<br>엉뚱해도, 한 줄이어도 괜찮아요. 재밌는 아이디어도, 고장 난 곳도 다 알려 주세요.<br><small>이름이 부끄러우면 🙈 익명, 민감한 문제는 🔒 비밀 제보로!</small></div>
+    <div class="idea-intro"><div class="ii-t">🏗️ 냥이 마을은 <b>우리가 같이 만드는 곳!</b></div>
+      <div>엉뚱해도, 한 줄이어도 괜찮아요</div>
+      <div>재밌는 아이디어 💡 고장 난 곳 🛠️ 다 알려 주세요</div>
+      <div class="ii-s"><span>🙈 이름이 부끄러우면 익명</span><span>🔒 민감한 문제는 비밀 제보</span></div></div>
     <textarea id="ideaText" rows="3" maxlength="300" placeholder="예: 마을에 수영장이 있으면 좋겠어요!"></textarea>
     <div class="idea-mode">
       <label><input type="radio" name="ideaM" value="name" checked><span>🐱 이름 공개</span></label>
@@ -523,7 +528,7 @@ async function ideaCall(op, extra){
   catch(e){ toast('연결이 안 돼요'); return null; }
 }
 const IDEA_EX = ['마을에 수영장이 있으면 좋겠어요 🏊', '하나랑 숨바꼭질 게임 만들어 주세요', '내 집에 둘 수 있는 가구가 더 많았으면!', '낚시에서 전설 물고기 나오게 해 주세요 🎣', '친구 집에 놀러 가는 기능 있으면 좋겠어요', '마을 밤 모드(별 뜨는 거) 만들어 주세요 🌙', '게임 광장에서 ○○ 게임이 잘 안 돼요 (고장 제보)', '생일인 친구 집에 풍선 달아 주세요 🎈'];
-function openIdeas(){ if (!me){ openLogin(); return; } $('ideaText').placeholder = '예: ' + IDEA_EX[Math.floor(Math.random() * IDEA_EX.length)]; $('ideaErr').textContent = ''; $('ideaOv').style.display = 'flex'; $('ideaList').innerHTML = '<div class="empty">불러오는 중…</div>'; ideaCall('ideaList'); }
+function openIdeas(){ if (!me){ openLogin(); return; } { const a = Math.floor(Math.random() * IDEA_EX.length); let b = Math.floor(Math.random() * (IDEA_EX.length - 1)); if (b >= a) b++; $('ideaText').placeholder = `예) ${IDEA_EX[a]}\n예) ${IDEA_EX[b]}`; } $('ideaErr').textContent = ''; $('ideaOv').style.display = 'flex'; $('ideaList').innerHTML = '<div class="empty">불러오는 중…</div>'; ideaCall('ideaList'); }
 function renderIdeas(){
   document.querySelectorAll('[data-isort]').forEach(b => b.classList.toggle('on', b.dataset.isort === ideaSort));
   const list = ideas.slice(); if (ideaSort === 'like') list.sort((a, b) => b.n - a.n || b.id - a.id);
@@ -757,7 +762,7 @@ function profileBox(){
   if (myProfile === null){ setTimeout(loadProfile, 0); myProfile = {}; }
   return `<div class="box"><div class="box-head lav">🪪 내 냥이 카드 <small style="font-size:.8rem;">마을에서 친구가 나를 누르면 보여요</small></div>
     <div class="pf-grid">${PROFILE_FORM.map(([k, l, n, ph]) => `<label>${l}<input type="text" data-pf="${k}" maxlength="${n}" placeholder="${ph}" value="${esc(myProfile[k] || '')}"></label>`).join('')}</div>
-    <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-y" id="pfSave">💾 카드 저장</button></div>
+    <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-y" id="pfSave">저장</button></div>
     <div class="hint">개인 정보(주소·전화번호 등)는 적지 마세요! 나쁜 말은 ♡로 바뀌어요.</div></div>`;
 }
 function dexBox(info){

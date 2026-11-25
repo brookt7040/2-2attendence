@@ -299,6 +299,20 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .wk-day div.lunch{background:#FFF0F4;border-color:transparent;font-size:1rem;color:#B07A88;}
 .wk-day div.chg{background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
 .wk-day div.now{border-color:var(--ink);background:#FFE58A;}
+.wk-t td.ed,.wk-day div.ed{cursor:pointer;} .wk-t td.ed:hover,.wk-day div.ed:hover{outline:2px dashed #E8C35A;}
+.wk-edit{border:3px solid var(--ink);border-radius:16px;background:#FFF8DA;padding:12px 14px;margin-bottom:12px;box-shadow:0 4px 0 var(--ink);}
+.wk-edit .we-h{font-size:1.1rem;margin-bottom:8px;} .wk-edit .we-h small{color:var(--ink-soft);font-size:.85rem;margin-left:6px;}
+.wk-edit input{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.2rem;border:2px solid var(--ink);border-radius:12px;padding:6px 10px;}
+.wk-edit .we-b{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.wk-edit .we-b button{font-family:inherit;font-size:.95rem;border:2px solid var(--ink);border-radius:999px;background:#FFE58A;padding:4px 12px;cursor:pointer;color:var(--ink);}
+.wk-edit .we-b button.g{background:#fff;margin-left:auto;}
+.clean-add{font-family:inherit;font-size:.9rem;line-height:1;border:2px solid #CDBBA8;border-radius:999px;background:#fff;color:var(--ink);width:24px;height:24px;margin-left:8px;cursor:pointer;vertical-align:middle;padding:0;}
+.clean-add:hover{border-color:var(--ink);background:#FFF3C4;}
+.ca-modal{max-width:640px;width:92vw;}
+.ca-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:10px;}
+.ca-grid button{font-family:inherit;font-size:1.05rem;border:2px solid #E6D9CA;border-radius:12px;background:#fff;padding:8px 4px;cursor:pointer;color:var(--ink);}
+.ca-grid button.on{border-color:var(--ink);background:#E2DAFF;}
+.ca-grid button.auto{background:#EEE;color:#999;cursor:default;}
 .wk-note{text-align:center;font-size:.9rem;color:var(--ink-soft);margin-top:10px;}
 
 /* ===== 상태바 ===== */
@@ -1022,6 +1036,12 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </div>
 </div>
 <div id="graceWarn"><span class="gw-ic">⏰</span><span>출석 마감! <b id="graceLeft">10</b>초 안에 터치하지 않으면 <b>지각</b> 처리됩니다</span></div>
+<div class="overlay" id="cleanAddOv">
+  <div class="modal ca-modal"><button type="button" class="modal-x" data-close="cleanAddOv" title="닫기">✕</button>
+    <h2>🧹 Cleaning Duty 추가</h2>
+    <div class="form-hint">이름을 누르면 오늘 청소 당번에 <b>넣고 · 빼요</b>. 회색은 EXP·욕설 때문에 자동으로 된 친구예요.</div>
+    <div class="ca-grid" id="cleanAddGrid"></div></div>
+</div>
 <div class="overlay" id="weekOv">
   <div class="modal wk-modal"><button type="button" class="modal-x" data-close="weekOv" title="닫기">✕</button>
     <h2>📅 우리 반 시간표</h2>
@@ -1308,6 +1328,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
       <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
+      <div class="row" style="margin-top:12px;"><span>📖 <b>안내 사이트 버전</b> · 가이드 제목 옆에 떠요</span><input type="text" id="guideVerInput" maxlength="12" style="width:110px;" placeholder="예: v1.0"></div>
+      <div class="form-group"><label>📝 안내 사이트 업데이트 내역 (한 줄에 하나 · 맨 위가 최신)</label><textarea id="guideNotesInput" style="height:80px;" placeholder="11/25 마을 개선 의견 게시판이 생겼어요&#10;11/25 시간표 보기가 생겼어요"></textarea></div>
     </div>
 
     <div class="section">
@@ -2030,6 +2052,8 @@ function mergeInto(parsed){
   if (typeof parsed.accessCode === 'string') db.accessCode = parsed.accessCode;
   if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
   if (parsed.accessEpoch) db.accessEpoch = Number(parsed.accessEpoch) || 0;
+  if (typeof parsed.guideVer === 'string') db.guideVer = parsed.guideVer;
+  if (typeof parsed.guideNotes === 'string') db.guideNotes = parsed.guideNotes;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
   if (typeof parsed.latePin === 'string') db.latePin = parsed.latePin;
 }
@@ -2169,7 +2193,7 @@ function renderTimetable(now){
   if (html !== ttKey){ ttKey = html; $('ttPanel').innerHTML = html; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 23;
+const NEED_API = 24;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2182,12 +2206,58 @@ function openRev(){
   document.querySelectorAll('[data-rev]').forEach(c => { try { c.checked = localStorage.getItem('nyangRev:' + NEED_API + ':' + c.dataset.rev) === '1'; } catch(e){} });
   $('revOv').style.display = 'flex';
 }
+/* 🧹 Cleaning Duty 직접 넣기 · 빼기 (관리자 · 부관리자 · 지각 관리자) */
+function openCleanAdd(){ renderCleanAdd(); $('cleanAddOv').style.display = 'flex'; }
+function renderCleanAdd(){
+  $('cleanAddGrid').innerHTML = kids().map(n => { const man = cleanManual(n), auto = !man && isCleaner(n);
+    return `<button type="button" class="${man ? 'on' : ''} ${auto ? 'auto' : ''}" data-ca="${esc(n)}" ${auto ? 'disabled' : ''}>${man ? '🧹 ' : ''}${esc(n)}</button>`; }).join('');
+}
+function toggleCleanManual(n){
+  const ds = getTodayStr(); db.cleanDone[ds] = db.cleanDone[ds] || {};
+  const k = '+' + n, v = !db.cleanDone[ds][k];
+  if (v) db.cleanDone[ds][k] = true; else delete db.cleanDone[ds][k];
+  saveDB(); syncOp({ op:'clean', ds, name: k, v }); renderMenuBoard(); renderCleanAdd(); publishPub();
+  showToast(v ? `🧹 ${n} 오늘 청소 당번에 넣었어요` : `${n} 청소 당번에서 뺐어요`);
+}
 /* 📅 시간표 전체 보기 (오늘 · 내일 · 이번 주) — 보기 전용 출석부에서도 열려요 */
 let wkMode = 'today';
-function ttDayItems(wd, withChg){
-  const tt = ttCfg(), subj = tt.subj[wd] || [], chg = withChg ? (((db.timetable || {}).chg || {})[getTodayStr()] || {}) : {};
+function ttDayItems(d){
+  const wd = d.getDay(), ds = getTodayStr(d), tt = ttCfg(), subj = tt.subj[wd] || [], chg = (((db.timetable || {}).chg || {})[ds]) || {};
   let ci = 0;
-  return tt.times.map((x, i) => { const lunch = ttIsLunch(x), num = (x.name.match(/\d+/) || [])[0]; let label = lunch ? '점심' : (subj[ci++] || ''); const changed = !lunch && chg[i] != null && chg[i] !== ''; if (changed) label = chg[i]; return { ...x, i, lunch, num, label, changed }; });
+  return tt.times.map((x, i) => { const lunch = ttIsLunch(x), num = (x.name.match(/\d+/) || [])[0], pi = lunch ? -1 : ci; let label = lunch ? '점심' : (subj[ci++] || ''); const base = label; const changed = !lunch && chg[i] != null && chg[i] !== ''; if (changed) label = chg[i]; return { ...x, i, pi, wd, ds, lunch, num, label, base, changed }; });
+}
+/* ✏️ 시간표 칸 고치기 (관리자): 그날만 · 매주 · 원래대로 */
+let wkEdit = null;
+function wkEditBox(){
+  if (!wkEdit) return '';
+  const e = wkEdit, DN = ['일','월','화','수','목','금','토'];
+  return `<div class="wk-edit"><div class="we-h">✏️ ${DN[e.wd]}요일 ${e.ds.slice(5).replace('-', '/')} · ${esc(e.name)} (${esc(e.start)}) <small>원래: ${esc(e.base || '비어 있음')}</small></div>
+    <input type="text" id="wkEditIn" maxlength="10" value="${esc(e.label || '')}" placeholder="과목">
+    <div class="we-b"><button type="button" data-we="day">📌 이 날만 바꾸기</button><button type="button" data-we="week">🔁 매주 ${DN[e.wd]}요일 바꾸기</button>${e.changed ? '<button type="button" data-we="undo">↩️ 이 날 변경 취소</button>' : ''}<button type="button" data-we="close" class="g">닫기</button></div></div>`;
+}
+function wkEditSave(kind){
+  const e = wkEdit; if (!e) return;
+  if (kind === 'close'){ wkEdit = null; renderWeek(); return; }
+  const tt = ttCfg(); db.timetable = db.timetable || { times: tt.times, subj: tt.subj };
+  db.timetable.times = db.timetable.times && db.timetable.times.length ? db.timetable.times : tt.times;
+  const v = ($('wkEditIn').value || '').trim().slice(0, 10);
+  if (kind === 'week'){
+    const subj = db.timetable.subj = db.timetable.subj || {}, row = (subj[e.wd] = (subj[e.wd] || []).slice());
+    while (row.length < e.pi) row.push(''); row[e.pi] = v;
+    const all = db.timetable.chg || {}; if (all[e.ds]) delete all[e.ds][e.i];
+  } else {
+    const all = db.timetable.chg = db.timetable.chg || {}, day = all[e.ds] = all[e.ds] || {};
+    if (kind === 'undo' || !v) delete day[e.i]; else day[e.i] = v;
+    const today = getTodayStr(); Object.keys(all).forEach(d => { if (d < today || !Object.keys(all[d]).length) delete all[d]; });
+  }
+  saveDB(); syncOp({ op:'config', data: configOf() }); ttKey = ''; updateReward(nowD());
+  showToast(kind === 'week' ? `🔁 매주 ${['일','월','화','수','목','금','토'][e.wd]}요일 ${e.name} → ${v || '비움'}` : kind === 'undo' ? '↩️ 원래 과목으로 돌렸어요' : `📌 ${e.ds.slice(5).replace('-', '/')} ${e.name} → ${v || '원래대로'} (분홍색)`);
+  wkEdit = null; renderWeek();
+}
+function wkCellClick(el){
+  if (VIEW) return;
+  const d = new Date(el.dataset.ds + 'T12:00:00'), it = ttDayItems(d)[+el.dataset.i]; if (!it || it.lunch) return;
+  requirePin(() => { wkEdit = it; renderWeek(); setTimeout(() => { const i = $('wkEditIn'); if (i){ i.focus(); i.select(); } }, 30); }, ['sub']);
 }
 function nextSchoolDay(d){ const n = new Date(d); do { n.setDate(n.getDate() + 1); } while (n.getDay() === 0 || n.getDay() === 6); return n; }
 function openWeek(mode){ wkMode = mode || 'today'; renderWeek(); $('weekOv').style.display = 'flex'; }
@@ -2198,21 +2268,21 @@ function renderWeek(){
   if (wkMode === 'week'){
     const mon = new Date(now); mon.setDate(now.getDate() - ((wdNow + 6) % 7) + (wdNow === 6 || wdNow === 0 ? 7 : 0));
     const days = [1,2,3,4,5].map(k => { const d = new Date(mon); d.setDate(mon.getDate() + k - 1); return d; });
-    const cols = days.map(d => ({ d, wd: d.getDay(), today: getTodayStr(d) === getTodayStr(now), items: ttDayItems(d.getDay(), getTodayStr(d) === getTodayStr(now)) }));
+    const cols = days.map(d => ({ d, wd: d.getDay(), today: getTodayStr(d) === getTodayStr(now), items: ttDayItems(d) }));
     const rows = ttCfg().times.map((x, i) => ttIsLunch(x)
       ? `<tr class="lunch"><td class="p">${esc(x.start)}</td><td colspan="5">점심시간</td></tr>`
-      : `<tr><td class="p">${esc(x.name)}<br>${esc(x.start)}</td>${cols.map(c => { const it = c.items[i]; return `<td class="${c.today ? 'today' : ''} ${it.changed ? 'chg' : ''}">${esc(it.label || '·')}</td>`; }).join('')}</tr>`).join('');
-    $('weekBody').innerHTML = `<table class="wk-t"><thead><tr><th style="width:84px;"></th>${cols.map(c => `<th class="${c.today ? 'today' : ''}">${DN[c.wd]}<small>${md(c.d)}${c.today ? ' · 오늘' : ''}</small></th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
-      <div class="wk-note">분홍 칸은 오늘만 바뀐 수업이에요</div>`;
+      : `<tr><td class="p">${esc(x.name)}<br>${esc(x.start)}</td>${cols.map(c => { const it = c.items[i]; return `<td class="${c.today ? 'today' : ''} ${it.changed ? 'chg' : ''} ${VIEW ? '' : 'ed'}" data-ds="${it.ds}" data-i="${i}">${esc(it.label || '·')}</td>`; }).join('')}</tr>`).join('');
+    $('weekBody').innerHTML = wkEditBox() + `<table class="wk-t"><thead><tr><th style="width:84px;"></th>${cols.map(c => `<th class="${c.today ? 'today' : ''}">${DN[c.wd]}<small>${md(c.d)}${c.today ? ' · 오늘' : ''}</small></th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
+      <div class="wk-note">분홍 칸은 그날만 바뀐 수업이에요${VIEW ? '' : ' · 칸을 누르면 고칠 수 있어요 (관리자)'}</div>`;
     return;
   }
   let d = new Date(now), isToday = wkMode === 'today';
   if (!isToday || wdNow === 0 || wdNow === 6) d = isToday ? nextSchoolDay(now) : nextSchoolDay(now);
-  const realToday = getTodayStr(d) === getTodayStr(now), items = ttDayItems(d.getDay(), realToday);
+  const realToday = getTodayStr(d) === getTodayStr(now), items = ttDayItems(d);
   const title = `${DN[d.getDay()]}요일 ${md(d)}${realToday ? ' · 오늘' : (isToday ? ' · 주말이라 다음 수업일' : ' · 내일')}`;
-  $('weekBody').innerHTML = `<div class="wk-note" style="font-size:1.1rem;margin:0 0 8px;color:var(--ink);">${title}</div><div class="wk-day">${items.map(x => {
+  $('weekBody').innerHTML = wkEditBox() + `<div class="wk-note" style="font-size:1.1rem;margin:0 0 8px;color:var(--ink);">${title}</div><div class="wk-day">${items.map(x => {
     const now2 = realToday && cur >= ttMin(x.start) && cur < ttMin(x.end);
-    return `<div class="${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${now2 ? 'now' : ''}"><small>${esc(x.lunch ? '점심' : x.name)} · ${esc(x.start)}</small><span>${esc(x.lunch ? '점심시간' : (x.label || '·'))}${x.changed ? ' (변경)' : ''}</span></div>`; }).join('')}</div>`;
+    return `<div class="${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${now2 ? 'now' : ''} ${VIEW || x.lunch ? '' : 'ed'}" data-ds="${x.ds}" data-i="${x.i}"><small>${esc(x.lunch ? '점심' : x.name)} · ${esc(x.start)}</small><span>${esc(x.lunch ? '점심시간' : (x.label || '·'))}${x.changed ? ' (변경)' : ''}</span></div>`; }).join('')}</div>`;
 }
 /* 📚 오늘만 과목 바꾸기: 시간표 칸을 누르면 (관리자) */
 function editTtToday(i){
@@ -2267,7 +2337,8 @@ function statusLine(name){ const st = db.statuses && db.statuses[name]; return s
 const SWEAR_STEP = 5;
 function swearList(n){ return Object.entries(db.notes || {}).flatMap(([ds, l]) => (l || []).filter(x => x.who === n && x.kind === 'swear').map(x => ({ ...x, ds }))).sort((a, b) => (a.ds + a.t + a.id).localeCompare(b.ds + b.t + b.id)); }
 function swearToday(n, ds){ ds = ds || getTodayStr(); return swearList(n).some((x, i) => (i + 1) % SWEAR_STEP === 0 && x.ds === ds); }
-function isCleaner(n){ return !isTeacherName(n) && (dayTotal(n) < 0 || swearToday(n)); }
+function cleanManual(n){ return !!((db.cleanDone || {})[getTodayStr()] || {})['+' + n]; }   // ➕ 관리자가 직접 넣은 청소 당번
+function isCleaner(n){ return !isTeacherName(n) && (dayTotal(n) < 0 || swearToday(n) || cleanManual(n)); }
 function flipCard(card){
   if (card.classList.contains('flipping')) return;
   card.classList.add('flipping');
@@ -2316,7 +2387,7 @@ function renderGrid(){
     card.classList.add('lv-' + li.lv);
     card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
     card.insertAdjacentHTML('beforeend', `<div class="lv-row" title="Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP ${li.exp}${li.next ? ` · 다음 레벨까지 ${li.need}` : ''}"><span class="lv-badge">Lv.${li.lv}</span><div class="lv-track"><div class="lv-fill" style="width:${Math.round(li.pct*100)}%"></div></div>${li.lv === 10 ? '<span class="lv-badge">MAX</span>' : ''}<button type="button" class="closet-btn" title="꾸미기 방">🎨</button></div>`);
-    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); if (VIEW){ location.href = studentLink() + '&tab=me&who=' + encodeURIComponent(name); return; } requireKidPin(name, () => openCloset(name)); });
+    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); requireKidPin(name, () => openCloset(name)); });
     grid.append(card);
   });
   lastNew = null;
@@ -2687,7 +2758,7 @@ function renderMenuBoard(){
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
   box.innerHTML = html;
   const side = $('cleanSide');
-  if (side) side.innerHTML = `<div class="t">🧹 Cleaning Duty</div>` + (cleaners.length
+  if (side) side.innerHTML = `<div class="t">🧹 Cleaning Duty<button type="button" class="clean-add" data-cleanadd title="청소 당번 추가 · 빼기 (관리자)">＋</button></div>` + (cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! ✨</span>');
   renderNoteSide();
@@ -3023,7 +3094,7 @@ function openCloset(name, newIds, onClose, admin){
   renderCloset(); $('closetOverlay').style.display = 'flex';
 }
 function closeCloset(){
-  $('closetOverlay').style.display = 'none'; closetName = null; renderGrid();
+  $('closetOverlay').style.display = 'none'; closetName = null; if (VIEW) kidAuth = null; renderGrid();
   if ($('gmOverlay').style.display === 'flex') renderGm();
   const f = closetOnClose; closetOnClose = null; f && f();
 }
@@ -3288,18 +3359,20 @@ function requireKidPin(name, fn, onCancel){
   $('pinInput').value = ''; $('pinHint').textContent = '학생 페이지 로그인 비밀번호(숫자 4자리)를 넣어 주세요';
   $('pinOverlay').style.display = 'flex'; setTimeout(() => $('pinInput').focus(), 50);
 }
+let kidAuth = null;   // 👀 보기 전용 출석부에서 학생 비밀번호로 연 꾸미기 방 → 학생 계정으로 저장해요
 async function checkKidPin(){
   const k = kidPin, v = $('pinInput').value.trim(); if (!k) return;
   const ok = () => { kidPin = null; $('pinOverlay').style.display = 'none'; k.fn(); };
   if (db.adminPin && v === db.adminPin) return ok();
   if (!/^\d{4}$/.test(v)){ $('pinHint').textContent = '숫자 4자리를 넣어 주세요'; return; }
-  if (!sync.url){ $('pinHint').textContent = '서버 연결이 없어서 확인할 수 없어요 (관리자 비밀번호로 열 수 있어요)'; return; }
+  const kurl = VIEW ? VIEW.api : sync.url;
+  if (!kurl){ $('pinHint').textContent = '서버 연결이 없어서 확인할 수 없어요 (관리자 비밀번호로 열 수 있어요)'; return; }
   $('pinHint').textContent = '확인 중…';
   try {
-    const r = await fetch(sync.url, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: k.name, pin: v, op:'login' }) });
+    const r = await fetch(kurl, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: k.name, pin: v, op:'login' }) });
     const j = await r.json();
     if (kidPin !== k) return;
-    if (j.ok) return ok();
+    if (j.ok){ kidAuth = { name: k.name, pin: v }; if (VIEW && j.look) db.looks[k.name] = j.look; return ok(); }
     $('pinHint').textContent = j.error === 'locked' ? '너무 많이 틀려서 잠시 잠겼어요. 조금 있다가 해 주세요'
       : j.error === 'nopin' ? '아직 로그인 비밀번호가 없어요 (관리자 비밀번호로 열 수 있어요)'
       : j.error === 'wrong' ? `❌ 비밀번호가 달라요${j.left ? ` (남은 기회 ${j.left}번)` : ''}` : '다시 해 주세요';
@@ -3938,6 +4011,7 @@ function openAdminUI(){
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
   $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
+  $('guideVerInput').value = db.guideVer || ''; $('guideNotesInput').value = db.guideNotes || '';
   $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
   const ac = db.alarmConfig;
@@ -4009,6 +4083,7 @@ async function saveAdminData(){
   db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
   db.accessCode = $('accessCodeInput').value.trim(); db.accessHours = Math.min(12, Math.max(1, parseInt($('accessHoursInput').value, 10) || 3));
   if (db.accessCode) gatePass(db.accessCode);   // 지금 이 기기는 바로 통과
+  db.guideVer = $('guideVerInput').value.trim().slice(0, 12); db.guideNotes = $('guideNotesInput').value.trim().slice(0, 1500);
   db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
   let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
@@ -4166,7 +4241,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -4211,6 +4286,8 @@ function applyConfig(c){
   if (typeof c.accessCode === 'string') db.accessCode = c.accessCode;
   if (c.accessHours) db.accessHours = Number(c.accessHours) || 3;
   if (c.accessEpoch != null) db.accessEpoch = Number(c.accessEpoch) || 0;
+  if (typeof c.guideVer === 'string') db.guideVer = c.guideVer;
+  if (typeof c.guideNotes === 'string') db.guideNotes = c.guideNotes;
   if (typeof c.latePin === 'string') db.latePin = c.latePin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
@@ -4400,6 +4477,12 @@ function publishPub(){
   sync.pubHash = h; saveSync(); syncOp({ op:'pub', data: p });
 }
 function syncLook(name){
+  if (VIEW){
+    if (!kidAuth || kidAuth.name !== name) return;
+    fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name, pin: kidAuth.pin, op:'look', look: (db.looks && db.looks[name]) || {} }) })
+      .then(r => r.json()).then(j => { if (!j || j.ok === false) showToast('저장하지 못했어요 · 다시 해 주세요'); }).catch(() => showToast('연결이 안 돼요'));
+    return;
+  }
   if (sync.api >= 3) syncOp({ op:'look', name, look: (db.looks && db.looks[name]) || null });
   else syncOp({ op:'config', data: configOf() });
 }
@@ -6781,13 +6864,19 @@ function bindEvents(){
     const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
   });
   $('ttPanel').addEventListener('click', e => { const c = e.target.closest('.tt-c[data-i]'); if (c && !VIEW) editTtToday(+c.dataset.i); });
-  document.addEventListener('click', e => { const w = e.target.closest('[data-wk]'); if (!w) return; if (w.closest('#weekOv')){ wkMode = w.dataset.wk; renderWeek(); } else openWeek(w.dataset.wk); });
+  $('cleanAddGrid').addEventListener('click', e => { const b = e.target.closest('[data-ca]'); if (b && !b.disabled) toggleCleanManual(b.dataset.ca); });
+  $('weekBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-we]'); if (b){ wkEditSave(b.dataset.we); return; }
+    const c = e.target.closest('.ed[data-ds]'); if (c) wkCellClick(c);
+  });
+  $('weekBody').addEventListener('keydown', e => { if (e.target.id === 'wkEditIn' && e.key === 'Enter' && !e.isComposing) wkEditSave('day'); });
+  document.addEventListener('click', e => { const w = e.target.closest('[data-wk]'); if (!w) return; wkEdit = null; if (w.closest('#weekOv')){ wkMode = w.dataset.wk; renderWeek(); } else openWeek(w.dataset.wk); });
   $('myPageBtn').addEventListener('click', e => {
     const api = (VIEW && VIEW.api) || sync.url;
     if (!api){ e.preventDefault(); showToast('먼저 구글 시트 동기화를 연결해 주세요'); return; }
     e.currentTarget.href = studentLink();
   });
-  $('revBar').addEventListener('click', openRev);
+  $('revBar').addEventListener('click', () => requirePin(openRev));
   $('revOv').addEventListener('change', e => { const c = e.target.closest('[data-rev]'); if (c) try { localStorage.setItem('nyangRev:' + NEED_API + ':' + c.dataset.rev, c.checked ? '1' : ''); } catch(err){} });
   $('gateResetBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
@@ -6811,7 +6900,7 @@ function bindEvents(){
   document.addEventListener('click', e => { if (!e.target.closest('.mini-menu')) $('miniMenuPop').classList.remove('on'); });
   $('openCoinViewBtn').addEventListener('click', () => { $('miniMenuPop').classList.remove('on'); openCoinView(); });
   $('cvTabs').addEventListener('click', e => { const b = e.target.closest('[data-cv]'); if (b){ cvTab = b.dataset.cv; renderCoinView(); } });
-  $('cleanSide').addEventListener('click', e => { const c = e.target.closest('[data-clean]'); if (c) requirePin(() => toggleClean(c.dataset.clean), ['sub', 'late']); });
+  $('cleanSide').addEventListener('click', e => { if (e.target.closest('[data-cleanadd]')){ requirePin(openCleanAdd, ['sub', 'late']); return; } const c = e.target.closest('[data-clean]'); if (c) requirePin(() => toggleClean(c.dataset.clean), ['sub', 'late']); });
   $('menuBoard').addEventListener('click', e => {
     const mi = e.target.closest('[data-mi]'); if (mi){ openGive(Number(mi.dataset.mi)); return; }
     const c = e.target.closest('[data-clean]'); if (c) requirePin(() => toggleClean(c.dataset.clean), ['sub', 'late']);

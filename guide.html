@@ -54,9 +54,17 @@ b.r{color:#D9466F;} b.g{color:#1F8A5F;}
 b{font-weight:normal;} .step b,.rule b,.q .k{white-space:nowrap;}
 p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 .hero p,.step,.note,.foot,.go a small{text-wrap:balance;}
+.hero .ver{display:inline-block;font-size:1.3rem;vertical-align:middle;margin-left:.6rem;background:#fff;border:0.19rem solid #5B4636;border-radius:999px;padding:.1rem .8rem;color:#5B4636;text-shadow:none;letter-spacing:0;}
+.hero .ver:empty{display:none;}
+.upd{margin-top:.6rem;}
+.upd button{font-family:inherit;font-size:1.25rem;border:0.13rem solid #CDBBA8;border-radius:999px;background:#fff;color:#5B4636;padding:.25rem 1rem;cursor:pointer;}
+.upd ul{list-style:none;max-width:44rem;margin:.8rem auto 0;text-align:left;background:#fff;border:0.19rem solid #5B4636;border-radius:1.2rem;padding:1rem 1.4rem;}
+.upd li{font-size:1.4rem;line-height:1.6;padding:.25rem 0 .25rem 1.8rem;}
+.upd li:first-child{color:#D9466F;}
 </style></head><body><div class="wrap">
 <div class="hero"><span class="cl">2학년 2반</span>
-<h1>🐾 온라인 학급</h1><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p></div>
+<h1>🐾 온라인 학급<span class="ver" id="gVer"></span></h1>
+<div class="upd" id="gUpd" style="display:none;"><button type="button" id="gUpdBtn">📝 업데이트 내역</button><ul id="gUpdList" hidden></ul></div><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p></div>
 
 <div class="go">
 <a class="a1" href="student.html?api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">🐱</span>내 화면 가기<small>로그인 · 꾸미기 · 냥이 마을</small></a>
@@ -106,4 +114,20 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <div class="q"><span class="k">내 카드에 상태가 안 떠요</span><span>🐱 내 고양이 탭 → 💬 내 상태를 적고 저장했는지 확인!</span></div>
 </div></div>
 <div class="go" style="margin-top:1.5rem;"><a class="a1" href="student.html?api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">🐱</span>내 화면 가기</a><a class="a2" href="index.html?view=1&amp;api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">📋</span>출석부 보러가기</a></div>
-</div></body></html>
+</div><script>
+(async () => {
+  try {
+    const r = await fetch('https://script.google.com/macros/s/AKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c/exec' + '?guide=1&t=' + Date.now(), { redirect:'follow' }), j = await r.json();
+    if (!j || !j.ok) return;
+    if (j.ver) document.getElementById('gVer').textContent = j.ver;
+    const lines = String(j.notes || '').split('\n').map(x => x.trim()).filter(Boolean);
+    if (lines.length){
+      const ul = document.getElementById('gUpdList');
+      lines.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+      document.getElementById('gUpd').style.display = 'block';
+      document.getElementById('gUpdBtn').onclick = () => { ul.hidden = !ul.hidden; };
+    }
+  } catch(e){}
+})();
+</script>
+</body></html>
