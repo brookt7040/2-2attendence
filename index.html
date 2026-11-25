@@ -4528,7 +4528,7 @@ function setMega(list){
 function setHanaLook(look){
   hanaLookNow = look || {};
   const el = $('hanaWear'); if (!el) return;
-  el.innerHTML = hanaWearHTML(hanaLookNow, db.economy);
+  el.innerHTML = '';   // 🐱 출석부 위 하나는 늘 기본 모습 (꾸민 모습은 마을에서만)
 }
 /* 📱 학생이 개인 기기로 누른 출석을 출석부에 기록해요 (누른 시각 기준으로 등급 계산) */
 let serverUrgent = 0, lastUrgentAlert = 0;
