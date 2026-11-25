@@ -221,9 +221,14 @@ body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-onl
 .sos-t{display:flex;flex-direction:column;align-items:center;gap:6px;margin:6px auto 0;}
 .sos-t canvas{width:120px;height:120px;image-rendering:pixelated;}
 .sos-t .vname{font-size:1.3rem;}
-.btn-sos{background:#FF5C7A;color:#fff;font-size:1.15rem;padding:10px 20px;margin-top:6px;}
-.sos-warn{background:#FFE1EA;border:2px dashed #E0577A;border-radius:14px;padding:10px 14px;font-size:.98rem;line-height:1.6;text-align:left;color:#8A2A44;}
-#sosOv input[type=text],#sosOv textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;}
+.btn-sos{background:#FF8FA6;color:#fff;font-size:1.15rem;padding:10px 20px;margin-top:6px;}
+.sos-warn{background:#FFF3C4;border:2px dashed #E0B04A;border-radius:14px;padding:10px 14px;font-size:.98rem;line-height:1.6;text-align:left;color:#6B4A1E;}
+.sos-q{font-size:1rem;margin-top:4px;}
+.sos-rs{display:grid;grid-template-columns:1fr;gap:5px;}
+.sos-r{display:flex;align-items:center;gap:6px;border:2px solid #E6D9CA;border-radius:12px;padding:7px 10px;cursor:pointer;font-size:.95rem;background:#fff;}
+.sos-r:has(input:checked){border-color:var(--ink);background:#FFF3C4;}
+.sos-r input{margin:0;}
+#sosOv .modal>*{flex:none;} #sosOv .modal{max-height:94vh;overflow:auto;} #sosOv textarea{min-height:60px;} #sosOv input[type=text],#sosOv textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;}
 #catWear{white-space:pre-line;}
 .st-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .st-quick button{font-family:inherit;font-size:.9rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 10px;cursor:pointer;}
@@ -290,7 +295,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-village">
-    <div class="guest-only box guest-box"><div class="box-head pink">🚨 선생님께 긴급 연락</div><div id="sosTeacher"></div>
+    <div class="guest-only box guest-box"><div class="box-head pink">📨 로그인이 안 될 때</div><div id="sosTeacher"></div>
       <p style="margin-top:14px;font-size:1rem;">마을은 로그인하면 들어갈 수 있어요. <button type="button" class="btn btn-y" data-guest-login style="font-size:.95rem;padding:4px 12px;">🔑 로그인</button></p></div>
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button>
       <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
@@ -334,13 +339,16 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div class="overlay" id="sosOv">
   <div class="modal">
     <button type="button" class="x" data-close="sosOv">✕</button>
-    <h2 id="sosTitle">🚨 긴급 메시지</h2>
-    <div class="sos-warn">⚠️ <b>정말 긴급할 때만</b> 보내요!<br>장난이나 긴급하지 않은 일로 보내면 <b>큰일 나요.</b> 누가 보냈는지 다 남아요.<br>🌙 <b>일과 시간이 끝난 뒤</b>에는 답이 없을 수 있어요. 위험한 상황이면 <b>112·119</b>나 가까운 어른에게 먼저 알려요.</div>
+    <h2 id="sosTitle">📨 선생님께 연락하기</h2>
+    <div class="sos-warn">로그인을 못 해서 선생님께 알려야 할 때 쓰는 곳이에요. <b>장난으로 보내면 안 돼요!</b> 보낸 이름이 남아요.<br>🌙 일과 시간이 끝난 뒤에는 답이 늦을 수 있어요.</div>
     <input type="text" id="sosWho" maxlength="10" placeholder="내 이름 (꼭 적어요)">
-    <textarea id="sosText" rows="4" maxlength="200" placeholder="무슨 일인지 적어 주세요"></textarea>
-    <label class="hint" style="display:flex;align-items:center;gap:6px;font-size:1rem;"><input type="checkbox" id="sosChk"> 긴급한 일이 맞아요</label>
+    <div class="sos-q">무슨 일이에요?</div>
+    <div class="sos-rs"><label class="sos-r"><input type="radio" name="sosR" value="🔑 비밀번호를 잊어버렸어요"><span>🔑 비밀번호를 잊어버렸어요</span></label><label class="sos-r"><input type="radio" name="sosR" value="🚫 로그인이 안 돼요"><span>🚫 로그인이 안 돼요</span></label><label class="sos-r"><input type="radio" name="sosR" value="📋 출석이 잘못 기록됐어요"><span>📋 출석이 잘못 기록됐어요</span></label><label class="sos-r"><input type="radio" name="sosR" value="📱 출석 버튼이 안 눌려요"><span>📱 출석 버튼이 안 눌려요</span></label><label class="sos-r"><input type="radio" name="sosR" value="🐛 화면이 이상하거나 오류가 나요"><span>🐛 화면이 이상하거나 오류가 나요</span></label><label class="sos-r"><input type="radio" name="sosR" value="✏️ 기타"><span>✏️ 기타</span></label></div>
+    <textarea id="sosText" rows="2" maxlength="200" placeholder="더 하고 싶은 말 (기타를 골랐으면 꼭 적어요)"></textarea>
+    <div class="sos-q">📮 답장 받을 곳 <small style="color:var(--ink-soft);">(선택 · 친구 이름이나 이메일)</small></div>
+    <input type="text" id="sosReply" maxlength="40" placeholder="예: 김하늘 / abc@sen.go.kr">
     <div class="err" id="sosErr"></div>
-    <button type="button" class="btn btn-sos" id="sosGo" disabled>🚨 보내기</button>
+    <button type="button" class="btn btn-sos" id="sosGo" disabled>📨 보내기</button>
   </div>
 </div>
 
@@ -466,15 +474,17 @@ async function statusSave(text){
 }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 async function sosSend(){
-  const who = $('sosWho').value.trim(), text = $('sosText').value.trim();
+  const who = $('sosWho').value.trim(), text = $('sosText').value.trim(), reply = $('sosReply').value.trim();
+  const rr = document.querySelector('[name=sosR]:checked'), reason = rr ? rr.value : '';
   if (!who){ $('sosErr').textContent = '이름을 꼭 적어 주세요'; return; }
-  if (!text){ $('sosErr').textContent = '무슨 일인지 적어 주세요'; return; }
+  if (!reason){ $('sosErr').textContent = '무슨 일인지 골라 주세요'; return; }
+  if (reason === '✏️ 기타' && !text){ $('sosErr').textContent = '기타를 골랐으면 무슨 일인지 적어 주세요'; return; }
   const b = $('sosGo'); b.disabled = true;
   try {
-    const j = await api(API, { method:'POST', body: JSON.stringify({ action:'sos', who, text }) });
+    const j = await api(API, { method:'POST', body: JSON.stringify({ action:'sos', who, reason, text, reply }) });
     if (j.error){ $('sosErr').textContent = { slow:'방금 다른 메시지가 갔어요. 20초 뒤에 다시 보내 주세요', full:'오늘은 더 보낼 수 없어요. 선생님을 직접 찾아가 주세요', who:'이름을 꼭 적어 주세요', empty:'무슨 일인지 적어 주세요' }[j.error] || '보내지 못했어요'; b.disabled = false; return; }
     $('sosOv').style.display = 'none'; $('sosText').value = '';
-    toast('🚨 선생님께 보냈어요. 교실 출석부에 바로 알림이 떠요');
+    toast(reply ? `📨 보냈어요! 답은 ${reply}(으)로 갈 거예요` : '📨 선생님께 보냈어요! 답은 선생님이 직접 알려 줘요');
   } catch(e){ $('sosErr').textContent = '연결이 안 돼요. 선생님을 직접 찾아가 주세요'; b.disabled = false; }
 }
 async function studentCall(op, extra){
@@ -610,9 +620,9 @@ function render(){
   if (!me){
     const tch = pub.students.find(x => /(쌤|샘|선생님)$/.test(x.name));
     const tn = tch ? tch.name : '선생님';
-    $('sosTeacher').innerHTML = `<div class="sos-t">${tch ? '<canvas class="pix" width="16" height="16"></canvas>' : ''}<div class="vname">${esc(tn)}</div><button type="button" class="btn btn-sos" id="sosOpen">🚨 ${esc(tn)}에게 긴급 메시지 보내기</button></div>`;
+    $('sosTeacher').innerHTML = `<div class="sos-t">${tch ? '<canvas class="pix" width="16" height="16"></canvas>' : ''}<div class="vname">${esc(tn)}</div><button type="button" class="btn btn-sos" id="sosOpen">📨 ${esc(tn)}에게 연락하기</button><div class="hint">비밀번호를 잊었거나 출석부에 문제가 있는데 로그인을 못 할 때 써요</div></div>`;
     if (tch) drawColors($('sosTeacher').querySelector('canvas'), lookColorsRaw(lookFor(tch), tch.lv));
-    $('sosTitle').textContent = `🚨 ${tn}에게 긴급 메시지`;
+    $('sosTitle').textContent = `📨 ${tn}에게 연락하기`;
   }
   // 마을
   const now = Date.now(), recent = pub.students.filter(s => s.lookAt && s.lookAt > tickerClear && now - s.lookAt < 3600000).sort((a, b) => b.lookAt - a.lookAt);
@@ -1065,7 +1075,7 @@ async function tLoad(){
   tRender();
 }
 function tRender(){
-  const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담' };
+  const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담', '연락':'📨 로그인 전 연락' };
   if (tTab === 'ask'){
     const open = a => !a.reply && !a.done;
     const list = (tData.asks || []).filter(a => !a.del).reverse().sort((a, b) => (b.kind === '긴급' && open(b)) - (a.kind === '긴급' && open(a)));
@@ -1215,7 +1225,7 @@ document.addEventListener('click', e => {
   const t = e.target;
   if (t.closest('.tab')){ showTab(t.closest('.tab').dataset.tab); return; }
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
-  if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; $('sosChk').checked = false; $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
+  if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
@@ -1260,7 +1270,7 @@ document.addEventListener('click', e => {
   if (t.closest('#oathGo')){ doCheckin(); return; }
 });
 $('loginBtn').addEventListener('click', doLogin);
-document.addEventListener('change', e => { if (e.target.id === 'sosChk') $('sosGo').disabled = !e.target.checked; });
+document.addEventListener('change', e => { if (e.target.name === 'sosR') $('sosGo').disabled = false; });
 document.addEventListener('change', e => { if (e.target.id === 'oathChk') $('oathGo').disabled = !e.target.checked; });
 document.addEventListener('change', e => { if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
 document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });

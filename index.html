@@ -4435,7 +4435,7 @@ async function loadAskAdmin(){
   const isCounsel = a => a.kind === '상담' || a.kind === '긴급';
   let list = askFilter === 'open' ? askCache.filter(isOpen) : askFilter === 'counsel' ? askCache.filter(isCounsel) : askCache;
   list = list.slice().sort((a, b) => (b.kind === '긴급' && isOpen(b)) - (a.kind === '긴급' && isOpen(a)));
-  const KIND = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담' };
+  const KIND = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담', '연락':'📨 로그인 전 연락' };
   $('askList').innerHTML = list.length ? list.map(a => `<div class="ask-card ${isOpen(a) ? '' : 'done'} ${a.kind === '긴급' && isOpen(a) ? 'urgent' : ''} ${isCounsel(a) ? 'counsel' : ''}">
       <div class="ask-meta">${KIND[a.kind] || '❓ 질문'} · ${a.anon ? '🙈 익명' : '🐱 ' + esc(a.from)} · ${esc(a.t)}${a.done && !a.reply ? ' · ✔ 확인함' : ''}</div>
       <div class="ask-text">${esc(a.text)}</div>

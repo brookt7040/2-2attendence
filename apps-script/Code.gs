@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 로그인 없이 긴급 메시지·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -784,20 +784,24 @@ function studentAsk_(name, body) {
   return { ok: true, error: error, asks: mine.reverse() };
 }
 
-/* 🚨 로그인 안 한 학생의 긴급 메시지 → 건의함에 '긴급'으로 (출석부에 ⭐ 알림) */
+/* 📨 로그인 못 하는 학생의 연락 (비밀번호 분실 등) → 건의함에 '연락'으로 */
+const SOS_REASONS = ['🔑 비밀번호를 잊어버렸어요', '🚫 로그인이 안 돼요', '📋 출석이 잘못 기록됐어요', '📱 출석 버튼이 안 눌려요', '🐛 화면이 이상하거나 오류가 나요', '✏️ 기타'];
 function sos_(body) {
   const who = String(body.who || '').replace(/[^가-힣a-zA-Z0-9 ]/g, '').trim().slice(0, 10);
-  const text = maskBad_(String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 200), (chatCfg_().ban) || []);
+  const reason = SOS_REASONS.indexOf(String(body.reason || '')) >= 0 ? String(body.reason) : '✏️ 기타';
+  const reply = String(body.reply || '').replace(/[^가-힣a-zA-Z0-9 @._+-]/g, '').trim().slice(0, 40);
+  const detail = maskBad_(String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 200), (chatCfg_().ban) || []);
   if (!who) return { ok: true, error: 'who' };
-  if (!text) return { ok: true, error: 'empty' };
+  if (reason === '✏️ 기타' && !detail) return { ok: true, error: 'empty' };
   const c = cache_(), dk = 'sosN:' + todayStr_(), n = Number(c.get(dk) || 0);
   if (c.get('sosLast')) return { ok: true, error: 'slow' };
   if (n >= 30) return { ok: true, error: 'full' };
+  const text = reason + (detail ? ' · ' + detail : '') + (reply ? ' · 📮 답장: ' + reply : '');
   const lock = lightLock_(15000);
   try {
     const sh = sheet_(ASK_SHEET, ASK_HEADER), id = Number(props_().getProperty('askSeq') || 0) + 1;
     props_().setProperty('askSeq', String(id));
-    sh.appendRow([id, "'" + nowStr_(), '🚨 ' + who + ' (로그인 안 함)', '긴급', text, '', '', '', '']);
+    sh.appendRow([id, "'" + nowStr_(), who + ' (로그인 전)', '연락', text, '', '', '', '']);
     bump_();
     try { c.put('sosLast', '1', 20); c.put(dk, String(n + 1), 21600); } catch (e) {}
   } finally { lock.releaseLock(); }
