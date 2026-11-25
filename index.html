@@ -273,6 +273,10 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .tt-c.past{opacity:.35;} .tt-c.past b{text-decoration:line-through;}
 .tt-c.now{opacity:1;border-color:var(--ink);background:#FFE58A;transform:translateY(-3px);box-shadow:0 3px 0 var(--ink);}
 .tt-c.lunch{background:#FFF0F4;}
+.tt-c[data-i]{cursor:pointer;}
+.tt-c.chg{opacity:1;background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
+.tt-c.chg.past{opacity:.45;} .tt-c.chg.now{background:#FFB8CB;border-color:var(--ink);color:var(--ink);}
+.tt-tag.chg{background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
 .tt-sub{font-size:.95rem;color:var(--ink-soft);text-align:center;margin-top:8px;}
 
 /* ===== 상태바 ===== */
@@ -1266,7 +1270,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 
     <div class="section">
       <div class="section-title">📚 시간표 (출석이 끝나면 오른쪽 EXP 표 자리에 떠요)</div>
-      <div class="form-hint">전원 출석하거나 출석 마감 10분 뒤부터 EXP 표 대신 <b>지금 교시 · 다음 교시</b>가 보여요. 과목을 비워 두면 'N교시'로만 나와요.</div>
+      <div class="form-hint">전원 출석하거나 출석 마감 10분 뒤부터 EXP 표 대신 <b>지금 교시 · 다음 교시</b>가 보여요. 과목을 비워 두면 'N교시'로만 나와요.<br>오늘만 바뀐 수업은 출석부 시간표의 그 <b>칸을 눌러서</b> 바꾸면 <b style="color:#C0365C;">분홍색</b>으로 표시돼요 (다음 날 저절로 원래대로).</div>
       <div class="form-group"><label>⏰ 교시 시간 (한 줄에 하나 · 예: <code>1교시 09:00-09:45</code>, <code>점심 12:30-13:20</code>)</label>
         <textarea id="ttTimesInput" style="height:150px;"></textarea></div>
       <div class="form-group"><label>📖 요일별 과목 (교시 순서대로, 쉼표나 띄어쓰기로 · 점심은 빼고)</label>
@@ -2088,20 +2092,35 @@ let ttKey = '';
 function renderTimetable(now){
   const tt = ttCfg(), wd = now.getDay(), subj = tt.subj[wd] || [], cur = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
   let ci = 0;
-  const items = tt.times.map(x => { const lunch = ttIsLunch(x), num = (x.name.match(/\d+/) || [])[0]; const label = lunch ? '🍱' : (subj[ci++] || (num ? num + '교시' : x.name)); return { ...x, lunch, num, label, s: ttMin(x.start), e: ttMin(x.end) }; });
+  const chg = ((db.timetable || {}).chg || {})[getTodayStr(now)] || {};
+  const items = tt.times.map((x, i) => { const lunch = ttIsLunch(x), num = (x.name.match(/\d+/) || [])[0]; let label = lunch ? '' : (subj[ci++] || (num ? num + '교시' : x.name)); const changed = !lunch && chg[i] != null && chg[i] !== ''; if (changed) label = chg[i]; return { ...x, i, lunch, num, label, changed, s: ttMin(x.start), e: ttMin(x.end) }; });
   const nowI = items.findIndex(x => cur >= x.s && cur < x.e), nextI = items.findIndex(x => x.s > cur);
   const L = x => x.lunch ? '점심시간' : `${x.num ? x.num + '교시' : x.name}${x.label && !/교시$/.test(x.label) ? ' · ' + x.label : ''}`;
   const left = m => { m = Math.max(0, Math.ceil(m)); return m >= 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`; };
   let tag, right, sub;
-  if (nowI >= 0){ const x = items[nowI]; tag = `<span class="tt-tag ${x.lunch ? 'lunch' : 'now'}">${x.lunch ? '🍱 점심시간' : '📚 지금 ' + L(x)}</span>`; right = `<span class="tt-tag">⏱ ${left(x.e - cur)} 남음</span>`; }
+  if (nowI >= 0){ const x = items[nowI]; tag = `<span class="tt-tag ${x.lunch ? 'lunch' : (x.changed ? 'chg' : 'now')}">${x.lunch ? '점심시간' : '📚 지금 ' + esc(L(x))}${x.changed ? ' (변경)' : ''}</span>`; right = `<span class="tt-tag">⏱ ${left(x.e - cur)} 남음</span>`; }
   else if (nextI === 0){ tag = `<span class="tt-tag now">☀️ 곧 수업 시작</span>`; right = `<span class="tt-tag">⏱ ${left(items[0].s - cur)} 뒤</span>`; }
   else if (nextI > 0){ tag = `<span class="tt-tag">🧃 쉬는 시간</span>`; right = `<span class="tt-tag">⏱ ${left(items[nextI].s - cur)} 뒤 종</span>`; }
   else { tag = `<span class="tt-tag done">🎉 오늘 수업 끝!</span>`; right = `<span class="tt-tag">📋 종례 시간</span>`; }
   const nx = nextI >= 0 ? items[nextI] : null;
-  sub = nx ? `다음: ${L(nx)} (${nx.start})` : (items.length ? '오늘도 수고했다냥 💛' : '⚙️ 설정의 📚 시간표에 교시 시간을 넣어 주세요');
-  const row = items.map((x, i) => `<div class="tt-c ${x.lunch ? 'lunch' : ''} ${i === nowI ? 'now' : (x.e <= cur ? 'past' : '')}">${x.lunch ? '점심' : (x.num || x.name)}<b>${esc(x.lunch ? '🍱' : (x.label && !/교시$/.test(x.label) ? x.label : '·'))}</b></div>`).join('');
+  sub = nx ? `다음: ${L(nx)}${nx.changed ? ' (변경)' : ''} (${nx.start})` : (items.length ? '오늘도 수고했다냥 💛' : '⚙️ 설정의 📚 시간표에 교시 시간을 넣어 주세요');
+  const row = items.map((x, i) => `<div class="tt-c ${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${i === nowI ? 'now' : (x.e <= cur ? 'past' : '')}" ${x.lunch ? '' : `data-i="${i}" title="눌러서 오늘만 과목 바꾸기 (관리자)"`}>${x.lunch ? '&nbsp;' : (x.changed ? `${x.num || ''} 변경` : (x.num || esc(x.name)))}<b>${x.lunch ? '점심' : esc(x.label && !/교시$/.test(x.label) ? x.label : '·')}</b></div>`).join('');
   const html = `<div class="tt-hd">${tag}${right}</div><div class="tt-row">${row}</div><div class="tt-sub">${esc(sub)}</div>`;
   if (html !== ttKey){ ttKey = html; $('ttPanel').innerHTML = html; }
+}
+/* 📚 오늘만 과목 바꾸기: 시간표 칸을 누르면 (관리자) */
+function editTtToday(i){
+  requirePin(() => {
+    const now = nowD(), ds = getTodayStr(now), tt = ttCfg(), x = tt.times[i]; if (!x) return;
+    db.timetable = db.timetable || { times: tt.times, subj: tt.subj };
+    const all = db.timetable.chg = db.timetable.chg || {}, day = all[ds] = all[ds] || {};
+    const v = prompt(`📚 오늘 ${x.name} (${x.start}) 과목 바꾸기\n\n바뀐 과목을 적어 주세요. 비우고 확인하면 원래 과목으로 돌아가요.`, day[i] || '');
+    if (v === null) return;
+    const t = v.trim().slice(0, 10); if (t) day[i] = t; else delete day[i];
+    Object.keys(all).forEach(d => { if (d < ds || !Object.keys(all[d]).length) delete all[d]; });   // 지난 날 변경은 지워요
+    saveDB(); syncOp({ op:'config', data: configOf() }); ttKey = ''; updateReward(nowD());
+    showToast(t ? `📚 오늘 ${x.name} → ${t} (분홍색으로 보여요)` : `📚 ${x.name} 원래 과목으로 돌렸어요`);
+  }, ['sub']);
 }
 function updateReward(now){
   const tton = ttActive(now); $('rewardPanel').classList.toggle('tt-on', tton);
@@ -3877,7 +3896,7 @@ async function saveAdminData(){
   db.lateTimeSetting = late;
   { const times = parseTtTimes($('ttTimesInput').value), subj = {};
     for (let d = 1; d <= 5; d++) subj[d] = $('ttSubj' + d).value.split(/[,，\s]+/).map(x => x.trim()).filter(Boolean).slice(0, 10);
-    db.timetable = { times, subj }; }
+    db.timetable = { times, subj, chg: (db.timetable || {}).chg || {} }; }
   db.expTiers = tiers;
   db.sfx = $('sfxInput').checked;
   db.adminPin = $('adminPinInput').value.trim();
@@ -6650,6 +6669,7 @@ function bindEvents(){
     const a = e.target.closest('[data-nadd]'); if (a){ if ((a.dataset.nadd === 'swear' || a.dataset.nadd === 'classlate') && !noteRoleOk(a.dataset.nadd)) return; addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
     const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
   });
+  $('ttPanel').addEventListener('click', e => { const c = e.target.closest('.tt-c[data-i]'); if (c && !VIEW) editTtToday(+c.dataset.i); });
   $('myPageBtn').addEventListener('click', e => {
     const api = (VIEW && VIEW.api) || sync.url;
     if (!api){ e.preventDefault(); showToast('먼저 구글 시트 동기화를 연결해 주세요'); return; }
