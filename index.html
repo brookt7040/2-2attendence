@@ -1710,7 +1710,7 @@ function catColors(def, furKey, opts = {}){
   if (def.pupil && !(def.sleepy || opts.blink)){ g[6][4] = 'e'; g[6][10] = 'e'; g[7][5] = 'd'; g[7][11] = 'd'; }
   const pal = {
     o: fur.dark ? '#2E2A36' : '#5B4636', f: fur.f, p: fur.p, q: fur.q || fur.p,
-    e: def.eye || (fur.dark ? '#FFE066' : '#3B2F2A'), d: def.pupil || def.eye || (fur.dark ? '#FFE066' : '#3B2F2A'), w:'#FFFFFF', n:'#FF8FAB',
+    e: opts.eye ? opts.eye.c : (def.eye || (fur.dark ? '#FFE066' : '#3B2F2A')), d: opts.eye ? opts.eye.d : (def.pupil || def.eye || (fur.dark ? '#FFE066' : '#3B2F2A')), w:'#FFFFFF', n: opts.mouth ? opts.mouth.c : '#FF8FAB',
     c: def.heartCheeks ? '#FF6F9C' : '#FFB8CB', i:'#FFB8CB', m:'#E25C7E'
   };
   const col = g.map((row, r) => row.map(ch => {
@@ -1718,6 +1718,7 @@ function catColors(def, furKey, opts = {}){
     if (fur.rainbow && ch === 'f') return RAINBOW[(r + 4) % 7];
     return pal[ch];
   }));
+  if (opts.mouth) [[9,7],[9,8]].forEach(([r,c]) => { if (g[r][c] === 'o') col[r][c] = opts.mouth.d; });
   (def.acc || []).forEach(k => applyAcc(col, k));
   return col;
 }
@@ -1774,7 +1775,9 @@ function recColors(rec, name, ds, lv){
   const ch = recChar(rec, name, ds);
   if (!ch) return houseColors();
   if (name && isTeacherName(name)) return lookColors(name, lv || levelInfo(seasonExpMap()[name] || 0).lv);   // 👑 선생님 냥이는 언제나 직접 꾸민 모습
-  const col = catColors(ch, recFur(rec, ch, name, ds));
+  // 학생이 고른 눈 색·입 색도 뽑힌 냥이에게 그대로 (직접 꾸민 학생만)
+  const own = name && db.looks && db.looks[name] ? lookOf(name, lv || levelInfo(seasonExpMap()[name] || 0).lv) : null;
+  const col = catColors(ch, recFur(rec, ch, name, ds), own ? { eye: own.eye && own.eye.c, mouth: own.mouth && own.mouth.c } : {});
   // 학생이 꾸미기 방에서 고른 아이템을 뽑힌 냥이에게도 입혀 줘요
   if (name && db.students.includes(name)){
     const L = lv || levelInfo(seasonExpMap()[name] || 0).lv, look = lookOf(name, L);
