@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v18 · 욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v19 · 빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 18;
+const API_VERSION = 19;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -232,6 +232,15 @@ function writeMeeting_(title, items) {
   sh.getRange(2, 1).setValue(String(title || '').slice(0, 60));
   if (items.length) sh.getRange(2, 2, items.length, 1).setValues(items.map(function (t) { return [String(t).slice(0, 80)]; }));
 }
+/* 🛡️ 아무것도 안 바꾼 처음 상태(명단이 친구1~5뿐)인지 */
+function looksDefault_(cfg) {
+  const st = (cfg && cfg.students) || [];
+  return !cfg || !st.length || st.every(function (n) { return /^친구\d+$/.test(String(n)); });
+}
+function pubDefault_(pub) {
+  const st = (pub && pub.students) || [];
+  return !st.length || st.every(function (x) { return /^친구\d+$/.test(String((x && x.name) || x)); });
+}
 function readRows_() {
   const sh = sheet_(DATA_SHEET, ['key', 'json', 'updated']);
   const n = sh.getLastRow();
@@ -324,7 +333,7 @@ function handlePost_(body, auth) {
   try {
     const db = readRows_();
     const map = db.map, dirty = {};
-    let replaced = false;
+    let replaced = false, guarded = false;
     const day = function (ds) {
       const k = 'day:' + ds;
       if (!map[k]) map[k] = { records: {}, bonus: [], cleanDone: {} };
@@ -338,6 +347,7 @@ function handlePost_(body, auth) {
     (body.ops || []).forEach(function (o) {
       switch (o.op) {
         case 'config': {
+          if (looksDefault_(o.data) && !looksDefault_(map.config)) { guarded = true; break; }   // 🛡️ 처음 상태(친구1~5) 출석부가 진짜 명단을 덮지 못하게
           const keepLooks = map.config && map.config.looks;
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
@@ -351,7 +361,7 @@ function handlePost_(body, auth) {
           map.lookAt = map.lookAt || {}; map.lookAt[o.name] = Date.now();
           dirty.config = true; dirty.lookAt = true; cacheDrop_(['v:pub']); break;
         }
-        case 'pub': map.pub = o.data || {}; dirty.pub = true; cacheDrop_(['v:pub']); break;
+        case 'pub': if (pubDefault_(o.data) && !pubDefault_(map.pub)) { guarded = true; break; } map.pub = o.data || {}; dirty.pub = true; cacheDrop_(['v:pub']); break;
         case 'notices': writeNotices_(o.list || []); break;
         case 'closing': writeList_(CLOSING_SHEET, CLOSING_HEADER, o.list || []); break;
         case 'urgent': writeList_(URGENT_SHEET, URGENT_HEADER, (o.list || []).slice(0, 5)); break;
@@ -434,6 +444,7 @@ function handlePost_(body, auth) {
           map.inv = map.inv || {}; map.inv[o.name] = o.inv || {}; dirty.inv = true; cacheDrop_(['v:inv']); break;
         }
         case 'import': {
+          if (looksDefault_(o.state && o.state.config) && !looksDefault_(map.config)) { guarded = true; break; }
           const keepLooks = map.config && map.config.looks, keepInv = map.inv;
           Object.keys(map).forEach(function (k) { delete map[k]; });
           if (keepInv) map.inv = keepInv;      // 냥코인으로 산 집·소품은 남겨요
@@ -458,7 +469,7 @@ function handlePost_(body, auth) {
     } else {
       writeRows_(db, Object.keys(dirty));
     }
-    result.ok = true; result.v = bump_();
+    result.ok = true; result.v = bump_(); if (guarded) result.guarded = true;
     return result;
   } finally {
     lock.releaseLock();

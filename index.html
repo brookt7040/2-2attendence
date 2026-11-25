@@ -3732,8 +3732,11 @@ function applyServerState(st){
   });
   sync.queue.forEach(applyOpLocal);   // 아직 못 올린 변경은 다시 덮어 적용
 }
+/* 🛡️ 명단이 처음 상태(친구1~5)인 출석부는 설정·공개 정보를 서버에 올리지 않아요 (진짜 명단을 덮지 않게) */
+function rosterIsDefault(){ return !db.students.length || db.students.every(n => /^친구\d+$/.test(n)); }
 function syncOp(op){
   if (!sync.url) return;
+  if ((op.op === 'config' || op.op === 'pub' || op.op === 'import') && rosterIsDefault()) return;
   sync.queue.push(op); saveSync();
   clearTimeout(syncOp.t); syncOp.t = setTimeout(flushSync, 300);
 }
@@ -4274,7 +4277,25 @@ async function saveTeacherKey(){
   await pullSync(true); updateSyncUI();
   if (sync.ok) setBubble('교사 열쇠를 저장했다냥 🔐', 3500);
 }
+/* 🩹 시트 명단이 친구1~5로 덮였지만 출석 기록·꾸미기·비밀번호에는 진짜 이름이 남아 있으면 되살려요 */
+function rosterRecoverCheck(){
+  if (!rosterIsDefault() || rosterRecoverCheck.asked) return;
+  const names = new Set();
+  Object.values(db.records || {}).forEach(d => Object.keys(d || {}).forEach(n => names.add(n)));
+  Object.keys(db.looks || {}).forEach(n => names.add(n));
+  (serverPinSet || []).forEach(n => names.add(n));
+  const list = [...names].filter(n => n && !/^친구\d+$/.test(n));
+  if (list.length < 3) return;
+  rosterRecoverCheck.asked = true;
+  list.sort((a, b) => (isTeacherName(b) - isTeacherName(a)) || a.localeCompare(b, 'ko'));
+  if (!confirm(`🩹 명단이 '친구1~5'로 바뀌어 있어요.\n출석 기록에 남아 있는 진짜 친구 ${list.length}명으로 되살릴까요?\n\n${list.join(', ')}`)) return;
+  db.students = list; saveDB();
+  syncOp({ op:'config', data: configOf() }); publishPub();
+  renderGrid(); updateStatsBoard(); applyTitle();
+  showToast(`🩹 친구 ${list.length}명 명단을 되살렸어요`);
+}
 function refreshAfterRemote(){
+  setTimeout(rosterRecoverCheck, 300);
   if (revealing){ pendingRemoteRender = true; return; }
   applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(nowD());
   if ($('statsOverlay').style.display === 'flex') loadStats(statsPeriod);
@@ -4376,6 +4397,7 @@ async function connectSync(){
 }
 async function adoptSync(mode){
   if (!syncCandidate) return;
+  if (mode === 'push' && rosterIsDefault() && syncCandidate.j.state && (syncCandidate.j.state.config || Object.keys(syncCandidate.j.state.days || {}).length)){ alert('이 컴퓨터는 아직 명단이 비어 있어서(친구1~5) 시트를 덮어쓸 수 없어요. 시트 데이터를 가져올게요.'); mode = 'pull'; }
   if (mode === 'push' && syncCandidate.j.state && syncCandidate.j.state.config && !confirm('시트에 있던 데이터를 지우고 이 컴퓨터 데이터로 덮어쓸까요?')) return;
   sync.url = syncCandidate.url; sync.v = -1; sync.queue = []; sync.api = syncCandidate.api || 2; sync.pubHash = '';
   if (mode === 'pull'){
@@ -4387,7 +4409,8 @@ async function adoptSync(mode){
     const nd = Object.keys((syncCandidate.j.state && syncCandidate.j.state.days) || {}).length;
     setTimeout(() => { const st = $('syncStatusText'); if (st) st.innerHTML += `<br>⬇ 시트에서 <b>친구 ${db.students.length}명 · 기록 ${nd}일</b>을 가져왔어요.`; }, 50);
   } else {
-    sync.queue = [{ op:'import', state: serverStateOf(), notices: db.notices.slice(), closing: (db.closing || []).slice() }]; saveSync();
+    if (rosterIsDefault() && Object.keys(db.records).length === 0){ sync.queue = []; saveSync(); }   // 빈 출석부는 올릴 게 없어요
+    else sync.queue = [{ op:'import', state: serverStateOf(), notices: db.notices.slice(), closing: (db.closing || []).slice() }]; saveSync();
     await flushSync();
   }
   syncCandidate = null; $('syncChoice').style.display = 'none';
