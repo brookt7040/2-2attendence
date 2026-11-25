@@ -2207,6 +2207,15 @@ function delNote(ds, id){
   db.notes[ds] = (db.notes[ds] || []).filter(x => x.id !== id); saveDB(); syncOp({ op:'noteDel', ds, id });
   renderGrid(); renderMenuBoard(); renderNoteSide(); renderNotes(); publishPub();
 }
+/* 하루에 한 번, 처음 누를 때 "○○ 관리자 맞나요?" 물어봐요 */
+function noteRoleOk(kind){
+  const k = 'nyangNoteRole:' + kind, today = getTodayStr();
+  try { if (localStorage.getItem(k) === today) return true; } catch(e){}
+  const q = kind === 'swear' ? '🤬 욕설 관리자가 맞나요?\n\n오늘 처음 욕설을 적어요. 맞으면 확인을 눌러 주세요.' : '⏰ 지각 관리자가 맞나요?\n\n오늘 처음 수업 지각을 적어요. 맞으면 확인을 눌러 주세요.';
+  if (!confirm(q)) return false;
+  try { localStorage.setItem(k, today); } catch(e){}
+  return true;
+}
 let notePeriod = 'week';
 function noteRange(){
   const now = nowD(), today = getTodayStr(now);
@@ -6488,7 +6497,7 @@ function bindEvents(){
   $('noteSide').addEventListener('click', () => requirePin(openNotes, ['sub', 'late']));
   $('notesBody').addEventListener('click', e => {
     const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
-    const a = e.target.closest('[data-nadd]'); if (a){ addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
+    const a = e.target.closest('[data-nadd]'); if (a){ if (!noteRoleOk(a.dataset.nadd)) return; addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
     const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
   });
   $('syncPullBtn').addEventListener('click', () => adoptSync('pull'));
