@@ -69,7 +69,7 @@ function show(t){
   if (!SRC[t]) t = 'board';
   curTab = t;
   if (!frames[t]){ const f = document.createElement('iframe'); f.src = fresh(SRC[t]); f.title = t; f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
-  Object.entries(frames).forEach(([k, f]) => f.classList.toggle('on', k === t));
+  Object.entries(frames).forEach(([k, f]) => { f.classList.toggle('on', k === t); if (k !== t) try { f.contentWindow.postMessage({ nyang:'hidden' }, location.origin); } catch(e){} });
   try { frames[t].contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){}   // 아지트: 로그인 안 했으면 로그인 창
   document.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   history.replaceState(null, '', '?tab=' + t + (q.get('api') ? '&api=' + encodeURIComponent(q.get('api')) : ''));

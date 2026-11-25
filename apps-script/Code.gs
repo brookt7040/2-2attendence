@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 35;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 36;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -40,12 +40,16 @@ const SEAT_CAP = {
   west: { umb1: 2, umb2: 2, umb3: 2, boat: 3, rock: 2, castle: 2, surf: 1 },
   east: { camp: 5, logs: 3, mush: 3, swing2: 1, stump: 1 },
   south: { park: 3, sandbox: 2 },
-  eng: { D1: 1, D2: 1, D3: 1, D4: 1, D5: 1, D6: 1, D7: 1, D8: 1, D9: 1, D10: 1, D11: 1, D12: 1 }
+  eng: { D1: 1, D2: 1, D3: 1, D4: 1, D5: 1, D6: 1, D7: 1, D8: 1, D9: 1, D10: 1, D11: 1, D12: 1 },
+  cafe: { C1: 1, C2: 1, C3: 1, C4: 1, C5: 1, C6: 1, C7: 1, C8: 1, C9: 1, C10: 1 }
 };
 const HOUSE_ORDER = ['h_box', 'h_tent', 'h_cabin', 'h_cottage', 'h_castle'];
 const HANA_LV = [0, 20, 60, 120, 200, 320];
 const HANA_DAILY = 5;          // 🐱 하나와는 하루에 5번까지 놀 수 있어요
 const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람', '받는 사람(빈칸=전체)', '내용', '상태'];
+const SIG_SHEET = '서명', SIG_HEADER = ['신청번호', '과목', '서명'];
+const MAIL_SHEET = '편지함', MAIL_HEADER = ['번호', '시간', '보낸 사람', '받는 사람', '종류', '내용(가림)', '읽음', '확인', '미션'];
+const DIARY_SHEET = '일기장', DIARY_HEADER = ['번호', '날짜', '이름', '내용(가림)', '시간'];
 const IDEA_SHEET = '마을의견', IDEA_HEADER = ['번호', '시간', '보낸 사람', '익명', '비밀', '내용', '좋아요', '상태'];
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
 // 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 민망한 애교 말로 바뀌어요
@@ -105,6 +109,7 @@ function doPost(e) {
     if (body.action === 'stuCfg') return out_({ ok: true, cfg: stuCfg_(), strikes: strikes_() });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
+    if (body.action === 'sig') { const sh = sheet_(SIG_SHEET, SIG_HEADER), n = sh.getLastRow(), r = n < 2 ? null : sh.getRange(2, 1, n - 1, 3).getValues().filter(function (x) { return Number(x[0]) === Number(body.id); })[0]; return out_({ ok: true, subj: r ? String(r[1]) : '', sig: r ? String(r[2]) : '' }); }   // ✍️ 학습태도 서명 보기
     if (body.action === 'engUpload') return out_(engUpload_(body));
     if (body.action === 'engResults') return out_(engResults_());
     if (body.action === 'backup') return out_(backupAll_());
@@ -659,6 +664,10 @@ function handleStudentCore_(body) {
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
   if (body.op === 'chatPull') return studentChat_(name, body, null);
   if (body.op === 'wReport') return whisperReport_(name, body);
+  if (/^mail/.test(String(body.op || ''))) return studentMail_(name, body);
+  if (/^diary/.test(String(body.op || ''))) return studentDiary_(name, body);
+  if (/^cafe/.test(String(body.op || ''))) return studentCafe_(name, body);
+  if (/^locker/.test(String(body.op || ''))) return studentLocker_(name, body);
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (/^idea/.test(String(body.op || ''))) return studentIdea_(name, body);
@@ -679,7 +688,7 @@ function handleStudentCore_(body) {
       cachePut_(sk, snap);
     }
     const mine0 = []; Object.keys(snap.acks).forEach(function (t) { if ((snap.acks[t] || []).indexOf(name) >= 0) mine0.push(t); });
-    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '', penalty: penaltyOf_(name) };
+    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '', penalty: penaltyOf_(name), mailNew: Number(props_().getProperty('mailN:' + name) || 0) };
   }
   const lock = lockFor_(true, 20000);
   try {
@@ -829,7 +838,7 @@ function maskBad_(t, extra) {
 /* 🚫 비속어 단계별 제한: 1회 경고 · 2회 1분 · 3회 10분(공개) · 4회 1시간(공개) · 5회 10일 · 6회부터 영구(공개)
  *  글을 쓰는 모든 곳(대화·상태·질문·의견·카드·상점 글)에서 잡아요. 선생님(출석부)께 바로 알림이 가요 */
 const STRIKE_RULES_ = [null, { s: 0 }, { s: 60 }, { s: 600, pub: 1 }, { s: 3600, pub: 1 }, { s: 864000 }, { perm: 1, pub: 1 }];
-const TEXT_OPS_ = { chatSend: 1, askSend: 1, ideaSend: 1, status: 1, profile: 1, buy: 1 };
+const TEXT_OPS_ = { chatSend: 1, askSend: 1, ideaSend: 1, status: 1, profile: 1, buy: 1, mailSend: 1, diarySave: 1 };
 function strikes_() { try { return JSON.parse(props_().getProperty('strikes') || '{}') || {}; } catch (e) { return {}; } }
 function penaltyOf_(name, all) {
   const s = (all || strikes_())[name]; if (!s) return null;
@@ -1105,7 +1114,7 @@ function studentVillage_(name, body) {
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
       let sc = String(body.sc || 'out');
-      if (!/^(out|west|east|south|hall|arcade|hana|eng|house:.{1,20})$/.test(sc)) sc = 'out';
+      if (!/^(out|west|east|south|hall|arcade|hana|eng|cafe|house:.{1,20})$/.test(sc)) sc = 'out';
       const pos = cacheGet_('v:pos', {}), now = Date.now();
       const p = { x: x, y: y, sc: sc, ts: now };
       const sit = String(body.s || ''), seat = Math.floor(Number(body.t));
@@ -1489,7 +1498,7 @@ function studentEng_(name, body) {
       if (practice) return { ok: true, result: { ans: ans, marks: marks, score: score, pass: score >= 80, practice: true } };
       res = { ans: ans, marks: marks, score: score, pass: score >= 80, tries: ((res && res.tries) || 0) + 1, at: Date.now() };
       props_().setProperty(k, JSON.stringify(res));
-      if (res.pass) { engReward_(name, readRows_().map); addNews_(name, 'eng'); }
+      if (res.pass) { const m1 = readRows_().map; engReward_(name, m1); addNews_(name, 'eng'); try { autoSettle_(name, economy_(m1), readCoins_(), m1); } catch (e) {} }
       return { ok: true, result: res };
     }
     if (body.op === 'engPass') {                // 👩‍🏫 선생님 통과 (관리자 비밀번호)
@@ -1526,7 +1535,18 @@ function backupAll_() {
 }
 
 /* ---------------- 🐾 냥코인 ---------------- */
-function economy_(map) { return (map.config && map.config.economy) || { missions: [], shop: [], game: {} }; }
+function economy_(map) {
+  const e = (map.config && map.config.economy) || { missions: [], shop: [], game: {} };
+  (e.missions || []).forEach(function (m) { const f = MISSION_FLOW_[m.id]; if (f) { if (m.flow === undefined) m.flow = f.flow; if (m.cap === undefined && f.cap) m.cap = f.cap; } });
+  return e;
+}
+/* 🎯 미션 종류: 고른 뒤 어떻게 끝나는지 (sign 서명 · praise 칭찬편지 · appon 출석 1등 · eng 영어 80점 · allon 반 전체 제시간 · allon3 주 3일 · good 바른 한 주 · diary 일기장 5일 · cafe 스터디카페 3일 · locker 사물함 가위바위보 · teacher 선생님이 줌) */
+const MISSION_FLOW_ = {
+  d_attitude: { flow: 'sign', cap: 5 }, d_praise: { flow: 'praise', cap: 10 }, d_board: { flow: 'appon', cap: 2 }, d_word: { flow: 'eng' },
+  a_allon: { flow: 'allon' }, w_allon3: { flow: 'allon3' }, w_good: { flow: 'good' }, w_daily: { flow: 'diary' }, w_study: { flow: 'cafe' },
+  w_locker: { flow: 'locker' }, w_best: { flow: 'teacher' }
+};
+const AUTO_FLOWS_ = { appon: 1, eng: 1, allon: 1, allon3: 1, good: 1, diary: 1, cafe: 1, praise: 1 };
 function readCoins_() {
   const sh = sheet_(COIN_SHEET, COIN_HEADER), n = sh.getLastRow();
   if (n < 2) return [];
@@ -1560,10 +1580,10 @@ function weekKey_() {
   const wd = d.getDay() === 0 ? 7 : d.getDay(); d.setDate(d.getDate() - wd + 1);
   return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd');
 }
-// 미션은 매일 아침 8시, 매주 월요일 아침 8시에 새로 시작해요
-function missionDay_() { return Utilities.formatDate(new Date(Date.now() - 8 * 3600000), 'Asia/Seoul', 'yyyy-MM-dd'); }
+// 미션은 매일 새벽 5시, 매주 월요일 새벽 5시에 새로 시작해요 (등교 전에 고를 수 있게)
+function missionDay_() { return Utilities.formatDate(new Date(Date.now() - 5 * 3600000), 'Asia/Seoul', 'yyyy-MM-dd'); }
 function missionWeek_() {
-  const d0 = new Date(Date.now() - 8 * 3600000), u = Number(Utilities.formatDate(d0, 'Asia/Seoul', 'u'));
+  const d0 = new Date(Date.now() - 5 * 3600000), u = Number(Utilities.formatDate(d0, 'Asia/Seoul', 'u'));
   return Utilities.formatDate(new Date(d0.getTime() - (u - 1) * 86400000), 'Asia/Seoul', 'yyyy-MM-dd');
 }
 function periodKey_(limit) { return limit === 'day' ? missionDay_() : limit === 'week' ? missionWeek_() : limit === 'once' ? 'all' : String(Date.now()); }
@@ -1615,13 +1635,244 @@ function gameOpen_(game) {
   const t = Utilities.formatDate(now, 'Asia/Seoul', 'HH:mm');
   return t >= h[0] && t < h[1];
 }
+/* ---------------- 🎯 미션 도우미 ---------------- */
+function kidNames_(map) { return (((map.pub || {}).students) || []).map(function (s) { return s.name; }).filter(function (n) { return !isTeacherName_(n); }); }
+function pickCount_(mid, slot, k, except) {
+  const all = props_().getProperties(); let n = 0;
+  Object.keys(all).forEach(function (key) { if (key.indexOf('pick:') !== 0 || key.slice(5) === except) return; try { const p = JSON.parse(all[key]); if (p[slot] && p[slot].k === k && (p[slot].ids || []).indexOf(mid) >= 0) n++; } catch (e) {} });
+  return n;
+}
+function capUsed_(eco) {
+  const out = {}, d = missionDay_(), w = missionWeek_(), all = props_().getProperties();
+  const caps = (eco.missions || []).filter(function (m) { return m.cap; });
+  if (!caps.length) return out;
+  Object.keys(all).forEach(function (key) { if (key.indexOf('pick:') !== 0) return; let p = {}; try { p = JSON.parse(all[key]); } catch (e) { return; }
+    caps.forEach(function (m) { const sl = m.cat === 'daily' ? 'd' : 'w', k = sl === 'd' ? d : w; if (p[sl] && p[sl].k === k && (p[sl].ids || []).indexOf(m.id) >= 0) out[m.id] = (out[m.id] || 0) + 1; }); });
+  return out;
+}
+function kstHM_(ts) { return Utilities.formatDate(new Date(ts || Date.now()), 'Asia/Seoul', 'HH:mm'); }
+function kstDs_(ts) { return Utilities.formatDate(new Date(ts || Date.now()), 'Asia/Seoul', 'yyyy-MM-dd'); }
+function weekDates_(wk) { const out = [], b = new Date(wk + 'T12:00:00+09:00'); for (let i = 0; i < 7; i++) out.push(kstDs_(b.getTime() + i * 86400000)); return out; }
+function dayAllOnTime_(map, ds, kids) {
+  const recs = ((map['day:' + ds] || {}).records) || {};
+  if (!kids.length || !kids.every(function (n) { return recs[n]; })) return false;
+  const pres = kids.filter(function (n) { return recs[n].status !== 'dungeon'; });
+  return pres.length > 0 && pres.every(function (n) { return recs[n].status === 'present'; });
+}
+/* 🎯 고른 자동 미션을 확인해서 냥코인 주기 (같은 보상은 한 번만) */
+function autoSettle_(name, eco, rows, map) {
+  const pk = picksOf_(name), paid = [], today = todayStr_(), kids = kidNames_(map);
+  const pay = function (m, why) {
+    const key = 'm:' + m.id + ':' + name + ':' + periodKey_(m.limit), c = cache_();
+    if (c.get('pk:' + key)) return; try { c.put('pk:' + key, '1', 900); } catch (e) {}      // 동시에 두 번 정산되지 않게
+    if (addCoin_(name, m.coins, '미션: ' + m.name + (why ? ' ' + why : ''), '자동', key, rows)) { expQueue_(name, m.exp != null ? Number(m.exp) : Math.round(m.coins / 2), '미션: ' + m.name); paid.push({ name: m.name, coins: m.coins }); }
+  };
+  [['d', pk.d], ['w', pk.w]].forEach(function (pair) {
+    const sl = pair[1]; (sl.ids || []).forEach(function (id) {
+      const m = (eco.missions || []).filter(function (x) { return x.id === id; })[0]; if (!m || !AUTO_FLOWS_[m.flow] || m.flow === 'praise') return;
+      const at = (sl.at || {})[id] || 0, atDs = at ? kstDs_(at) : '0000';
+      try {
+        if (m.flow === 'appon') { const r = (((map['day:' + today] || {}).records) || {})[name]; if (r && Number(r.rank) === 1 && (!at || kstHM_(at) <= String(r.time || '99:99'))) pay(m); }
+        else if (m.flow === 'eng') { const r = JSON.parse(props_().getProperty(engResultKey_(name)) || 'null'); if (r && r.pass && (!at || !r.at || r.at >= at - 60000)) pay(m); }
+        else if (m.flow === 'allon') { if (dayAllOnTime_(map, today, kids)) pay(m); }
+        else if (m.flow === 'allon3' || m.flow === 'good' || m.flow === 'diary' || m.flow === 'cafe') {
+          const days = weekDates_(sl.k), upto = days.filter(function (d) { return d <= today; });
+          if (m.flow === 'allon3') { if (upto.slice(0, 5).filter(function (d) { return dayAllOnTime_(map, d, kids); }).length >= 3) pay(m); }
+          else if (m.flow === 'good') {
+            const wd = Number(Utilities.formatDate(new Date(), 'Asia/Seoul', 'u'));
+            if (!(wd >= 6 || (wd === 5 && kstHM_() >= '15:00'))) return;      // 금요일 오후 3시부터 확인해요
+            const bad = days.slice(0, 5).some(function (d) {
+              const day = map['day:' + d] || {}, r = (day.records || {})[name];
+              return (r && r.status === 'late') || (day.notes || []).some(function (n) { return n.who === name && ['swear', 'classlate', 'attitude'].indexOf(n.kind) >= 0; });
+            });
+            const st = strikes_()[name], wk0 = new Date(sl.k + 'T05:00:00+09:00').getTime();
+            if (!bad && !(st && st.at && st.at >= wk0)) pay(m);
+          }
+          else if (m.flow === 'diary') { const n = diaryDays_(name).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs; }).length; if (n >= 5) pay(m, '(' + n + '일)'); }
+          else if (m.flow === 'cafe') { const c = cafeOf_(name), n = Object.keys(c.days || {}).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs && c.days[d] >= 60; }).length; if (n >= 3) pay(m, '(' + n + '일)'); }
+        }
+      } catch (e) {}
+    });
+  });
+  return paid;
+}
+
+/* ---------------- 💌 편지함 (마을 집 안) · 칭찬편지 미션 ---------------- */
+const enc_ = function (t) { return Utilities.base64Encode(String(t || ''), Utilities.Charset.UTF_8); };
+const dec_ = function (t) { try { return Utilities.newBlob(Utilities.base64Decode(String(t || ''), Utilities.Charset.UTF_8)).getDataAsString('UTF-8'); } catch (e) { return ''; } };
+function readMail_(keep) {
+  const sh = sheet_(MAIL_SHEET, MAIL_HEADER), n = sh.getLastRow(); if (n < 2) return [];
+  return sh.getRange(2, 1, n - 1, 9).getValues().map(function (r, i) { return { row: i + 2, id: Number(r[0]), t: String(r[1]), from: String(r[2]), to: String(r[3]), kind: String(r[4]), text: r[5], read: String(r[6]) === 'y', ok: String(r[7]) === 'y', mission: String(r[8]) }; }).filter(keep);
+}
+function studentMail_(name, body) {
+  const map = readRows_().map, kids = kidNames_(map).concat((((map.pub || {}).students) || []).map(function (s) { return s.name; }).filter(isTeacherName_));
+  let error = '', paid = null;
+  if (body.op === 'mailSend') {
+    const to = String(body.to || ''), praise = body.kind === 'praise', text = maskBad_(String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 300), (chatCfg_().ban) || []);
+    if (kids.indexOf(to) < 0 || to === name) error = 'to';
+    else if (text.length < (praise ? 20 : 5)) error = 'short';
+    else if (Date.now() - Number(props_().getProperty('mailLast:' + name) || 0) < 20000 && !isTeacherName_(name)) error = 'slow';
+    else {
+      const lock = lightLock_(15000);
+      try {
+        let mission = '';
+        if (praise) {
+          const eco = economy_(map), m = (eco.missions || []).filter(function (x) { return x.flow === 'praise'; })[0], pk = picksOf_(name);
+          if (m && pk.d.ids.indexOf(m.id) >= 0 && !readMail_(function (x) { return x.from === name && x.mission && x.mission.indexOf(pk.d.k) === 0; }).length) mission = pk.d.k + ':' + m.id;   // 미션 편지는 하루 1통
+        }
+        const id = Number(props_().getProperty('mailSeq') || 0) + 1; props_().setProperty('mailSeq', String(id));
+        sheet_(MAIL_SHEET, MAIL_HEADER).appendRow([id, "'" + nowStr_(), name, to, praise ? '칭찬' : '편지', enc_(text), '', '', mission]);
+        props_().setProperty('mailN:' + to, String(Number(props_().getProperty('mailN:' + to) || 0) + 1));
+        props_().setProperty('mailLast:' + name, String(Date.now()));
+        appendChat_('📮 우체부', to, '📮 새 편지가 도착했어요! 마을 → 우리 집 → 📮 편지함에서 확인해요');
+        bump_();
+        paid = { mission: !!mission };
+      } finally { lock.releaseLock(); }
+    }
+  } else if (body.op === 'mailOk') {             // 💛 받은 사람이 '덜 친한 친구 · 칭찬 쪽지' 둘 다 맞다고 하면 보낸 친구에게 지급
+    const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name; })[0];
+    if (!it || it.kind !== '칭찬') error = 'bad';
+    else if (!it.ok && body.a && body.b) {
+      const sh = sheet_(MAIL_SHEET, MAIL_HEADER); sh.getRange(it.row, 7, 1, 2).setValues([['y', 'y']]);
+      if (it.mission) {
+        const parts = it.mission.split(':'), eco = economy_(map), m = (eco.missions || []).filter(function (x) { return x.id === parts[1]; })[0];
+        if (m && addCoin_(it.from, m.coins, '미션: ' + m.name + ' → ' + name, '자동', 'm:' + m.id + ':' + it.from + ':' + parts[0])) expQueue_(it.from, m.exp != null ? Number(m.exp) : Math.round(m.coins / 2), '미션: ' + m.name);
+      }
+    }
+  } else if (body.op === 'mailRead') {
+    const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name; })[0];
+    if (it && !it.read) sheet_(MAIL_SHEET, MAIL_HEADER).getRange(it.row, 7).setValue('y');
+  }
+  if (body.op === 'mailList' || body.op === 'mailOk' || body.op === 'mailRead') props_().setProperty('mailN:' + name, '0');
+  const box = readMail_(function (x) { return x.to === name; }).slice(-40).reverse().map(function (x) { return { id: x.id, t: x.t, from: x.from, kind: x.kind, text: dec_(x.text), read: x.read, ok: x.ok }; });
+  const sent = readMail_(function (x) { return x.from === name; }).slice(-20).reverse().map(function (x) { return { id: x.id, t: x.t, to: x.to, kind: x.kind, ok: x.ok, mission: !!x.mission }; });
+  return { ok: true, error: error, inbox: box, sent: sent, sentInfo: paid, kids: kids };
+}
+/* 선생님: 칭찬편지 결과만 (내용 없이) */
+function praiseResults_() { return readMail_(function (x) { return x.kind === '칭찬'; }).slice(-60).reverse().map(function (x) { return { t: x.t, from: x.from, to: x.to, ok: x.ok, mission: !!x.mission }; }); }
+
+/* ---------------- 📔 집 안 일기장 (주인만 쓰고, 선생님과 주인이 고른 친구만 읽어요) ---------------- */
+const DIARY_MIN = 50;
+function readDiary_(keep) {
+  const sh = sheet_(DIARY_SHEET, DIARY_HEADER), n = sh.getLastRow(); if (n < 2) return [];
+  return sh.getRange(2, 1, n - 1, 5).getValues().map(function (r, i) { return { row: i + 2, id: Number(r[0]), ds: String(r[1]).replace(/^'/, ''), name: String(r[2]), text: r[3], t: String(r[4]) }; }).filter(keep);
+}
+function diaryDays_(name) { return readDiary_(function (x) { return x.name === name; }).map(function (x) { return x.ds; }); }
+function diaryReaders_(name) { try { return JSON.parse(props_().getProperty('diaryR:' + name) || '[]') || []; } catch (e) { return []; } }
+function studentDiary_(name, body) {
+  let error = '';
+  const ds = todayStr_();
+  if (body.op === 'diarySave') {
+    const text = maskBad_(String(body.text || '').trim().slice(0, 1000), (chatCfg_().ban) || []);
+    if (text.replace(/\s/g, '').length < DIARY_MIN) error = 'short';
+    else {
+      const lock = lightLock_(15000);
+      try {
+        const sh = sheet_(DIARY_SHEET, DIARY_HEADER), it = readDiary_(function (x) { return x.name === name && x.ds === ds; })[0];
+        if (it) sh.getRange(it.row, 4, 1, 2).setValues([[enc_(text), "'" + nowStr_()]]);
+        else { const id = Number(props_().getProperty('diarySeq') || 0) + 1; props_().setProperty('diarySeq', String(id)); sh.appendRow([id, "'" + ds, name, enc_(text), "'" + nowStr_()]); }
+      } finally { lock.releaseLock(); }
+    }
+  } else if (body.op === 'diaryReaders') {
+    props_().setProperty('diaryR:' + name, JSON.stringify((Array.isArray(body.list) ? body.list : []).map(String).slice(0, 30)));
+  }
+  const owner = String(body.owner || name), can = owner === name || isTeacherName_(name) || diaryReaders_(owner).indexOf(name) >= 0;
+  if (!can) return { ok: true, error: error, owner: owner, locked: true };
+  const list = readDiary_(function (x) { return x.name === owner; }).slice(-30).reverse().map(function (x) { return { ds: x.ds, text: dec_(x.text), t: x.t }; });
+  return { ok: true, error: error, owner: owner, mine: owner === name, entries: list, readers: owner === name ? diaryReaders_(name) : undefined, min: DIARY_MIN };
+}
+
+/* ---------------- ☕ 스터디카페: 1시간 집중 (앱을 나가면 탈락) ---------------- */
+function cafeOf_(name) { try { return JSON.parse(props_().getProperty('cafe:' + name) || '{}') || {}; } catch (e) { return {}; } }
+function studentCafe_(name, body) {
+  const c = cafeOf_(name), now = Date.now(); let error = '', done = false;
+  c.days = c.days || {};
+  if (body.op === 'cafeStart') { c.s = { start: now, last: now }; }
+  else if (body.op === 'cafeBeat' || body.op === 'cafeDone') {
+    if (!c.s) error = 'none';
+    else if (now - c.s.last > 150000) { error = 'gap'; c.s = null; }                  // 2분 넘게 소식이 없으면 탈락
+    else {
+      c.s.last = now;
+      if (body.op === 'cafeDone') {
+        if (now - c.s.start >= 59.5 * 60000) { const d = kstDs_(c.s.start); c.days[d] = Math.max(c.days[d] || 0, 60); done = true; c.s = null; }
+        else error = 'early';
+      }
+    }
+  } else if (body.op === 'cafeQuit') { c.s = null; }
+  Object.keys(c.days).sort().slice(0, -14).forEach(function (d) { delete c.days[d]; });
+  props_().setProperty('cafe:' + name, JSON.stringify(c));
+  const wk = weekDates_(missionWeek_());
+  return { ok: true, error: error, done: done, session: c.s || null, week: Object.keys(c.days).filter(function (d) { return wk.indexOf(d) >= 0 && c.days[d] >= 60; }).length, now: now };
+}
+
+/* ---------------- 🗄 사물함 구역: 월요일 8:45까지 신청 → 신청자끼리 가위바위보 ---------------- */
+function lockerKeyNow_() {   // 지금 신청할 수 있는 주 (주말 · 월요일 8:45 전)
+  const wd = Number(Utilities.formatDate(new Date(), 'Asia/Seoul', 'u')), hm = kstHM_();
+  if (wd === 1 && hm < '08:45') return weekKey_();
+  if (wd === 6 || wd === 7) return kstDs_(Date.now() + (8 - wd) * 86400000);
+  return '';
+}
+function lockerOf_(k) { try { return JSON.parse(props_().getProperty('locker:' + k) || 'null') || { apps: [] }; } catch (e) { return { apps: [] }; } }
+function lockerResolve_(k, L) {
+  const wd = Number(Utilities.formatDate(new Date(), 'Asia/Seoul', 'u')), started = k < kstDs_() || (k === kstDs_() && kstHM_() >= '08:45');
+  if (!started || L.winner || L.none) return false;
+  const now = Date.now();
+  if (!L.game) {
+    if (!L.apps.length) { L.none = true; return true; }
+    if (L.apps.length === 1) { L.winner = L.apps[0]; return true; }
+    L.game = { round: 1, alive: L.apps.slice(), hands: {}, start: now, hist: [] }; return true;
+  }
+  const G = L.game, sub = Object.keys(G.hands).filter(function (n) { return G.alive.indexOf(n) >= 0; });
+  const timeout = now - G.start > 180000;
+  if (sub.length < G.alive.length && !(timeout && sub.length)) { if (timeout && !sub.length) G.start = now; return timeout; }
+  const kinds = {}; sub.forEach(function (n) { kinds[G.hands[n]] = 1; });
+  const ks = Object.keys(kinds), beats = { '✊': '✌️', '✌️': '✋', '✋': '✊' };
+  let next = sub;
+  if (ks.length === 2) { const win = beats[ks[0]] === ks[1] ? ks[0] : ks[1]; next = sub.filter(function (n) { return G.hands[n] === win; }); }
+  G.hist.push({ round: G.round, hands: G.hands, out: G.alive.filter(function (n) { return next.indexOf(n) < 0; }) });
+  G.hist = G.hist.slice(-6);
+  if (next.length === 1) { L.winner = next[0]; return true; }
+  G.alive = next; G.hands = {}; G.round++; G.start = now; return true;
+}
+function lockerView_(name) {
+  const applyK = lockerKeyNow_(), curK = weekKey_();
+  const A = applyK ? lockerOf_(applyK) : null, L = lockerOf_(curK);
+  try { if (lockerResolve_(curK, L)) { props_().setProperty('locker:' + curK, JSON.stringify(L)); lockerReq_(curK, L); } } catch (e) {}
+  return { applyK: applyK, applied: A ? A.apps.indexOf(name) >= 0 : false, apps: A ? A.apps.length : 0,
+    cur: { k: curK, apps: L.apps, winner: L.winner || '', none: !!L.none, game: L.game ? { round: L.game.round, alive: L.game.alive, mine: L.game.hands[name] || '', left: Math.max(0, 180 - Math.round((Date.now() - L.game.start) / 1000)), hist: L.game.hist } : null } };
+}
+function lockerReq_(k, L) {   // 🏆 우승하면 선생님께 지급 신청이 저절로
+  if (!L.winner || L.reqMade) return;
+  const map = readRows_().map, m = (economy_(map).missions || []).filter(function (x) { return x.flow === 'locker'; })[0];
+  const sh = sheet_(REQ_SHEET, REQ_HEADER), id = Number(props_().getProperty('reqSeq') || 0) + 1;
+  props_().setProperty('reqSeq', String(id));
+  sh.appendRow([id, "'" + nowStr_(), L.winner, '미션', (m ? m.name : '🗄 사물함 구역') + ' · 🏆 가위바위보 우승', m ? m.coins : 50, '대기', '', m ? m.id : 'w_locker']);
+  L.reqMade = true; props_().setProperty('locker:' + k, JSON.stringify(L)); bump_();
+}
+function studentLocker_(name, body) {
+  let error = '';
+  const lock = lightLock_(10000);
+  try {
+    if (body.op === 'lockerApply') {
+      const k = lockerKeyNow_(); if (!k) error = 'closed';
+      else { const A = lockerOf_(k); if (A.apps.indexOf(name) < 0) A.apps.push(name); props_().setProperty('locker:' + k, JSON.stringify(A)); }
+    } else if (body.op === 'lockerHand') {
+      const k = weekKey_(), L = lockerOf_(k), h = String(body.h || '');
+      if (!L.game || L.winner || L.game.alive.indexOf(name) < 0 || ['✊', '✌️', '✋'].indexOf(h) < 0) error = 'bad';
+      else if (L.game.hands[name]) error = 'done';
+      else { L.game.hands[name] = h; lockerResolve_(k, L); props_().setProperty('locker:' + k, JSON.stringify(L)); lockerReq_(k, L); }
+    }
+  } finally { lock.releaseLock(); }
+  return { ok: true, error: error, locker: lockerView_(name) };
+}
 function teacherCoins_() {
+  try { const m0 = readRows_().map, e0 = economy_(m0), r0 = readCoins_(); kidNames_(m0).forEach(function (n) { autoSettle_(n, e0, r0, m0); }); } catch (e) {}   // 🎯 자동 미션 정산
   const rows = readCoins_(), bal = {};
   rows.forEach(function (r) { bal[r.name] = (bal[r.name] || 0) + r.amt; });
   const reqs = readReqs_(function () { return true; }).slice(-300).reverse();
   const map = readRows_().map, sold = {};
   (economy_(map).shop || []).forEach(function (it) { sold[it.id] = soldCount_(it.id); });
-  return { ok: true, balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [] };
+  return { ok: true, balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [], praise: praiseResults_(), sigs: sheet_(SIG_SHEET, SIG_HEADER).getLastRow() > 1 ? sheet_(SIG_SHEET, SIG_HEADER).getRange(2, 1, sheet_(SIG_SHEET, SIG_HEADER).getLastRow() - 1, 1).getValues().map(function (r) { return Number(r[0]); }) : [] };
 }
 function studentCoins_(name, body) {
   const lock = lockFor_(body.op !== 'coins', 20000);
@@ -1709,23 +1960,33 @@ function studentCoins_(name, body) {
       const m = (eco.missions || []).filter(function (x) { return x.id === body.mid; })[0];
       const pk = picksOf_(name), lim = eco.pickLimit || { daily: 2, weekly: 3 };
       const slot = m && m.cat === 'daily' ? 'd' : m && m.cat === 'weekly' ? 'w' : '';
-      if (!m || m.auto || !m.req || !slot) error = 'noitem';
+      const pickable = m && slot && m.flow !== 'locker' && m.flow !== 'teacher' && (m.flow || m.auto || m.req);   // 🎯 모든 미션은 골라야 해요
+      if (!pickable) error = 'noitem';
       else if (pk[slot].ids.indexOf(m.id) >= 0) error = 'owned';
       else if (!T && pk[slot].ids.length >= (slot === 'd' ? lim.daily : lim.weekly)) error = 'pickfull';
-      else { pk[slot].ids.push(m.id); props_().setProperty('pick:' + name, JSON.stringify(pk)); result = m.name; }
+      else if (!T && m.cap && pickCount_(m.id, slot, pk[slot].k, name) >= m.cap) error = 'capfull';   // 선착순 인원
+      else if (m.flow === 'sign' && !String(body.subj || '').trim()) error = 'subj';
+      else {
+        pk[slot].ids.push(m.id); pk[slot].at = pk[slot].at || {}; pk[slot].at[m.id] = Date.now();
+        if (m.flow === 'sign') { pk[slot].meta = pk[slot].meta || {}; pk[slot].meta[m.id] = { subj: String(body.subj).slice(0, 20) }; }
+        props_().setProperty('pick:' + name, JSON.stringify(pk)); result = m.name;
+      }
     } else if (body.op === 'missionReq') {
       const m = (eco.missions || []).filter(function (x) { return x.id === body.mid; })[0];
       const pk0 = picksOf_(name);
       const key = m ? 'm:' + m.id + ':' + name + ':' + periodKey_(m.limit) : '';
       const pending = readReqs_(function (r) { return r.name === name && r.itemId === body.mid && r.status === '대기'; }).length;
-      if (!m || !m.req) error = 'noitem';
-      else if (!T && eco.pickLimit && pk0.d.ids.indexOf(m.id) < 0 && pk0.w.ids.indexOf(m.id) < 0) error = 'nopick';
+      const sig = String(body.sig || ''), subj = m && m.flow === 'sign' ? String((((pk0.d.meta || {})[m.id]) || {}).subj || body.subj || '').slice(0, 20) : '';
+      if (!m || (!m.req && m.flow !== 'sign') || AUTO_FLOWS_[m.flow]) error = m && AUTO_FLOWS_[m.flow] ? 'auto' : 'noitem';
+      else if (!T && pk0.d.ids.indexOf(m.id) < 0 && pk0.w.ids.indexOf(m.id) < 0) error = 'nopick';
       else if (pending) error = 'pending';
       else if (!T && m.limit !== 'none' && rows.some(function (r) { return r.key === key; })) error = 'done';
+      else if (m.flow === 'sign' && (!/^data:image\/png;base64,/.test(sig) || sig.length > 48000 || !body.sure)) error = 'sig';
       else {
         const sh = sheet_(REQ_SHEET, REQ_HEADER), id = Number(props_().getProperty('reqSeq') || 0) + 1;
         props_().setProperty('reqSeq', String(id));
-        sh.appendRow([id, "'" + nowStr_(), name, '미션', m.name, m.coins, '대기', '', m.id]);
+        sh.appendRow([id, "'" + nowStr_(), name, '미션', m.name + (subj ? ' · ' + subj : ''), m.coins, '대기', '', m.id]);
+        if (m.flow === 'sign') sheet_(SIG_SHEET, SIG_HEADER).appendRow([id, subj, sig]);   // ✍️ 서명은 따로 보관
         result = m.name;
       }
     } else if (body.op === 'game') {
@@ -1770,6 +2031,7 @@ function studentCoins_(name, body) {
         }
       }
     }
+    const paid = body.op === 'coins' && !T ? autoSettle_(name, eco, rows, map) : [];
     const g = eco.game || {};
     const reqs = readReqs_(function (r) { return r.name === name; }).slice(-40).reverse();
     const sold = {}; (eco.shop || []).forEach(function (it) { if (it.stock > 0) sold[it.id] = soldCount_(it.id); });
@@ -1781,7 +2043,8 @@ function studentCoins_(name, body) {
         furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {}, locked: eco.locked || {} },
       playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),
-      picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }
+      picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }, paid: paid,
+      capUsed: capUsed_(eco), locker: lockerView_(name), tt: (map.config && map.config.timetable) || null, kids: kidNames_(map)
     };
   } finally { lock.releaseLock(); }
 }

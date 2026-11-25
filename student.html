@@ -46,6 +46,47 @@ button,input,select{font-family:inherit;color:var(--ink);}
 html.agit .tab{min-width:0;}
 @media (max-width:480px){ .subs{gap:4px;flex-wrap:nowrap;} .subs button{font-size:.85rem;padding:5px 7px;flex:1;white-space:nowrap;} html.agit .tab{font-size:1rem;padding:9px 2px;} }
 .subs i.se{font-style:normal;}
+/* 🎯 미션 2.0 */
+.ms .cap{font-size:.78rem;color:var(--ink-soft);margin-left:4px;}
+.ms .prog{font-size:.8rem;color:#2F8F6B;margin-left:4px;}
+.ms button.go{background:#FFF2BF;}
+.lk-box{border:2px dashed #CDBBA8;border-radius:14px;padding:10px 12px;margin:8px 0;background:#FFFDF6;}
+.lk-box .hands{display:flex;gap:8px;justify-content:center;margin:8px 0;}
+.lk-box .hands button{font-size:2rem;width:64px;height:64px;border-radius:50%;border:3px solid var(--ink);background:#fff;cursor:pointer;box-shadow:0 3px 0 var(--ink);}
+.lk-box .hist{font-size:.85rem;color:var(--ink-soft);}
+.big-ov{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;background:rgba(80,60,45,.55);padding:12px;}
+.big-ov.on{display:flex;}
+.big-ov .sheet{background:#FFFCF3;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);width:100%;max-width:560px;max-height:92vh;overflow:auto;padding:18px 18px 16px;position:relative;}
+.big-ov h2{margin:0 0 10px;font-size:1.35rem;text-align:center;padding:0 36px;word-break:keep-all;}
+.big-ov .x{position:absolute;right:10px;top:10px;}
+.sig-q{font-size:1.15rem;line-height:1.6;text-align:center;word-break:keep-all;background:#FFF2BF;border-radius:14px;padding:10px;margin-bottom:10px;}
+#sigPad{width:100%;height:220px;background:#fff;border:3px dashed #CDBBA8;border-radius:14px;touch-action:none;display:block;}
+.sig-row{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;}
+.sig-sure{display:flex;gap:8px;align-items:center;font-size:1.05rem;margin:10px 0;}
+.sig-sure input{width:22px;height:22px;}
+.subj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:8px 0;}
+.subj-grid button{font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:10px 6px;cursor:pointer;}
+.subj-grid button small{display:block;color:var(--ink-soft);font-size:.8rem;}
+.mail-it{border:2px solid #EFE3D3;border-radius:14px;padding:10px 12px;margin-bottom:8px;background:#fff;cursor:pointer;}
+.mail-it.unread{border-color:#E0577A;background:#FFF0F4;}
+.mail-it .mh{display:flex;justify-content:space-between;gap:8px;font-size:.9rem;color:var(--ink-soft);}
+.mail-body{white-space:pre-line;line-height:1.7;font-size:1.1rem;background:#FFFDF6;border:2px dashed #E8C35A;border-radius:14px;padding:12px;margin:8px 0;word-break:keep-all;}
+.mail-kind{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap;}
+.mail-kind label{flex:1;min-width:140px;border:2px solid var(--ink);border-radius:12px;padding:8px;text-align:center;cursor:pointer;background:#fff;}
+.mail-kind input{display:none;} .mail-kind label:has(input:checked){background:#FFE1EA;}
+.chk2{display:flex;flex-direction:column;gap:8px;margin:8px 0;font-size:1.05rem;}
+.chk2 input{width:20px;height:20px;vertical-align:-4px;margin-right:6px;}
+.dia-e{border-bottom:2px dashed #EFE3D3;padding:10px 2px;}
+.dia-e b{display:block;color:var(--ink-soft);font-size:.9rem;margin-bottom:4px;}
+.dia-e div{white-space:pre-line;line-height:1.7;word-break:keep-all;}
+.cnt{font-size:.85rem;text-align:right;color:var(--ink-soft);} .cnt.ok{color:#2F8F6B;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;}
+.chips button{font-family:inherit;border:2px solid #CDBBA8;border-radius:999px;background:#fff;padding:4px 10px;cursor:pointer;}
+.chips button.on{border-color:var(--ink);background:#DFF7EE;}
+#cafeOv .sheet{text-align:center;background:linear-gradient(180deg,#3B2F2A,#5B4636);color:#FFE8C2;border-color:#2E2420;}
+#cafeOv .timer{font-size:3.6rem;letter-spacing:4px;margin:14px 0;}
+#cafeOv .bar{height:14px;border-radius:999px;background:#2E2420;overflow:hidden;margin:6px 0 14px;} #cafeOv .bar i{display:block;height:100%;background:#FFD08A;width:0;}
+.mail-ban{display:flex;align-items:center;gap:10px;justify-content:space-between;background:#FFE1EA;border:3px solid #E0577A;border-radius:16px;padding:10px 14px;margin:8px 0;font-size:1.05rem;}
 .sum-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font-family:inherit;font-size:1.02rem;color:var(--ink);background:none;border:none;border-bottom:2px dashed #EFE3D3;padding:11px 4px;cursor:pointer;}
 .sum-row:last-child{border-bottom:none;}
 .sum-row:hover{background:#FFF8DA;}
@@ -433,6 +474,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 
   <section class="panel" id="p-me">
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
+    <div id="mailBan"></div>
     <div id="specialBox"></div>
     <div id="cleanMe"></div>
     <div id="meBox"></div>
@@ -489,6 +531,10 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div id="nGate" class="nyl-gate"><div class="nyl-box"><div class="nyl-ic">🔐</div><h2>입장 코드를 넣어 주세요</h2><div class="nyl-hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
   <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw nyl-in" type="text" id="ngInput" maxlength="12" inputmode="numeric"><div id="ngErr" class="nyl-err"></div><button type="button" class="nyl-go" id="ngBtn">들어가기</button><div id="ngT"></div></div></div>
 
+<div class="big-ov" id="msOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="msOv">✕</button><div id="msBody"></div></div></div>
+<div class="big-ov" id="mailOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="mailOv">✕</button><div id="mailBody"></div></div></div>
+<div class="big-ov" id="diaryOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="diaryOv">✕</button><div id="diaryBody"></div></div></div>
+<div class="big-ov" id="cafeOv"><div class="sheet"><div id="cafeBody"></div></div></div>
 <div class="overlay" id="penOv">
   <div class="modal pen-modal">
     <h2 id="penH"></h2>
@@ -908,9 +954,12 @@ const V_BUILDINGS = [
   { id:'hall',   map:'out',  name:'🏛️ 냥이 시청 · 학급회의', x:60,   y:400, w:300, h:190, door:[210, 615] },
   { id:'hana',   map:'out',  name:'🏰 하나네 집',             x:690,  y:360, w:220, h:170, door:[800, 555] },
   { id:'arcade', map:'out',  name:'🎮 냥냥 오락실',           x:1250, y:400, w:290, h:190, door:[1395, 615] },
-  { id:'eng',    map:'east', name:'📚 냥글리시 아카데미',     x:1020, y:330, w:340, h:210, door:[1190, 565] }
+  { id:'eng',    map:'east', name:'📚 냥글리시 아카데미',     x:1020, y:330, w:340, h:210, door:[1190, 565] },
+  { id:'cafe',   map:'east', name:'☕ 냥냥 스터디카페',       x:560,  y:150, w:300, h:190, door:[710, 365] }
 ];
 /* 📚 냥글리시 아카데미 책상 (1인석 12개) — Code.gs의 SEAT_CAP.eng 과 같아야 해요 */
+/* ☕ 스터디카페 1인석 10개 — Code.gs의 SEAT_CAP.cafe 와 같아야 해요 */
+const CAFE_DESKS = Array.from({ length: 10 }, (_, i) => ({ id: 'C' + (i + 1), x: 300 + (i % 5) * 250, y: 540 + Math.floor(i / 5) * 230 }));
 const ENG_DESKS = Array.from({ length: 12 }, (_, i) => ({ id: 'D' + (i + 1), x: 380 + (i % 4) * 280, y: 470 + Math.floor(i / 4) * 170 }));
 /* 🪑 앉거나 놀 수 있는 소품 — 자리 수는 Code.gs의 SEAT_CAP.out 과 같아야 해요 */
 const V_OBJS = [
@@ -1445,6 +1494,7 @@ function openVillage(opts){
   function seatPos(sc, sit, t){
     if (isMap(sc)){ const o = V_OBJS.find(x => x.id === sit); if (o && o.seats[t]) return { x: o.x + o.seats[t][0], y: o.y + o.seats[t][1] }; }
     if (sc === 'eng'){ const d = ENG_DESKS.find(x => x.id === sit); if (d) return { x: d.x, y: d.y + 40 }; }
+    if (sc === 'cafe'){ const d = CAFE_DESKS.find(x => x.id === sit); if (d) return { x: d.x, y: d.y + 44 }; }
     if (sc === 'hall' && isChairSeat(sit)){ const pd = HALL_PODIUMS.find(x => x.id === sit); return { x: pd.x, y: 272 }; }
     if (sc === 'hall'){ const tb = HALL_TABLES.find(x => x.id === sit); if (tb){ const s = hallSeats(tb)[t]; if (s) return { x: tb.x + s[0], y: tb.y + s[1] }; } }
     return null;
@@ -1664,7 +1714,7 @@ function openVillage(opts){
       ctx.beginPath(); ctx.moveTo(x - 50, y); ctx.lineTo(x, y - 110); ctx.lineTo(x + 50, y); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - 40, y - 50); ctx.lineTo(x, y - 140); ctx.lineTo(x + 40, y - 50); ctx.closePath(); ctx.fill();
     });
     emoji('🦉', 260, 70, 24); emoji('🐿️', 940, 210, 22); emoji('🌼', 660, 640, 18); emoji('🌸', 1300, 960, 18);
-    V_BUILDINGS.filter(b => b.map === 'east').forEach(b => drawEngBuilding(b, t));
+    V_BUILDINGS.filter(b => b.map === 'east').forEach(b => b.id === 'cafe' ? drawCafeBuilding(b, t) : drawEngBuilding(b, t));
     objsOf('east').forEach(o => drawObj(o, t)); drawSigns('east');
     const h = new Date().getHours(); if (h >= 18 || h < 6) for (let i = 0; i < 14; i++){ ctx.fillStyle = 'rgba(255,240,120,.9)'; ctx.beginPath(); ctx.arc((i * 233 + t / 20) % VW, 200 + ((i * 97 + Math.sin(t / 500 + i) * 30) % 700), 3, 0, Math.PI * 2); ctx.fill(); }
     label('🌲 숲속 마을', 800, 40, 18, '#FFFFFF');
@@ -1703,6 +1753,31 @@ function openVillage(opts){
     });
     objsOf('south').forEach(o => drawObj(o, t)); drawSigns('south');
     label('🏡 새 주택단지 · Lv.7부터 이사할 수 있어요', 800, 300, 16, '#FFFFFF');
+  }
+  /* ---------- ☕ 스터디카페 ---------- */
+  function drawCafeBuilding(b, t){
+    const { x, y, w, h } = b;
+    box(x, y + 40, w, h - 40, '#F3E3CF', 10);
+    for (let i = 0; i < 6; i++){ ctx.fillStyle = i % 2 ? '#FFFFFF' : '#2F8F6B'; ctx.fillRect(x - 10 + i * (w + 20) / 6, y + 26, (w + 20) / 6 + 1, 22); }
+    ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.strokeRect(x - 10, y + 26, w + 20, 22);
+    box(x + w / 2 - 100, y + 58, 200, 32, '#5B4636', 6); ctx.font = '17px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#FFE8C2'; ctx.fillText('STUDY CAFE ☕', x + w / 2, y + 75);
+    [x + 24, x + w - 84].forEach(wx => { box(wx, y + 100, 60, 46, '#FFF6DA', 4); emoji('📖', wx + 30, y + 123, 20); });
+    box(x + w / 2 - 28, y + h - 58, 56, 58, '#8B5A3C', 6);
+    const inside = Object.values(cats).filter(c => c.sc === b.id).length;
+    label(b.name + (inside ? ` 👥${inside}` : ''), x + w / 2, y + h + 18, 14, '#FFFFFF');
+  }
+  function drawCafe(t){
+    ctx.fillStyle = '#F7EBDD'; ctx.fillRect(0, 0, VW, 360); ctx.fillStyle = '#D9B892'; ctx.fillRect(0, 360, VW, VH - 360);
+    for (let i = 0; i < VW; i += 120){ ctx.fillStyle = '#CDA87F'; ctx.fillRect(i, 360, 4, VH - 360); }
+    box(400, 50, 800, 200, '#5B4636', 10); ctx.fillStyle = '#2E2A26'; ctx.fillRect(414, 64, 772, 172);
+    ctx.font = '32px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#FFE8C2'; ctx.fillText('☕ 냥냥 스터디카페', 800, 110);
+    ctx.font = '20px NeoDunggeunmo, sans-serif'; ctx.fillStyle = '#FFFFFF'; ctx.fillText('빈 자리에 앉아 ⏱ 1시간 집중!', 800, 160);
+    ctx.fillStyle = '#FFB3C7'; ctx.fillText('앱을 나가거나 화면을 끄면 실패해요 🙅', 800, 200);
+    emoji('🪴', 200, 290, 60); emoji('🪴', 1400, 290, 60); emoji('🕯️', 300, 120, 34); emoji('📚', 1300, 120, 44);
+    const taken = new Set(Object.values(cats).filter(c => c.sc === 'cafe' && c.sit).map(c => c.sit.s));
+    CAFE_DESKS.forEach((d, i) => { box(d.x - 80, d.y - 34, 160, 56, taken.has(d.id) ? '#FFD8A8' : '#A9744F', 8); emoji('💡', d.x - 50, d.y - 48, 22); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(d.x - 18, d.y - 26, 40, 28); emoji('☕', d.x + 50, d.y - 12, 18); label(String(i + 1), d.x, d.y + 36, 12, '#FFFFFF'); });
+    drawHanaAt(1470, 920, 64, -1, t, false); bubble('조용히 집중하자냥 🤫', 1470, 846, false);
+    box(740, 940, 120, 60, '#2F8F6B', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
   }
   /* ---------- 📚 냥글리시 아카데미 (교실) ---------- */
   function drawEng(t){
@@ -1903,7 +1978,7 @@ function openVillage(opts){
     camera(false);
     ctx.setTransform(scale, 0, 0, scale, ox, oy);
     if (scene === 'out') drawOut(t); else if (scene === 'west') drawWest(t); else if (scene === 'east') drawEast(t); else if (scene === 'south') drawSouth(t);
-    else if (scene === 'hall') drawHall(t); else if (scene === 'arcade') drawArcade(t); else if (scene === 'hana') drawHanaHome(t); else if (scene === 'eng') drawEng(t); else drawRoom(t);
+    else if (scene === 'hall') drawHall(t); else if (scene === 'arcade') drawArcade(t); else if (scene === 'hana') drawHanaHome(t); else if (scene === 'eng') drawEng(t); else if (scene === 'cafe') drawCafe(t); else drawRoom(t);
     const here = Object.values(cats).filter(c => c.sc === scene || (scene === 'out' && !c.sc));
     const list = here.slice().sort((a, b) => a.y - b.y);
     let hanaDrawn = scene !== 'out';
@@ -1942,6 +2017,7 @@ function openVillage(opts){
     } else if (scene === 'arcade') ARCADE_MACHINES.forEach(m => add(m.x + 62, m.y - 108, m.x, m.y));
     else if (scene === 'hana') add(860, 410, 800, 500);
     else if (scene === 'eng') ENG_DESKS.forEach(d => add(d.x + 62, d.y - 34, d.x, d.y));
+    else if (scene === 'cafe') CAFE_DESKS.forEach(d => add(d.x + 70, d.y - 40, d.x, d.y));
     return out;
   }
   function drawPaws(t){
@@ -1964,7 +2040,7 @@ function openVillage(opts){
   let goal = null;   // { type:'seat'|'door'|'machine'|'hana', ... }
   function arrived(c){
     const g = goal; goal = null;
-    showActs(null);
+    showActs(null); if (scene.startsWith('house:')) houseActs();
     if (g && g.type === 'seat'){
       sendMove(c, { s: g.sit, t: g.t, a: g.act }).then(j => {
         if (j && j.error === 'full'){ say('앗, 그 자리는 누가 먼저 앉았어요!'); c.sit = null; c.ty += 30; return; }
@@ -1973,6 +2049,7 @@ function openVillage(opts){
         const o = V_OBJS.find(x => x.id === g.sit);
         if (o){ emote(o.emo, true); showActs(o); }
         else if (scene === 'eng'){ showActs({ id: '', act: 'study', label: '📚 문제 풀기' }); openEngPanel(); }
+        else if (scene === 'cafe'){ showActs({ id: '', act: 'cafe', label: '⏱ 공부 시작' }); opts.onCafe && opts.onCafe(); }
         else if (scene === 'hall' && isChairSeat(g.sit)){ showActs({ hall: true, chair: true }); say('👑 단상에 올랐어요! 내 말풍선이 크고 노랗게 보여요 · 🔇 로 친구 말을 잠시 막을 수 있어요', 4200); toGroup = false; updateTo(); }
         else if (scene === 'hall'){ showActs({ hall: true, table: g.sit }); say(`🤫 ${g.sit.slice(1)}모둠 자리에 앉았어요! 모둠끼리 대화할 수 있어요`, 3200); toGroup = true; updateTo(); }
       });
@@ -2006,6 +2083,7 @@ function openVillage(opts){
       else if (o.act === 'fish') btns.push(`<button type="button" data-act="fish">🎣 낚싯대 던지기</button>`);
       else if (o.act === 'churu') btns.push(`<button type="button" data-act="churu">🍡 츄르 뽑기</button>`);
       else if (o.act === 'study') btns.push(`<button type="button" data-act="study">📚 문제 풀기</button>`);
+      else if (o.act === 'cafe') btns.push(`<button type="button" data-act="cafe">⏱ 1시간 집중</button>`);
       else if (o.act === 'camp') btns.push(`<button type="button" data-act="camp">🍡 마시멜로 굽기</button>`);
       else if (o.act !== 'sit') btns.push(`<button type="button" data-act="again">${o.label}</button>`);
       btns.push(`<button type="button" data-act="stand" class="alt">🙋 일어나기</button>`);
@@ -2022,6 +2100,7 @@ function openVillage(opts){
     if (a === 'chair'){ openChairPanel(); return; }
     if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).catch(() => {}); takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
+    if (a === 'cafe'){ opts.onCafe && opts.onCafe(); return; }
     if (['camp', 'fish', 'churu', 'again'].includes(a) && opts.call && !opts.viewOnly){
       if (actsEl.dataset.busy) return; actsEl.dataset.busy = '1';
       if (a !== 'again') opts.call('vnews', { a }).catch(() => {});
@@ -2053,6 +2132,7 @@ function openVillage(opts){
     if (scene === 'out') t.textContent = `🏘️ ${opts.viewOnly ? '우리 반 냥이 마을' : '냥이 마을 · 땅이나 건물을 눌러 보세요'}`;
     else if (isMap(scene)) t.textContent = V_MAPS[scene];
     else if (scene === 'eng') t.textContent = '📚 냥글리시 아카데미';
+    else if (scene === 'cafe') t.textContent = '☕ 냥냥 스터디카페';
     else if (scene.startsWith('house:')) t.textContent = `🏠 ${scene.slice(6)}네 집${room && room.owner === meName ? ' (우리 집)' : ''}`;
     else t.textContent = SCENE_NAME[scene];
     $q('.vg-out').style.display = scene === 'out' ? 'none' : 'block';
@@ -2091,12 +2171,24 @@ function openVillage(opts){
     if (scene === 'south' && opts.me && (opts.me.lv || 1) >= 7) say('🏗️ 빈 부지를 누르면 그곳으로 이사할 수 있어요 (다음 날 완공)', 4000);
     toGroup = false; updateTo();
     groupEl.style.display = 'none';
-    if (scene.startsWith('house:') && room.owner === meName && !opts.viewOnly) showActs({ id: '', act: 'edit', label: '' }), actsEl.innerHTML = `<button type="button" id="vgEdit">🛠 우리 집 꾸미기</button>`;
+    if (scene.startsWith('house:')) houseActs();
     if (scene === 'hana') say('하나를 눌러서 같이 놀아요! 💛', 3000);
     if (scene === 'arcade') say('오락기를 눌러 보세요! 🎮', 2500);
     if (scene === 'hall') say('🐾 를 눌러 모둠 테이블에 앉거나, 단상(👑)에 올라 회의를 진행해요', 3200);
   }
-  actsEl.addEventListener('click', e => { if (e.target.closest('#vgEdit')) editStart(); });
+  /* 🏠 집 안: 📮 편지함 · 📔 일기장 (+ 내 집이면 꾸미기) */
+  function houseActs(){
+    if (!room || opts.viewOnly || !meName) return;
+    const mine = room.owner === meName;
+    actsEl.innerHTML = `<button type="button" id="vgMail">📮 편지함${mine ? '' : ' (편지 쓰기)'}</button><button type="button" id="vgDiary">📔 일기장</button>${mine ? '<button type="button" id="vgEdit" class="alt">🛠 우리 집 꾸미기</button>' : ''}`;
+    actsEl.style.display = 'flex';
+  }
+  window.__vgEnter = id => enter(id);   // 🧪 시험용
+  actsEl.addEventListener('click', e => {
+    if (e.target.closest('#vgEdit')) editStart();
+    else if (e.target.closest('#vgMail')) opts.onMail && opts.onMail(room && room.owner);
+    else if (e.target.closest('#vgDiary')) opts.onDiary && opts.onDiary(room && room.owner);
+  });
   $q('.vg-out').addEventListener('click', () => {
     const b = V_BUILDINGS.find(b => b.id === scene);
     if (b) return enter(b.map);
@@ -2130,6 +2222,16 @@ function openVillage(opts){
       const o = objsOf(scene).find(o => Math.hypot(p.x - o.x, p.y - o.y) < o.r + 20);
       if (o){ seatAt(o, p); return; }
       const s2 = freeSpot(p.x, p.y, scene); walkTo(s2.x, s2.y); return;
+    }
+    if (scene === 'cafe'){
+      if (opts.viewOnly || !c) return;
+      const d = CAFE_DESKS.find(d => Math.abs(p.x - d.x) < 85 && Math.abs(p.y - d.y) < 55);
+      if (d){
+        if (c.sit && c.sit.s === d.id){ opts.onCafe && opts.onCafe(); return; }
+        if (Object.values(cats).some(q => q !== c && q.sc === 'cafe' && q.sit && q.sit.s === d.id)){ say('누가 공부하고 있어요! 🤫'); return; }
+        walkTo(d.x, d.y + 44, { type: 'seat', sit: d.id, t: 0, act: 'cafe' }); return;
+      }
+      walkTo(Math.max(40, Math.min(VW - 40, p.x)), Math.max(380, Math.min(VH - 30, p.y))); return;
     }
     if (scene === 'eng'){
       if (opts.viewOnly || !c) return;
@@ -2482,7 +2584,7 @@ function openVillage(opts){
         else { room.room = data; say('🏠 집을 저장했어요! 친구들이 놀러 올 수 있어요', 3000); }
       }).catch(() => say('연결이 안 돼요'));
     }
-    if (scene.startsWith('house:') && room && room.owner === meName){ actsEl.innerHTML = `<button type="button" id="vgEdit">🛠 우리 집 꾸미기</button>`; actsEl.style.display = 'flex'; }
+    if (scene.startsWith('house:') && room) houseActs();
   }
   function myInv(){ return (opts.getInv && opts.getInv()) || {}; }
   function owned(f){ return ((myInv().furn || {})[f.id] || 0); }
@@ -2625,7 +2727,7 @@ function openVillage(opts){
   function kbBounds(){
     if (isMap(scene)) return MAP_WALK[scene] || WALK;
     if (scene.startsWith('house:')){ const g = roomGeom(); return { x0: g.x0 + 20, x1: g.x0 + g.w - 20, y0: g.y0 + 30, y1: g.y0 + g.h }; }
-    return { x0: 40, x1: VW - 40, y0: { hall: 340, arcade: 640, hana: 400, eng: 360 }[scene] || 360, y1: VH - 30 };
+    return { x0: 40, x1: VW - 40, y0: { hall: 340, arcade: 640, hana: 400, eng: 360, cafe: 380 }[scene] || 360, y1: VH - 30 };
   }
   function kbMove(){
     if (!kbKeys.size || editing) return;
@@ -2873,7 +2975,7 @@ async function refreshMe(silent){
     // 비밀번호가 정말 틀렸을 때만 로그아웃해요. 서버가 바쁘거나 잠깐 오류가 난 건 그대로 두고 다음에 다시 확인해요
     if (!j.ok && (j.error === 'wrong' || j.error === 'nopin')){ if (!silent) alert('비밀번호가 바뀌었어요. 다시 로그인해 주세요.'); logout(); return; }
     if (!j.ok){ if (!silent) toast('서버가 잠깐 바빠요 · 조금 있다 다시 확인할게요'); return; }
-    me.info = j.me; me.look = j.look; me.acked = j.acked || []; if (typeof j.status === 'string') me.status = j.status; me.penalty = j.penalty || null; renderPenBar();
+    me.info = j.me; me.look = j.look; me.acked = j.acked || []; me.mailNew = Number(j.mailNew) || 0; renderMailBan(); if (typeof j.status === 'string') me.status = j.status; me.penalty = j.penalty || null; renderPenBar();
   } catch(e){}
 }
 
@@ -2901,7 +3003,7 @@ async function doLogin(){
         j.error === 'wrong'  ? (j.until ? '너무 많이 틀려서 10분 동안 잠겼어요' : `비밀번호가 달라요 (남은 기회 ${j.left}번)`) : '잠시 후 다시 해 주세요';
       return;
     }
-    me = { name, pin, info: j.me, look: j.look, acked: j.acked || [], status: j.status || '' };
+    me = { name, pin, info: j.me, look: j.look, acked: j.acked || [], status: j.status || '', mailNew: Number(j.mailNew) || 0 }; setTimeout(renderMailBan, 0);
     const store = $('loginKeep').checked ? localStorage : sessionStorage;
     localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY);
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
@@ -2920,6 +3022,201 @@ function logout(){
 
 /* ---------- 화면 ---------- */
 let current = 'notice';
+
+/* ================= 🎯 미션 도구: 서명 · 칭찬편지 · 일기장 · 스터디카페 ================= */
+function bOpen(id, html){ $(id.replace('Ov', 'Body')).innerHTML = html; $(id).classList.add('on'); }
+function bClose(id){ const o = $(id); if (o) o.classList.remove('on'); if (id === 'cafeOv') cafeStop(false); }
+/* 📚 오늘 시간표 과목 */
+function todaySubjects(){
+  const tt = coin && coin.tt, wd = new Date().getDay(); if (!tt || wd === 0 || wd === 6) return [];
+  const subj = (tt.subj || {})[wd] || [], chg = ((tt.chg || {})[todayStr()]) || {}, times = Array.isArray(tt.times) ? tt.times : [];
+  if (!times.length) return subj.map((x, i) => ({ p: (i + 1) + '교시', s: x })).filter(o => o.s);
+  let ci = 0; const out = [];
+  times.forEach((x, i) => { if (/점심|lunch/i.test(x.name)) return; const base = subj[ci++], lab = chg[i] || base; if (!lab) return; const num = (String(x.name).match(/\d+/) || [])[0]; out.push({ p: num ? num + '교시' : x.name, s: lab }); });
+  return out;
+}
+function openSubjPick(m){
+  const list = todaySubjects();
+  bOpen('msOv', `<h2>✍️ 어떤 과목에서 할 거예요?</h2><div class="hint" style="text-align:center;">오늘 시간표에서 골라요. 그 과목 선생님께 서명을 받아요!</div>
+    ${list.length ? `<div class="subj-grid">${list.map(o => `<button type="button" data-subj="${esc(o.s)}"><small>${esc(o.p)}</small>${esc(o.s)}</button>`).join('')}</div>` : '<div class="empty">오늘 시간표가 없어요. 과목을 직접 적어 주세요</div>'}
+    <div class="sig-row"><input type="text" id="subjFree" maxlength="20" placeholder="직접 적기 (예: 수학)" style="flex:1;"><button type="button" class="btn btn-y" data-subjfree="1">고르기</button></div>
+    <div class="hint" style="margin-top:8px;">⚠️ 한 번 고르면 바꿀 수 없어요 · 하루 ${m.cap || 5}명 선착순</div>`);
+  $('msOv').dataset.mid = m.id;
+}
+async function pickSubj(subj){
+  if (!subj) return;
+  const m = coin.economy.missions.find(x => x.id === $('msOv').dataset.mid);
+  if (!confirm(`📚 ${subj} 시간에 학습태도 서명을 받을까요?`)) return;
+  const j = await coinCall('missionPick', { mid: m.id, subj });
+  if (j && !j.error){ bClose('msOv'); toast('🎯 골랐어요! 수업이 끝나면 ✍️ 서명 받기를 눌러요'); } else if (j) toast(ERR[j.error] || ({ pickfull:'이미 다 골랐어요', owned:'이미 골랐어요' })[j.error] || '고르지 못했어요');
+}
+/* ✍️ 서명판 */
+let sigDrawn = false;
+function openSign(m){
+  const meta = (((coin.picks || {}).d || {}).meta || {})[m.id] || {}, subj = meta.subj || '수업';
+  bOpen('msOv', `<h2>✍️ 학습태도 서명</h2>
+    <div class="sig-q">📚 <b>${esc(subj)}</b> 선생님!<br>오늘 <b>${esc(givenName(me.name))}</b> 학생의 학습태도에<br><b>100% 만족</b>하셨나요?</div>
+    <canvas id="sigPad"></canvas>
+    <div class="sig-row"><span class="hint">👆 선생님이 손가락으로 서명해 주세요</span><button type="button" class="btn btn-gray" id="sigClear">지우기</button></div>
+    <label class="sig-sure"><input type="checkbox" id="sigSure"> 저는 ${esc(subj)} 교과 선생님임을 확인합니다</label>
+    <button type="button" class="btn btn-y" id="sigDone" style="width:100%;">✅ 완료 (시내쌤께 보내기)</button>`);
+  $('msOv').dataset.mid = m.id;
+  const cv = $('sigPad'), r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  const x = cv.getContext('2d'); x.lineCap = 'round'; x.lineJoin = 'round'; x.lineWidth = 3.2 * dpr; x.strokeStyle = '#1E2340';
+  let down = false, last = null; sigDrawn = false;
+  const pos = e => { const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) * dpr, (e.clientY - b.top) * dpr]; };
+  cv.onpointerdown = e => { down = true; last = pos(e); cv.setPointerCapture(e.pointerId); e.preventDefault(); };
+  cv.onpointermove = e => { if (!down) return; const p = pos(e); x.beginPath(); x.moveTo(last[0], last[1]); x.lineTo(p[0], p[1]); x.stroke(); last = p; sigDrawn = true; };
+  cv.onpointerup = cv.onpointercancel = () => { down = false; };
+  $('sigClear').onclick = () => { x.clearRect(0, 0, cv.width, cv.height); sigDrawn = false; };
+  $('sigDone').onclick = sigSend;
+}
+async function sigSend(){
+  if (!sigDrawn){ toast('선생님 서명이 필요해요 ✍️'); return; }
+  if (!$('sigSure').checked){ toast('선생님 확인 체크를 눌러 주세요'); return; }
+  const cv = $('sigPad'), out = document.createElement('canvas'), w = 420, h = Math.round(w * cv.height / cv.width);
+  out.width = w; out.height = h; const o = out.getContext('2d'); o.fillStyle = '#fff'; o.fillRect(0, 0, w, h); o.drawImage(cv, 0, 0, w, h);
+  const sig = out.toDataURL('image/png');
+  $('sigDone').disabled = true;
+  const j = await coinCall('missionReq', { mid: $('msOv').dataset.mid, sig, sure: true });
+  $('sigDone') && ($('sigDone').disabled = false);
+  if (j && !j.error){ bClose('msOv'); toast('✅ 시내쌤께 보냈어요! 승인되면 냥코인이 들어와요'); } else if (j) toast(ERR[j.error] || '보내지 못했어요');
+}
+/* 💌 칭찬편지: 친구 고르기 → 편지 쓰기 */
+function openPraisePick(){
+  const kids = ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => n !== me.name && !/(쌤|샘|선생님|교감|교장)$/.test(n));
+  bOpen('msOv', `<h2>💌 누구에게 칭찬편지를 쓸까요?</h2><div class="hint" style="text-align:center;margin-bottom:8px;">평소에 <b>덜 친한 친구</b>를 골라 봐요! 친구가 '맞아요'를 누르면 냥코인이 들어와요</div>
+    <div class="chips">${kids.map(n => `<button type="button" data-praiseto="${esc(n)}">${esc(n)}</button>`).join('')}</div>`);
+}
+let mailData = null;
+async function openMail(owner, opt){
+  if (!me){ toast('로그인해 주세요'); return; }
+  opt = opt || {};
+  if (owner && owner !== me.name){ mailCompose(owner, opt.praise); return; }
+  bOpen('mailOv', '<h2>📮 내 편지함</h2><div class="empty">불러오는 중…</div>');
+  try { mailData = await studentCall('mailList'); } catch(e){ mailData = null; }
+  if (me) me.mailNew = 0; renderMailBan();
+  mailInbox();
+}
+function mailInbox(){
+  const d = mailData || {}, box = d.inbox || [];
+  bOpen('mailOv', `<h2>📮 내 편지함</h2>${box.length ? box.map(x => `<div class="mail-it ${!x.read || (x.kind === '칭찬' && !x.ok) ? 'unread' : ''}" data-mopen="${x.id}"><div class="mh"><span>${x.kind === '칭찬' ? '💛 칭찬편지' : '✉️ 편지'} · from. <b>${esc(x.from)}</b></span><span>${esc(String(x.t).slice(5, 16))}</span></div>${!x.read ? '<div>📩 새 편지! 눌러서 읽어요</div>' : `<div style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${esc(x.text)}</div>`}</div>`).join('') : '<div class="empty">아직 받은 편지가 없어요 📭</div>'}
+    <div class="hint" style="margin-top:8px;">✉️ 친구 집에 놀러 가서 📮 편지함을 누르면 편지를 쓸 수 있어요</div>`);
+}
+function mailOpenOne(id){
+  const x = ((mailData || {}).inbox || []).find(m => m.id === id); if (!x) return;
+  if (!x.read){ x.read = true; studentCall('mailRead', { id }).catch(() => {}); }
+  bOpen('mailOv', `<h2>${x.kind === '칭찬' ? '💛 칭찬편지' : '✉️ 편지'}</h2><div class="hint">from. <b>${esc(x.from)}</b> · ${esc(String(x.t).slice(0, 16))}</div><div class="mail-body">${esc(x.text)}</div>
+    ${x.kind === '칭찬' ? (x.ok ? '<div class="hint" style="text-align:center;">✅ 확인했어요. 고마운 마음 전해졌어요 💛</div>' : `<div class="chk2"><label><input type="checkbox" id="mok1"> 🤝 평소에 덜 친한 친구가 맞아요</label><label><input type="checkbox" id="mok2"> 💛 칭찬 쪽지가 맞아요</label></div><button type="button" class="btn btn-y" data-mok="${x.id}" style="width:100%;">확인했어요</button><div class="hint" style="margin-top:6px;">둘 다 맞으면 보낸 친구에게 냥코인이 가요 🐾</div>`) : ''}
+    <button type="button" class="btn btn-gray" data-mback="1" style="width:100%;margin-top:8px;">◀ 편지함으로</button>`);
+}
+async function mailOk(id){
+  if (!$('mok1').checked || !$('mok2').checked){ toast('두 개 모두 맞으면 체크해 주세요 (아니면 그냥 닫아요)'); return; }
+  try { mailData = await studentCall('mailOk', { id, a: true, b: true }); toast('💛 확인했어요!'); mailOpenOne(id); } catch(e){ toast('연결이 안 돼요'); }
+}
+function mailCompose(to, praise){
+  bOpen('mailOv', `<h2>✉️ ${esc(to)}에게 편지 쓰기</h2>
+    <div class="mail-kind"><label><input type="radio" name="mkind" value="normal" ${praise ? '' : 'checked'}>✉️ 그냥 편지</label><label><input type="radio" name="mkind" value="praise" ${praise ? 'checked' : ''}>💛 칭찬편지 보내기</label></div>
+    <textarea id="mailText" rows="5" maxlength="300" placeholder="${praise ? '친구의 좋은 점을 구체적으로 칭찬해 줘요 (20자 이상)' : '하고 싶은 말을 적어요'}"></textarea>
+    <div class="cnt" id="mailCnt">0자</div>
+    <div class="hint">🔒 편지 내용은 받는 친구만 볼 수 있어요 (선생님도 못 봐요). 나쁜 말은 애교 말로 바뀌어요!</div>
+    <button type="button" class="btn btn-y" data-msend="${esc(to)}" style="width:100%;margin-top:8px;">📮 보내기</button>`);
+  $('mailText').oninput = () => { const n = $('mailText').value.trim().length, pr = document.querySelector('[name=mkind]:checked').value === 'praise'; $('mailCnt').textContent = `${n}자${pr ? ' / 20자 이상' : ''}`; $('mailCnt').classList.toggle('ok', !pr || n >= 20); };
+  setTimeout(() => $('mailText').focus(), 60);
+}
+async function mailSend(to){
+  const text = $('mailText').value.trim(), kind = document.querySelector('[name=mkind]:checked').value;
+  if (text.length < (kind === 'praise' ? 20 : 5)){ toast(kind === 'praise' ? '칭찬편지는 20자 이상 써요' : '조금 더 적어 주세요'); return; }
+  try {
+    const j = await studentCall('mailSend', { to, kind, text });
+    if (j.error){ toast({ short:'조금 더 적어 주세요', slow:'조금 있다 보내요 🐢', to:'받는 친구를 확인해요' }[j.error] || '보내지 못했어요'); return; }
+    bClose('mailOv'); toast(kind === 'praise' ? ((j.sentInfo || {}).mission ? '💛 칭찬편지를 보냈어요! 친구가 확인하면 냥코인 🐾' : '💛 칭찬편지를 보냈어요!') : '📮 편지를 보냈어요!');
+    if (current === 'coin') coinCall('coins');
+  } catch(e){ toast('연결이 안 돼요'); }
+}
+function renderMailBan(){
+  const b = $('mailBan'); if (!b) return;
+  const n = me && me.mailNew || 0;
+  b.innerHTML = n ? `<div class="mail-ban"><span>📮 새 편지 <b>${n}</b>통이 왔어요!</span><button type="button" class="btn btn-y" data-mailme="1">열어 보기</button></div>` : '';
+}
+/* 📔 일기장 */
+let diaryData = null;
+async function openDiary(owner){
+  if (!me){ toast('로그인해 주세요'); return; }
+  bOpen('diaryOv', `<h2>📔 ${esc(owner === me.name ? '내' : owner + '의')} 일기장</h2><div class="empty">불러오는 중…</div>`);
+  try { diaryData = await studentCall('diaryGet', { owner }); } catch(e){ diaryData = null; }
+  renderDiary();
+}
+function renderDiary(){
+  const d = diaryData || {}; if (!d.ok){ bOpen('diaryOv', '<h2>📔 일기장</h2><div class="empty">불러오지 못했어요</div>'); return; }
+  const title = `<h2>📔 ${d.mine ? '내' : esc(d.owner) + '의'} 일기장</h2>`;
+  if (d.locked){ bOpen('diaryOv', title + `<div class="empty">🔒 ${esc(d.owner)}의 일기장은<br>주인이 허락한 친구만 읽을 수 있어요</div>`); return; }
+  const today = todayStr(), mineToday = d.mine ? (d.entries || []).find(e => e.ds === today) : null;
+  const kids = ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => n !== me.name && !/(쌤|샘|선생님|교감|교장)$/.test(n)), readers = new Set(d.readers || []);
+  bOpen('diaryOv', title + (d.mine ? `<div class="hint">✏️ 오늘(${today.slice(5)}) 일기 · ${d.min || 50}자 이상이면 저장돼요 (하루 한 편, 다시 저장하면 고쳐져요)</div>
+      <textarea id="diaryText" rows="6" maxlength="1000" placeholder="오늘 있었던 일, 느낀 점을 자유롭게 적어요">${esc(mineToday ? mineToday.text : '')}</textarea>
+      <div class="cnt" id="diaryCnt"></div><button type="button" class="btn btn-y" id="diarySave" style="width:100%;">💾 저장</button>
+      <div style="margin-top:16px;font-size:1.05rem;border-top:2px dashed #EFE3D3;padding-top:12px;">👀 <b>읽을 수 있는 친구</b></div><div class="hint">선생님은 언제나 읽을 수 있어요. 친구는 내가 고른 친구만!</div>
+      <div class="chips" id="diaryReaders">${kids.map(n => `<button type="button" data-dread="${esc(n)}" class="${readers.has(n) ? 'on' : ''}">${esc(n)}</button>`).join('')}</div>
+      <button type="button" class="btn btn-mint" id="diaryReadSave">👀 저장</button>` : '') +
+    `<div style="margin-top:12px;">${(d.entries || []).filter(e => !d.mine || e.ds !== today).map(e => `<div class="dia-e"><b>📅 ${esc(e.ds)}</b><div>${esc(e.text)}</div></div>`).join('') || (d.mine ? '' : '<div class="empty">아직 일기가 없어요</div>')}</div>`);
+  if (d.mine){ const upd = () => { const n = $('diaryText').value.replace(/\s/g, '').length; $('diaryCnt').textContent = `${n}자 / ${d.min || 50}자`; $('diaryCnt').classList.toggle('ok', n >= (d.min || 50)); }; $('diaryText').oninput = upd; upd(); }
+}
+async function diarySave(){
+  const text = $('diaryText').value;
+  if (text.replace(/\s/g, '').length < ((diaryData || {}).min || 50)){ toast(`${(diaryData || {}).min || 50}자 이상 써 주세요 ✏️`); return; }
+  try { diaryData = await studentCall('diarySave', { text, owner: me.name }); toast(diaryData.error ? '저장하지 못했어요' : '📔 오늘 일기를 저장했어요!'); renderDiary(); } catch(e){ toast('연결이 안 돼요'); }
+}
+async function diaryReadersSave(){
+  const list = [...document.querySelectorAll('#diaryReaders .on')].map(b => b.dataset.dread);
+  try { diaryData = await studentCall('diaryReaders', { list, owner: me.name }); toast('👀 읽을 수 있는 친구를 저장했어요'); renderDiary(); } catch(e){ toast('연결이 안 돼요'); }
+}
+/* ☕ 스터디카페: 1시간 집중 (화면을 끄거나 앱을 나가면 실패) */
+let cafe = null;
+function openCafe(){
+  if (!me){ toast('로그인해 주세요'); return; }
+  if (cafe && cafe.on){ $('cafeOv').classList.add('on'); return; }
+  bOpen('cafeOv', `<h2 style="color:#FFE8C2;">☕ 1시간 집중 공부</h2>
+    <div style="line-height:1.7;word-break:keep-all;">⏱ <b>60분</b> 동안 이 화면을 켜 두고 공부해요.<br>🙅 <b>다른 앱으로 가거나 화면을 끄면 실패</b>해요!<br>🏆 이번 주 3일 성공하면 미션 달성</div>
+    <div class="timer">60:00</div>
+    <button type="button" class="btn btn-y" id="cafeGo" style="width:100%;font-size:1.2rem;">⏱ 시작하기</button>
+    <button type="button" class="btn btn-gray" data-bclose="cafeOv" style="width:100%;margin-top:8px;">닫기</button>`);
+  $('cafeGo').onclick = cafeStart;
+}
+async function cafeStart(){
+  let j; try { j = await studentCall('cafeStart'); } catch(e){ toast('연결이 안 돼요'); return; }
+  cafe = { on: true, start: Date.now(), beat: Date.now() };
+  bOpen('cafeOv', `<h2 style="color:#FFE8C2;">☕ 집중하는 중…</h2><div class="timer" id="cafeT">00:00</div><div class="bar"><i id="cafeBar"></i></div>
+    <div style="word-break:keep-all;">📵 이 화면을 끄거나 나가면 실패해요! · 이번 주 <b>${j.week || 0}</b>/3일</div>
+    <button type="button" class="btn btn-gray" id="cafeQuit" style="width:100%;margin-top:14px;">그만하기</button>`);
+  $('cafeQuit').onclick = () => { if (confirm('그만할까요? 오늘 집중은 실패로 끝나요')) cafeStop(true, '그만했어요'); };
+  cafe.tick = setInterval(cafeTick, 1000);
+}
+async function cafeTick(){
+  if (!cafe || !cafe.on) return;
+  const sec = Math.floor((Date.now() - cafe.start) / 1000), left = Math.max(0, 3600 - sec);
+  if ($('cafeT')) $('cafeT').textContent = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+  if ($('cafeBar')) $('cafeBar').style.width = Math.min(100, sec / 36) + '%';
+  if (Date.now() - cafe.beat > 50000){ cafe.beat = Date.now(); studentCall('cafeBeat').then(j => { if (j && j.error === 'gap') cafeStop(true, '연결이 끊겨서 실패했어요'); }).catch(() => {}); }
+  if (left <= 0 && !cafe.ending){
+    cafe.ending = true;
+    try { const j = await studentCall('cafeDone'); clearInterval(cafe.tick); cafe.on = false;
+      bOpen('cafeOv', j && j.done ? `<h2 style="color:#FFE8C2;">🎉 1시간 집중 성공!</h2><div style="font-size:3rem;">🏆</div><div>이번 주 <b>${j.week}</b>/3일</div><button type="button" class="btn btn-y" data-bclose="cafeOv" style="width:100%;margin-top:14px;">좋아요!</button>`
+        : `<h2 style="color:#FFE8C2;">😿 기록하지 못했어요</h2><div>${esc((j && j.error) || '')}</div><button type="button" class="btn btn-gray" data-bclose="cafeOv" style="width:100%;margin-top:14px;">닫기</button>`);
+      if (j && j.done && current === 'coin') coinCall('coins');
+    } catch(e){ cafe.ending = false; }
+  }
+}
+function cafeStop(fail, why){
+  if (!cafe || !cafe.on) return;
+  clearInterval(cafe.tick); cafe.on = false;
+  if (fail){ studentCall('cafeQuit').catch(() => {}); bOpen('cafeOv', `<h2 style="color:#FFE8C2;">😿 집중 실패</h2><div>${esc(why || '화면을 나가서 실패했어요')}</div><div class="hint" style="color:#FFE8C2;">다시 자리에 앉아 처음부터 도전해요!</div><button type="button" class="btn btn-gray" data-bclose="cafeOv" style="width:100%;margin-top:14px;">닫기</button>`); $('cafeOv').classList.add('on'); }
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && cafe && cafe.on) cafeStop(true, '다른 앱으로 가거나 화면을 꺼서 실패했어요'); });
+addEventListener('pagehide', () => { if (cafe && cafe.on) cafeStop(true); });
+addEventListener('message', e => { if (e.origin === location.origin && (e.data || {}).nyang === 'hidden' && cafe && cafe.on) cafeStop(true, '다른 탭으로 가서 실패했어요'); });
+
 async function enterVillage(){
   if (me && !coin) await coinCall('coins');
   const eco = (coin && coin.economy) || {};
@@ -2940,6 +3237,7 @@ async function enterVillage(){
     onCoins: j => { if (j && j.ok){ coin = j; render(); } },
     onHanaLook: look => { hanaLookNow = look; drawHeaderHana(); },
     onGame: g => openGame(g),
+    onMail: owner => openMail(owner), onDiary: owner => openDiary(owner), onCafe: () => openCafe(),
     onClose: () => clearInterval(villageChatTimer) });
   let vTick = 0;
   villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
@@ -3211,7 +3509,7 @@ function renderChat(){
   const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
   const room = chat.to || '';
   // 방마다 안 읽은 표시 · 최근 귓속말 친구
-  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
+  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && m.from !== '📮 우체부' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
   const rooms = [['', '📢 전체']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
   if (room && !rooms.some(r => r[0] === room)) rooms.push([room, room.charAt(0) === '#' ? `👥 ${room.slice(2)}모둠` : `🤫 ${room}`]);
   const shown = chat.msgs.filter(m => room === '' ? true : chatRoomOf(m) === room);
@@ -3223,7 +3521,7 @@ function renderChat(){
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub">${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}${wh && !mine && !T && m.to === me.name ? ` <button type="button" class="wrep" data-wrep="${m.id}" title="불편한 귓속말 신고">🚨 신고</button>` : ''}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}${wh && !mine && !T && m.to === me.name ? ` <button type="button" class="wrep" data-wrep="${m.id}" title="불편한 귓속말 신고">🚨 신고</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
@@ -3368,9 +3666,9 @@ async function askSend(){
 let coin = null, shopTab = 'coupon', betAmt = 10;
 async function coinCall(op, extra){
   if (!me) return null;
-  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
+  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); if ((j.paid || []).length) setTimeout(() => toast(`🎉 미션 달성! ${j.paid.map(x => x.name.replace(/^\S+\s/, '') + ' +' + x.coins + '🐾').join(' · ')}`), 300); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
-const ERR = { off:'지금은 확성기를 팔지 않아요 📢', locked:'🔒 아직 사용할 수 없어요', nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
+const ERR = { capfull:'선착순 인원이 다 찼어요 😿', subj:'과목을 골라 주세요', sig:'서명과 체크를 확인해 주세요', auto:'이 미션은 조건을 채우면 저절로 받아요', off:'지금은 확성기를 팔지 않아요 📢', locked:'🔒 아직 사용할 수 없어요', nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
   closed:'지금은 게임 시간이 아니에요', limit:'오늘은 게임을 다 했어요. 내일 또 만나요!', bet:'걸 수 있는 코인을 확인해 주세요', bad:'다시 해 주세요' };
 function weekStartS(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return todayStr(x); }
 function periodS(limit){ const P = (coin && coin.periods) || {}; return limit === 'day' ? (P.day || todayStr()) : limit === 'week' ? (P.week || weekStartS()) : limit === 'once' ? 'all' : null; }
@@ -3380,24 +3678,51 @@ function itemSprite(it){
   return c;
 }
 function hoursText(g){ const d = ['', '월', '화', '수', '목', '금']; return [1,2,3,4,5].map(i => (g.hours || {})[i] ? `${d[i]} ${g.hours[i][0]}~${g.hours[i][1]}` : null).filter(Boolean).join(' · ') || '없음'; }
+/* 🗄 사물함 구역: 신청 → 월요일 8:45 가위바위보 */
+function lockerRow(m){
+  const L = coin.locker || {}, cur = L.cur || {}, G = cur.game;
+  let body = '';
+  if (L.applyK) body = L.applied ? `<span class="st">✅ 신청했어요 (${L.apps}명)</span>` : `<button type="button" class="go" data-lapply="1">🗄 신청하기</button>`;
+  let game = '';
+  if (cur.winner) game = `<div>🏆 이번 주 사물함 구역: <b>${esc(cur.winner)}</b>${cur.winner === me.name ? ' (선생님이 확인하면 냥코인!)' : ''}</div>`;
+  else if (G){
+    const alive = G.alive.includes(me.name);
+    game = `<div><b>✊✌️✋ ${G.round}판째</b> · 남은 친구 ${G.alive.map(esc).join(', ')} <small>(${G.left}초 안에 내요)</small></div>` +
+      (alive ? (G.mine ? `<div style="text-align:center;margin:8px 0;">내가 낸 손: <span style="font-size:2rem;">${G.mine}</span> · 친구들을 기다려요…</div>` : `<div class="hands">${['✊', '✌️', '✋'].map(h => `<button type="button" data-lhand="${h}">${h}</button>`).join('')}</div>`)
+        : (cur.apps || []).includes(me.name) ? '<div>😿 아쉽게 탈락했어요</div>' : '') +
+      (G.hist && G.hist.length ? `<div class="hist">${G.hist.map(h => `${h.round}판: ${Object.entries(h.hands).map(([n, x]) => esc(n) + x).join(' ')}${h.out.length ? ' → 탈락 ' + h.out.map(esc).join(', ') : ' → 비겼어요'}`).join('<br>')}</div>` : '');
+  }
+  return `<div class="ms"><span class="nm">${esc(m.name)}</span><span class="cn">+${m.coins}🐾</span>${body || '<span class="st">주말~월 8:45 신청</span>'}</div>${game ? `<div class="lk-box">${game}</div>` : ''}`;
+}
+let lockerTimer = 0;
+function lockerPoll(){ clearTimeout(lockerTimer); const G = coin && coin.locker && coin.locker.cur && coin.locker.cur.game; if (G && !coin.locker.cur.winner && current === 'coin' && !document.hidden) lockerTimer = setTimeout(() => coinCall('coins'), 4000); }
 function renderCoin(){
   const box = $('coinBox'); if (!box) return;
   if (!me){ box.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">🐾 냥코인</div><p>🔑 로그인하면 미션·상점·게임을 이용할 수 있어요</p></div>'; return; }
   if (!coin){ box.innerHTML = '<div class="box"><div class="box-head">🐾 냥코인</div><div class="empty">불러오는 중…</div></div>'; return; }
   const eco = coin.economy, claimed = new Set(coin.claimed || []), pend = new Set((coin.reqs || []).filter(r => r.status === '대기' && r.type === '미션').map(r => r.itemId));
   const picks = coin.picks || { d:{ ids:[] }, w:{ ids:[] } }, lim = eco.pickLimit || { daily: 2, weekly: 3 };
-  const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 아침 8시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 아침 8시에 새로 골라요']];
+  const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 새벽 5시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 새벽 5시에 새로 골라요']];
   const msHtml = groups.map(([k, t, sl, max, note]) => {
     const list = eco.missions.filter(m => m.cat === k); if (!list.length) return '';
     const mine = picks[sl].ids || [], full = mine.length >= max;
     const row = m => {
+      if (m.flow === 'locker') return lockerRow(m);
       const per = periodS(m.limit), got = per && claimed.has(`m:${m.id}:${me.name}:${per}`), picked = mine.includes(m.id);
-      const right = m.auto ? '<span class="st">자동</span>'
-        : !m.req ? '<span class="st">선생님이 줘요</span>'
+      const used = (coin.capUsed || {})[m.id] || 0, capFull = m.cap && used >= m.cap && !picked;
+      const capTxt = m.cap ? `<span class="cap">👥 ${used}/${m.cap}명</span>` : '';
+      const meta = ((picks[sl].meta || {})[m.id]) || {};
+      const AUTO_TXT = { appon:'출석 1등이면 자동', eng:'냥카데미 80점 넘으면 자동', allon:'반 전체 제시간이면 자동', allon3:'주 3일 달성하면 자동', good:'금요일 오후에 자동 확인' };
+      const right = m.flow === 'teacher' || (!m.flow && !m.req && !m.auto) ? '<span class="st">선생님이 줘요</span>'
         : got ? '<span class="st">✔ 받았어요</span>' : pend.has(m.id) ? '<span class="st">⏳ 확인 중</span>'
-        : picked ? `<button type="button" data-mreq="${m.id}">완료했어요!</button>`
-        : full ? '<span class="st">🔒</span>' : `<button type="button" class="pick-btn" data-mpick="${m.id}">🎯 고르기</button>`;
-      return `<div class="ms ${picked ? 'picked' : ''} ${!picked && full && m.req && !m.auto ? 'dim' : ''}"><span class="nm">${picked ? '🎯 ' : ''}${esc(m.name)}</span><span class="cn">+${m.coins}🐾 +${m.exp != null ? m.exp : Math.round(m.coins / 2)}✨</span>${right}</div>`;
+        : picked ? (m.flow === 'sign' ? `<button type="button" class="go" data-msign="${m.id}">✍️ 서명 받기</button>`
+          : m.flow === 'praise' ? `<button type="button" class="go" data-mpraise="${m.id}">💌 편지 쓰기</button>`
+          : m.flow === 'diary' ? `<button type="button" class="go" data-mdiary="1">📔 일기 쓰기</button>`
+          : m.flow === 'cafe' ? `<button type="button" class="go" data-mcafe="1">☕ 카페 가기</button>`
+          : AUTO_TXT[m.flow] ? `<span class="st">⏳ ${AUTO_TXT[m.flow]}</span>`
+          : `<button type="button" data-mreq="${m.id}">완료했어요!</button>`)
+        : capFull ? '<span class="st">🔒 마감</span>' : full ? '<span class="st">🔒</span>' : `<button type="button" class="pick-btn" data-mpick="${m.id}">🎯 고르기</button>`;
+      return `<div class="ms ${picked ? 'picked' : ''} ${!picked && (full || capFull) ? 'dim' : ''}"><span class="nm">${picked ? '🎯 ' : ''}${esc(m.name)}${meta.subj ? ` <span class="prog">📚 ${esc(meta.subj)}</span>` : ''}${capTxt}</span><span class="cn">+${m.coins}🐾 +${m.exp != null ? m.exp : Math.round(m.coins / 2)}✨</span>${right}</div>`;
     };
     const order = list.slice().sort((a, b) => (mine.includes(b.id) - mine.includes(a.id)) || (!!a.auto - !!b.auto));
     return `<div class="ms-group">${t} <small>(${mine.length}/${max} 골랐어요 · ${note})</small></div>` + order.map(row).join('');
@@ -3422,7 +3747,7 @@ function renderCoin(){
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 하고 싶은 미션을 골라요 (한 번 고르면 바꿀 수 없어요!). 다 했으면 '완료했어요!' → 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
+    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 모든 미션은 먼저 골라요 (한 번 고르면 바꿀 수 없어요! 👥 표시는 선착순 인원). 자동 미션은 조건을 채우면 저절로, 나머지는 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
     <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button>${tickerCfg.mega ? `<button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button>` : ''}<button type="button" data-stab="special" class="${shopTab === 'special' ? 'on' : ''}">✨ 특별</button></div>
       ${shopTab === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}
@@ -3433,6 +3758,7 @@ function renderCoin(){
     <div class="box"><div class="box-head lav">🎟 내 신청</div>${(coin.reqs || []).length ? coin.reqs.map(r => `<div class="req"><span>${r.type === '미션' ? '✅' : '🎟'} ${esc(r.item)}</span><span class="st">${esc(r.status)}</span></div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
     <div class="box"><div class="box-head">📜 코인 기록</div>${(coin.ledger || []).map(l => `<div class="req"><span>${esc(l.t.slice(5))} · ${esc(l.why)}</span><span style="color:${l.amt >= 0 ? '#1F8A5F' : '#D6456E'}">${l.amt >= 0 ? '+' : ''}${l.amt}</span></div>`).join('') || '<div class="empty">아직 없어요</div>'}</div>`;
   box.querySelectorAll('[data-spr]').forEach(el => { const it = eco.shop.find(x => x.id === el.dataset.spr); el.replaceWith(itemSprite(it)); });
+  lockerPoll();
 }
 /* 🎮 게임 */
 let gameOne = '';
@@ -3562,7 +3888,7 @@ function tRender(){
   if (tTab === 'coin'){
     const c = tData.coins || {}, pend = (c.reqs || []).filter(r => r.status === '대기');
     box.innerHTML = `<div class="box"><div class="box-head">⏳ 확인 대기 (${pend.length})</div>${pend.map(r => `<div class="t-line"><span>${r.type === '미션' ? '✅' : '🎟'} <b>${esc(r.name)}</b> ${esc(r.item)} <small>${r.type === '미션' ? '+' : ''}${r.coins}🐾</small></span>
-        <span><button type="button" class="btn btn-mint" data-treq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급'}</button><button type="button" class="btn btn-gray" data-treq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '환불'}</button></span></div>`).join('') || '<div class="empty">확인할 게 없어요 ✨</div>'}</div>
+        <span>${(c.sigs || []).includes(r.id) ? `<button type="button" class="btn btn-y" data-tsig="${r.id}">✍️ 서명</button>` : ''}<button type="button" class="btn btn-mint" data-treq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급'}</button><button type="button" class="btn btn-gray" data-treq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '환불'}</button></span></div>`).join('') || '<div class="empty">확인할 게 없어요 ✨</div>'}</div>
       <div class="box"><div class="box-head pink">🎁 코인 주기</div>
         <select id="tMission">${(c.missions || []).map(m => `<option value="${m.id}">${esc(m.name)} (+${m.coins})</option>`).join('')}<option value="_">✏️ 직접 입력</option></select>
         <div class="t-row" id="tCustom" style="display:none;"><input type="number" id="tAmt" placeholder="코인 (예: 20 또는 -10)"><input type="text" id="tWhy" placeholder="이유"></div>
@@ -3739,7 +4065,26 @@ document.addEventListener('click', e => {
   if (t.closest('#enterVillage') || t.closest('#coinVillage')){ enterVillage(); return; }
   if (t.closest('#coinGame')){ openGame(); return; }
   const st2 = t.closest('[data-stab]'); if (st2){ shopTab = st2.dataset.stab; renderCoin(); return; }
-  const mp = t.closest('[data-mpick]'); if (mp){ const m = coin.economy.missions.find(x => x.id === mp.dataset.mpick); if (!confirm(`🎯 "${m.name}"\n이 미션을 고를까요?\n\n⚠️ 한 번 고르면 바꿀 수 없어요!`)) return; coinCall('missionPick', { mid: m.id }).then(j => j && toast(j.error ? ({ pickfull:'이미 다 골랐어요', owned:'이미 골랐어요' }[j.error] || '고르지 못했어요') : '🎯 미션을 골랐어요! 화이팅')); return; }
+  const mp = t.closest('[data-mpick]'); if (mp){ const m = coin.economy.missions.find(x => x.id === mp.dataset.mpick); if (m.flow === 'sign'){ openSubjPick(m); return; } if (!confirm(`🎯 "${m.name}"\n이 미션을 고를까요?\n\n⚠️ 한 번 고르면 바꿀 수 없어요!`)) return; coinCall('missionPick', { mid: m.id }).then(j => j && toast(j.error ? ({ pickfull:'이미 다 골랐어요', owned:'이미 골랐어요' }[j.error] || '고르지 못했어요') : '🎯 미션을 골랐어요! 화이팅')); return; }
+  { const x = t.closest('[data-msign]'); if (x){ openSign(coin.economy.missions.find(m => m.id === x.dataset.msign)); return; } }
+  if (t.closest('[data-mpraise]')){ openPraisePick(); return; }
+  if (t.closest('[data-mdiary]')){ openDiary(me.name); return; }
+  if (t.closest('[data-mcafe]')){ toast('☕ 마을 → 숲 → 냥냥 스터디카페 빈자리에 앉아요!'); enterVillage(); return; }
+  if (t.closest('[data-lapply]')){ if (!confirm('🗄 이번 주 사물함 구역에 신청할까요?\n월요일 8:45에 신청한 친구들끼리 가위바위보를 해요!')) return; coinCall('lockerApply').then(j => j && toast(j.error === 'closed' ? '신청 기간이 아니에요 (주말 ~ 월요일 8:45)' : '🗄 신청했어요! 월요일 8:45에 가위바위보 ✊✌️✋')); return; }
+  { const x = t.closest('[data-lhand]'); if (x){ coinCall('lockerHand', { h: x.dataset.lhand }); return; } }
+  { const x = t.closest('[data-bclose]'); if (x){ bClose(x.dataset.bclose); return; } }
+  { const x = t.closest('[data-subj]'); if (x){ pickSubj(x.dataset.subj); return; } }
+  { const x = t.closest('[data-tsig]'); if (x){ tCall({ action:'sig', id: Number(x.dataset.tsig) }).then(j => bOpen('msOv', `<h2>✍️ 학습태도 서명</h2><div class="hint" style="text-align:center;">📚 ${esc(j.subj || '')} 시간</div>${j.sig ? `<img src="${j.sig}" style="width:100%;background:#fff;border:2px solid #CDBBA8;border-radius:12px;">` : '<div class="empty">서명이 없어요</div>'}`)).catch(() => toast('불러오지 못했어요')); return; } }
+  if (t.closest('[data-subjfree]')){ pickSubj(($('subjFree').value || '').trim()); return; }
+  { const x = t.closest('[data-praiseto]'); if (x){ bClose('msOv'); mailCompose(x.dataset.praiseto, true); $('mailOv').classList.add('on'); return; } }
+  { const x = t.closest('[data-mopen]'); if (x){ mailOpenOne(Number(x.dataset.mopen)); return; } }
+  { const x = t.closest('[data-mok]'); if (x){ mailOk(Number(x.dataset.mok)); return; } }
+  if (t.closest('[data-mback]')){ mailInbox(); return; }
+  { const x = t.closest('[data-msend]'); if (x){ mailSend(x.dataset.msend); return; } }
+  if (t.closest('[data-mailme]')){ openMail(me.name); return; }
+  if (t.closest('#diarySave')){ diarySave(); return; }
+  if (t.closest('#diaryReadSave')){ diaryReadersSave(); return; }
+  { const x = t.closest('[data-dread]'); if (x){ x.classList.toggle('on'); return; } }
   const mr = t.closest('[data-mreq]'); if (mr){ coinCall('missionReq', { mid: mr.dataset.mreq }).then(j => j && toast(j.error ? (ERR[j.error] || '신청하지 못했어요') : '선생님께 신청했어요 ✅')); return; }
   const by = t.closest('[data-buy]'); if (by){ const it = coin.economy.shop.find(x => x.id === by.dataset.buy);
     let text = '', style = '';
