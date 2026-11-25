@@ -1259,7 +1259,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="row"><span>📢 <b>부관리자</b> · 화면의 <b>오늘의 알림·중요 공지</b>만 고칠 수 있어요</span><input type="password" inputmode="numeric" id="subPinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
       <div class="row"><span>⏰ <b>지각 관리자</b> · 냥이 카드의 <b>출석·지각·결석</b>만 고칠 수 있어요 (OO쌤 카드 제외)</span><input type="password" inputmode="numeric" id="latePinInput" maxlength="12" style="width:130px;" autocomplete="new-password"></div>
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
-      <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button></div>
+      <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
     </div>
 
@@ -1982,6 +1982,7 @@ function mergeInto(parsed){
   if (parsed.notes && typeof parsed.notes === 'object') db.notes = parsed.notes;
   if (typeof parsed.accessCode === 'string') db.accessCode = parsed.accessCode;
   if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
+  if (parsed.accessEpoch) db.accessEpoch = Number(parsed.accessEpoch) || 0;
   if (parsed.statuses && typeof parsed.statuses === 'object') db.statuses = parsed.statuses;
   if (typeof parsed.latePin === 'string') db.latePin = parsed.latePin;
 }
@@ -4072,7 +4073,7 @@ function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
   return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
-           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
+           expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
   const days = {};
@@ -4116,6 +4117,7 @@ function applyConfig(c){
   if (c.bubbleCfg && typeof c.bubbleCfg === 'object'){ db.bubbleCfg = c.bubbleCfg; setTimeout(renderAdminBubble, 0); }
   if (typeof c.accessCode === 'string') db.accessCode = c.accessCode;
   if (c.accessHours) db.accessHours = Number(c.accessHours) || 3;
+  if (c.accessEpoch != null) db.accessEpoch = Number(c.accessEpoch) || 0;
   if (typeof c.latePin === 'string') db.latePin = c.latePin;
   if (c.economy && typeof c.economy === 'object') db.economy = c.economy;
   if (c.collect && typeof c.collect === 'object') db.collect = c.collect;
@@ -6690,6 +6692,12 @@ function bindEvents(){
     if (!api){ e.preventDefault(); showToast('먼저 구글 시트 동기화를 연결해 주세요'); return; }
     e.currentTarget.href = studentLink();
   });
+  $('gateResetBtn').addEventListener('click', () => {
+    if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
+    if (!confirm('🔒 지금 출석부를 보고 있는 모든 기기(교실 TV·학생 디벗)가\n시간과 상관없이 입장 코드를 다시 넣어야 해요.\n(코드는 그대로예요 · 이 기기는 바로 통과)\n\n할까요?')) return;
+    db.accessEpoch = Date.now(); saveDB(); syncOp({ op:'config', data: configOf() }); gatePass(db.accessCode);
+    showToast('🔒 모두 다시 입력하게 했어요 (다른 기기는 1분 안에 바뀌어요)');
+  });
   $('gateTestBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
     if (!confirm('이 기기의 입장 기록을 지우고 처음 접속한 것처럼 다시 열어요.\n코드를 넣으면 바로 들어올 수 있어요.')) return;
@@ -6734,8 +6742,10 @@ function bindEvents(){
 /* 🚪 출석부 입장 코드 (기기 기억하기 없이, 정한 시간이 지나면 다시 물어봐요) */
 const GATE_KEY = 'nyangGate';
 const VIEW = (() => { try { const q = new URLSearchParams(location.search); const api = q.get('api'); return q.get('view') === '1' && api && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(api) ? { api } : null; } catch(e){ return null; } })();
-function gateOk(code){ try { const g = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); return g && g.code === code && Date.now() < g.until; } catch(e){ return false; } }
-function gatePass(code, hours){ try { localStorage.setItem(GATE_KEY, JSON.stringify({ code, until: Date.now() + (hours || db.accessHours || 3) * 3600000 })); } catch(e){} }
+let viewEpoch = 0;
+const gateEpoch = () => Number(VIEW ? viewEpoch : db.accessEpoch) || 0;   // 🔒 '모두 다시 입력' 누를 때마다 바뀌어요
+function gateOk(code){ try { const g = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); return g && g.code === code && Date.now() < g.until && (Number(g.ep) || 0) === gateEpoch(); } catch(e){ return false; } }
+function gatePass(code, hours){ try { localStorage.setItem(GATE_KEY, JSON.stringify({ code, until: Date.now() + (hours || db.accessHours || 3) * 3600000, ep: gateEpoch() })); } catch(e){} }
 function showGate(check){
   const ov = $('gateOv'); ov.style.display = 'flex'; $('gateErr').textContent = ''; $('gateInput').value = ''; setTimeout(() => $('gateInput').focus(), 80);
   const go = async () => {
@@ -6777,7 +6787,7 @@ function viewApply(j){
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
   db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
-  viewClean = Array.isArray(j.clean) ? j.clean : [];
+  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0;
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
   applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();
@@ -6786,7 +6796,7 @@ function viewApply(j){
 async function viewGate(){
   bootDone();
   showGate(async v => {
-    try { const j = await viewFetch(v); if (!j.ok) return j.error === 'slow' ? '너무 많이 틀렸어요. 1분 뒤에 다시 해 주세요' : '❌ 코드가 달라요'; viewCode = v; gatePass(v, j.hours); viewApply(j); return true; }
+    try { const j = await viewFetch(v); if (!j.ok) return j.error === 'slow' ? '너무 많이 틀렸어요. 1분 뒤에 다시 해 주세요' : '❌ 코드가 달라요'; viewCode = v; viewEpoch = Number(j.epoch) || 0; gatePass(v, j.hours); viewApply(j); return true; }
     catch(e){ return '연결이 안 돼요'; }
   });
 }
@@ -6797,7 +6807,7 @@ async function viewStart(){
   db.students = []; db.records = {}; renderGrid();
   let saved = null; try { saved = JSON.parse(localStorage.getItem(GATE_KEY) || 'null'); } catch(e){}
   const tryCode = saved && Date.now() < saved.until ? saved.code : '';
-  try { const j = await viewFetch(tryCode); if (j.ok){ viewCode = tryCode || '__none__'; viewApply(j); } else viewGate(); } catch(e){ bootDone(false); }
+  try { const j = await viewFetch(tryCode); if (j.ok){ viewEpoch = Number(j.epoch) || 0; if (tryCode && !gateOk(tryCode)){ viewGate(); return; } viewCode = tryCode || '__none__'; viewApply(j); } else viewGate(); } catch(e){ bootDone(false); }
   setInterval(async () => { if (!viewCode || !gateOk(viewCode) && viewCode !== '__none__') return; try { const j = await viewFetch(viewCode === '__none__' ? '' : viewCode); if (j.ok) viewApply(j); else if (j.error === 'gate'){ viewCode = ''; viewGate(); } } catch(e){} }, 20000);
 }
 function init(){
