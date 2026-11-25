@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v24 · 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v25 · 🚫 비속어 단계별 제한·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 24;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 25;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -320,6 +320,7 @@ function teacherPull_(body, auth) {
       if (k.indexOf('acks:') === 0) st.acks[k.slice(5)] = map[k];
     });
     res.state = st;
+    res.strikes = strikes_(); try { res.strikeFeed = JSON.parse(props_().getProperty('strikeFeed') || '[]'); } catch (e) { res.strikeFeed = []; }
     res.asksOpen = readAsks_(function (a) { return !a.reply && !a.del && !a.done; }).length;
     res.counselUrgent = counselUrgent_();
     res.reqOpen = readReqs_(function (r) { return r.status === '대기'; }).length;
@@ -433,6 +434,11 @@ function handlePost_(body, auth) {
           break;
         }
         case 'askDel': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '삭제'); break;
+        case 'strikeSet': {                      // 🚫 비속어 제한 풀기 · 횟수 초기화 (선생님)
+          const all = strikes_(), s = all[o.name];
+          if (s) { if (o.reset) delete all[o.name]; else { s.until = 0; s.perm = false; s.pub = false; } props_().setProperty('strikes', JSON.stringify(all)); }
+          break;
+        }
         case 'askDone': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '확인'); break;
         case 'megaDel': props_().setProperty('mega', JSON.stringify(megaList_().filter(function (m) { return m.ts !== Number(o.ts); }))); break;
         case 'hanaReset': props_().setProperty('hanaLook', '{}'); break;
@@ -537,6 +543,7 @@ function handleStudent_(body) {
   const name = String(body.name || '');
   const chk = checkStudent_(name, body.pin);
   if (!chk.ok) return chk;
+  { const g = textGuard_(name, body); if (g) return g; }
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
   if (body.op === 'chatPull') return studentChat_(name, body, null);
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
@@ -558,7 +565,7 @@ function handleStudent_(body) {
       cachePut_(sk, snap);
     }
     const mine0 = []; Object.keys(snap.acks).forEach(function (t) { if ((snap.acks[t] || []).indexOf(name) >= 0) mine0.push(t); });
-    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '' };
+    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '', penalty: penaltyOf_(name) };
   }
   const lock = lockFor_(true, 20000);
   try {
@@ -702,6 +709,49 @@ function maskBad_(t, extra) {
     if (hit[i]) { if (run < 3) out += '♡'; run++; } else { out += t.charAt(i); run = 0; }
   }
   return out;
+}
+/* 🚫 비속어 단계별 제한: 1회 경고 · 2회 1분 · 3회 10분(공개) · 4회 1시간(공개) · 5회 10일 · 6회부터 영구(공개)
+ *  글을 쓰는 모든 곳(대화·상태·질문·의견·카드·상점 글)에서 잡아요. 선생님(출석부)께 바로 알림이 가요 */
+const STRIKE_RULES_ = [null, { s: 0 }, { s: 60 }, { s: 600, pub: 1 }, { s: 3600, pub: 1 }, { s: 864000 }, { perm: 1, pub: 1 }];
+const TEXT_OPS_ = { chatSend: 1, askSend: 1, ideaSend: 1, status: 1, profile: 1, buy: 1 };
+function strikes_() { try { return JSON.parse(props_().getProperty('strikes') || '{}') || {}; } catch (e) { return {}; } }
+function penaltyOf_(name, all) {
+  const s = (all || strikes_())[name]; if (!s) return null;
+  const active = !!s.perm || Number(s.until || 0) > Date.now();
+  return { n: s.n || 0, until: Number(s.until || 0), perm: !!s.perm, pub: !!s.pub, active: active };
+}
+function addStrike_(name, op, text) {
+  const lock = lightLock_(10000);
+  try {
+    const all = strikes_(), s = all[name] || { n: 0 };
+    s.n = (s.n || 0) + 1;
+    const r = STRIKE_RULES_[Math.min(s.n, 6)];
+    s.perm = !!r.perm; s.pub = !!r.pub; s.until = r.perm ? 0 : (r.s ? Date.now() + r.s * 1000 : 0); s.at = Date.now();
+    all[name] = s;
+    const feed = JSON.parse(props_().getProperty('strikeFeed') || '[]');
+    feed.push({ ts: Date.now(), n: name, k: s.n, op: op, text: String(text || '').slice(0, 60) });
+    props_().setProperty('strikeFeed', JSON.stringify(feed.slice(-30)));
+    props_().setProperty('strikes', JSON.stringify(all));
+    try { sheet_('비속어', ['시간', '이름', '횟수', '어디서', '쓴 글']).appendRow(["'" + nowStr_(), name, s.n, op, String(text || '').slice(0, 200)]); } catch (e) {}
+    bump_();
+    return penaltyOf_(name, all);
+  } finally { lock.releaseLock(); }
+}
+function publicPunish_() {
+  const all = strikes_(), out = {};
+  Object.keys(all).forEach(function (n) { const p = penaltyOf_(n, all); if (p && p.active && p.pub) out[n] = { until: p.until, perm: p.perm, n: p.n }; });
+  return out;
+}
+/* 글쓰기 전에 확인: 제한 중이면 막고, 비속어면 횟수를 올려요 */
+function textGuard_(name, body) {
+  if (!TEXT_OPS_[body.op] || isTeacherName_(name)) return null;
+  const pen = penaltyOf_(name);
+  if (pen && pen.active) return { ok: true, error: 'penalty', penalty: pen };
+  const ban = chatCfg_().ban || [];
+  const texts = body.op === 'profile' ? Object.keys(body.data || {}).map(function (k) { return body.data[k]; }) : [body.text];
+  const bad = texts.filter(function (t) { t = String(t || ''); return t && maskBad_(t, ban) !== t; })[0];
+  if (bad) return { ok: true, error: 'bad', penalty: addStrike_(name, body.op, bad) };
+  return null;
 }
 function hasBad_(text) { const t = String(text || ''); return maskBad_(t, []) !== t; }
 function cleanText_(text, cfg) {
@@ -1151,7 +1201,7 @@ function boardOf_(code) {
     const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
     return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
   }
-  const out = b.data; out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER);
+  const out = b.data; out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER);
   return out;
 }
 function cardOf_(name) {

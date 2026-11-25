@@ -781,6 +781,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .cbk-tier{font-size:1.05rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 12px;letter-spacing:1px;}
 .cbk-name{font-size:1.35rem;font-weight:700;margin-top:4px;word-break:keep-all;line-height:1.25;}
 .cbk-sub{font-size:.85rem;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
+.card-punish{max-width:94%;margin-top:4px;font-size:.8rem;background:#E8473A;color:#fff;border:2px solid #8A1F18;border-radius:10px;padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;animation:revPulse 1.8s ease-in-out infinite;}
 .card-status{max-width:92%;margin-top:4px;font-size:.82rem;background:#fff;border:2px solid #CDBBA8;border-radius:12px;padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
 .gate-box{text-align:center;max-width:380px;}
 .gate-box h2{margin:6px 0;}
@@ -811,6 +812,9 @@ body.view-mode .card.waiting{cursor:default;}
 .nl.good span:nth-child(2){color:#226B43;font-weight:700;}
 .nt small.acc{color:var(--ink-soft);font-size:.78rem;}
 .nb{font-family:inherit;font-size:.85rem;border:2px solid var(--ink);border-radius:10px;background:#fff;padding:1px 8px;cursor:pointer;margin-left:4px;}
+.stk-box{margin-top:12px;border:2px solid #F3B4B4;border-radius:14px;background:#FFF5F5;padding:10px 12px;}
+.stk-h{font-size:1.05rem;margin-bottom:6px;} .stk-h small{display:block;font-size:.78rem;color:var(--ink-soft);}
+.stk-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed #F3C9C9;} .stk-row b{font-weight:normal;min-width:70px;}
 .nlog{border:2px solid #EFE3D3;border-radius:12px;padding:8px;overflow:auto;max-height:60vh;font-size:.9rem;}
 .nlog-h{font-weight:700;margin-bottom:6px;} .nl{display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px dashed #EFE3D3;} .nl span:first-child{color:var(--ink-soft);min-width:84px;}
 .nl button{margin-left:auto;border:none;background:none;color:#C9A0A0;cursor:pointer;}
@@ -2192,8 +2196,26 @@ function renderTimetable(now){
   const html = `<div class="tt-hd">${tag}${right}</div><div class="tt-row">${row}</div><div class="tt-sub">${esc(sub)} <button type="button" class="tt-all-btn" data-wk="tomorrow">📅 내일 · 전체 시간표</button></div>`;
   if (html !== ttKey){ ttKey = html; $('ttPanel').innerHTML = html; }
 }
+/* 🚫 비속어 알림: 새로 생기면 선생님 출석부에 바로 알려요 */
+function applyStrikes(all, feed){
+  const before = JSON.stringify(serverStrikes); serverStrikes = all || {};
+  let seen = 0; try { seen = Number(localStorage.getItem('nyangStrikeSeen') || 0); } catch(e){}
+  const fresh = (feed || []).filter(f => f.ts > seen && Date.now() - f.ts < 30 * 60000);
+  if (feed && feed.length){ try { localStorage.setItem('nyangStrikeSeen', String(Math.max(seen, ...feed.map(f => f.ts)))); } catch(e){} }
+  fresh.forEach((f, i) => setTimeout(() => {
+    const STEP = ['', '경고', '1분 제한', '10분 제한 (공개)', '1시간 제한 (공개)', '10일 제한', '영구 정지 (공개)'][Math.min(f.k, 6)];
+    showToast(`🚫 ${f.n} 비속어 ${f.k}회 → ${STEP}`); try { sfx('late'); } catch(e){}
+  }, i * 2600));
+  if (JSON.stringify(serverStrikes) !== before){ renderGrid(); if ($('notesOverlay').style.display === 'flex') renderNotes(); }
+}
+function strikeSet(name, reset){
+  if (!confirm(reset ? `${name}의 비속어 횟수를 0으로 되돌릴까요?` : `${name}의 지금 제한을 풀까요? (횟수는 그대로)`)) return;
+  const s = serverStrikes[name]; if (s){ if (reset) delete serverStrikes[name]; else { s.until = 0; s.perm = false; s.pub = false; } }
+  syncOp({ op:'strikeSet', name, reset: !!reset }); renderGrid(); renderNotes();
+  showToast(reset ? `🔄 ${name} 횟수를 초기화했어요` : `🔓 ${name} 제한을 풀었어요`);
+}
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 24;
+const NEED_API = 25;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2331,7 +2353,19 @@ function streakOf(name){
 function expPill(exp){ return `<span class="exp-pill ${Number(exp) >= 0 ? 'plus' : 'minus'}">${fmtExp(exp)}</span>`; }
 
 /* 💬 학생이 학생 페이지에서 적은 내 상태 */
-function statusLine(name){ const st = db.statuses && db.statuses[name]; return st && st.t ? `<div class="card-status" title="${esc(name)}의 상태">💬 ${esc(st.t)}</div>` : ''; }
+/* 🚫 비속어 벌칙 (3·4·6회째는 출석부에 공개) */
+let serverStrikes = {}, viewPunish = {};
+function punishOf(name){
+  if (VIEW){ const p = viewPunish[name]; return p && (p.perm || p.until > Date.now()) ? p : null; }
+  const s = serverStrikes[name]; if (!s || !s.pub) return null;
+  return (s.perm || Number(s.until) > Date.now()) ? { perm: !!s.perm, until: Number(s.until) || 0, n: s.n } : null;
+}
+function punishLine(name){
+  const p = punishOf(name); if (!p) return '';
+  const t = p.perm ? '영구 정지' : `${pad(new Date(p.until).getHours())}:${pad(new Date(p.until).getMinutes())}까지`;
+  return `<div class="card-punish" title="비속어 ${p.n}회">🚫 비속어 벌칙 · ${t}</div>`;
+}
+function statusLine(name){ const pl = punishLine(name); if (pl) return pl; const st = db.statuses && db.statuses[name]; return st && st.t ? `<div class="card-status" title="${esc(name)}의 상태">💬 ${esc(st.t)}</div>` : ''; }
 /* 🧹 청소 당번: 오늘 EXP가 마이너스이거나, 오늘 욕설로 적힌 친구 */
 /* 🤬 욕설은 누적 5번마다(5·10·15…) 그날 청소 당번 */
 const SWEAR_STEP = 5;
@@ -2537,6 +2571,13 @@ function renderNoteSide(){
   const sw = list.filter(x => x.kind === 'swear').length, cl = list.filter(x => x.kind === 'classlate').length;
   el.innerHTML = `<div class="t">📓 우리반 관리 수첩 <small>오늘</small></div><span class="ns-chip">🤬 욕설 <b>${sw}</b></span><span class="ns-chip">⏰ 수업 지각 <b>${cl}</b></span>`;
 }
+function strikeBox(){
+  const names = Object.keys(serverStrikes || {}).filter(n => (serverStrikes[n] || {}).n);
+  if (!names.length) return '<div class="stk-box"><div class="stk-h">🚫 비속어 자동 제한 <small>학생 페이지에서 비속어를 쓰면 자동으로 세요 · 1회 경고 → 2회 1분 → 3회 10분 → 4회 1시간 → 5회 10일 → 6회 영구</small></div><div class="hint">아직 없어요 ✨</div></div>';
+  return `<div class="stk-box"><div class="stk-h">🚫 비속어 자동 제한 <small>1회 경고 → 2회 1분 → 3회 10분(공개) → 4회 1시간(공개) → 5회 10일 → 6회 영구(공개)</small></div>${names.map(n => { const s = serverStrikes[n], on = s.perm || Number(s.until) > Date.now();
+    const st = s.perm ? '⛔ 영구 정지' : on ? `🔇 ${pad(new Date(+s.until).getHours())}:${pad(new Date(+s.until).getMinutes())}까지 제한` : '✅ 제한 없음';
+    return `<div class="stk-row"><b>${esc(n)}</b><span>비속어 ${s.n}회</span><span>${st}</span>${on ? `<button type="button" class="nb" data-stk="${esc(n)}">🔓 제한 풀기</button>` : ''}<button type="button" class="nb" data-stkr="${esc(n)}">🔄 횟수 0으로</button></div>`; }).join('')}<div class="hint">쓴 글은 구글 시트 '비속어' 탭에 남아요.</div></div>`;
+}
 function openNotes(){ renderNotes(); $('notesOverlay').style.display = 'flex'; }
 function renderNotes(){
   const box = $('notesBody'); if (!box) return;
@@ -2551,7 +2592,8 @@ function renderNotes(){
   box.innerHTML = `<div class="np">${P.map(([k, l]) => `<button type="button" data-np="${k}" class="${notePeriod === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="nt-wrap"><div class="nt-box"><table class="nt"><thead><tr><th>이름</th><th class="good">💮 칭찬 도장</th><th>🤬 욕설</th><th>⏰ 수업 지각</th><th>😴 수업태도</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="nlog"><div class="nlog-h">🕘 최근 기록</div>${log.map(x => `<div class="nl${NOTE_KIND[x.kind] && NOTE_KIND[x.kind].good ? ' good' : ''}"><span>${x.ds.slice(5).replace('-', '/')} ${esc(x.t)}</span><span>${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].icon : ''} ${esc(x.who)} ${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].name : ''}</span><button type="button" data-ndel="${esc(x.id)}" data-nds="${x.ds}" title="지우기">✕</button></div>`).join('') || '<div class="hint">기록이 없어요</div>'}</div></div>
-    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 지금까지 몇 번인지는 <b>전체</b>를 눌러 보세요.</div>`;
+    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 지금까지 몇 번인지는 <b>전체</b>를 눌러 보세요.</div>
+    ${strikeBox()}`;
 }
 let attEditName = null;
 function editTime(name){
@@ -4349,6 +4391,7 @@ async function pullSync(force){
     sync.needKey = !!j.needKey;
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
     if (j.api) checkServerRev(j.api);
+    if (j.strikes) applyStrikes(j.strikes, j.strikeFeed || []);
     if (typeof j.asksOpen === 'number'){ serverAsksOpen = j.asksOpen; updateGmDot(); }
     if (typeof j.reqOpen === 'number'){ serverReqOpen = j.reqOpen; updateGmDot(); }
     if (j.pinSet) serverPinSet = j.pinSet;
@@ -6861,7 +6904,9 @@ function bindEvents(){
   $('notesBody').addEventListener('click', e => {
     const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
     const a = e.target.closest('[data-nadd]'); if (a){ if ((a.dataset.nadd === 'swear' || a.dataset.nadd === 'classlate') && !noteRoleOk(a.dataset.nadd)) return; addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
-    const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
+    const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); return; }
+    const k1 = e.target.closest('[data-stk]'); if (k1){ strikeSet(k1.dataset.stk, false); return; }
+    const k2 = e.target.closest('[data-stkr]'); if (k2){ strikeSet(k2.dataset.stkr, true); }
   });
   $('ttPanel').addEventListener('click', e => { const c = e.target.closest('.tt-c[data-i]'); if (c && !VIEW) editTtToday(+c.dataset.i); });
   $('cleanAddGrid').addEventListener('click', e => { const b = e.target.closest('[data-ca]'); if (b && !b.disabled) toggleCleanManual(b.dataset.ca); });
@@ -6973,7 +7018,7 @@ function viewApply(j){
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
   db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
-  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0;
+  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {};
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
   applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();

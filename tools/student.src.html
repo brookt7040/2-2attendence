@@ -43,7 +43,7 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .dot.on{display:block;}
 .panel{display:none;} .panel.on{display:block;}
 
-.box{position:relative;background:#FFFDF6;border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);padding:26px 16px 14px;margin:24px 0 14px;}
+.box{position:relative;background:#FFFDF6;border:3px solid var(--ink);border-radius:20px;box-shadow:0 6px 0 var(--ink);padding:34px 16px 16px;margin:28px 0 16px;}
 .box-head{position:absolute;top:-17px;left:16px;background:var(--y);border:3px solid var(--ink);border-radius:999px;padding:3px 16px;font-size:1.15rem;box-shadow:0 3px 0 var(--ink);white-space:nowrap;}
 .box-head.pink{background:var(--pink);} .box-head.lav{background:var(--lav);} .box-head.mint{background:var(--mint);}
 .empty{color:var(--ink-soft);font-size:1rem;}
@@ -54,7 +54,7 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .ack.done{background:var(--mint);cursor:default;}
 .num{flex:none;width:34px;height:34px;border:3px solid var(--ink);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;}
 .clean-me{background:#FFE0E7;border:3px solid var(--ink);border-radius:14px;padding:10px 14px;font-size:1.2rem;margin-bottom:10px;}
-.clean-list{display:flex;flex-wrap:wrap;gap:6px;}
+.clean-list{display:flex;flex-wrap:wrap;gap:8px;padding-top:2px;}
 .clean-list span{border:2px solid var(--ink);border-radius:999px;padding:2px 12px;background:var(--lav);}
 
 /* 마을 */
@@ -248,6 +248,9 @@ body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-onl
 .idea .like{font-family:inherit;border:2px solid #E6D9CA;border-radius:999px;background:#fff;padding:2px 12px;cursor:pointer;}
 .idea .like.on{border-color:#E0577A;background:#FFE1EA;color:#C0365C;}
 .idea .idel{font-family:inherit;border:none;background:none;cursor:pointer;color:var(--ink-soft);}
+#penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
+.pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
+.pen-modal h2{color:#C0365C;}
 .sos-q{font-size:1rem;margin-top:4px;}
 .sos-rs{display:grid;grid-template-columns:1fr;gap:5px;}
 .sos-r{display:flex;align-items:center;gap:6px;border:2px solid #E6D9CA;border-radius:12px;padding:7px 10px;cursor:pointer;font-size:.95rem;background:#fff;}
@@ -307,6 +310,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
 
+  <div id="penBar" style="display:none;"></div>
   <section class="panel on" id="p-notice">
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div id="specialBox"></div>
@@ -380,6 +384,14 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="btn btn-y" id="ideaSend">💡 올리기</button>
     <div class="idea-sort"><button type="button" data-isort="new" class="on">🕐 최신순</button><button type="button" data-isort="like">❤️ 인기순</button></div>
     <div id="ideaList"></div>
+  </div>
+</div>
+
+<div class="overlay" id="penOv">
+  <div class="modal pen-modal">
+    <h2 id="penH"></h2>
+    <div class="oath-text" id="penBody"></div>
+    <button type="button" class="btn btn-y" data-close="penOv">알겠어요</button>
   </div>
 </div>
 
@@ -565,8 +577,27 @@ async function sosSend(){
 }
 async function studentCall(op, extra){
   const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
-  return api(API, { method:'POST', body: JSON.stringify(body) });
+  const j = await api(API, { method:'POST', body: JSON.stringify(body) });
+  if (j && (j.error === 'bad' || j.error === 'penalty')){ if (me) me.penalty = j.penalty; showPenalty(j.error, j.penalty || {}); renderPenBar(); return Object.assign({}, j, { ok: false }); }
+  return j;
 }
+/* 🚫 비속어 단계별 제한 안내 */
+function penLeft(p){ if (p.perm) return '영구 정지'; const s = Math.max(0, Math.ceil((p.until - Date.now()) / 1000)); return s >= 86400 ? `${Math.ceil(s / 86400)}일` : s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.ceil((s % 3600) / 60)}분` : s >= 60 ? `${Math.ceil(s / 60)}분` : `${s}초`; }
+function showPenalty(kind, p){
+  toast.muteUntil = Date.now() + 3000;
+  const n = p.n || 1, NEXT = ['', '1분 동안 아무 글도 쓸 수 없어요', '10분 동안 막히고, 출석부에 모두에게 공개돼요', '1시간 동안 막히고, 출석부에 공개돼요', '10일 동안 막혀요', '영구 정지돼요', '영구 정지 중이에요'];
+  let h, body;
+  if (kind === 'penalty'){ h = '🚫 지금은 글을 쓸 수 없어요'; body = `비속어 ${n}회 때문에 대화·글쓰기가 막혀 있어요.<br><b>${p.perm ? '영구 정지' : '남은 시간: ' + penLeft(p)}</b>`; }
+  else if (n <= 1){ h = '⚠️ 경고! 비속어를 쓰면 안 돼요'; body = `글이 올라가지 않았어요. <b>선생님께 알림이 갔어요.</b><br>한 번 더 쓰면 <b>${NEXT[1]}</b>.`; }
+  else { h = `🚫 비속어 ${n}회`; body = `${p.perm ? '<b>영구 정지</b>됐어요. 선생님과 이야기해야 풀 수 있어요.' : `<b>${penLeft(p)}</b> 동안 대화·글쓰기가 모두 막혀요.`}${p.pub ? '<br>📺 출석부에 모두에게 공개돼요.' : ''}<br><span class="soft">선생님께 알림이 갔어요.${n < 6 ? ` 또 쓰면 ${NEXT[Math.min(n, 6)]}.` : ''}</span>`; }
+  $('penH').textContent = h; $('penBody').innerHTML = body; $('penOv').style.display = 'flex';
+}
+function renderPenBar(){
+  const p = me && me.penalty, on = p && (p.perm || p.until > Date.now());
+  $('penBar').style.display = on ? 'block' : 'none';
+  if (on) $('penBar').textContent = `🚫 비속어 ${p.n}회 · 대화·글쓰기 금지 ${p.perm ? '(영구 정지)' : '· 남은 시간 ' + penLeft(p)}`;
+}
+setInterval(() => { if (me && me.penalty) renderPenBar(); }, 1000);
 async function refreshMe(silent){
   if (!me) return;
   try {
@@ -574,7 +605,7 @@ async function refreshMe(silent){
     // 비밀번호가 정말 틀렸을 때만 로그아웃해요. 서버가 바쁘거나 잠깐 오류가 난 건 그대로 두고 다음에 다시 확인해요
     if (!j.ok && (j.error === 'wrong' || j.error === 'nopin')){ if (!silent) alert('비밀번호가 바뀌었어요. 다시 로그인해 주세요.'); logout(); return; }
     if (!j.ok){ if (!silent) toast('서버가 잠깐 바빠요 · 조금 있다 다시 확인할게요'); return; }
-    me.info = j.me; me.look = j.look; me.acked = j.acked || []; if (typeof j.status === 'string') me.status = j.status;
+    me.info = j.me; me.look = j.look; me.acked = j.acked || []; if (typeof j.status === 'string') me.status = j.status; me.penalty = j.penalty || null; renderPenBar();
   } catch(e){}
 }
 
@@ -664,7 +695,7 @@ function showTab(t){
   if (t === 'village') $('dotVillage').classList.remove('on');
 }
 function coinText(){ return coin ? (coin.unlimited ? '∞' : coin.balance) : 0; }
-function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
+function toast(t){ if (Date.now() < (toast.muteUntil || 0)) return; const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
 function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
 function lookFor(s){ const r = (me && s.name === me.name && me.look) ? me.look : s.look; return /(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, r || defaultLook(s.lv), { _free: true }) : r; }
 
@@ -760,7 +791,7 @@ let myProfile = null;
 async function loadProfile(){ try { const r = await api(`${API}?card=${encodeURIComponent(me.name)}&t=${Date.now()}`); myProfile = (r && r.profile) || {}; renderMe(); } catch(e){} }
 function profileBox(){
   if (myProfile === null){ setTimeout(loadProfile, 0); myProfile = {}; }
-  return `<div class="box"><div class="box-head lav">🪪 내 냥이 카드 <small style="font-size:.8rem;">마을에서 친구가 나를 누르면 보여요</small></div>
+  return `<div class="box"><div class="box-head lav">🪪 내 냥이 카드</div><div class="hint" style="margin:-4px 0 8px;">마을에서 친구가 나를 누르면 보여요</div>
     <div class="pf-grid">${PROFILE_FORM.map(([k, l, n, ph]) => `<label>${l}<input type="text" data-pf="${k}" maxlength="${n}" placeholder="${ph}" value="${esc(myProfile[k] || '')}"></label>`).join('')}</div>
     <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-y" id="pfSave">저장</button></div>
     <div class="hint">개인 정보(주소·전화번호 등)는 적지 마세요! 나쁜 말은 ♡로 바뀌어요.</div></div>`;
