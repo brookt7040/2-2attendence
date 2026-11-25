@@ -314,6 +314,11 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .ca-grid button{font-family:inherit;font-size:1.05rem;border:2px solid #E6D9CA;border-radius:12px;background:#fff;padding:8px 4px;cursor:pointer;color:var(--ink);}
 .ca-grid button.on{border-color:var(--ink);background:#E2DAFF;}
 .ca-grid button.auto{background:#EEE;color:#999;cursor:default;}
+.pr-sec{margin:10px 0;} .pr-h{font-size:1.05rem;margin-bottom:6px;} .pr-h b{font-weight:normal;background:#FFE58A;border-radius:999px;padding:0 8px;margin-left:4px;}
+.pr-chip{display:inline-block;border:2px solid #8CCBA2;background:#E4F7EA;border-radius:999px;padding:2px 10px;margin:0 6px 6px 0;font-size:1rem;}
+.pr-chip small{color:var(--ink-soft);font-size:.78rem;} .pr-chip.off{border-color:#E6D9CA;background:#F6F1EA;color:#9A8A7A;}
+.pr-sec:nth-child(2) .pr-chip{border-color:#E8C35A;background:#FFF5D1;}
+.pr-none{color:var(--ink-soft);font-size:.9rem;} .pr-anon{margin-top:8px;font-size:.95rem;} .pr-note{margin-top:6px;font-size:.8rem;color:var(--ink-soft);}
 .wk-note{text-align:center;font-size:.9rem;color:var(--ink-soft);margin-top:10px;}
 
 /* ===== 상태바 ===== */
@@ -809,7 +814,7 @@ body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openCl
 .gate-box{text-align:center;max-width:380px;}
 .gate-box h2{margin:6px 0;}
 .gate-box .pin-input{margin:10px auto 4px;display:block;}
-body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode .closing-reset,
+body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode #presBtn,body.view-mode .closing-reset,
 body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
 /* 👀 보기 전용: 하나 쓰다듬기 · 내 화면 보러가기 · 고양이 카드 · 칠판만 눌러져요 */
@@ -914,7 +919,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><button type="button" class="mini-menu-btn icon" id="presBtn" title="지금 접속 중 (마스터 관리자)">🟢</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
@@ -1074,6 +1079,10 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="btn btn-y" id="swGo" style="width:100%;">들어가기</button></div>
 </div>
 <button type="button" id="backView" style="display:none;">👀 학생용 출석부로 돌아가기</button>
+<div class="overlay" id="presOv">
+  <div class="modal" style="max-width:640px;width:92vw;"><button type="button" class="modal-x" data-close="presOv" title="닫기">✕</button>
+    <h2>🟢 지금 접속 중</h2><div id="presBody"></div></div>
+</div>
 <div class="overlay" id="cleanAddOv">
   <div class="modal ca-modal"><button type="button" class="modal-x" data-close="cleanAddOv" title="닫기">✕</button>
     <h2>🧹 Cleaning Duty 추가</h2>
@@ -2292,8 +2301,25 @@ function backToView(){
   const back = localStorage.getItem('nyangBackView') || (location.pathname + '?view=1&api=' + encodeURIComponent(sync.url));
   localStorage.removeItem(SYNC_KEY); localStorage.removeItem('nyangBackView'); location.href = back;
 }
+
+/* 🟢 지금 접속 중 (마스터 관리자 · 선생님만) */
+const PRES_WHERE = { notice:'알림', village:'마을', me:'내 고양이', coin:'냥코인', admin:'관리', login:'로그인', chatPull:'대화', move:'마을', act:'마을', emote:'마을' };
+function presenceHTML(p, names){
+  p = p || {}; const list = p.list || {}, now = Date.now();
+  const ago = t => { const m = Math.floor((now - t) / 60000); return m < 1 ? '방금' : `${m}분 전`; };
+  const on = [], soon = [], off = [];
+  names.forEach(n => { const x = list[n]; if (x && now - x.t < 120000) on.push([n, x]); else if (x && now - x.t < 600000) soon.push([n, x]); else off.push(n); });
+  const chip = ([n, x]) => `<span class="pr-chip">${esc(n)} <small>${esc(PRES_WHERE[x.w] || x.w || '')} · ${ago(x.t)}</small></span>`;
+  return `<div class="pr-sec"><div class="pr-h">🟢 지금 활동 중 <b>${on.length}</b></div>${on.map(chip).join('') || '<span class="pr-none">없어요</span>'}</div>
+    <div class="pr-sec"><div class="pr-h">🟡 10분 안 <b>${soon.length}</b></div>${soon.map(chip).join('') || '<span class="pr-none">없어요</span>'}</div>
+    <div class="pr-sec"><div class="pr-h">⚪ 지금은 안 들어옴 <b>${off.length}</b></div>${off.map(n => `<span class="pr-chip off">${esc(n)}</span>`).join('') || '<span class="pr-none">없어요</span>'}</div>
+    <div class="pr-anon">👀 로그인 없이 학생용 출석부를 보는 중: <b>${p.anon || 0}</b>대</div>
+    <div class="pr-note">로그인한 학생 기준이에요. 창을 닫아도 1~2분 정도는 활동 중으로 보일 수 있어요.</div>`;
+}
+let serverPresence = null;
+function openPres(){ $('presBody').innerHTML = serverPresence ? presenceHTML(serverPresence, kids()) : '<div class="hint">서버 코드를 최신(v29)으로 배포하면 보여요</div>'; $('presOv').style.display = 'flex'; pullSync(true); }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 28;
+const NEED_API = 29;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -4479,6 +4505,7 @@ async function pullSync(force){
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
     if (j.api) checkServerRev(j.api);
     if (j.strikes) applyStrikes(j.strikes, j.strikeFeed || []);
+    if (j.presence){ serverPresence = j.presence; if ($('presOv').style.display === 'flex') $('presBody').innerHTML = presenceHTML(serverPresence, kids()); }
     if (typeof j.asksOpen === 'number'){ serverAsksOpen = j.asksOpen; updateGmDot(); }
     if (typeof j.reqOpen === 'number'){ serverReqOpen = j.reqOpen; updateGmDot(); }
     if (j.pinSet) serverPinSet = j.pinSet;
@@ -7011,6 +7038,7 @@ function bindEvents(){
   $('revBar').addEventListener('click', () => requirePin(openRev));
   $('noticeArea').addEventListener('click', e => { if (VIEW && e.target.closest('.notice-header')) swTap(); });
   $('swGo').addEventListener('click', swGo);
+  $('presBtn').addEventListener('click', () => { pinUntil = Date.now() < pinUntil ? pinUntil : 0; requirePin(openPres); });
   $('swPin').addEventListener('keydown', e => { if (e.key === 'Enter') swGo(); });
   $('backView').addEventListener('click', backToView);
   $('sleepAdmin').addEventListener('click', () => { if (VIEW) return; pinUntil = 0; requirePin(() => { sleepBypass = true; sleepTick(); showToast('👑 이 기기만 잠깐 깨웠어요 (새로고침하면 다시 잠겨요)'); }); });
@@ -7096,7 +7124,8 @@ function bootDone(ok){
 /* 👀 보기 전용 (학생 페이지 → 출석부 보러가기): 서버에서 오늘 출석만 받아 와서 보여줘요. 아무것도 바꾸지 않아요 */
 let viewCode = '', viewExp = {}, viewClean = [];
 async function viewFetch(code){
-  const r = await fetch(`${VIEW.api}?board=1&gate=${encodeURIComponent(code)}&t=${Date.now()}`, { redirect:'follow' });
+  let cid = ''; try { cid = localStorage.getItem('nyangCid') || ''; if (!cid){ cid = Math.random().toString(36).slice(2, 12); localStorage.setItem('nyangCid', cid); } } catch(e){}
+  const r = await fetch(`${VIEW.api}?board=1&gate=${encodeURIComponent(code)}&cid=${cid}&t=${Date.now()}`, { redirect:'follow' });
   return r.json();
 }
 function viewApply(j){

@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v28 · 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v29 · 🟢 지금 접속 중 · v28 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 28;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 29;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -99,6 +99,7 @@ function doPost(e) {
     if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
     if (body.action === 'chat') return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function () { return true; }) });
+    if (body.action === 'presence') return out_(presence_());
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
     if (body.action === 'engUpload') return out_(engUpload_(body));
@@ -313,7 +314,7 @@ function publicGet_(p) {
   if (p.village) return villageState_();
   if (p.room) return roomState_(String(p.room));
   if (p.card) return cardOf_(String(p.card));
-  if (p.board) return boardOf_(String(p.gate || ''));
+  if (p.board) { if (p.cid) touchAnon_(p.cid); return boardOf_(String(p.gate || '')); }
   if (p.guide) { const cfg = readRows_().map.config || {}; return { ok: true, api: API_VERSION, ver: String(cfg.guideVer || ''), notes: String(cfg.guideNotes || ''), sleep: sleepCfg_(), now: Date.now() }; }   // 📖 안내 사이트 버전·업데이트 내역
   if (p.eng) return engPublic_();
   const v = version_();
@@ -344,6 +345,7 @@ function teacherPull_(body, auth) {
       if (k.indexOf('acks:') === 0) st.acks[k.slice(5)] = map[k];
     });
     res.state = st;
+    res.presence = presence_();
     res.strikes = strikes_(); try { res.strikeFeed = JSON.parse(props_().getProperty('strikeFeed') || '[]'); } catch (e) { res.strikeFeed = []; }
     res.asksOpen = readAsks_(function (a) { return !a.reply && !a.del && !a.done; }).length;
     res.counselUrgent = counselUrgent_();
@@ -565,8 +567,31 @@ function cleanLook_(look, lv, old, name) {
   return out;
 }
 
+/* 🟢 지금 접속 중: 학생이 서버와 주고받을 때마다 '언제 · 어디서'를 잠깐 기억해요 (캐시 · 30분) */
+function touchPres_(name, where) {
+  try {
+    const c = cache_(), m = JSON.parse(c.get('pres') || '{}'), now = Date.now();
+    m[name] = { t: now, w: String(where || '').slice(0, 12) };
+    Object.keys(m).forEach(function (k) { if (now - m[k].t > 1800000) delete m[k]; });
+    c.put('pres', JSON.stringify(m), 21600);
+  } catch (e) {}
+}
+function touchAnon_(cid) {
+  try {
+    const c = cache_(), m = JSON.parse(c.get('presAnon') || '{}'), now = Date.now();
+    m[String(cid).slice(0, 16)] = now;
+    Object.keys(m).forEach(function (k) { if (now - m[k] > 600000) delete m[k]; });
+    c.put('presAnon', JSON.stringify(m), 21600);
+  } catch (e) {}
+}
+function presence_() {
+  const c = cache_(), now = Date.now();
+  let list = {}, anon = {}; try { list = JSON.parse(c.get('pres') || '{}'); anon = JSON.parse(c.get('presAnon') || '{}'); } catch (e) {}
+  return { ok: true, now: now, list: list, anon: Object.keys(anon).filter(function (k) { return now - anon[k] < 120000; }).length };
+}
 function handleStudent_(body) {
   const r = handleStudentCore_(body);
+  if (r && r.ok !== false && body.name) touchPres_(String(body.name), body.where || body.op);
   if (body.__strike && r && typeof r === 'object') r.strike = body.__strike;
   return r;
 }
