@@ -927,7 +927,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><button type="button" class="mini-menu-btn icon" id="presBtn" title="지금 접속 중 (마스터 관리자)">🟢</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
@@ -3932,7 +3932,7 @@ function renderNotices(){
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
     const acked = ackNames(text);
     item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>` +
-      '';   // ✔ 학생 확인 현황 버튼은 뺐어요
+      (sync.url && sync.api >= 3 ? `<button type="button" class="ack-badge" title="학생 확인 현황">✔ ${acked.length}/${kids().length}</button>` : '');
     const badge = item.querySelector('.ack-badge');
     if (badge) badge.onclick = e => { e.stopPropagation(); if (noticeAdminActive()) showAcks(text); };
     // 🔒 관리자(또는 부관리자) 비밀번호가 살아 있을 때만 눌러서 지울 수 있어요. 그 밖엔 눌러도 아무 일 없어요
@@ -7075,7 +7075,6 @@ function bindEvents(){
   $('revBar').addEventListener('click', () => requirePin(openRev));
   $('noticeArea').addEventListener('click', e => { if (VIEW && e.target.closest('.notice-header')) swTap(); });
   $('swGo').addEventListener('click', swGo);
-  $('presBtn').addEventListener('click', () => { pinUntil = Date.now() < pinUntil ? pinUntil : 0; requirePin(openPres); });
   $('swPin').addEventListener('keydown', e => { if (e.key === 'Enter') swGo(); });
   $('backView').addEventListener('click', backToView);
   $('sleepAdmin').addEventListener('click', () => { if (VIEW) return; pinUntil = 0; requirePin(() => { sleepBypass = true; sleepTick(); showToast('👑 이 기기만 잠깐 깨웠어요 (새로고침하면 다시 잠겨요)'); }); });
