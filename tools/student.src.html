@@ -980,7 +980,7 @@ function mailCompose(to, praise){
     <div class="mail-kind"><label><input type="radio" name="mkind" value="normal" ${praise ? '' : 'checked'}>✉️ 그냥 편지</label><label><input type="radio" name="mkind" value="praise" ${praise ? 'checked' : ''}>💛 칭찬편지 보내기</label></div>
     <textarea id="mailText" rows="5" maxlength="300" placeholder="${praise ? '친구의 좋은 점을 구체적으로 칭찬해 줘요 (20자 이상)' : '하고 싶은 말을 적어요'}"></textarea>
     <div class="cnt" id="mailCnt">0자</div>
-    <div class="hint">🔒 편지 내용은 받는 친구만 볼 수 있어요 (선생님도 못 봐요). 나쁜 말은 애교 말로 바뀌어요!</div>
+    <div class="hint">🕐 편지는 오후 1시에 한꺼번에 배달돼요 (1시 전에 쓰면 오늘, 1시 넘으면 내일)<br>🔒 편지 내용은 받는 친구만 볼 수 있어요 (선생님도 못 봐요). 나쁜 말은 애교 말로 바뀌어요!</div>
     <button type="button" class="btn btn-y" data-msend="${esc(to)}" style="width:100%;margin-top:8px;">📮 보내기</button>`);
   $('mailText').oninput = () => { const n = $('mailText').value.trim().length, pr = document.querySelector('[name=mkind]:checked').value === 'praise'; $('mailCnt').textContent = `${n}자${pr ? ' / 20자 이상' : ''}`; $('mailCnt').classList.toggle('ok', !pr || n >= 20); };
   setTimeout(() => $('mailText').focus(), 60);
@@ -991,7 +991,8 @@ async function mailSend(to){
   try {
     const j = await studentCall('mailSend', { to, kind, text });
     if (j.error){ toast({ short:'조금 더 적어 주세요', slow:'조금 있다 보내요 🐢', to:'받는 친구를 확인해요' }[j.error] || '보내지 못했어요'); return; }
-    bClose('mailOv'); toast(kind === 'praise' ? ((j.sentInfo || {}).mission ? '💛 칭찬편지를 보냈어요! 친구가 확인하면 냥코인 🐾' : '💛 칭찬편지를 보냈어요!') : '📮 편지를 보냈어요!');
+    const at = (j.sentInfo || {}).at || '', when = at ? (at.slice(0, 10) === new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10) ? ' 오늘 오후 1시에 도착해요 🕐' : ' 내일 오후 1시에 도착해요 🕐') : '';
+    bClose('mailOv'); toast((kind === 'praise' ? ((j.sentInfo || {}).mission ? '💛 칭찬편지를 보냈어요! 친구가 확인하면 냥코인 🐾' : '💛 칭찬편지를 보냈어요!') : '📮 편지를 보냈어요!') + when);
     if (current === 'coin') coinCall('coins');
   } catch(e){ toast('연결이 안 돼요'); }
 }
@@ -1085,14 +1086,15 @@ async function storyAns(a){
 /* 🇺🇸 급식 영어 번역 (학생 화면) */
 function openMenuTr(){
   const today = todayStr(), menu = (st.meal || {})[today] || '';
-  bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="mail-body" style="font-size:1rem;">${esc(menu || '급식 관리자가 아직 안 올렸어요. 그래도 번역할 수 있어요!')}</div>
+  if (!menu){ bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="empty">🍱 급식 관리자가 오늘 메뉴를 올리면 번역할 수 있어요<br>조금 이따 다시 와 줘요!</div>`); return; }
+  bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="mail-body" style="font-size:1rem;">${esc(menu)}</div>
     <textarea id="menuTrText" rows="4" maxlength="400" placeholder="예: Rice / Kimchi stew / Pork cutlet"></textarea>
     <button type="button" class="btn btn-y" id="menuTrSend" style="width:100%;margin-top:8px;">🇺🇸 보내기</button>
     <div class="hint" style="margin-top:6px;">급식 관리자가 승인하면 오늘 번역 완료! 한 주에 2일 승인되면 미션 냥코인 🐾</div>`);
 }
 async function menuTrSend(){
   const text = $('menuTrText').value.trim(); if (text.replace(/\s/g, '').length < 5){ toast('조금 더 적어 주세요'); return; }
-  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 🎯 번역 미션을 골라요' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
+  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 🎯 번역 미션을 골라요', nomenu:'급식 관리자가 오늘 메뉴를 올린 뒤에 번역해요 🍱' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
 }
 /* ☕ 스터디카페: 1시간 집중 (화면을 끄거나 앱을 나가면 실패) */
 let cafe = null;

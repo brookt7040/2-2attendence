@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 38;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 39;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -48,7 +48,7 @@ const HANA_LV = [0, 20, 60, 120, 200, 320];
 const HANA_DAILY = 5;          // 🐱 하나와는 하루에 5번까지 놀 수 있어요
 const CHAT_SHEET = '대화', CHAT_HEADER = ['번호', '시간', '보낸 사람', '받는 사람(빈칸=전체)', '내용', '상태'];
 const SIG_SHEET = '서명', SIG_HEADER = ['신청번호', '과목', '서명'];
-const MAIL_SHEET = '편지함', MAIL_HEADER = ['번호', '시간', '보낸 사람', '받는 사람', '종류', '내용(가림)', '읽음', '확인', '미션'];
+const MAIL_SHEET = '편지함', MAIL_HEADER = ['번호', '시간', '보낸 사람', '받는 사람', '종류', '내용(가림)', '읽음', '확인', '미션', '도착'];
 const DIARY_SHEET = '일기장', DIARY_HEADER = ['번호', '날짜', '이름', '내용(가림)', '시간'];
 const MENU_SHEET = '급식번역', MENU_HEADER = ['번호', '날짜', '이름', '영어 메뉴', '상태', '시간'];
 const STORY_SHEET = '스토리답', STORY_HEADER = ['스토리', '이름', '답', '시간'];
@@ -106,6 +106,7 @@ function doPost(e) {
     else auth = teacherAuth_(body.key);
     if (!auth.ok) return out_({ ok: false, error: 'auth', api: API_VERSION });
     if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
+    if (auth.view) { if (body.action !== 'pull') return out_({ ok: false, error: 'view', api: API_VERSION }); body.remoteOk = false; const pr = teacherPull_(body, auth); pr.view = true; return out_(pr); }   // 👀 입장 전용은 보기만
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
     if (body.action === 'chat') { const reps = wReports_(); return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function (m) { return teacherSees_(m, reps, ''); }).map(function (m) { return markRep_(m, reps); }), reports: reps.slice(-30) }); }   // 🤫 귓속말은 신고된 것만
     if (body.action === 'presence') return out_(presence_());
@@ -292,6 +293,9 @@ function apinAuth_(pin) {
     try { props_().setProperty('apins', JSON.stringify(list)); } catch (e) {}
   }
   if (pin && list.indexOf(hash_('P:' + String(pin))) >= 0) return { ok: true, needKey: false };
+  let vp = props_().getProperty('vpinH');      // 👀 입장 전용: 관리자 출석부를 보기만 해요
+  if (vp === null) { const cf = readRows_().map.config || {}; vp = cf.viewPin ? hash_('P:' + cf.viewPin) : ''; try { props_().setProperty('vpinH', vp); } catch (e) {} }
+  if (pin && vp && vp === hash_('P:' + String(pin))) return { ok: true, needKey: false, view: true };
   try { c.put('apinfail', String(f + 1), 600); } catch (e) {}
   return { ok: false };
 }
@@ -426,7 +430,7 @@ function handlePost_(body, auth) {
           const keepLooks = map.config && map.config.looks;
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
-          try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
+          try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); props_().setProperty('vpinH', d0.viewPin ? hash_('P:' + d0.viewPin) : ''); } catch (e) {}
           if (o.data && o.data.sleep !== undefined) try { props_().setProperty('sleepCfg', JSON.stringify(o.data.sleep || null)); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
@@ -716,7 +720,7 @@ function handleStudentCore_(body) {
       cachePut_(sk, snap);
     }
     const mine0 = []; Object.keys(snap.acks).forEach(function (t) { if ((snap.acks[t] || []).indexOf(name) >= 0) mine0.push(t); });
-    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '', penalty: penaltyOf_(name), mailNew: Number(props_().getProperty('mailN:' + name) || 0) };
+    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0, status: ((snap.statuses || {})[name] || {}).t || '', penalty: penaltyOf_(name), mailNew: mailNew_(name) };
   }
   const lock = lockFor_(true, 20000);
   try {
@@ -1776,6 +1780,7 @@ function menuTrSet_(id, ok) {
 function studentMenu_(name, body) {
   const text = maskBad_(String(body.text || '').trim().slice(0, 400), (chatCfg_().ban) || []);
   if (!isTeacherName_(name) && menuPickers_().indexOf(name) < 0) return { ok: true, error: 'nopick' };   // 미션을 고른 학생만
+  if (!mealData_()[todayStr_()]) return { ok: true, error: 'nomenu' };   // 급식 관리자가 오늘 메뉴를 올린 뒤에만
   if (text.replace(/\s/g, '').length < 5) return { ok: true, error: 'short' };
   const lock = lightLock_(15000);
   try {
@@ -1834,7 +1839,24 @@ const enc_ = function (t) { return Utilities.base64Encode(String(t || ''), Utili
 const dec_ = function (t) { try { return Utilities.newBlob(Utilities.base64Decode(String(t || ''), Utilities.Charset.UTF_8)).getDataAsString('UTF-8'); } catch (e) { return ''; } };
 function readMail_(keep) {
   const sh = sheet_(MAIL_SHEET, MAIL_HEADER), n = sh.getLastRow(); if (n < 2) return [];
-  return sh.getRange(2, 1, n - 1, 9).getValues().map(function (r, i) { return { row: i + 2, id: Number(r[0]), t: String(r[1]), from: String(r[2]), to: String(r[3]), kind: String(r[4]), text: r[5], read: String(r[6]) === 'y', ok: String(r[7]) === 'y', mission: String(r[8]) }; }).filter(keep);
+  const now = nowStr_();
+  return sh.getRange(2, 1, n - 1, 10).getValues().map(function (r, i) { const at = String(r[9] || '').replace(/^'/, ''); return { row: i + 2, id: Number(r[0]), t: String(r[1]).replace(/^'/, ''), from: String(r[2]), to: String(r[3]), kind: String(r[4]), text: r[5], read: String(r[6]) === 'y', ok: String(r[7]) === 'y', mission: String(r[8]), at: at, came: !at || at <= now }; }).filter(keep);
+}
+/* 📮 편지는 오후 1시에 한꺼번에 도착: 1시 전에 쓰면 오늘 1시, 1시 이후면 내일 1시 (선생님 편지는 바로) */
+function mailArrive_() {
+  const d = new Date(), hm = Utilities.formatDate(d, 'Asia/Seoul', 'HH:mm');
+  if (hm >= '13:00') d.setTime(d.getTime() + 86400000);
+  return Utilities.formatDate(d, 'Asia/Seoul', 'yyyy-MM-dd') + ' 13:00';
+}
+/* 새 편지 수: 도착 시간이 지난 대기 편지를 '새 편지'로 옮겨요 */
+function mailNew_(name) {
+  const P = props_(); let n = Number(P.getProperty('mailN:' + name) || 0);
+  let wait = []; try { wait = JSON.parse(P.getProperty('mailP:' + name) || '[]'); } catch (e) {}
+  if (wait.length) {
+    const now = nowStr_(), due = wait.filter(function (a) { return a <= now; });
+    if (due.length) { n += due.length; P.setProperty('mailN:' + name, String(n)); P.setProperty('mailP:' + name, JSON.stringify(wait.filter(function (a) { return a > now; }))); }
+  }
+  return n;
 }
 function studentMail_(name, body) {
   const map = readRows_().map, kids = kidNames_(map).concat((((map.pub || {}).students) || []).map(function (s) { return s.name; }).filter(isTeacherName_));
@@ -1853,16 +1875,17 @@ function studentMail_(name, body) {
           if (m && pk.d.ids.indexOf(m.id) >= 0 && !readMail_(function (x) { return x.from === name && x.mission && x.mission.indexOf(pk.d.k) === 0; }).length) mission = pk.d.k + ':' + m.id;   // 미션 편지는 하루 1통
         }
         const id = Number(props_().getProperty('mailSeq') || 0) + 1; props_().setProperty('mailSeq', String(id));
-        sheet_(MAIL_SHEET, MAIL_HEADER).appendRow([id, "'" + nowStr_(), name, to, praise ? '칭찬' : '편지', enc_(text), '', '', mission]);
-        props_().setProperty('mailN:' + to, String(Number(props_().getProperty('mailN:' + to) || 0) + 1));
+        const at = isTeacherName_(name) ? '' : mailArrive_();
+        sheet_(MAIL_SHEET, MAIL_HEADER).appendRow([id, "'" + nowStr_(), name, to, praise ? '칭찬' : '편지', enc_(text), '', '', mission, at ? "'" + at : '']);
+        if (at) { let w = []; try { w = JSON.parse(props_().getProperty('mailP:' + to) || '[]'); } catch (e) {} w.push(at); props_().setProperty('mailP:' + to, JSON.stringify(w)); }
+        else { props_().setProperty('mailN:' + to, String(Number(props_().getProperty('mailN:' + to) || 0) + 1)); appendChat_('📮 우체부', to, '📮 새 편지가 도착했어요! 마을 → 우리 집 → 📮 편지함에서 확인해요'); }
         props_().setProperty('mailLast:' + name, String(Date.now()));
-        appendChat_('📮 우체부', to, '📮 새 편지가 도착했어요! 마을 → 우리 집 → 📮 편지함에서 확인해요');
         bump_();
-        paid = { mission: !!mission };
+        paid = { mission: !!mission, at: at };
       } finally { lock.releaseLock(); }
     }
   } else if (body.op === 'mailOk') {             // 💛 받은 사람이 '덜 친한 친구 · 칭찬 쪽지' 둘 다 맞다고 하면 보낸 친구에게 지급
-    const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name; })[0];
+    const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name && x.came; })[0];
     if (!it || it.kind !== '칭찬') error = 'bad';
     else if (!it.ok && body.a && body.b) {
       const sh = sheet_(MAIL_SHEET, MAIL_HEADER); sh.getRange(it.row, 7, 1, 2).setValues([['y', 'y']]);
@@ -1872,12 +1895,12 @@ function studentMail_(name, body) {
       }
     }
   } else if (body.op === 'mailRead') {
-    const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name; })[0];
+    const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name && x.came; })[0];
     if (it && !it.read) sheet_(MAIL_SHEET, MAIL_HEADER).getRange(it.row, 7).setValue('y');
   }
-  if (body.op === 'mailList' || body.op === 'mailOk' || body.op === 'mailRead') props_().setProperty('mailN:' + name, '0');
-  const box = readMail_(function (x) { return x.to === name; }).slice(-40).reverse().map(function (x) { return { id: x.id, t: x.t, from: x.from, kind: x.kind, text: dec_(x.text), read: x.read, ok: x.ok }; });
-  const sent = readMail_(function (x) { return x.from === name; }).slice(-20).reverse().map(function (x) { return { id: x.id, t: x.t, to: x.to, kind: x.kind, ok: x.ok, mission: !!x.mission }; });
+  if (body.op === 'mailList' || body.op === 'mailOk' || body.op === 'mailRead') { mailNew_(name); props_().setProperty('mailN:' + name, '0'); }
+  const box = readMail_(function (x) { return x.to === name && x.came; }).slice(-40).reverse().map(function (x) { return { id: x.id, t: x.at || x.t, from: x.from, kind: x.kind, text: dec_(x.text), read: x.read, ok: x.ok }; });
+  const sent = readMail_(function (x) { return x.from === name; }).slice(-20).reverse().map(function (x) { return { id: x.id, t: x.t, to: x.to, kind: x.kind, ok: x.ok, mission: !!x.mission, at: x.came ? '' : x.at }; });
   return { ok: true, error: error, inbox: box, sent: sent, sentInfo: paid, kids: kids };
 }
 /* 선생님: 칭찬편지 결과만 (내용 없이) */
