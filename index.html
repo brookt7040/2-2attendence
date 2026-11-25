@@ -749,6 +749,7 @@ body.view-mode .note-side{display:none !important;}
 .mini-menu{display:flex;gap:8px;}
 .mini-menu-btn.icon{font-size:1.35rem;width:46px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;}
 .mini-menu-pop{top:calc(100% + 6px);}
+#noticeArea:not(.admin-on) .notice-item,#noticeArea:not(.admin-on) .ack-badge{cursor:default;}
 </style>
 </head>
 <body>
@@ -3381,8 +3382,9 @@ function scheduleBlink(){
 /* =========================================================
    📢 오늘의 알림
    ========================================================= */
+function noticeAdminActive(){ return !db.adminPin || Date.now() < pinUntil || Date.now() < pinRoleUntil.sub; }
 function renderNotices(){
-  const area = $('noticeArea');
+  const area = $('noticeArea'); area.classList.toggle('admin-on', noticeAdminActive());
   area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 Notice<button type="button" class="edit-mini" title="알림 고치기" onclick="event.stopPropagation(); editText(\'notices\')">✏️</button></div>';
   const list = (db.notices || []).filter(t => t && t.trim() !== '');
   if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">✏️ 버튼을 눌러 오늘의 알림을 적어 주세요</div>'); return; }
@@ -3393,8 +3395,9 @@ function renderNotices(){
     item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>` +
       (sync.url && sync.api >= 3 ? `<button type="button" class="ack-badge" title="학생 확인 현황">✔ ${acked.length}/${kids().length}</button>` : '');
     const badge = item.querySelector('.ack-badge');
-    if (badge) badge.onclick = e => { e.stopPropagation(); showAcks(text); };
-    item.onclick = () => { noticeChecked[idx] = !noticeChecked[idx]; renderNotices(); };
+    if (badge) badge.onclick = e => { e.stopPropagation(); if (noticeAdminActive()) showAcks(text); };
+    // 🔒 관리자(또는 부관리자) 비밀번호가 살아 있을 때만 눌러서 지울 수 있어요. 그 밖엔 눌러도 아무 일 없어요
+    item.onclick = () => { if (!noticeAdminActive()) return; noticeChecked[idx] = !noticeChecked[idx]; renderNotices(); };
     area.append(item);
   });
 }
