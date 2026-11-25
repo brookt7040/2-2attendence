@@ -1410,7 +1410,7 @@ function boardOf_(code) {
     const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
     return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
   }
-  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_(); out.reload = reloadInfo_(); out.mealEn = menuEnToday_();
+  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_(); out.reload = reloadInfo_(); out.mealEn = menuEnToday_(); out.menuPick = menuPickers_();
   return out;
 }
 function cardOf_(name) {
@@ -1742,6 +1742,14 @@ function readMenuTr_(keep) {
   const sh = sheet_(MENU_SHEET, MENU_HEADER), n = sh.getLastRow(); if (n < 2) return [];
   return sh.getRange(2, 1, n - 1, 6).getValues().map(function (r, i) { return { row: i + 2, id: Number(r[0]), ds: String(r[1]).replace(/^'/, ''), name: String(r[2]), text: String(r[3]), status: String(r[4]), t: String(r[5]) }; }).filter(keep);
 }
+function menuPickers_() {   // 🇺🇸 이번 주 '급식 영어 번역' 미션을 고른 학생
+  try {
+    const m = (economy_(readRows_().map).missions || []).filter(function (x) { return x.flow === 'menu'; })[0]; if (!m) return [];
+    const w = missionWeek_(), all = props_().getProperties(), out = [];
+    Object.keys(all).forEach(function (k) { if (k.indexOf('pick:') !== 0) return; try { const p = JSON.parse(all[k]); if (p.w && p.w.k === w && (p.w.ids || []).indexOf(m.id) >= 0) out.push(k.slice(5)); } catch (e) {} });
+    return out;
+  } catch (e) { return []; }
+}
 function menuDays_(name) { return readMenuTr_(function (x) { return x.name === name && x.status === '승인'; }).map(function (x) { return x.ds; }); }
 function menuEnToday_() { const t = todayStr_(), a = readMenuTr_(function (x) { return x.ds === t && x.status === '승인'; }); return a.length ? { name: a[a.length - 1].name, text: a[a.length - 1].text } : null; }
 function menuTrList_() { const t = todayStr_(); return readMenuTr_(function (x) { return x.status === '대기' || x.ds === t; }).slice(-40).reverse().map(function (x) { return { id: x.id, ds: x.ds, name: x.name, text: x.text, status: x.status }; }); }
@@ -1753,6 +1761,7 @@ function menuTrSet_(id, ok) {
 }
 function studentMenu_(name, body) {
   const text = maskBad_(String(body.text || '').trim().slice(0, 400), (chatCfg_().ban) || []);
+  if (!isTeacherName_(name) && menuPickers_().indexOf(name) < 0) return { ok: true, error: 'nopick' };   // 미션을 고른 학생만
   if (text.replace(/\s/g, '').length < 5) return { ok: true, error: 'short' };
   const lock = lightLock_(15000);
   try {

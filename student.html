@@ -3234,7 +3234,7 @@ function openMenuTr(){
 }
 async function menuTrSend(){
   const text = $('menuTrText').value.trim(); if (text.replace(/\s/g, '').length < 5){ toast('조금 더 적어 주세요'); return; }
-  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
+  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 🎯 번역 미션을 골라요' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
 }
 /* ☕ 스터디카페: 1시간 집중 (화면을 끄거나 앱을 나가면 실패) */
 let cafe = null;
