@@ -303,6 +303,13 @@ html.agit #p-notice > .nb-pub{display:none !important;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
+#nGate{display:none;position:fixed;inset:0;z-index:20050;align-items:center;justify-content:center;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);padding:16px;}
+#nGate.on{display:flex;}
+.ng-box{background:#FFFDF6;border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);padding:24px 26px;text-align:center;max-width:380px;width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;}
+.ng-box h2{margin:2px 0;font-size:1.4rem;}
+#ngInput{font-family:inherit;font-size:2rem;text-align:center;letter-spacing:10px;width:220px;border:3px solid var(--ink);border-radius:14px;padding:6px;}
+#ngErr{min-height:1.3em;color:#D94A6A;font-size:.95rem;}
+#ngBtn{width:100%;}
 .sos-q{font-size:1rem;margin-top:4px;}
 .sos-rs{display:grid;grid-template-columns:1fr;gap:5px;}
 .sos-r{display:flex;align-items:center;gap:6px;border:2px solid #E6D9CA;border-radius:12px;padding:7px 10px;cursor:pointer;font-size:.95rem;background:#fff;}
@@ -449,6 +456,9 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </div>
 
 <div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat"><canvas id="sleepCat" class="pix" width="16" height="16" style="width:150px;height:150px;image-rendering:pixelated;"></canvas><span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><button type="button" class="sl-admin" id="sleepT">👑 선생님 로그인</button></div>
+
+<div id="nGate"><div class="ng-box"><div style="font-size:3rem;">🔐</div><h2>입장 코드를 넣어 주세요</h2><div class="hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
+  <input type="password" id="ngInput" maxlength="12" autocomplete="off"><div id="ngErr"></div><button type="button" class="btn btn-y" id="ngBtn">들어가기</button></div></div>
 
 <div class="overlay" id="penOv">
   <div class="modal pen-modal">
@@ -693,6 +703,31 @@ function presenceHTML(p, names){
     <div class="pr-anon">👀 로그인 없이 학생용 출석부를 보는 중: <b>${p.anon || 0}</b>대</div>
     <div class="pr-note">로그인한 학생 기준이에요. 창을 닫아도 1~2분 정도는 활동 중으로 보일 수 있어요.</div>`;
 }
+/* 🔐 📢 알림·종례 탭(앱)도 입장 코드: 출석부와 같은 기록을 써서, 한쪽에서 넣으면 다른 쪽은 안 물어요 */
+const N_ONLY = document.documentElement.classList.contains('only-notice');
+let nGateCode = '';
+async function nGateFetch(code){ const r = await fetch(`${API}?board=1&gate=${encodeURIComponent(code || '')}&t=${Date.now()}`, { redirect:'follow' }); return r.json(); }
+function nGateSaved(){ try { const g = JSON.parse(localStorage.getItem('nyangGate') || 'null'); return g && Date.now() < g.until ? g : null; } catch(e){ return null; } }
+async function nGateCheck(){
+  if (!N_ONLY || !API) return;
+  const g = nGateSaved();
+  try {
+    const j = await nGateFetch(g ? g.code : '');
+    if (j.ok && (!g || (Number(g.ep) || 0) === (Number(j.epoch) || 0) || !g.code)){ $('nGate').classList.remove('on'); nGateCode = g ? g.code : ''; return; }
+    $('nGate').classList.add('on'); setTimeout(() => $('ngInput').focus(), 60);
+  } catch(e){}
+}
+async function nGateGo(){
+  const v = $('ngInput').value.trim(); if (!v) return;
+  $('ngErr').textContent = '확인 중…';
+  try {
+    const j = await nGateFetch(v);
+    if (!j.ok){ $('ngErr').textContent = j.error === 'slow' ? '너무 많이 틀렸어요. 1분 뒤에 다시 해 주세요' : '❌ 코드가 달라요'; $('ngInput').value = ''; return; }
+    try { localStorage.setItem('nyangGate', JSON.stringify({ code: v, until: Date.now() + (Number(j.hours) || 3) * 3600000, ep: Number(j.epoch) || 0 })); } catch(e){}
+    $('ngErr').textContent = ''; $('nGate').classList.remove('on');
+  } catch(e){ $('ngErr').textContent = '연결이 안 돼요'; }
+}
+if (N_ONLY){ setInterval(nGateCheck, 30000); addEventListener('storage', e => { if (e.key === 'nyangGate') nGateCheck(); }); }
 /* 🚫 비속어 단계별 제한 안내 */
 function penLeft(p){ if (p.perm) return '영구 정지'; const s = Math.max(0, Math.ceil((p.until - Date.now()) / 1000)); return s >= 86400 ? `${Math.ceil(s / 86400)}일` : s >= 3600 ? `${Math.floor(s / 3600)}시간 ${Math.ceil((s % 3600) / 60)}분` : s >= 60 ? `${Math.ceil(s / 60)}분` : `${s}초`; }
 function showPenalty(kind, p){
@@ -1507,6 +1542,7 @@ document.addEventListener('click', e => {
   if (IN_APP && t.closest('.board-link')){ e.preventDefault(); appGo('board'); return; }
   { const r = t.closest('[data-room]'); if (r){ chat.to = r.dataset.room; renderChat(); return; } }
   { const qk = t.closest('[data-quick]'); if (qk){ const i = $('chatText'); if (i){ i.value = (i.value ? i.value + ' ' : '') + qk.dataset.quick; i.focus(); } return; } }
+  if (t.closest('#ngBtn')){ nGateGo(); return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
@@ -1574,6 +1610,7 @@ document.addEventListener('change', e => { if (e.target.id === 'oathChk') $('oat
 document.addEventListener('change', e => { if (e.target.id === 'chatWho' && e.target.value){ chat.to = e.target.value; renderChat(); const i = $('chatText'); if (i) i.focus(); return; } if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
 document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });
 $('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+$('ngInput').addEventListener('keydown', e => { if (e.key === 'Enter') nGateGo(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
 
 /* ---------- 시작 ---------- */
@@ -1596,6 +1633,7 @@ function bootDone(ok){
     if (me && /(쌤|샘|선생님|교감|교장)$/.test(me.name)){ tAuthByLogin = true; tOn(); }
   }
   // 👑 관리 탭은 'OO쌤' 계정으로 로그인했을 때만 보여요 (예전에 저장된 교사 열쇠는 지워요)
+  if (N_ONLY) await nGateCheck();
   bootDone(st.pub ? true : false);
   localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); tKey = '';
   if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
