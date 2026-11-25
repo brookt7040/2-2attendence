@@ -883,6 +883,20 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 .bb-pv-wrap{background:#FFF5D1;border-radius:12px;padding:12px;margin:8px 0;text-align:center;}
 .bb-pv{display:inline-block;border:3px solid var(--ink);border-radius:16px;padding:8px 16px;font-size:1.2rem;white-space:pre-line;max-width:100%;}
 .nopw{-webkit-text-security:disc;text-security:disc;}
+#mhBody .meal-d{border:2px dashed #EFE3D3;border-radius:14px;padding:10px 12px;margin-bottom:8px;background:#FFFDF6;}
+#mhBody .meal-d.today{border:2px solid #E8C35A;background:#FFF8DA;}
+#mhBody .meal-d b{display:block;margin-bottom:4px;}
+#mhBody .meal-d .mt{white-space:pre-line;line-height:1.6;word-break:keep-all;}
+#mhBody textarea{width:100%;font-family:inherit;font-size:1rem;border:2px solid #CDBBA8;border-radius:10px;padding:6px 8px;resize:vertical;box-sizing:border-box;}
+#mhBody .hw-i{display:flex;gap:8px;align-items:center;border:2px solid #EFE3D3;border-radius:14px;padding:8px 12px;margin-bottom:8px;background:#FFFDF6;word-break:keep-all;}
+#mhBody .hw-i .tx{flex:1;}
+#mhBody .dd{flex:none;font-size:.85rem;border-radius:999px;padding:2px 8px;background:#E8F4FF;border:1px solid #9CC8EE;}
+#mhBody .dd.hot{background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
+#mhBody .sj{color:var(--ink-soft);font-size:.9rem;margin-right:4px;}
+#mhBody .hw-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px;padding-top:10px;border-top:2px dashed #EFE3D3;}
+#mhBody .hw-add input{font-family:inherit;font-size:1rem;border:2px solid #CDBBA8;border-radius:10px;padding:5px 8px;}
+#mhBody .mh-empty{color:var(--ink-soft);text-align:center;padding:14px;}
+body.view-mode #mealBtn,body.view-mode #hwBtn{pointer-events:auto;}
 </style>
 </head>
 <body>
@@ -922,7 +936,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><button type="button" class="mini-menu-btn icon" id="mealBtn" title="급식">🍱</button><button type="button" class="mini-menu-btn icon" id="hwBtn" title="숙제">📚</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
@@ -1099,6 +1113,13 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="form-hint">이름을 누르면 오늘 청소 당번에 <b>넣고 · 빼요</b>. 회색은 EXP·욕설 때문에 자동으로 된 친구예요.</div>
     <div class="ca-grid" id="cleanAddGrid"></div></div>
 </div>
+<div class="overlay" id="mhOv">
+  <div class="modal" style="max-width:560px;width:94vw;">
+    <button type="button" class="modal-x" data-close="mhOv" title="닫기">✕</button>
+    <h2 id="mhTitle">🍱 급식</h2>
+    <div id="mhBody"></div>
+  </div>
+</div>
 <div class="overlay" id="weekOv">
   <div class="modal wk-modal"><button type="button" class="modal-x" data-close="weekOv" title="닫기">✕</button>
     <h2>📅 우리 반 시간표</h2>
@@ -1239,7 +1260,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="row" style="justify-content:flex-end;"><button type="button" class="btn btn-y" id="caSaveBtn">설정 저장</button></div>
     </div>
     <div class="section">
-      <div class="section-title">📜 모든 대화 <small style="color:var(--ink-soft);">(귓속말 포함 · 시트 '대화' 탭에도 남아요)</small></div>
+      <div class="section-title">📜 모든 대화 <small style="color:var(--ink-soft);">(🤫 귓속말은 학생이 🚨 신고한 대화만 보여요)</small></div>
       <div class="chat-log" id="caLog"></div>
       <div class="row" style="justify-content:flex-start;">
         <select id="caTo" style="padding:7px;border:2px solid var(--ink);border-radius:10px;font-size:1rem;"></select>
@@ -2111,6 +2132,8 @@ function mergeInto(parsed){
   if (parsed.accessHours) db.accessHours = Number(parsed.accessHours) || 3;
   if (parsed.accessEpoch) db.accessEpoch = Number(parsed.accessEpoch) || 0;
   if (parsed.sleep) db.sleep = parsed.sleep;
+  if (parsed.meal && typeof parsed.meal === 'object') db.meal = parsed.meal;
+  if (Array.isArray(parsed.hw)) db.hw = parsed.hw;
   if (typeof parsed.closingAt === 'string') db.closingAt = parsed.closingAt;
   if (parsed.ticker) db.ticker = parsed.ticker;
   if (typeof parsed.guideVer === 'string') db.guideVer = parsed.guideVer;
@@ -2375,7 +2398,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 34;
+const NEED_API = 35;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2466,6 +2489,33 @@ function renderWeek(){
     const now2 = realToday && cur >= ttMin(x.start) && cur < ttMin(x.end);
     return `<div class="${x.lunch ? 'lunch' : ''} ${x.changed ? 'chg' : ''} ${now2 ? 'now' : ''} ${VIEW || x.lunch ? '' : 'ed'}" data-ds="${x.ds}" data-i="${x.i}"><small>${esc(x.lunch ? '점심' : x.name)} · ${esc(x.start)}</small><span>${esc(x.lunch ? '점심시간' : (x.label || '·'))}${x.changed ? ' (변경)' : ''}</span></div>`; }).join('')}</div>`;
 }
+/* 🍱 급식 · 📚 숙제: 아이콘을 누르면 보여요 (관리자는 고칠 수 있어요 · 공지사항 탭에도 같이 나와요) */
+let mhKind = 'meal';
+function mhDays(){ const out = [], now = nowD(); let d = new Date(now); if (d.getDay() === 0 || d.getDay() === 6) d = nextSchoolDay(d); for (let i = 0; i < 5; i++){ out.push(getTodayStr(d)); d = nextSchoolDay(d); } return out; }
+function mhLabel(ds){ const [y, m, d] = ds.split('-').map(Number), dt = new Date(y, m - 1, d), t0 = nowD(); t0.setHours(0, 0, 0, 0); const diff = Math.round((dt - t0) / 86400000); return { md: `${m}/${d} (${'일월화수목금토'[dt.getDay()]})`, diff }; }
+function openMH(kind){ mhKind = kind; renderMH(); $('mhOv').style.display = 'flex'; }
+function renderMH(){
+  const meal = db.meal || {}, hw = (db.hw || []).slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1), today = getTodayStr(nowD());
+  $('mhTitle').textContent = mhKind === 'meal' ? '🍱 급식' : '📚 숙제';
+  if (mhKind === 'meal'){
+    const days = VIEW ? Object.keys(meal).filter(d => d >= today).sort().slice(0, 5) : mhDays();
+    $('mhBody').innerHTML = (days.length ? days.map(d => { const L = mhLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b>${VIEW ? `<div class="mt">${esc(meal[d] || '')}</div>` : `<textarea rows="4" data-meal="${d}" placeholder="메뉴를 한 줄에 하나씩 (비우면 안 보여요)">${esc(meal[d] || '')}</textarea>`}</div>`; }).join('') : '<div class="mh-empty">아직 급식 메뉴가 없어요 🍚</div>')
+      + (VIEW ? '' : '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요</div>');
+  } else {
+    const list = VIEW ? hw : hw;
+    $('mhBody').innerHTML = (list.length ? list.map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff < 0 ? '지남' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
+      return `<div class="hw-i"><span class="dd ${L && L.diff <= 1 ? 'hot' : ''}">${dd}</span><span class="tx">${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</span>${VIEW ? '' : `<button type="button" class="act-btn cancel" data-hwdel="${h.id}" title="지우기">🗑</button>`}</div>`; }).join('') : '<div class="mh-empty">숙제가 없어요! 🎉</div>')
+      + (VIEW ? '' : `<div class="hw-add"><input id="hwSubj" placeholder="과목" maxlength="12" style="width:80px;"><input id="hwText" placeholder="숙제 내용" maxlength="200" style="flex:1;min-width:140px;"><input type="date" id="hwDue" value="${getTodayStr(nextSchoolDay(nowD()))}"><button type="button" class="btn btn-y" id="hwAdd">＋ 추가</button></div><div class="form-hint">마감일이 지나면 학생 화면에서 저절로 사라져요</div>`);
+  }
+}
+function mealSave(){
+  requirePin(() => {
+    db.meal = Object.assign({}, db.meal || {});
+    document.querySelectorAll('#mhBody [data-meal]').forEach(t => { const d = t.dataset.meal, v = t.value.trim(); if ((db.meal[d] || '') === v) return; if (v) db.meal[d] = v; else delete db.meal[d]; syncOp({ op:'meal', ds: d, text: v }); });
+    saveDB(); showToast('🍱 급식을 저장했어요'); renderMH();
+  });
+}
+function hwChange(list){ requirePin(() => { db.hw = list; saveDB(); syncOp({ op:'hw', list }); renderMH(); }); }
 /* 📚 오늘만 과목 바꾸기: 시간표 칸을 누르면 (관리자) */
 function editTtToday(i){
   requirePin(() => {
@@ -4470,6 +4520,8 @@ function applyOpLocal(o){
     case 'notices': db.notices = o.list.slice(); break;
     case 'config': applyConfig(o.data); break;
     case 'epoch': db.accessEpoch = Number(o.v) || 0; break;
+    case 'meal': db.meal = db.meal || {}; if (o.text) db.meal[o.ds] = o.text; else delete db.meal[o.ds]; break;
+    case 'hw': db.hw = (o.list || []).slice(); break;
     case 'look': db.looks = db.looks || {}; if (o.look) db.looks[o.name] = o.look; else delete db.looks[o.name]; break;
   }
 }
@@ -4579,6 +4631,8 @@ async function pullSync(force){
       const u = j.urgent.join('\n');
       if (u !== (db.urgent || '') && !sync.queue.some(o => o.op === 'urgent')){ db.urgent = u; saveDB(); renderUrgent(); }
     }
+    if (j.meal && typeof j.meal === 'object' && !sync.queue.some(o => o.op === 'meal') && JSON.stringify(j.meal) !== JSON.stringify(db.meal || {})){ db.meal = j.meal; saveDB(); if ($('mhOv').style.display === 'flex' && mhKind === 'meal' && !document.activeElement.matches('#mhBody textarea')) renderMH(); }
+    if (Array.isArray(j.hw) && !sync.queue.some(o => o.op === 'hw') && JSON.stringify(j.hw) !== JSON.stringify(db.hw || [])){ db.hw = j.hw; saveDB(); if ($('mhOv').style.display === 'flex' && mhKind === 'hw') renderMH(); }
     if (j.meeting) mtApplyRemote(j.meeting);
     const nl = (j.notices || []);
     if (JSON.stringify(nl) !== JSON.stringify(db.notices) && !sync.queue.some(o => o.op === 'notices')){ db.notices = nl; noticeChecked = {}; changed = true; }
@@ -4787,7 +4841,7 @@ async function loadChatAdmin(withCfg){
     }
     const log = $('caLog'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 30;
     log.innerHTML = j.msgs.length ? j.msgs.map(m => `<div class="cmsg ${m.to ? 'wh' : ''} ${isTeacherName(m.from) || m.from === '선생님' ? 't' : ''} ${m.del ? 'del' : ''}">
-        <span class="who">${esc(m.from)}${m.to ? (m.to.charAt(0) === '#' ? ` → ${esc(m.to.slice(2))}모둠 🤫` : ' → ' + esc(m.to) + ' 🤫') : ''}</span><span class="txt">${esc(m.text)}</span><span class="tm">${esc(m.t.slice(5))}</span>
+        <span class="who">${m.rep ? '🚨 ' : ''}${esc(m.from)}${m.to ? (m.to.charAt(0) === '#' ? ` → ${esc(m.to.slice(2))}모둠 🤫` : ' → ' + esc(m.to) + ' 🤫') : ''}</span><span class="txt">${esc(m.text)}</span><span class="tm">${esc(m.t.slice(5))}</span>
         ${m.del ? '' : `<button type="button" class="act-btn cancel" data-cdel="${m.id}" title="지우기">🗑</button>`}</div>`).join('')
       : '<div class="clean-empty">아직 대화가 없어요</div>';
     if (atBottom || withCfg) log.scrollTop = log.scrollHeight;
@@ -7074,6 +7128,13 @@ function bindEvents(){
   $('bbAlarm').addEventListener('click', () => { $('bbColor').value = '#FFFFFF'; $('bbBg').value = '#E8473A'; $('bbSize').value = 10; $('bbText').value = '🚨 '; bubbleEditPreview(); $('bbText').focus(); });
   $('attNotes').addEventListener('click', e => { const b = e.target.closest('[data-attnote]'); if (!b || !attEditName) return; addNote(attEditName, b.dataset.attnote); $('attEditOv').style.display = 'none'; });
   $('noteSide').addEventListener('click', () => requirePin(openNotes, ['sub', 'late']));
+  $('mealBtn').addEventListener('click', () => openMH('meal'));
+  $('hwBtn').addEventListener('click', () => openMH('hw'));
+  $('mhOv').addEventListener('click', e => {
+    if (e.target.closest('#mealSave')) mealSave();
+    else if (e.target.closest('#hwAdd')){ const text = $('hwText').value.trim(); if (!text){ showToast('숙제 내용을 적어 주세요'); return; } hwChange((db.hw || []).concat([{ id: Date.now(), subj: $('hwSubj').value.trim(), text, due: $('hwDue').value || '' }])); }
+    else { const d = e.target.closest('[data-hwdel]'); if (d) hwChange((db.hw || []).filter(h => String(h.id) !== d.dataset.hwdel)); }
+  });
   $('notesBody').addEventListener('click', e => {
     const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
     const a = e.target.closest('[data-nadd]'); if (a){ if ((a.dataset.nadd === 'swear' || a.dataset.nadd === 'classlate') && !noteRoleOk(a.dataset.nadd)) return; addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
@@ -7198,7 +7259,7 @@ function viewApply(j){
   if (j.title) db.mainTitle = j.title;
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
-  db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
+  db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n'); db.meal = j.meal || {}; db.hw = Array.isArray(j.hw) ? j.hw : [];
   viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {}; viewCleanWhy = j.cleanWhy || {}; viewSleep = j.sleep || null; sleepTick();
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();

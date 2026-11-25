@@ -14,6 +14,11 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .bar button{flex:1;max-width:190px;font-family:inherit;font-size:1rem;border:2px solid #5B4636;border-radius:999px;background:#fff;color:#5B4636;padding:6px 6px;cursor:pointer;white-space:nowrap;}
 .bar button.on{background:#FFD84D;box-shadow:0 3px 0 #5B4636;transform:translateY(-1px);}
 .bar .sp{flex:1;}
+.bar .ts{display:none;}
+@media (max-width:760px){ .bar .side .tl{display:none;} .bar .sub,.bar .inst{padding:5px 8px;} }
+@media (max-width:560px){ .bar button .tl{display:none;} .bar button .ts{display:inline;} }
+@media (max-width:420px){ .bar{gap:3px;padding-left:4px;padding-right:4px;} .bar > button[data-t]{font-size:.76rem !important;padding:6px 0 !important;letter-spacing:-.3px;} .bar .side{margin-left:2px !important;padding-left:4px !important;gap:2px !important;border-left:none;} .bar .sub,.bar .inst{padding:4px 5px !important;font-size:.8rem !important;} .cchip{margin-left:2px !important;padding:4px 5px !important;} .bar .sp{display:none;} }
+@media (max-width:380px){ .bar > button[data-t] .em{display:none;} .bar > button[data-t]{font-size:.82rem !important;} }
 .frames{position:fixed;left:0;right:0;top:50px;bottom:0;}
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;visibility:hidden;}
 .frames iframe.on{visibility:visible;}
@@ -46,18 +51,18 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 @media (max-width:480px){ .cchip .faces{display:none;} .cchip{margin-left:4px;padding:4px 7px !important;} #chatPop{right:6px;left:6px;width:auto;top:56px;height:calc(100vh - 64px);} .bar > button[data-t]{font-size:.8rem !important;padding:6px 1px !important;} .bar .inst,.bar .sub{font-size:.8rem;padding:5px 7px;} .bar .side{margin-left:4px;padding-left:6px;gap:4px;} .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
 </style></head><body>
 <div class="bar"><div class="logo"><img src="icons/favicon-64.png" alt=""><span>2-2😻</span></div>
-  <button type="button" data-t="board">📋 출석부</button><button type="button" data-t="notice">📢 알림·종례</button><button type="button" data-t="me">🧸 아지트</button><span class="sp"></span><button type="button" id="chatChip" class="cchip" title="우리 반 대화">💬<span class="faces" id="chatFaces"></span><span class="cdot" id="chatDot" hidden></span></button><span class="side"><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub">📖 안내</button><button type="button" id="instBtn" class="inst">📲 설치</button></span></div>
+  <button type="button" data-t="board"><span class="em">📋 </span>출석부</button><button type="button" data-t="notice"><span class="em">📢 </span><span class="tl">공지사항</span><span class="ts">공지</span></button><button type="button" data-t="me"><span class="em">🧸 </span>아지트</button><button type="button" data-t="ask"><span class="em">💌 </span><span class="tl">to. 시내T</span><span class="ts">시내T</span></button><span class="sp"></span><button type="button" id="chatChip" class="cchip" title="우리 반 대화">💬<span class="faces" id="chatFaces"></span><span class="cdot" id="chatDot" hidden></span></button><span class="side"><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub" title="안내">📖<span class="tl"> 안내</span></button><button type="button" id="instBtn" class="inst" title="설치">📲<span class="tl"> 설치</span></button></span></div>
 <div id="iosOv"><div class="io-box"><button type="button" class="io-x" id="iosX">✕</button><h3>🍎 아이폰 · 아이패드는 직접 추가해요</h3><ol class="io-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
 <div class="frames" id="frames"></div>
 <div id="chatPop"><div class="cp-head"><b>💬 우리 반 대화</b><button type="button" id="chatClose">✕</button></div><div class="cp-body" id="chatBody"></div></div>
 <script>
-/* 📱 2-2😻 앱: 한 창 안에서 출석부 · 알림·종례 · 아지트 · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
+/* 📱 2-2😻 앱: 한 창 안에서 출석부 · 공지사항 · 아지트 · to. 시내T · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
 const q = new URLSearchParams(location.search);
 let API = q.get('api') || 'https://script.google.com/macros/s/AKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c/exec';
 try { const moved = localStorage.getItem('nyangApi'); if (!q.get('api') && moved && /^https:\/\/script\.google\.com\//.test(moved)) API = moved; } catch(e){}
 /* 🔄 늘 최신 화면: 주소 끝에 시각을 붙여서 예전 화면(캐시)이 안 나오게 해요 */
 const fresh = u => u + (u.includes('?') ? '&' : '?') + '_=' + Date.now();
-const SRC = { notice: 'student.html?only=notice&api=' + encodeURIComponent(API), me: 'student.html?api=' + encodeURIComponent(API), board: 'index.html?view=1&api=' + encodeURIComponent(API), guide: 'guide.html?inapp=1' };
+const SRC = { notice: 'student.html?only=notice&api=' + encodeURIComponent(API), me: 'student.html?api=' + encodeURIComponent(API), board: 'index.html?view=1&api=' + encodeURIComponent(API), guide: 'guide.html?inapp=1', ask: 'student.html?only=ask&api=' + encodeURIComponent(API) };
 const frames = {};
 function show(t){
   if (!SRC[t]) t = 'board';

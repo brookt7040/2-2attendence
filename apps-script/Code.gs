@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 34;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 35;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -99,7 +99,7 @@ function doPost(e) {
     if (!auth.ok) return out_({ ok: false, error: 'auth', api: API_VERSION });
     if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
-    if (body.action === 'chat') return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function () { return true; }) });
+    if (body.action === 'chat') { const reps = wReports_(); return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function (m) { return teacherSees_(m, reps, ''); }).map(function (m) { return markRep_(m, reps); }), reports: reps.slice(-30) }); }   // 🤫 귓속말은 신고된 것만
     if (body.action === 'presence') return out_(presence_());
     if (body.action === 'stuCfg') return out_({ ok: true, cfg: stuCfg_(), strikes: strikes_() });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
@@ -337,15 +337,22 @@ function publicGet_(p) {
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
   { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; }
+  res.meal = mealPub_(); res.hw = hwPub_();
   return res;
 }
 
 /* ---------------- 교사: 전체 읽기 ---------------- */
+/* 🍱 급식 · 📚 숙제: 출석부와 공지사항 탭에 같이 보여요 (선생님이 출석부에서 써요) */
+function mealData_() { try { return JSON.parse(props_().getProperty('meal') || '{}') || {}; } catch (e) { return {}; } }
+function hwData_() { try { return JSON.parse(props_().getProperty('hw') || '[]') || []; } catch (e) { return []; } }
+function mealPub_() { const m = mealData_(), t = todayStr_(), out = {}; Object.keys(m).sort().forEach(function (d) { if (d >= t && Object.keys(out).length < 10) out[d] = m[d]; }); return out; }
+function hwPub_() { const t = todayStr_(); return hwData_().filter(function (h) { return !h.due || h.due >= t; }); }
 function teacherPull_(body, auth) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER), meeting: readMeeting_() };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
   res.lockdown = props_().getProperty('lockdown') === '1';
+  res.meal = mealData_(); res.hw = hwData_();
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
   if (body.since === undefined || Number(body.since) !== v) {
     const map = readRows_().map;
@@ -433,6 +440,18 @@ function handlePost_(body, auth) {
         case 'noteDel': {
           const d = day(o.ds); d.notes = (d.notes || []).filter(function (b) { return b.id !== o.id; });
           break;
+        }
+        case 'meal': {                           // 🍱 급식 (날짜별 · 비우면 지워요)
+          const m = mealData_(), d0 = String(o.ds || ''), t0 = String(o.text || '').slice(0, 400).trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(d0)) { if (t0) m[d0] = t0; else delete m[d0]; }
+          const keys = Object.keys(m).sort(); while (keys.length > 40) delete m[keys.shift()];
+          props_().setProperty('meal', JSON.stringify(m)); break;
+        }
+        case 'hw': {                             // 📚 숙제 목록 통째로
+          const list = (Array.isArray(o.list) ? o.list : []).slice(0, 40).map(function (h) {
+            return { id: Number(h.id) || Date.now(), subj: String(h.subj || '').slice(0, 12), text: String(h.text || '').slice(0, 200), due: /^\d{4}-\d{2}-\d{2}$/.test(String(h.due || '')) ? String(h.due) : '' };
+          }).filter(function (h) { return h.text; });
+          props_().setProperty('hw', JSON.stringify(list)); break;
         }
         case 'epoch': {                          // 🔒 모두 다시 입력: 다른 설정은 건드리지 않아요
           map.config = map.config || {}; map.config.accessEpoch = Number(o.v) || Date.now();
@@ -621,6 +640,7 @@ function handleStudentCore_(body) {
   { const g = textGuard_(name, body); if (g) return g; }
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
   if (body.op === 'chatPull') return studentChat_(name, body, null);
+  if (body.op === 'wReport') return whisperReport_(name, body);
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (/^idea/.test(String(body.op || ''))) return studentIdea_(name, body);
@@ -844,6 +864,29 @@ function appendChat_(from, to, text) {
   if (!to) cachePush_('v:chat', { n: from, text: text, ts: Date.now() }, 30);
   return id;
 }
+/* 🤫 귓속말은 두 사람만 봐요. 받은 사람이 🚨 신고하면 선생님은 그 두 사람의 앞뒤 10분 대화만 볼 수 있어요 */
+function wReports_() { try { return JSON.parse(props_().getProperty('wreports') || '[]') || []; } catch (e) { return []; } }
+function isWhisper_(m) { return !!m.to && m.to.charAt(0) !== '#'; }
+function tMin_(t) { const x = String(t || '').match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/); return x ? Date.UTC(+x[1], +x[2] - 1, +x[3], +x[4], +x[5]) / 60000 : 0; }
+function repHit_(m, reps) { const tm = tMin_(m.t); return reps.some(function (r) { return ((m.from === r.a && m.to === r.b) || (m.from === r.b && m.to === r.a)) && Math.abs(tm - r.m) <= 10; }); }
+function teacherSees_(m, reps, me) { if (!isWhisper_(m)) return true; if (me && (m.from === me || m.to === me)) return true; return repHit_(m, reps); }
+function markRep_(m, reps) { if (isWhisper_(m) && repHit_(m, reps)) m.rep = true; return m; }
+function whisperReport_(name, body) {
+  const id = Number(body.id), m = readChat_(id - 1, function (x) { return x.id === id; })[0];
+  if (!m || !isWhisper_(m) || (m.to !== name && m.from !== name)) return { ok: true, error: 'bad' };
+  const other = m.from === name ? m.to : m.from, reps = wReports_();
+  if (reps.some(function (r) { return r.id === id; })) return { ok: true, already: true };
+  const lock = lightLock_(15000);
+  try {
+    reps.push({ id: id, a: name, b: other, m: tMin_(m.t), at: nowStr_() });
+    props_().setProperty('wreports', JSON.stringify(reps.slice(-100)));
+    const sh = sheet_(ASK_SHEET, ASK_HEADER), aid = Number(props_().getProperty('askSeq') || 0) + 1;
+    props_().setProperty('askSeq', String(aid));
+    sh.appendRow([aid, "'" + nowStr_(), name, '신고', '🚨 귓속말 신고 · ' + name + ' ↔ ' + other + ' (' + String(m.t).slice(11) + ' 무렵) · 💬 대화 관리에서 그 앞뒤 대화를 볼 수 있어요', '', '', '', '']);
+    bump_();
+  } finally { lock.releaseLock(); }
+  return { ok: true };
+}
 function readChat_(after, keep) {
   const sh = sheet_(CHAT_SHEET, CHAT_HEADER), n = sh.getLastRow();
   if (n < 2) return [];
@@ -884,8 +927,8 @@ function studentChat_(name, body, pub) {
       finally { lock.releaseLock(); }
     }
   }
-  const tb = myTable_(name), isT = /(쌤|샘|선생님)$/.test(name);   // 👑 선생님은 귓속말·모둠 대화도 모두 봐요
-  const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (isT || m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb)); });
+  const tb = myTable_(name), isT = /(쌤|샘|선생님)$/.test(name), reps = isT ? wReports_() : [];   // 👑 선생님은 모둠 대화는 모두, 🤫 귓속말은 신고된 것만 봐요
+  const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (isT ? teacherSees_(m, reps, name) : (m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb))); }).map(function (m) { return isT ? markRep_(m, reps) : m; });
   return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper || T, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
 }
 
@@ -1323,7 +1366,7 @@ function boardOf_(code) {
     const f = Number(cache_().get('gatefail') || 0) + 1; try { cache_().put('gatefail', String(f), 60); } catch (e) {}
     return { ok: false, error: f > 30 ? 'slow' : 'gate', api: API_VERSION };
   }
-  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER);
+  const out = b.data; out.sleep = sleepCfg_(); out.punish = publicPunish_(); out.hours = b.hours; out.notices = readNotices_(); out.closing = readList_(CLOSING_SHEET, CLOSING_HEADER); out.urgent = readList_(URGENT_SHEET, URGENT_HEADER); out.meal = mealPub_(); out.hw = hwPub_();
   return out;
 }
 function cardOf_(name) {

@@ -38,7 +38,22 @@ button,input,select{font-family:inherit;color:var(--ink);}
 
 /* 탭 */
 .tabs{display:flex;gap:8px;margin:16px 0 14px;flex-wrap:wrap;}
-.tn-agit{display:none;} html.agit .tn-full{display:none;} html.agit .tn-agit{display:inline;}
+.subs{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px;}
+.subs button{font-family:inherit;font-size:1rem;border:2px solid var(--ink);border-radius:999px;background:#fff;color:var(--ink);padding:6px 13px;cursor:pointer;box-shadow:0 3px 0 var(--ink);}
+.subs button.on{background:var(--y);}
+.subs button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
+.ns{display:none;} .ns.on{display:block;}
+html.agit .tab{min-width:0;}
+@media (max-width:480px){ .subs{gap:4px;flex-wrap:nowrap;} .subs button{font-size:.85rem;padding:5px 7px;flex:1;white-space:nowrap;} html.agit .tab{font-size:1rem;padding:9px 2px;} }
+@media (max-width:390px){ .subs button{font-size:.8rem;padding:5px 3px;min-width:0;letter-spacing:-.3px;} }
+.meal-d{border:2px dashed #EFE3D3;border-radius:14px;padding:10px 12px;margin-bottom:8px;background:#FFFDF6;}
+.meal-d.today{border:2px solid #E8C35A;background:#FFF8DA;}
+.meal-d b{display:block;margin-bottom:4px;}
+.meal-d div{white-space:pre-line;line-height:1.6;word-break:keep-all;}
+.hw-i{display:flex;gap:8px;align-items:flex-start;border:2px solid #EFE3D3;border-radius:14px;padding:8px 12px;margin-bottom:8px;background:#FFFDF6;word-break:keep-all;}
+.hw-i .dd{flex:none;font-size:.85rem;border-radius:999px;padding:2px 8px;background:#E8F4FF;border:1px solid #9CC8EE;}
+.hw-i .dd.hot{background:#FFE1EA;border-color:#E0577A;color:#C0365C;}
+.hw-i .sj{color:var(--ink-soft);font-size:.9rem;margin-right:4px;}
 .tab{flex:1;min-width:110px;border:3px solid var(--ink);border-radius:16px;padding:10px 6px;font-size:1.15rem;cursor:pointer;background:#fff;box-shadow:0 4px 0 var(--ink);position:relative;}
 .tab.active{background:var(--y);transform:translateY(-2px);box-shadow:0 6px 0 var(--ink);}
 .dot{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--pink-deep);border:2px solid var(--ink);display:none;}
@@ -234,7 +249,7 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 /* 🔑 로그인 전에는 탭만 보이고, 각 탭엔 로그인 안내만 (마을 탭은 선생님 카드 + 긴급 메시지) */
 .guest-only{display:none;}
 body.guest .guest-only{display:block;}
-body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-only),body.guest #p-me > :not(.guest-only),body.guest #p-coin > :not(.guest-only),body.guest .board-link{display:none !important;}
+body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),body.guest #p-ask > :not(.guest-only),body.guest #p-village > :not(.guest-only),body.guest #p-me > :not(.guest-only),body.guest #p-coin > :not(.guest-only),body.guest .board-link{display:none !important;}
 .guest-box{text-align:center;padding:30px 16px 22px;}
 .guest-box p{font-size:1.15rem;margin:0 0 12px;line-height:1.6;}
 .sos-t{display:flex;flex-direction:column;align-items:center;gap:6px;margin:6px auto 0;}
@@ -287,7 +302,9 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 .sc-stk .btn{font-size:.85rem;padding:3px 10px;}
 /* 📢 알림·종례 탭 (앱) */
 html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,html.only-notice #cleanMe,html.only-notice #specialBox ~ .box:not(.nb-pub),html.only-notice #p-notice .guest-only,html.only-notice #penBar{display:none !important;}
-html.only-notice body.guest #p-notice > .nb-pub,html.only-notice body.guest #p-notice > #specialBox{display:block !important;}
+html.only-notice body.guest #p-notice > .nb-pub.on{display:block !important;} html.only-notice body.guest #p-notice > .subs{display:flex !important;}
+html.only-ask .tabs,html.only-ask #penBar{display:none !important;} html.only-ask .panel:not(#p-ask){display:none !important;} html.only-ask #p-ask{display:block !important;}
+html.agit .tab[data-tab="notice"],html.agit .tab[data-tab="ask"]{display:none !important;}
 html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
 /* 💬 대화 팝업 (앱 위쪽 💬 칩) */
 html.only-chat .top,html.only-chat .tabs,html.only-chat #penBar{display:none !important;}
@@ -331,12 +348,13 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 .status{position:fixed;left:10px;bottom:10px;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;}
 @media (max-width:560px){ .title{font-size:1.4rem;} #mascot{width:56px;height:56px;} .hana-wear{font-size:56px;} .n-item{font-size:1.15rem;} }
 .nopw{-webkit-text-security:disc;text-security:disc;}
+.wrep{font-family:inherit;font-size:.72rem;border:1px solid #E0577A;color:#C0365C;background:#FFF0F4;border-radius:999px;padding:0 6px;margin-left:4px;cursor:pointer;vertical-align:1px;}
 </style>
 </head>
 <body>
 <script>
 /* 📱 2-2😻 앱 안: ?only=notice 는 📢 알림·종례 탭 (로그인 없이), 아지트에서는 알림·종례 칸을 빼요 */
-(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && !q.get('only') && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (q.get('only') === 'chat') document.documentElement.classList.add('only-chat'); else if (inApp) document.documentElement.classList.add('agit'); })();
+(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && !q.get('only') && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (q.get('only') === 'chat') document.documentElement.classList.add('only-chat'); else if (q.get('only') === 'ask') document.documentElement.classList.add('only-ask'); else if (inApp) document.documentElement.classList.add('agit'); })();
 </script>
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
@@ -362,26 +380,34 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="tab" data-tab="village">🏘️ 마을<span class="dot" id="dotVillage"></span></button>
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
     <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
-    <button type="button" class="tab active" data-tab="notice"><span class="tn-full">📢 알림·종례</span><span class="tn-agit">📮 질문·상담</span><span class="dot" id="dotNotice"></span></button>
+    <button type="button" class="tab active" data-tab="notice">📢 공지사항<span class="dot" id="dotNotice"></span></button>
+    <button type="button" class="tab" data-tab="ask">💌 to. 시내T</button>
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
 
   <div id="penBar" style="display:none;"></div>
   <section class="panel on" id="p-notice">
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
-    <div id="specialBox"></div>
+    <div class="subs" data-for="notice"><button type="button" data-sub="closing">📋 종례</button><button type="button" data-sub="notice">📢 알림</button><button type="button" data-sub="clean">🧹 청소</button><button type="button" data-sub="meal">🍱 급식</button><button type="button" data-sub="hw">📚 숙제</button></div>
     <div id="checkinBox"></div>
-    <div id="cleanMe"></div>
-    <div class="box nb-pub"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
-    <div class="box nb-pub" id="closingBox"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
-    <div class="box nb-pub"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
-    <div class="box"><div class="box-head mint">📮 질문 · 건의</div><div id="askBox"></div></div>
-    <div class="box"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
+    <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
+    <div class="box nb-pub ns" data-sec="notice"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
+    <div class="box nb-pub ns" data-sec="clean"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
+    <div class="box nb-pub ns" data-sec="meal"><div class="box-head mint">🍱 급식</div><div id="mealList"></div></div>
+    <div class="box nb-pub ns" data-sec="hw"><div class="box-head">📚 숙제</div><div id="hwList"></div></div>
+  </section>
+
+  <section class="panel" id="p-ask">
+    <div class="guest-only box guest-box"><p>🔑 로그인하면 시내T에게 질문 · 건의 · 상담을 보낼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button>
+      <div class="box-head pink" style="margin-top:16px;">📨 로그인이 안 될 때</div><div id="sosTeacher"></div></div>
+    <div class="subs" data-for="ask"><button type="button" data-sub="q">❓ 질문</button><button type="button" data-sub="s">💡 건의</button><button type="button" data-sub="c">💬 상담</button></div>
+    <div class="box ns" data-sec="q s"><div class="box-head mint" id="askHead">❓ 질문</div><div id="askBox"></div></div>
+    <div class="box ns" data-sec="c"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
   </section>
 
   <section class="panel" id="p-village">
-    <div class="guest-only box guest-box"><div class="box-head pink">📨 로그인이 안 될 때</div><div id="sosTeacher"></div>
-      <p style="margin-top:14px;font-size:1rem;">마을은 로그인하면 들어갈 수 있어요. <button type="button" class="btn btn-y" data-guest-login style="font-size:.95rem;padding:4px 12px;">🔑 로그인</button></p></div>
+    <div class="guest-only box guest-box"><p>🔑 마을은 로그인하면 들어갈 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button>
+      <div class="hint" style="margin-top:10px;">로그인이 안 되면 <b>💌 to. 시내T</b> 탭에서 연락해요</div></div>
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button> <button type="button" class="btn btn-mint" id="ideaOpen" style="font-size:1.1rem;padding:10px 20px;">💡 마을 개선 의견</button>
       <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
     <div class="ticker mega" id="megaTicker" style="display:none;"><span id="megaText"></span></div>
@@ -396,6 +422,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 
   <section class="panel" id="p-me">
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
+    <div id="specialBox"></div>
+    <div id="cleanMe"></div>
     <div id="meBox"></div>
   </section>
 
@@ -563,7 +591,7 @@ async function pull(force){
     const j = await api(`${API}?since=${force ? -1 : st.v}&t=${Date.now()}`);
     if (!j.ok) throw new Error(j.error || 'error');
     const prevNotice = JSON.stringify([st.notices, st.closing]);
-    st.notices = j.notices || []; st.closing = j.closing || [];
+    st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : [];
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
     megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn; if (j.newsKinds) newsKinds = j.newsKinds;
     sleepCfgNow = j.sleep || null; sleepTick(); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
@@ -656,15 +684,21 @@ function sleepShow(cfg, on){ if (window.NyLock) NyLock.sleep(cfg, on); }
 if (window.NyLock) NyLock.api = () => API;
 let sleepCfgNow = null, closingAtNow = '';
 /* 📋 정해진 시각이 지나면 종례를 맨 위에 크게 */
+/* 📑 하위 탭: 공지사항(종례·알림·청소·급식·숙제) · to. 시내T(질문·건의·상담) */
+const subNow = { notice: '', ask: 'q' }, subPicked = {};
+function showSub(panel, key){
+  subNow[panel] = key;
+  document.querySelectorAll(`.subs[data-for="${panel}"] button`).forEach(b => b.classList.toggle('on', b.dataset.sub === key));
+  document.querySelectorAll(`#p-${panel} .ns`).forEach(x => x.classList.toggle('on', x.dataset.sec.split(' ').includes(key)));
+  if (panel === 'ask'){ const h = $('askHead'); if (h) h.textContent = key === 's' ? '💡 건의' : '❓ 질문'; if ($('askBox')) $('askBox').dataset.n = ''; renderAsk(); }
+}
+/* 📋 정해진 시각이 지나면 종례를 먼저 보여 줘요 (직접 고른 탭은 그대로) */
 function placeClosing(){
-  const box = $('closingBox'), p = $('p-notice'); if (!box || !p) return;
+  const box = $('closingBox'); if (!box) return;
   const d = new Date(), t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   const hot = !!closingAtNow && t >= closingAtNow && (st.closing || []).length > 0;
   box.classList.toggle('closing-hot', hot);
-  const first = p.querySelector('.guest-only') ? p.querySelector('.guest-only').nextElementSibling : p.firstElementChild;
-  if (hot && first !== box) p.insertBefore(box, first);
-  if (!hot && box.dataset.moved && $('cleanList')) { const ref = $('cleanList').closest('.box'); p.insertBefore(box, ref); }
-  box.dataset.moved = hot ? '1' : '';
+  if (!subPicked.notice){ const want = hot ? 'closing' : 'notice'; if (subNow.notice !== want) showSub('notice', want); }
 }
 setInterval(placeClosing, 30000);
 function sleepTick(){ const t = me && /(쌤|샘|선생님|교감|교장)$/.test(me.name); if (t && window.NyLock && !NyLock.isTeacher()) NyLock.setTeacher(30); sleepShow(sleepCfgNow, !t && !!window.NyLock && NyLock.sleepIn(sleepCfgNow, new Date())); }
@@ -767,7 +801,7 @@ async function doLogin(){
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
     $('loginOv').style.display = 'none';
     toast(`${givenName(name)}, 어서 와! 🐾`);
-    chatReset(); coin = null; myProfile = null; render(); showTab('me'); chatPull(); askList(); coinCall('coins');
+    chatReset(); coin = null; myProfile = null; render(); showTab(document.documentElement.classList.contains('only-ask') ? 'ask' : 'me'); chatPull(); askList(); coinCall('coins');
     if (/(쌤|샘|선생님|교감|교장)$/.test(name)){ tAuthByLogin = true; tOn(); tPoll(); toast('👑 선생님 계정이라 관리 탭이 열렸어요'); }
     else tOff(true);
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
@@ -847,6 +881,7 @@ function render(){
     const btn = me ? `<button type="button" class="ack ${done ? 'done' : ''}" data-ack="${esc(t)}">${done ? '✔ 확인함' : '확인했어요'}</button>` : '';
     return `<div class="n-item"><span>🐾</span><span class="n-text">${esc(t)}</span>${btn}</div>`;
   }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">알림이 없어요</div>';
+  renderMealHw();
   $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
     : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span class="cw-${(pub.cleanWhy || {})[n] || ''}">${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
@@ -1078,11 +1113,11 @@ function renderChat(){
   const logHtml = shown.length ? shown.map(m => {
     const mine = m.from === me.name, wh = !!m.to && m.to.charAt(0) !== '#', grp = !!m.to && m.to.charAt(0) === '#', tch = /(쌤|샘|선생님)$/.test(m.from);
     const same = prev && prev.from === m.from && prev.to === m.to && (m.id - prev.id) < 50; prev = m;
-    const tag = grp ? `👥 ${esc(m.to.slice(2))}모둠` : wh ? (mine ? `🤫 → ${esc(m.to)}` : (m.to === me.name ? '🤫 나에게' : `🤫 → ${esc(m.to)}`)) : '';
+    const tag = (m.rep ? '🚨 신고된 귓속말 · ' : '') + (grp ? `👥 ${esc(m.to.slice(2))}모둠` : wh ? (mine ? `🤫 → ${esc(m.to)}` : (m.to === me.name ? '🤫 나에게' : `🤫 → ${esc(m.to)}`)) : '');
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub">${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub">${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}${wh && !mine && !T && m.to === me.name ? ` <button type="button" class="wrep" data-wrep="${m.id}" title="불편한 귓속말 신고">🚨 신고</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
@@ -1097,7 +1132,7 @@ function renderChat(){
   box.innerHTML = `<div class="ch">
     <div class="ch-top"><div class="ch-rooms">${rooms.map(([k, l]) => `<button type="button" class="${k === room ? 'on' : ''}" data-room="${esc(k)}">${esc(l)}</button>`).join('')}
       ${c.whisper ? `<select id="chatWho"><option value="">＋ 🤫 귓속말 친구</option>${kidsList.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
-      <div class="ch-warn">👀 선생님은 귓속말까지 모든 대화를 볼 수 있어요 · 고운 말만! 💛</div></div>
+      <div class="ch-warn">${T ? '🤫 귓속말은 학생이 🚨 신고한 대화만 볼 수 있어요' : '🤫 귓속말은 둘만 봐요 · 불편한 귓속말은 🚨 신고하면 선생님이 그 대화를 확인해요 · 고운 말만! 💛'}</div></div>
     <div class="ch-log" id="chatLog">${logHtml}</div>
     ${!c.open ? `<div class="chat-off">🌙 지금은 대화 쉬는 시간이에요 (${esc(c.start)}~${esc(c.end)})</div>`
       : chat.muted ? '<div class="chat-off">🔇 선생님이 잠시 대화 쓰기를 막아 두었어요</div>'
@@ -1131,21 +1166,31 @@ async function chatSend(){
 /* ---------- 📮 질문·건의 ---------- */
 let asks = [];
 async function askList(){ if (!me) return; try { const j = await studentCall('askList'); if (j.ok){ asks = j.asks || []; renderAsk(); renderCounsel(); } } catch(e){} }
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function dLabel(ds){ const [y, m, d] = ds.split('-').map(Number), dt = new Date(y, m - 1, d), t0 = new Date(); t0.setHours(0, 0, 0, 0); const diff = Math.round((dt - t0) / 86400000);
+  return { md: `${m}/${d} (${'일월화수목금토'[dt.getDay()]})`, diff }; }
+function renderMealHw(){
+  const ml = $('mealList'), hl = $('hwList'); if (!ml || !hl) return;
+  const meal = st.meal || {}, today = ymd(new Date()), days = Object.keys(meal).filter(d => d >= today).sort().slice(0, 5);
+  ml.innerHTML = days.length ? days.map(d => { const L = dLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b><div>${esc(meal[d])}</div></div>`; }).join('') : '<div class="empty">아직 급식 메뉴가 없어요 🍚</div>';
+  const hw = (st.hw || []).slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
+  hl.innerHTML = hw.length ? hw.map(h => { const L = h.due ? dLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
+    return `<div class="hw-i"><span class="dd ${L && L.diff <= 1 ? 'hot' : ''}">${dd}</span><span>${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</span></div>`; }).join('') : '<div class="empty">숙제가 없어요! 🎉</div>';
+}
 function renderAsk(){
   const box = $('askBox'); if (!box) return;
   if (!me){ box.innerHTML = '<div class="empty">🔑 로그인하면 선생님께 질문이나 건의를 보낼 수 있어요</div>'; return; }
   const ae = document.activeElement && document.activeElement.id;
   if ((ae === 'askText' || ae === 'askKind') && box.dataset.n === String(asks.length) && box.dataset.r === JSON.stringify(asks.map(a => a.reply))) return;
   box.dataset.n = String(asks.length); box.dataset.r = JSON.stringify(asks.map(a => a.reply));
-  const kindNow = $('askKind') ? $('askKind').value : '질문';
+  const kindNow = subNow.ask === 's' ? '건의' : '질문';
   const draft = $('askText') ? $('askText').value : '';
-  const qa = asks.filter(a => a.kind === '질문' || a.kind === '건의');
-  box.innerHTML = `<div class="ask-row"><select id="askKind"><option ${kindNow === '질문' ? 'selected' : ''}>질문</option><option ${kindNow === '건의' ? 'selected' : ''}>건의</option></select></div>
-    <textarea id="askText" rows="3" maxlength="300" placeholder="궁금한 점이나 우리 반에 바라는 점을 적어 주세요">${esc(draft)}</textarea>
+  const qa = asks.filter(a => a.kind === kindNow);
+  box.innerHTML = `<textarea id="askText" rows="3" maxlength="300" placeholder="${kindNow === '건의' ? '우리 반에 바라는 점을 적어 주세요' : '궁금한 점을 적어 주세요'}">${esc(draft)}</textarea>
     <div style="text-align:right;margin-top:6px;"><button type="button" class="btn btn-mint" id="askSend">📮 보내기</button></div>
-    <div class="hint" style="margin:8px 0 4px;">내가 보낸 질문 (나만 볼 수 있어요)</div>
+    <div class="hint" style="margin:8px 0 4px;">내가 보낸 ${kindNow} (나만 볼 수 있어요)</div>
     ${qa.length ? qa.map(a => `<div class="my-ask"><div class="meta">${a.kind === '건의' ? '💡 건의' : '❓ 질문'} · ${esc(a.t)}${a.anon ? ' · 🙈 익명' : ''}</div>
-      <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : '<div class="wait">⏳ 답변을 기다리는 중</div>'}</div>`).join('') : '<div class="empty">아직 보낸 질문이 없어요</div>'}`;
+      <div>${esc(a.text)}</div>${a.reply ? `<div class="rep">💬 선생님: ${esc(a.reply)}</div>` : '<div class="wait">⏳ 답변을 기다리는 중</div>'}</div>`).join('') : `<div class="empty">아직 보낸 ${kindNow}${kindNow === '건의' ? '가' : '이'} 없어요</div>`}`;
 }
 /* 💬 상담 · ⭐ 중요 */
 function renderCounsel(){
@@ -1189,7 +1234,7 @@ async function askSend(){
   if (!text){ toast('내용을 적어 주세요'); return; }
   $('askSend').disabled = true;
   try {
-    const j = await studentCall('askSend', { kind: $('askKind').value, text });
+    const j = await studentCall('askSend', { kind: subNow.ask === 's' ? '건의' : '질문', text });
     if (j.ok && !j.error){ $('askText').value = ''; toast('선생님께 보냈어요 📮'); }
     else toast(j.error === 'slow' ? '조금 있다가 다시 보내 주세요' : '보내지 못했어요');
     if (j.ok){ asks = j.asks || []; renderAsk(); }
@@ -1547,6 +1592,9 @@ document.addEventListener('click', e => {
   { const x = t.closest('[data-stkr]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
   { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
   if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
+  { const w = t.closest('[data-wrep]'); if (w){ if (!confirm('이 귓속말을 신고할까요?\n선생님이 이 대화 앞뒤를 확인해요. (장난 신고는 안 돼요!)')) return;
+      studentCall('wReport', { id: Number(w.dataset.wrep) }).then(j => toast(j && j.ok && !j.error ? (j.already ? '이미 신고한 귓속말이에요' : '🚨 신고했어요. 선생님이 확인할게요') : '다시 해 주세요')).catch(() => toast('연결이 안 돼요')); return; } }
+  { const sb = t.closest('.subs [data-sub]'); if (sb){ const pn = sb.closest('.subs').dataset.for; subPicked[pn] = true; showSub(pn, sb.dataset.sub); return; } }
   if (t.closest('#ideaOpen')){ openIdeas(); return; }
   if (t.closest('#ideaSend')){ ideaSend(); return; }
   { const x = t.closest('[data-isort]'); if (x){ ideaSort = x.dataset.isort; renderIdeas(); return; } }
@@ -1631,6 +1679,8 @@ function bootDone(ok){
   if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
   if (document.documentElement.classList.contains('agit')) showTab('me');   // 🧸 아지트는 내 고양이부터
   if (C_ONLY){ showTab('chat'); chatTell(); }
+  showSub('ask', 'q'); if (!subNow.notice) showSub('notice', 'notice');
+  if (document.documentElement.classList.contains('only-ask')) showTab('ask');
   { // 🎨 출석부(보기 전용)의 꾸미기 방 버튼 → 내 고양이 탭으로, 로그인 안 했으면 이름을 골라 둔 로그인 창
     const q = new URLSearchParams(location.search), who = q.get('who');
     if (q.get('tab') === 'me'){ showTab('me'); if (!me){ openLogin(); if (who) $('loginName').value = who; } }
