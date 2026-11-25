@@ -319,6 +319,14 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .pr-chip small{color:var(--ink-soft);font-size:.78rem;} .pr-chip.off{border-color:#E6D9CA;background:#F6F1EA;color:#9A8A7A;}
 .pr-sec:nth-child(2) .pr-chip{border-color:#E8C35A;background:#FFF5D1;}
 .pr-none{color:var(--ink-soft);font-size:.9rem;} .pr-anon{margin-top:8px;font-size:.95rem;} .pr-note{margin-top:6px;font-size:.8rem;color:var(--ink-soft);}
+.st-tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:2px 0 12px;position:sticky;top:-2px;z-index:5;background:var(--paper,#FFFDF6);padding:6px 0;}
+.st-tabs button{font-family:inherit;font-size:1rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 14px;cursor:pointer;color:var(--ink);}
+.st-tabs button.on{background:#FFE58A;box-shadow:0 3px 0 var(--ink);}
+#adminOverlay .section[data-sg].st-hide{display:none;}
+.st-write{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:4px 0 12px;}
+.st-write button{font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:14px;background:#FFF5D1;padding:10px 6px;cursor:pointer;color:var(--ink);box-shadow:0 3px 0 var(--ink);}
+.st-write button small{display:block;font-size:.75rem;color:var(--ink-soft);margin-top:2px;}
+#textEditOverlay,#bubbleEditOv{z-index:10050 !important;}
 .wk-note{text-align:center;font-size:.9rem;color:var(--ink-soft);margin-top:10px;}
 
 /* ===== 상태바 ===== */
@@ -1366,6 +1374,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   <div class="modal modal-small">
     <button type="button" class="modal-x" data-close="adminOverlay" title="닫기">✕</button>
     <h2>⚙️ 선생님 설정</h2>
+    <div class="st-tabs" id="stTabs"></div>
 
     <div class="section">
       <div class="section-title">🔒 관리자 비밀번호</div>
@@ -2321,6 +2330,33 @@ function presenceHTML(p, names){
 }
 let serverPresence = null;
 function openPres(){ $('presBody').innerHTML = serverPresence ? presenceHTML(serverPresence, kids()) : '<div class="hint">서버 코드를 최신(v29)으로 배포하면 보여요</div>'; $('presOv').style.display = 'flex'; pullSync(true); }
+/* ⚙️ 설정 탭: 기본 · 📢 알림 · 🔒 보안·접속 · 🔔 알람·소리 · ☁️ 동기화 */
+const ST_TABS = [['basic', '⚙️ 기본'], ['notice', '📢 알림'], ['secure', '🔒 보안·접속'], ['alarm', '🔔 알람·소리'], ['sync', '☁️ 동기화']];
+let stTab = 'basic';
+function setupSettingsTabs(){
+  const ov = $('adminOverlay'); if (!ov || ov.dataset.tabs) return; ov.dataset.tabs = '1';
+  const secs = [...ov.querySelectorAll('.modal > .section')];
+  secs.forEach(sec => { const t = (sec.querySelector('.section-title') || {}).textContent || '';
+    sec.dataset.sg = /비밀번호/.test(t) ? 'secure' : /알람|효과음/.test(t) ? 'alarm' : /동기화|이사|백업|초기화/.test(t) ? 'sync' : 'basic'; });
+  const n = document.createElement('div'); n.className = 'section'; n.dataset.sg = 'notice';
+  n.innerHTML = `<div class="section-title">📢 알림 · 공지</div>
+    <div class="form-hint">✍️ 바로 쓰기 · 누르면 쓰는 창이 열려요 (출석부 화면에서 눌러 쓰는 것과 똑같아요)</div>
+    <div class="st-write"><button type="button" data-stw="notices">📢 Notice<small>오늘의 알림</small></button><button type="button" data-stw="urgent">📌 Must Read<small>중요 공지</small></button><button type="button" data-stw="closing">📋 종례<small>종례 화면 · 학생 화면</small></button><button type="button" data-stw="bubble">💬 하나 말풍선<small>긴급 호출도 여기서</small></button></div>
+    <div class="form-hint" style="margin-top:6px;">⚙️ 알림 설정</div><div class="st-move"></div>`;
+  secs[0].parentNode.insertBefore(n, secs[0]);
+  const mv = n.querySelector('.st-move');
+  ['tkLookOn', 'tkMegaOn', 'closingAtInput', 'guideVerInput', 'guideNotesInput'].forEach(id => { const el = $(id); const row = el && (el.closest('.form-group') || el.closest('.row')); if (row) mv.appendChild(row); });
+  $('stTabs').innerHTML = ST_TABS.map(([k, l]) => `<button type="button" data-st="${k}">${l}</button>`).join('');
+  $('stTabs').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b) showStTab(b.dataset.st); });
+  n.addEventListener('click', e => { const b = e.target.closest('[data-stw]'); if (!b) return; const k = b.dataset.stw; if (k === 'bubble') openBubbleEdit(); else editText(k); });
+  showStTab(stTab);
+}
+function showStTab(k){
+  stTab = k;
+  document.querySelectorAll('#stTabs [data-st]').forEach(b => b.classList.toggle('on', b.dataset.st === k));
+  document.querySelectorAll('#adminOverlay .section[data-sg]').forEach(sec => sec.classList.toggle('st-hide', sec.dataset.sg !== k));
+  const m = $('adminOverlay').querySelector('.modal'); if (m) m.scrollTop = 0;
+}
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
 const NEED_API = 30;
 let serverRev = 0;
@@ -4156,6 +4192,7 @@ function cancelRecord(name){
 let noticesAtOpen = '', closingAtOpen = '';
 const TIER_FIELDS = ['e1','e1Exp','eU','eUExp','e2','e2Exp','eN','e3Exp','eSExp','l1','l1Exp','l2','l2Exp','l3','l3Exp','l4Exp'];
 function openAdminUI(){
+  setupSettingsTabs();
   $('mainTitleInput').value = db.mainTitle || '';
   $('studentNamesInput').value = db.students.join('\n');
   $('lateTimeInput').value = db.lateTimeSetting;
