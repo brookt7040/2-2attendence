@@ -2498,8 +2498,8 @@ function renderMH(){
   const meal = db.meal || {}, hw = (db.hw || []).slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1), today = getTodayStr(nowD());
   $('mhTitle').textContent = mhKind === 'meal' ? '🍱 급식' : '📚 숙제';
   if (mhKind === 'meal'){
-    const days = VIEW ? Object.keys(meal).filter(d => d >= today).sort().slice(0, 5) : mhDays();
-    $('mhBody').innerHTML = (days.length ? days.map(d => { const L = mhLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b>${VIEW ? `<div class="mt">${esc(meal[d] || '')}</div>` : `<textarea rows="4" data-meal="${d}" placeholder="메뉴를 한 줄에 하나씩 (비우면 안 보여요)">${esc(meal[d] || '')}</textarea>`}</div>`; }).join('') : '<div class="mh-empty">아직 급식 메뉴가 없어요 🍚</div>')
+    const days = VIEW ? (meal[today] ? [today] : []) : [today];   // 🍱 오늘 것만
+    $('mhBody').innerHTML = (days.length ? days.map(d => { const L = mhLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b>${VIEW ? `<div class="mt">${esc(meal[d] || '')}</div>` : `<textarea rows="4" data-meal="${d}" placeholder="메뉴를 한 줄에 하나씩 (비우면 안 보여요)">${esc(meal[d] || '')}</textarea>`}</div>`; }).join('') : '<div class="mh-empty">오늘 급식 메뉴가 아직 없어요 🍚</div>')
       + (VIEW ? '' : '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요</div>');
   } else {
     const list = VIEW ? hw : hw;

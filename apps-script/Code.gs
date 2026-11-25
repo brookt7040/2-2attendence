@@ -345,7 +345,7 @@ function publicGet_(p) {
 /* 🍱 급식 · 📚 숙제: 출석부와 공지사항 탭에 같이 보여요 (선생님이 출석부에서 써요) */
 function mealData_() { try { return JSON.parse(props_().getProperty('meal') || '{}') || {}; } catch (e) { return {}; } }
 function hwData_() { try { return JSON.parse(props_().getProperty('hw') || '[]') || []; } catch (e) { return []; } }
-function mealPub_() { const m = mealData_(), t = todayStr_(), out = {}; Object.keys(m).sort().forEach(function (d) { if (d >= t && Object.keys(out).length < 10) out[d] = m[d]; }); return out; }
+function mealPub_() { const m = mealData_(), t = todayStr_(), out = {}; if (m[t]) out[t] = m[t]; return out; }   // 🍱 오늘 것만 (급식 알리미가 따로 있어요)
 function hwPub_() { const t = todayStr_(); return hwData_().filter(function (h) { return !h.due || h.due >= t; }); }
 function teacherPull_(body, auth) {
   const v = version_();

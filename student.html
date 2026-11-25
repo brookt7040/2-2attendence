@@ -3266,8 +3266,8 @@ function dLabel(ds){ const [y, m, d] = ds.split('-').map(Number), dt = new Date(
   return { md: `${m}/${d} (${'일월화수목금토'[dt.getDay()]})`, diff }; }
 function renderMealHw(){
   const ml = $('mealList'), hl = $('hwList'); if (!ml || !hl) return;
-  const meal = st.meal || {}, today = ymd(new Date()), days = Object.keys(meal).filter(d => d >= today).sort().slice(0, 5);
-  ml.innerHTML = days.length ? days.map(d => { const L = dLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b><div>${esc(meal[d])}</div></div>`; }).join('') : '<div class="empty">아직 급식 메뉴가 없어요 🍚</div>';
+  const meal = st.meal || {}, today = ymd(new Date()), days = meal[today] ? [today] : [];   // 🍱 오늘 것만
+  ml.innerHTML = days.length ? days.map(d => { const L = dLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b><div>${esc(meal[d])}</div></div>`; }).join('') : '<div class="empty">오늘 급식 메뉴가 아직 없어요 🍚</div>';
   const hw = (st.hw || []).slice().sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
   hl.innerHTML = hw.length ? hw.map(h => { const L = h.due ? dLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
     return `<div class="hw-i"><span class="dd ${L && L.diff <= 1 ? 'hot' : ''}">${dd}</span><span>${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</span></div>`; }).join('') : '<div class="empty">숙제가 없어요! 🎉</div>';
