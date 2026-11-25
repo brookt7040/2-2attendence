@@ -2470,7 +2470,9 @@ async function refreshMe(silent){
   if (!me) return;
   try {
     const j = await studentCall('login');
-    if (!j.ok){ if (!silent) alert('다시 로그인해 주세요.'); logout(); return; }
+    // 비밀번호가 정말 틀렸을 때만 로그아웃해요. 서버가 바쁘거나 잠깐 오류가 난 건 그대로 두고 다음에 다시 확인해요
+    if (!j.ok && (j.error === 'wrong' || j.error === 'nopin')){ if (!silent) alert('비밀번호가 바뀌었어요. 다시 로그인해 주세요.'); logout(); return; }
+    if (!j.ok){ if (!silent) toast('서버가 잠깐 바빠요 · 조금 있다 다시 확인할게요'); return; }
     me.info = j.me; me.look = j.look; me.acked = j.acked || [];
   } catch(e){}
 }
