@@ -106,7 +106,6 @@ function doPost(e) {
     else auth = teacherAuth_(body.key);
     if (!auth.ok) return out_({ ok: false, error: 'auth', api: API_VERSION });
     if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
-    if (auth.view) { if (body.action !== 'pull') return out_({ ok: false, error: 'view', api: API_VERSION }); body.remoteOk = false; const pr = teacherPull_(body, auth); pr.view = true; return out_(pr); }   // 👀 입장 전용은 보기만
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
     if (body.action === 'chat') { const reps = wReports_(); return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function (m) { return teacherSees_(m, reps, ''); }).map(function (m) { return markRep_(m, reps); }), reports: reps.slice(-30) }); }   // 🤫 귓속말은 신고된 것만
     if (body.action === 'presence') return out_(presence_());
@@ -293,9 +292,6 @@ function apinAuth_(pin) {
     try { props_().setProperty('apins', JSON.stringify(list)); } catch (e) {}
   }
   if (pin && list.indexOf(hash_('P:' + String(pin))) >= 0) return { ok: true, needKey: false };
-  let vp = props_().getProperty('vpinH');      // 👀 입장 전용: 관리자 출석부를 보기만 해요
-  if (vp === null) { const cf = readRows_().map.config || {}; vp = cf.viewPin ? hash_('P:' + cf.viewPin) : ''; try { props_().setProperty('vpinH', vp); } catch (e) {} }
-  if (pin && vp && vp === hash_('P:' + String(pin))) return { ok: true, needKey: false, view: true };
   try { c.put('apinfail', String(f + 1), 600); } catch (e) {}
   return { ok: false };
 }
@@ -430,7 +426,7 @@ function handlePost_(body, auth) {
           const keepLooks = map.config && map.config.looks;
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
-          try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); props_().setProperty('vpinH', d0.viewPin ? hash_('P:' + d0.viewPin) : ''); } catch (e) {}
+          try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
           if (o.data && o.data.sleep !== undefined) try { props_().setProperty('sleepCfg', JSON.stringify(o.data.sleep || null)); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
