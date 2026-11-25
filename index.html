@@ -722,7 +722,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .gate-box{text-align:center;max-width:380px;}
 .gate-box h2{margin:6px 0;}
 .gate-box .pin-input{margin:10px auto 4px;display:block;}
-body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openClosingBtn,body.view-mode #openMeetingBtn,body.view-mode #openVillageBtn,
+body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openClosingBtn,body.view-mode #openVillageBtn,
 body.view-mode .mini-menu,body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .closet-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
 body.view-mode #urgentBox{pointer-events:none;}
@@ -2947,7 +2947,7 @@ function mtSave(now){
   clearTimeout(mt.timer);
   const go = () => {
     const d = mtRead(); db.meeting = d; saveDB();
-    if (sync.url && sync.api >= 14){ sync.queue = sync.queue.filter(o => o.op !== 'meeting'); syncOp({ op:'meeting', title: d.title, items: d.items.filter(Boolean) }); }
+
   };
   if (now) go(); else mt.timer = setTimeout(go, 900);
 }
@@ -2963,6 +2963,7 @@ function openMeeting(){
   $('meetOv').style.display = 'flex'; requestAnimationFrame(mtFit);
 }
 function mtApplyRemote(m){
+  return;   // 칠판은 이 기기에서만 (다른 기기와 맞추지 않아요)
   if (!m || typeof m !== 'object') return;
   const nd = { title: String(m.title || ''), items: Array.isArray(m.items) ? m.items : [] };
   if (JSON.stringify(nd) === JSON.stringify(meetingData()) || sync.queue.some(o => o.op === 'meeting')) return;
@@ -2971,7 +2972,7 @@ function mtApplyRemote(m){
   if (open && !typing){ $('mtTitle').textContent = nd.title; mtRenderList(nd.items); }
 }
 function bindMeeting(){
-  $('openMeetingBtn').addEventListener('click', () => requirePin(openMeeting));
+  $('openMeetingBtn').addEventListener('click', openMeeting);   // 🖍️ 칠판은 이 기기에서만 쓰는 판서용이라 비밀번호 없이
   $('mtClose').addEventListener('click', () => { mtSave(true); $('meetOv').style.display = 'none'; });
   $('mtTitle').addEventListener('input', () => mtSave());
   $('mtTitle').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); const d = mtRead(); if (!d.items.length){ mtRenderList([''], 0); mtSave(); } else document.querySelector('#mtList .mt-text').focus(); } });
