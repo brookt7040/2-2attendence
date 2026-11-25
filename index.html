@@ -959,7 +959,7 @@ body.view-mode .note-side{display:none !important;}
     <div class="row" id="attEditTimeRow"><span>⏰ 도착 시간</span><input type="time" id="attEditTime" style="width:150px;"></div>
     <div class="row" id="attEditWhyRow"><span>📝 이유 <small>(선택)</small></span><input type="text" id="attEditWhy" maxlength="40" placeholder="예: 병원, 몸이 아파서" style="flex:1;min-width:0;"></div>
     <div class="att-hint" id="attEditHint"></div>
-    <div class="att-notes" id="attNotes"><span>📓 관리 수첩</span><button type="button" class="btn" data-attnote="swear" style="background:#FFD0D0;">🤬 욕설 <small>(5번마다 청소 당번)</small></button><button type="button" class="btn" data-attnote="classlate" style="background:#E3D9FF;">⏰ 수업 지각</button></div>
+    <div class="att-notes" id="attNotes" style="display:none !important;"></div>
     <div class="modal-btns"><button type="button" class="btn btn-gray" id="attEditClear" style="margin-right:auto;">🗑 기록 지우기</button><button type="button" class="btn btn-gray" id="attEditCancel">취소</button><button type="button" class="btn btn-y" id="attEditOk">저장</button></div>
   </div>
 </div>
@@ -2244,7 +2244,6 @@ function editTime(name){
   $('attEditTime').value = cur; $('attEditWhy').value = (old && old.why) || '';
   document.querySelectorAll('[name=attMode]').forEach(r => { r.checked = r.value === mode; });
   $('attEditClear').style.display = old ? '' : 'none';
-  $('attNotes').style.display = isTeacherName(name) ? 'none' : '';
   attEditSync(); $('attEditOv').style.display = 'flex';
 }
 function attEditSync(){
