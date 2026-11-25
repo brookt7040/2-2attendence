@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v16 · 잠금 줄이기(동시 접속에 강하게)·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v17 · 캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 16;
+const API_VERSION = 17;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -184,7 +184,16 @@ function sheet_(name, header) {
 }
 function readNotices_() { return readList_(NOTICE_SHEET, NOTICE_HEADER); }
 function writeNotices_(list) { writeList_(NOTICE_SHEET, NOTICE_HEADER, list); }
+/* ⚡ 시트 목록(알림·종례·중요공지·학급회의)은 20초 동안 기억해 둬요. 시트에서 직접 고쳐도 20초 안에 반영돼요 */
+const LIST_TTL_ = 20;
 function readList_(name, header) {
+  const k = 'L:' + name;
+  try { const hit = cache_().get(k); if (hit) return JSON.parse(hit); } catch (e) {}
+  const v = readListRaw_(name, header);
+  try { cache_().put(k, JSON.stringify(v), LIST_TTL_); } catch (e) {}
+  return v;
+}
+function readListRaw_(name, header) {
   const sh = sheet_(name, [header]);
   const n = sh.getLastRow();
   if (n < 2) return [];
@@ -193,6 +202,7 @@ function readList_(name, header) {
     .filter(function (t) { return t; });
 }
 function writeList_(name, header, list) {
+  try { cache_().put('L:' + name, JSON.stringify(list.map(String).map(function (t) { return t.trim(); }).filter(function (t) { return t; })), LIST_TTL_); } catch (e) {}
   const sh = sheet_(name, [header]);
   const n = sh.getLastRow();
   if (n >= 2) sh.getRange(2, 1, n - 1, 1).clearContent();
@@ -201,6 +211,12 @@ function writeList_(name, header, list) {
 
 /* 🗳️ 학급회의 칠판: A2 = 회의 주제, B2부터 = 안건 (한 줄에 하나) */
 function readMeeting_() {
+  try { const hit = cache_().get('L:' + MEETING_SHEET); if (hit) return JSON.parse(hit); } catch (e) {}
+  const v = readMeetingRaw_();
+  try { cache_().put('L:' + MEETING_SHEET, JSON.stringify(v), LIST_TTL_); } catch (e) {}
+  return v;
+}
+function readMeetingRaw_() {
   const sh = sheet_(MEETING_SHEET, ['🗳️ 회의 주제 (A2)', '📝 안건 (B2부터 한 줄에 하나)']);
   const n = sh.getLastRow();
   if (n < 2) return { title: '', items: [] };
@@ -208,6 +224,7 @@ function readMeeting_() {
   return { title: String(v[0][0] || '').trim(), items: v.map(function (r) { return String(r[1] || '').trim(); }).filter(function (t) { return t; }) };
 }
 function writeMeeting_(title, items) {
+  try { cache_().put('L:' + MEETING_SHEET, JSON.stringify({ title: String(title || '').slice(0, 60), items: items.map(function (t) { return String(t).slice(0, 80); }).filter(function (t) { return t.trim(); }) }), LIST_TTL_); } catch (e) {}
   const sh = sheet_(MEETING_SHEET, ['🗳️ 회의 주제 (A2)', '📝 안건 (B2부터 한 줄에 하나)']);
   const n = sh.getLastRow();
   if (n >= 2) sh.getRange(2, 1, n - 1, 2).clearContent();
@@ -264,7 +281,11 @@ function publicGet_(p) {
   if (p.eng) return engPublic_();
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
-  if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
+  if (p.since === undefined || Number(p.since) !== v) {
+    let pub = cacheGet_('pubv:' + v, null);
+    if (!pub) { pub = publicState_(readRows_().map); cachePut_('pubv:' + v, pub); }
+    res.pub = pub;
+  }
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
   return res;
@@ -491,7 +512,18 @@ function handleStudent_(body) {
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
   if (body.op === 'engSubmit' || body.op === 'engPass' || body.op === 'engMine') return studentEng_(name, body);
-  const lock = lockFor_(['checkin', 'look', 'ack'].indexOf(body.op) >= 0, 20000);
+  if (['checkin', 'look', 'ack'].indexOf(body.op) < 0) {
+    const v = version_(), ds0 = todayStr_(), sk = 'me:' + v + ':' + ds0;
+    let snap = cacheGet_(sk, null);
+    if (!snap) {
+      const m0 = readRows_().map;
+      snap = { priv: ((m0.pub || {}).priv) || {}, looks: (m0.config && m0.config.looks) || {}, acks: m0['acks:' + ds0] || {} };
+      cachePut_(sk, snap);
+    }
+    const mine0 = []; Object.keys(snap.acks).forEach(function (t) { if ((snap.acks[t] || []).indexOf(name) >= 0) mine0.push(t); });
+    return { ok: true, name: name, me: snap.priv[name] || null, look: snap.looks[name] || null, acked: mine0 };
+  }
+  const lock = lockFor_(true, 20000);
   try {
     const db = readRows_(), map = db.map;
     const pub = map.pub || {}, priv = (pub.priv || {})[name] || null;
