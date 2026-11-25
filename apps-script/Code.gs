@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v23 · 로그인 없이 긴급 메시지·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -87,6 +87,7 @@ function doPost(e) {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     const mv = props_().getProperty('movedTo'); if (mv) return out_({ ok: false, error: 'moved', movedTo: mv, api: API_VERSION });
     if (body.action === 'student') return out_(handleStudent_(body));
+    if (body.action === 'sos') return out_(sos_(body));          // 🚨 로그인 없이 선생님께 긴급 메시지
     let auth;
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
       const c = checkStudent_(String(body.name), body.pin);
@@ -781,6 +782,26 @@ function studentAsk_(name, body) {
   const mine = readAsks_(function (a) { return a.from === name && !a.del; })
     .map(function (a) { return { id: a.id, t: a.t, kind: a.kind, text: a.text, anon: a.anon, reply: a.reply, rt: a.rt, done: a.done }; });
   return { ok: true, error: error, asks: mine.reverse() };
+}
+
+/* 🚨 로그인 안 한 학생의 긴급 메시지 → 건의함에 '긴급'으로 (출석부에 ⭐ 알림) */
+function sos_(body) {
+  const who = String(body.who || '').replace(/[^가-힣a-zA-Z0-9 ]/g, '').trim().slice(0, 10);
+  const text = maskBad_(String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 200), (chatCfg_().ban) || []);
+  if (!who) return { ok: true, error: 'who' };
+  if (!text) return { ok: true, error: 'empty' };
+  const c = cache_(), dk = 'sosN:' + todayStr_(), n = Number(c.get(dk) || 0);
+  if (c.get('sosLast')) return { ok: true, error: 'slow' };
+  if (n >= 30) return { ok: true, error: 'full' };
+  const lock = lightLock_(15000);
+  try {
+    const sh = sheet_(ASK_SHEET, ASK_HEADER), id = Number(props_().getProperty('askSeq') || 0) + 1;
+    props_().setProperty('askSeq', String(id));
+    sh.appendRow([id, "'" + nowStr_(), '🚨 ' + who + ' (로그인 안 함)', '긴급', text, '', '', '', '']);
+    bump_();
+    try { c.put('sosLast', '1', 20); c.put(dk, String(n + 1), 21600); } catch (e) {}
+  } finally { lock.releaseLock(); }
+  return { ok: true };
 }
 
 /* ---------------- ⚡ 빠른 저장소 (마을용) ---------------- */

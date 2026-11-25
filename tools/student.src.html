@@ -212,6 +212,18 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 .checkin.wait{background:#E4F3FF;font-size:1.05rem;}
 @keyframes ckb{50%{transform:translateY(-3px)}}
 .board-link{text-decoration:none;display:inline-flex;align-items:center;}
+/* 🔑 로그인 전에는 탭만 보이고, 각 탭엔 로그인 안내만 (마을 탭은 선생님 카드 + 긴급 메시지) */
+.guest-only{display:none;}
+body.guest .guest-only{display:block;}
+body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-only),body.guest #p-me > :not(.guest-only),body.guest #p-coin > :not(.guest-only),body.guest .board-link{display:none !important;}
+.guest-box{text-align:center;padding:30px 16px 22px;}
+.guest-box p{font-size:1.15rem;margin:0 0 12px;line-height:1.6;}
+.sos-t{display:flex;flex-direction:column;align-items:center;gap:6px;margin:6px auto 0;}
+.sos-t canvas{width:120px;height:120px;image-rendering:pixelated;}
+.sos-t .vname{font-size:1.3rem;}
+.btn-sos{background:#FF5C7A;color:#fff;font-size:1.15rem;padding:10px 20px;margin-top:6px;}
+.sos-warn{background:#FFE1EA;border:2px dashed #E0577A;border-radius:14px;padding:10px 14px;font-size:.98rem;line-height:1.6;text-align:left;color:#8A2A44;}
+#sosOv input[type=text],#sosOv textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;}
 #catWear{white-space:pre-line;}
 .st-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .st-quick button{font-family:inherit;font-size:.9rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 10px;cursor:pointer;}
@@ -266,6 +278,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </div>
 
   <section class="panel on" id="p-notice">
+    <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div id="specialBox"></div>
     <div id="checkinBox"></div>
     <div id="cleanMe"></div>
@@ -277,6 +290,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-village">
+    <div class="guest-only box guest-box"><div class="box-head pink">🚨 선생님께 긴급 연락</div><div id="sosTeacher"></div>
+      <p style="margin-top:14px;font-size:1rem;">마을은 로그인하면 들어갈 수 있어요. <button type="button" class="btn btn-y" data-guest-login style="font-size:.95rem;padding:4px 12px;">🔑 로그인</button></p></div>
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button>
       <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
     <div class="ticker mega" id="megaTicker" style="display:none;"><span id="megaText"></span></div>
@@ -286,10 +301,12 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-me">
+    <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div id="meBox"></div>
   </section>
 
   <section class="panel" id="p-coin">
+    <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div id="coinBox"></div>
   </section>
 
@@ -313,6 +330,19 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </div>
 
 
+
+<div class="overlay" id="sosOv">
+  <div class="modal">
+    <button type="button" class="x" data-close="sosOv">✕</button>
+    <h2 id="sosTitle">🚨 긴급 메시지</h2>
+    <div class="sos-warn">⚠️ <b>정말 긴급할 때만</b> 보내요!<br>장난이나 긴급하지 않은 일로 보내면 <b>큰일 나요.</b> 누가 보냈는지 다 남아요.<br>🌙 <b>일과 시간이 끝난 뒤</b>에는 답이 없을 수 있어요. 위험한 상황이면 <b>112·119</b>나 가까운 어른에게 먼저 알려요.</div>
+    <input type="text" id="sosWho" maxlength="10" placeholder="내 이름 (꼭 적어요)">
+    <textarea id="sosText" rows="4" maxlength="200" placeholder="무슨 일인지 적어 주세요"></textarea>
+    <label class="hint" style="display:flex;align-items:center;gap:6px;font-size:1rem;"><input type="checkbox" id="sosChk"> 긴급한 일이 맞아요</label>
+    <div class="err" id="sosErr"></div>
+    <button type="button" class="btn btn-sos" id="sosGo" disabled>🚨 보내기</button>
+  </div>
+</div>
 
 <div class="overlay" id="catOv">
   <div class="modal" style="align-items:center;text-align:center;">
@@ -435,6 +465,18 @@ async function statusSave(text){
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
+async function sosSend(){
+  const who = $('sosWho').value.trim(), text = $('sosText').value.trim();
+  if (!who){ $('sosErr').textContent = '이름을 꼭 적어 주세요'; return; }
+  if (!text){ $('sosErr').textContent = '무슨 일인지 적어 주세요'; return; }
+  const b = $('sosGo'); b.disabled = true;
+  try {
+    const j = await api(API, { method:'POST', body: JSON.stringify({ action:'sos', who, text }) });
+    if (j.error){ $('sosErr').textContent = { slow:'방금 다른 메시지가 갔어요. 20초 뒤에 다시 보내 주세요', full:'오늘은 더 보낼 수 없어요. 선생님을 직접 찾아가 주세요', who:'이름을 꼭 적어 주세요', empty:'무슨 일인지 적어 주세요' }[j.error] || '보내지 못했어요'; b.disabled = false; return; }
+    $('sosOv').style.display = 'none'; $('sosText').value = '';
+    toast('🚨 선생님께 보냈어요. 교실 출석부에 바로 알림이 떠요');
+  } catch(e){ $('sosErr').textContent = '연결이 안 돼요. 선생님을 직접 찾아가 주세요'; b.disabled = false; }
+}
 async function studentCall(op, extra){
   const body = Object.assign({ action:'student', name: me.name, pin: me.pin, op }, extra || {});
   return api(API, { method:'POST', body: JSON.stringify(body) });
@@ -564,6 +606,14 @@ function render(){
     (special.butler ? `<div class="sp-butler">🐱 오늘의 하나 집사: <b>${esc(special.butler)}</b></div>` : '');
   $('cleanMe').innerHTML = (me && fresh && me.info && me.info.clean) ? '<div class="clean-me">🧹 오늘 청소 당번이에요! 오늘 EXP가 마이너스라서 그래요. 내일은 플러스로 만들어 보자 💪</div>' : '';
 
+  document.body.classList.toggle('guest', !me);
+  if (!me){
+    const tch = pub.students.find(x => /(쌤|샘|선생님)$/.test(x.name));
+    const tn = tch ? tch.name : '선생님';
+    $('sosTeacher').innerHTML = `<div class="sos-t">${tch ? '<canvas class="pix" width="16" height="16"></canvas>' : ''}<div class="vname">${esc(tn)}</div><button type="button" class="btn btn-sos" id="sosOpen">🚨 ${esc(tn)}에게 긴급 메시지 보내기</button></div>`;
+    if (tch) drawColors($('sosTeacher').querySelector('canvas'), lookColorsRaw(lookFor(tch), tch.lv));
+    $('sosTitle').textContent = `🚨 ${tn}에게 긴급 메시지`;
+  }
   // 마을
   const now = Date.now(), recent = pub.students.filter(s => s.lookAt && s.lookAt > tickerClear && now - s.lookAt < 3600000).sort((a, b) => b.lookAt - a.lookAt);
   $('megaTicker').style.display = megaNow.length ? 'block' : 'none';
@@ -1164,7 +1214,9 @@ document.addEventListener('change', e => { if (e.target.id === 'tMission') $('tC
 document.addEventListener('click', e => {
   const t = e.target;
   if (t.closest('.tab')){ showTab(t.closest('.tab').dataset.tab); return; }
-  if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2')){ openLogin(); return; }
+  if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
+  if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; $('sosChk').checked = false; $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
+  if (t.closest('#sosGo')){ sosSend(); return; }
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
   const cat = t.closest('[data-cat]'); if (cat){ const cs = st.pub.students[+cat.dataset.cat]; markSeen(cs); const nb = cat.querySelector('.new'); if (nb) nb.remove(); openCat(cs); return; }
@@ -1208,6 +1260,7 @@ document.addEventListener('click', e => {
   if (t.closest('#oathGo')){ doCheckin(); return; }
 });
 $('loginBtn').addEventListener('click', doLogin);
+document.addEventListener('change', e => { if (e.target.id === 'sosChk') $('sosGo').disabled = !e.target.checked; });
 document.addEventListener('change', e => { if (e.target.id === 'oathChk') $('oathGo').disabled = !e.target.checked; });
 document.addEventListener('change', e => { if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
 document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });
