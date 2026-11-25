@@ -7206,6 +7206,8 @@ function viewApply(j){
 }
 async function viewGate(){
   bootDone();
+  /* 💤 입장 코드보다 '하나 자는 중'이 먼저: 코드 없이도 받을 수 있는 잠자는 시간 설정을 먼저 받아요 */
+  if (!viewSleep) try { const r = await fetch(`${VIEW.api}?guide=1&t=${Date.now()}`, { redirect:'follow' }), g = await r.json(); if (g && g.sleep){ viewSleep = g.sleep; sleepTick(); } } catch(e){}
   showGate(async v => {
     try { const j = await viewFetch(v); if (!j.ok) return j.error === 'slow' ? '너무 많이 틀렸어요. 1분 뒤에 다시 해 주세요' : '❌ 코드가 달라요'; viewCode = v; viewEpoch = Number(j.epoch) || 0; gatePass(v, j.hours); viewApply(j); return true; }
     catch(e){ return '연결이 안 돼요'; }
