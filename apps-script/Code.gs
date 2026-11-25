@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v30 · ✨📢 마을 공지 켜기/끄기·시간 · v29 🟢 지금 접속 중 · v28 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v31 · 🏘️ 마을 소식(물 마시기·시험 통과…) · v30 ✨📢 마을 공지 켜기/끄기·시간 · v29 🟢 지금 접속 중 · v28 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 30;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 31;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -326,7 +326,7 @@ function publicGet_(p) {
   }
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
-  res.sleep = sleepCfg_(); res.closingAt = props_().getProperty('closingAt') || ''; res.ticker = tickerCfg_();
+  res.sleep = sleepCfg_(); res.closingAt = props_().getProperty('closingAt') || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = props_().getProperty('newsOn') !== '0';
   return res;
 }
 
@@ -467,6 +467,7 @@ function handlePost_(body, auth) {
           if (s) { if (o.reset) delete all[o.name]; else { s.until = 0; s.perm = false; s.pub = false; } props_().setProperty('strikes', JSON.stringify(all)); }
           break;
         }
+        case 'newsSet': props_().setProperty('newsOn', o.on ? '1' : '0'); bump_(); break;   // 🏘️ 마을 소식 줄 켜기 · 끄기
         case 'askDone': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '확인'); break;
         case 'megaDel': props_().setProperty('mega', JSON.stringify(megaList_().filter(function (m) { return m.ts !== Number(o.ts); }))); break;
         case 'hanaReset': props_().setProperty('hanaLook', '{}'); break;
@@ -609,6 +610,7 @@ function handleStudentCore_(body) {
   if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
+  if (body.op === 'vnews') { addNews_(name, String(body.a || '')); return { ok: true }; }
   if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
@@ -930,6 +932,7 @@ function studentIdea_(name, body) {
       try {
         const id = Number(props_().getProperty('ideaSeq') || 0) + 1; props_().setProperty('ideaSeq', String(id));
         sheet_(IDEA_SHEET, IDEA_HEADER).appendRow([id, "'" + nowStr_(), name, body.anon ? '예' : '', body.secret ? '예' : '', text, '[]', '']);
+        if (!body.anon && !body.secret) addNews_(name, 'idea');
         props_().setProperty('ideaLast:' + name, String(Date.now()));
       } finally { lock.releaseLock(); }
     }
@@ -1083,6 +1086,18 @@ function butlerToday_() {
 }
 /* ✨📢 마을 공지 설정 (선생님): 새로 꾸몄어요 · 확성기 켜기/끄기와 떠 있는 시간(분) */
 function tickerCfg_() { const d = { look: true, lookMin: 60, mega: true, megaMin: 60 }; try { return Object.assign(d, JSON.parse(props_().getProperty('tickerCfg') || '{}') || {}); } catch (e) { return d; } }
+/* 🏘️ 마을 소식: 물 마시기 · 시험 통과 같은 소소한 일 (캐시 · 3시간) */
+const NEWS_KINDS_ = ['drink', 'fish', 'churu', 'camp', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide', 'photo', 'eng', 'hana', 'house', 'idea'];
+function addNews_(name, k) {
+  if (NEWS_KINDS_.indexOf(k) < 0 || isTeacherName_(name)) return;
+  try {
+    const c = cache_(), now = Date.now(); let list = JSON.parse(c.get('news') || '[]');
+    if (list.some(function (x) { return x.n === name && x.k === k && now - x.ts < 600000; })) return;   // 같은 일은 10분에 한 번만
+    list.push({ ts: now, n: name, k: k }); list = list.filter(function (x) { return now - x.ts < 10800000; }).slice(-40);
+    c.put('news', JSON.stringify(list), 21600);
+  } catch (e) {}
+}
+function newsList_() { try { return JSON.parse(cache_().get('news') || '[]'); } catch (e) { return []; } }
 function megaList_() {
   const cut = Date.now() - (Number(tickerCfg_().megaMin) || 60) * 60000;
   try { return JSON.parse(props_().getProperty('mega') || '[]').filter(function (m) { return m.ts > cut; }); } catch (e) { return []; }
@@ -1166,7 +1181,7 @@ function studentHana_(name, body) {
           else addCoin_(name, -a.cost, '하나: ' + a.name, '하나', '', rows);
         }
         if (!error) {
-          st.c[a.id] = (st.c[a.id] || 0) + 1; gained = a.aff || 1; st.p += gained;
+          st.c[a.id] = (st.c[a.id] || 0) + 1; gained = a.aff || 1; st.p += gained; addNews_(name, 'hana');
           props_().setProperty('hana:' + name, JSON.stringify(st));
           cachePush_('v:emo', { n: '하나', e: '💛', ts: Date.now() }, 40);
         }
@@ -1367,7 +1382,7 @@ function studentEng_(name, body) {
       if (practice) return { ok: true, result: { ans: ans, marks: marks, score: score, pass: score >= 80, practice: true } };
       res = { ans: ans, marks: marks, score: score, pass: score >= 80, tries: ((res && res.tries) || 0) + 1, at: Date.now() };
       props_().setProperty(k, JSON.stringify(res));
-      if (res.pass) engReward_(name, readRows_().map);
+      if (res.pass) { engReward_(name, readRows_().map); addNews_(name, 'eng'); }
       return { ok: true, result: res };
     }
     if (body.op === 'engPass') {                // 👩‍🏫 선생님 통과 (관리자 비밀번호)
@@ -1550,7 +1565,7 @@ function studentCoins_(name, body) {
         } else if (it.cat === 'mega') {
           const list = megaList_(); list.push({ n: name, text: cleanText_(body.text, chatCfg_()).slice(0, 60), ts: Date.now() });
           props_().setProperty('mega', JSON.stringify(list.slice(-5))); bump_();
-        } else if (it.cat === 'house') { inv.houses = (inv.houses || []).concat([it.id]); inv.house = it.id; }
+        } else if (it.cat === 'house') { inv.houses = (inv.houses || []).concat([it.id]); inv.house = it.id; addNews_(name, 'house'); }
         else if (it.cat === 'decor') { inv.decor = (inv.decor || []).concat([it.id]); }
         if (['house', 'decor', 'title'].indexOf(it.cat) >= 0) { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + name]); }
         result = it.name;

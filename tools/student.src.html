@@ -268,6 +268,7 @@ body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-onl
 .pr-chip small{color:var(--ink-soft);font-size:.78rem;} .pr-chip.off{border-color:#E6D9CA;background:#F6F1EA;color:#9A8A7A;}
 .pr-sec:nth-child(2) .pr-chip{border-color:#E8C35A;background:#FFF5D1;}
 .pr-none{color:var(--ink-soft);font-size:.9rem;} .pr-anon{margin-top:8px;font-size:.95rem;} .pr-note{margin-top:6px;font-size:.8rem;color:var(--ink-soft);}
+.ticker-off{display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:inherit;font-size:.8rem;border:2px solid var(--ink);border-radius:999px;background:#FFE1EA;padding:1px 10px;cursor:pointer;z-index:2;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
@@ -349,7 +350,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button> <button type="button" class="btn btn-mint" id="ideaOpen" style="font-size:1.1rem;padding:10px 20px;">💡 마을 개선 의견</button>
       <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
     <div class="ticker mega" id="megaTicker" style="display:none;"><span id="megaText"></span></div>
-    <div class="ticker" id="ticker" style="display:none;"><span id="tickerText"></span></div>
+    <div class="ticker" id="ticker" style="display:none;position:relative;"><span id="tickerText"></span><button type="button" id="tickerOff" class="ticker-off" title="마을 소식 줄 끄기 (선생님)">🔕 끄기</button></div>
     <div class="village" id="village"></div>
     <div class="box" style="margin-top:30px;"><div class="box-head pink">💬 우리 반 대화</div><div id="chatBox"></div></div>
   </section>
@@ -524,7 +525,7 @@ async function pull(force){
     const prevNotice = JSON.stringify([st.notices, st.closing]);
     st.notices = j.notices || []; st.closing = j.closing || [];
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
-    megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker;
+    megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn;
     sleepCfgNow = j.sleep || null; sleepTick(); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
     special = { banners: j.banners || [], butler: j.butler || '' };
     if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
@@ -745,7 +746,8 @@ async function enterVillage(){
   villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
   if (!me) toast('로그인하면 내 고양이로 걸어 다닐 수 있어요');
 }
-let tickerCfg = { look: true, lookMin: 60, mega: true, megaMin: 60 };
+let tickerCfg = { look: true, lookMin: 60, mega: true, megaMin: 60 }, newsNow = [], newsOn = true;
+const NEWS_TXT = { drink:'물을 마셨어요 💧', fish:'낚시를 했어요 🎣', churu:'츄르를 뽑았어요 🍡', camp:'모닥불에 마시멜로를 구웠어요 🔥', swing:'그네를 탔어요 🎠', slide:'미끄럼틀을 탔어요 🛝', nap:'해먹에서 낮잠을 잤어요 😴', boat:'배를 탔어요 ⛵', surf:'서핑을 했어요 🏄', climb:'캣타워에 올랐어요 🗼', yarn:'털실을 굴렸어요 🧶', scratch:'스크래처를 긁었어요 🐾', sunbath:'햇볕을 쬐었어요 ☀️', build:'모래성을 쌓았어요 🏰', hide:'상자에 쏙 들어갔어요 📦', photo:'사진을 찍었어요 📸', eng:'영어 시험을 통과했어요! 🎉', hana:'하나랑 놀았어요 🐱', house:'새 집으로 이사했어요 🏠', idea:'마을 의견을 냈어요 💡' };
 let villageChatTimer = 0, hanaLookNow = {}, megaNow = [], tickerClear = 0, special = { banners: [], butler: '' };
 /* 🐱 머리 위 하나: 눌러서 말 시키기 + 꾸민 모습 */
 function drawHeaderHana(){ const w = $('hanaWear'); if (w) w.innerHTML = hanaWearHTML(hanaLookNow, null); }
@@ -805,8 +807,14 @@ function render(){
   const now = Date.now(), recent = !tickerCfg.look ? [] : pub.students.filter(s => s.lookAt && s.lookAt > tickerClear && now - s.lookAt < (tickerCfg.lookMin || 60) * 60000).sort((a, b) => b.lookAt - a.lookAt);
   $('megaTicker').style.display = megaNow.length ? 'block' : 'none';
   $('megaText').textContent = megaNow.map(m => `📢 ${m.n} : ${m.text}`).join('      ');
-  $('ticker').style.display = recent.length ? 'block' : 'none';
-  $('tickerText').textContent = recent.map(s => `✨ ${iga(givenName(s.name))} 새로 꾸몄어요!`).join('      ');
+  const win = (tickerCfg.lookMin || 60) * 60000;
+  const items = recent.map(s => ({ ts: s.lookAt, t: `✨ ${iga(givenName(s.name))} 새로 꾸몄어요!` }))
+    .concat((newsNow || []).filter(x => now - x.ts < win && x.ts > tickerClear && NEWS_TXT[x.k]).map(x => ({ ts: x.ts, t: `${iga(givenName(x.n))} ${NEWS_TXT[x.k]}` })))
+    .sort((a, b) => b.ts - a.ts).slice(0, 12);
+  const tOn = me && /(쌤|샘|선생님|교감|교장)$/.test(me.name) && !viewAsStudent;
+  $('ticker').style.display = newsOn && items.length ? 'block' : 'none';
+  $('tickerText').textContent = items.map(x => x.t).join('      ');
+  $('tickerOff').style.display = tOn ? 'inline-block' : 'none';
   $('village').innerHTML = pub.students.map((s, i) => {
     const deco = LEVELS[s.lv - 1] ? LEVELS[s.lv - 1].deco : '';
     return `<div class="vcat lv-${s.lv} ${me && me.name === s.name ? 'mine' : ''}" data-cat="${i}"><div class="lv-frame"></div>${deco ? `<div class="lv-deco">${deco}</div>` : ''}
@@ -1323,7 +1331,8 @@ function tRender(){
   if (tTab === 'eng'){ box.innerHTML = '<div id="tEngBox"></div>'; mountEngAdmin($('tEngBox'), tCall, toast); return; }
   if (tTab === 'show'){
     const d = tData.today || {}, inv = (tData.coins || {}).inv || {};
-    box.innerHTML = `<div class="box"><div class="box-head">🧹 냥이 마을 공지 지우기</div><div class="hint">마을 위쪽에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><div class="t-row"><button type="button" class="btn btn-y" data-tdel="tickerClear">🧹 마을 공지 모두 지우기</button></div></div>
+    box.innerHTML = `<div class="box"><div class="box-head">🏘️ 마을 소식 줄</div><div class="hint">마을 탭 위에 흐르는 줄 (새로 꾸몄어요 · 물 마시기 · 시험 통과 …) · 지금 <b>${newsOn ? '켜짐' : '꺼짐'}</b></div><div class="t-row"><button type="button" class="btn btn-y" data-newson="${newsOn ? 0 : 1}">${newsOn ? '🔕 끄기' : '🔔 켜기'}</button></div></div>
+      <div class="box"><div class="box-head">🧹 냥이 마을 공지 지우기</div><div class="hint">마을 위쪽에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><div class="t-row"><button type="button" class="btn btn-y" data-tdel="tickerClear">🧹 마을 공지 모두 지우기</button></div></div>
       <div class="box"><div class="box-head">📢 확성기</div>${(d.mega || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="megaDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head pink">🎊 축하 배너</div>${(d.banners || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="bannerDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head mint">🏷️ 칭호</div>${Object.entries(inv).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="t-line"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="btn btn-gray" data-ttitle="${esc(n)}">지우기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
@@ -1406,6 +1415,8 @@ document.addEventListener('click', e => {
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
   if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
+  { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
+  if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (교실 출석부 ⚙️ 설정 → 📢 알림에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
   if (t.closest('#sleepT')){ $('sleepOv').classList.remove('on'); openLogin(); return; }
   if (t.closest('#ideaOpen')){ openIdeas(); return; }
   if (t.closest('#ideaSend')){ ideaSend(); return; }

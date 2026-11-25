@@ -2342,13 +2342,15 @@ function setupSettingsTabs(){
   n.innerHTML = `<div class="section-title">📢 알림 · 공지</div>
     <div class="form-hint">✍️ 바로 쓰기 · 누르면 쓰는 창이 열려요 (출석부 화면에서 눌러 쓰는 것과 똑같아요)</div>
     <div class="st-write"><button type="button" data-stw="notices">📢 Notice<small>오늘의 알림</small></button><button type="button" data-stw="urgent">📌 Must Read<small>중요 공지</small></button><button type="button" data-stw="closing">📋 종례<small>종례 화면 · 학생 화면</small></button><button type="button" data-stw="bubble">💬 하나 말풍선<small>긴급 호출도 여기서</small></button></div>
-    <div class="form-hint" style="margin-top:6px;">⚙️ 알림 설정</div><div class="st-move"></div>`;
+    <div class="form-hint" style="margin-top:6px;">⚙️ 알림 설정</div><div class="st-move"></div>
+    <div class="row"><span>🏘️ <b>마을 소식 줄</b> · 학생 화면 마을 탭 위 (물 마시기 · 시험 통과 · 새로 꾸몄어요 …)</span><span><button type="button" class="btn" data-news="1" style="font-size:.85rem;padding:4px 10px;background:#E4F7EA;">켜기</button> <button type="button" class="btn" data-news="0" style="font-size:.85rem;padding:4px 10px;background:#FFE1EA;">끄기</button></span></div>`;
   secs[0].parentNode.insertBefore(n, secs[0]);
   const mv = n.querySelector('.st-move');
   ['tkLookOn', 'tkMegaOn', 'closingAtInput', 'guideVerInput', 'guideNotesInput'].forEach(id => { const el = $(id); const row = el && (el.closest('.form-group') || el.closest('.row')); if (row) mv.appendChild(row); });
   $('stTabs').innerHTML = ST_TABS.map(([k, l]) => `<button type="button" data-st="${k}">${l}</button>`).join('');
   $('stTabs').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b) showStTab(b.dataset.st); });
-  n.addEventListener('click', e => { const b = e.target.closest('[data-stw]'); if (!b) return; const k = b.dataset.stw; if (k === 'bubble') openBubbleEdit(); else editText(k); });
+  n.addEventListener('click', e => { const nb = e.target.closest('[data-news]'); if (nb){ syncOp({ op:'newsSet', on: nb.dataset.news === '1' }); showToast(nb.dataset.news === '1' ? '🏘️ 마을 소식 줄을 켰어요' : '🏘️ 마을 소식 줄을 껐어요'); return; } const b = e.target.closest('[data-stw]'); if (!b) return; const k = b.dataset.stw; if (k === 'bubble') openBubbleEdit(); else editText(k); });
+  ov.addEventListener('focusin', e => { const sec = e.target.closest('.section[data-sg]'); if (sec && sec.classList.contains('st-hide')) showStTab(sec.dataset.sg); });   // 숨은 탭의 칸으로 가면 그 탭을 열어요
   showStTab(stTab);
 }
 function showStTab(k){
@@ -2358,7 +2360,7 @@ function showStTab(k){
   const m = $('adminOverlay').querySelector('.modal'); if (m) m.scrollTop = 0;
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 30;
+const NEED_API = 31;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -6357,10 +6359,11 @@ function openVillage(opts){
     const a = b.dataset.act, c = me(); if (!c) return;
     if (a === 'stand'){ c.sit = null; showActs(null); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 40); if (scene === 'hall'){ c.ty = c.y + 60; toGroup = false; updateTo(); } sendMove(Object.assign({}, c, { y: c.ty })); return; }
     if (a === 'chair'){ openChairPanel(); return; }
-    if (a === 'photo'){ takePhoto(); return; }
+    if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).catch(() => {}); takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
     if (['camp', 'fish', 'churu', 'again'].includes(a) && opts.call && !opts.viewOnly){
       if (actsEl.dataset.busy) return; actsEl.dataset.busy = '1';
+      if (a !== 'again') opts.call('vnews', { a }).catch(() => {});
       opts.call('act', { a }).then(j => {
         delete actsEl.dataset.busy;
         if (j && j.error === 'actlimit'){ say('🐾 오늘 마을 놀이 20번을 다 했어요! 내일 또 놀아요', 3500); return; }
@@ -6368,6 +6371,7 @@ function openVillage(opts){
       }).catch(() => { delete actsEl.dataset.busy; doAct(a, c, null); });
       return;
     }
+    if (['drink', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide'].includes(a) && opts.call && !opts.viewOnly) opts.call('vnews', { a }).catch(() => {});
     doAct(a, c, null);
   });
   function doAct(a, c, left){
