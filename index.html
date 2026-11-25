@@ -300,6 +300,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .touch-text{font-size:1rem;margin-top:6px;color:var(--ink-soft);animation:blink 1.4s infinite;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .card-tag{position:absolute;top:10px;left:22px;font-size:.82rem;padding:2px 8px;border:2px solid var(--ink);border-radius:999px;background:#fff;}
+.card:has(.card-rank) .card-tag{left:36px;}
 .card-streak{position:absolute;top:8px;right:8px;width:48px;height:48px;border-radius:50%;border:3px double #E8577D;color:#E8577D;
   background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;
   font-size:.66rem;line-height:1.05;transform:rotate(-14deg);}
@@ -422,6 +423,20 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
   transition:transform .08s;
 }
 .closing-big:hover{transform:translateY(-3px);}
+#graceWarn{display:none;position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:9000;align-items:center;gap:16px;pointer-events:none;
+  background:#FF5C7A;color:#fff;border:5px solid var(--ink);border-radius:26px;padding:22px 40px;font-size:clamp(1.6rem,2.6vw,2.6rem);box-shadow:0 8px 0 var(--ink),0 0 0 12px rgba(255,92,122,.25);
+  text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink);animation:gwPulse .5s ease-in-out infinite alternate;white-space:nowrap;}
+#graceWarn b{color:#FFF27A;font-size:1.3em;}
+#graceWarn .gw-ic{font-size:1.6em;animation:gwShake .25s linear infinite;}
+@keyframes gwPulse{to{box-shadow:0 8px 0 var(--ink),0 0 0 22px rgba(255,92,122,.12);}}
+@keyframes gwShake{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+/* 🥇 순위 메달 (왼쪽 위 귀퉁이) */
+.card-rank{position:absolute;top:-14px;left:-12px;z-index:4;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;font-weight:900;color:#5B4636;border:3px solid #5B4636;background:radial-gradient(circle at 35% 30%,#FFFFFF,#E6DEFF 70%);box-shadow:0 3px 0 rgba(91,70,54,.35);transform:rotate(-10deg);}
+.card-rank::before{content:'';position:absolute;top:-14px;left:9px;width:18px;height:16px;z-index:-1;background:linear-gradient(90deg,#FF8FB1 50%,#7FB8FF 50%);clip-path:polygon(0 0,100% 0,100% 100%,50% 70%,0 100%);}
+.card-rank.r1{background:radial-gradient(circle at 35% 30%,#FFF6C4,#FFD233 65%,#E8A800);font-size:1.5rem;}
+.card-rank.r2{background:radial-gradient(circle at 35% 30%,#FFFFFF,#D9DEE6 65%,#AEB6C2);}
+.card-rank.r3{background:radial-gradient(circle at 35% 30%,#FFE2C4,#E5A06A 65%,#C2773E);}
 .meeting-big{display:block;width:100%;max-width:470px;margin-top:10px;padding:3px 0;font-family:inherit;font-size:1.3rem;letter-spacing:2px;cursor:pointer;color:#fff;
   background:linear-gradient(180deg,#5BA97A,#3E8A5E);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);
   text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink);transition:transform .08s;}
@@ -804,6 +819,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 </div>
 
 <!-- 비밀번호 -->
+<div id="graceWarn"><span class="gw-ic">⏰</span><span>출석 마감! <b id="graceLeft">10</b>초 안에 터치하지 않으면 <b>지각</b> 처리됩니다</span></div>
 <div class="overlay" id="meetOv">
   <div class="mt-wrap">
     <div class="mt-frame" id="mtFrame">
@@ -1824,8 +1840,10 @@ function resetForNewYear(){
 /* =========================================================
    ⏱ EXP 단계 계산
    ========================================================= */
+const LATE_GRACE = 10;   // ⏰ 마감 뒤 10초까지는 봐줘요 (경고창이 떠요)
 function getTier(d = nowD()){
   const t = db.expTiers, now = secOfDay(d), dl = deadlineSec();
+  if (now > dl && now <= dl + LATE_GRACE) return { key:'safe', exp:t.eSExp, late:false, left:dl + LATE_GRACE - now + 1, next:'⏰ 지각까지', grace:true };
   if (now <= dl){
     const early = dl - now;
     if (early >= t.e1*60) return { key:'legend', exp:t.e1Exp, late:false, left:early - t.e1*60, next:'🦄 유니크 타임까지' };
@@ -1911,13 +1929,13 @@ function renderGrid(){
       card.innerHTML =
         `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` +
         (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
-        (medalOf(rec) ? `<div class="card-first" title="오늘의 ${medalOf(rec)}등">${MEDALS[medalOf(rec)]}</div>` : '') +
+        (rec.rank ? `<div class="card-rank ${rec.rank <= 3 ? 'r' + rec.rank : ''}" title="오늘 ${rec.rank}번째 도착${rec.rankBonus ? ` · 보너스 +${rec.rankBonus}` : ''}">${rec.rank}</div>` : '') +
         (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
       drawColors(cv, recColors(rec, name, ds, li.lv));
       card.append(cv);
       card.insertAdjacentHTML('beforeend',
         `<div class="student-name">${numTag(nums, name)}${esc(name)}</div>` +
-        `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button>${rankPill(rec)}${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
+        `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button>${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
       card.title = recCharName(rec, name, ds);
       card.querySelector('.time-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name)); });
     }
@@ -3219,6 +3237,13 @@ function clockHeat(now){
     else { u.style.removeProperty('background'); u.style.removeProperty('border-color'); u.style.color = ''; }
   });
 }
+function graceWarn(now){
+  const el = $('graceWarn'), sec = secOfDay(now), dl = deadlineSec(), wd = now.getDay();
+  const missing = kids().some(n => !todayData()[n]);
+  const on = wd !== 0 && wd !== 6 && missing && sec > dl && sec <= dl + LATE_GRACE;
+  if (!on){ el.style.display = 'none'; return; }
+  el.style.display = 'flex'; $('graceLeft').textContent = String(dl + LATE_GRACE - sec + 1);
+}
 function tick(){
   const now = nowD();
   setFlip('flipHour', pad(now.getHours()));
@@ -3231,6 +3256,7 @@ function tick(){
     updateDate(now); renderNotices(); renderGrid(); updateStatsBoard();
   }
   updateReward(now);
+  graceWarn(now);
   updateMascotBubble(now);
   $('mcTime').innerHTML = `${pad(now.getHours())}:${pad(now.getMinutes())}<small>:${pad(now.getSeconds())}</small>`;
   { const t = getTier(now), m = TIER_META[t.key]; $('mcTier').textContent = `${m.icon} ${fmtExp(t.exp)}`; $('mcTier').style.background = m.color; }
@@ -3593,7 +3619,8 @@ function checkAlarms(){
     if (!t.on || !validTime(t.time)) continue;
     const [h, m] = t.time.split(':').map(Number);
     const diff = nowSec - (h*3600 + m*60);
-    if (diff >= 0 && diff < 60 && !isFired(t.idx)){ markFired(t.idx); fireAlarm(t.idx, t.time); return; }
+    const from = t.idx === 1 ? LATE_GRACE + 1 : 0;   // 마감 알람은 10초 봐주는 시간이 끝난 뒤에 떠요 (그동안 터치할 수 있게)
+    if (diff >= from && diff < 60 && !isFired(t.idx)){ markFired(t.idx); fireAlarm(t.idx, t.time); return; }
   }
 }
 function previewAlarm(idx){
