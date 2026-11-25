@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v17 · 캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v17 · 선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -489,11 +489,11 @@ function cleanLook_(look, lv, old, name) {
     if (v === '' || v === undefined || v === null) { if (slot !== 'eye' && slot !== 'mouth') out[slot] = ''; return; }
     const parts = String(v).split(':'), rule = ITEM_RULES[parts[0]], ci = Number(parts[1]);
     if (!rule || rule.slot !== slot || !(ci >= 0 && ci < rule.n) || Math.floor(ci) !== ci) return;
-    if (rule.lv > lv && !(old && old._free)) return;
+    if (rule.lv > lv && !(old && old._free) && !isTeacherName_(name || '')) return;   // 👑 선생님은 모든 아이템
     if (rule.teacher && !isTeacherName_(name || '')) return;
     out[slot] = parts[0] + ':' + ci;
   });
-  if (old && old._free) out._free = true;           // '모든 아이템 열기'는 선생님만 바꿀 수 있어요
+  if ((old && old._free) || isTeacherName_(name || '')) out._free = true;           // '모든 아이템 열기'는 선생님만 바꿀 수 있어요
   return out;
 }
 

@@ -1729,6 +1729,8 @@ function recFur(rec, ch, name, ds){
 function recColors(rec, name, ds, lv){
   const ch = recChar(rec, name, ds);
   if (!ch) return houseColors();
+  // 🎨 학생이 직접 꾸민 냥이가 있으면 출석한 카드에도 그 모습 그대로 (털빛·눈·입·아이템 전부)
+  if (name && db.looks && db.looks[name]) return lookColors(name, lv || levelInfo(seasonExpMap()[name] || 0).lv);
   const col = catColors(ch, recFur(rec, ch, name, ds));
   // 학생이 꾸미기 방에서 고른 아이템을 뽑힌 냥이에게도 입혀 줘요
   if (name && db.students.includes(name)){
@@ -2563,8 +2565,13 @@ function swatchBg(c){
   return v.length > 1 ? `linear-gradient(135deg, ${v[0]} 0 58%, ${v[1]} 58% 100%)` : v[0];
 }
 /*@@SHARED:end*/
-function lookOf(name, lv){ return lookOfRaw((db.looks && db.looks[name]) || defaultLook(lv), lv); }
-function lookColors(name, lv){ return lookColorsRaw((db.looks && db.looks[name]) || defaultLook(lv), lv); }
+/* 학생 페이지·꾸미기 방에서 고른 '내 냥이' 모습 (선생님은 모든 아이템이 열려 있어요) */
+function lookRawOf(name, lv){
+  const raw = (db.looks && db.looks[name]) || defaultLook(lv);
+  return isTeacherName(name) ? Object.assign({}, raw, { _free: true }) : raw;
+}
+function lookOf(name, lv){ return lookOfRaw(lookRawOf(name, lv), lv); }
+function lookColors(name, lv){ return lookColorsRaw(lookRawOf(name, lv), lv); }
 function setLook(name, slot, val){
   const lv = levelInfo(seasonExpMap()[name] || 0).lv;
   db.looks = db.looks || {};
@@ -4966,7 +4973,7 @@ function openVillage(opts){
       const p = plotOf(s.name);
       c = cats[s.name] = { name: s.name, x: Math.max(WALK.x0, Math.min(WALK.x1, p.x)), y: WALK.y0 + 30 + Math.random() * 80, tx: null, ty: null, anchor: null, wanderAt: 0, bubble: null, emo: null, face: 1, sc: 'out', sit: null };
     }
-    if (c.key !== key){ c.key = key; c.img = catSprite(s.look, s.lv); c.lv = s.lv; }
+    if (c.key !== key){ c.key = key; c.img = catSprite(/(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, s.look || {}, { _free: true }) : s.look, s.lv); c.lv = s.lv; }
     return c;
   }
   function seatPos(sc, sit, t){
@@ -5774,7 +5781,7 @@ function openVillage(opts){
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
       <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
-    drawColors(panel.querySelector('canvas'), lookColorsRaw(cd.look || {}, cd.lv || 1));
+    drawColors(panel.querySelector('canvas'), lookColorsRaw(/(쌤|샘|선생님|교감|교장)$/.test(name) ? Object.assign({}, cd.look || {}, { _free: true }) : (cd.look || {}), cd.lv || 1));
     godInfo = { name, house: cd.house || 'h_box', aff: cd.hana || 0, title: cd.title || '', decor: ((state && state.inv && state.inv[name]) || {}).decor || [] };
   }
   /* 👑 선생님 마법: 'OO쌤'으로 들어오면 아무 친구의 집·하나 친밀도·칭호·꾸밈·위치·냥코인을 바로 바꿔요 */

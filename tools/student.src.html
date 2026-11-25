@@ -507,7 +507,7 @@ function showTab(t){
 function coinText(){ return coin ? (coin.unlimited ? '∞' : coin.balance) : 0; }
 function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
 function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
-function lookFor(s){ return (me && s.name === me.name && me.look) ? me.look : s.look; }
+function lookFor(s){ const r = (me && s.name === me.name && me.look) ? me.look : s.look; return /(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, r || defaultLook(s.lv), { _free: true }) : r; }
 
 function render(){
   const pub = st.pub || { students:[], clean:[] }, fresh = pub.ds === todayStr();
@@ -630,7 +630,8 @@ function renderMe(){
     return;
   }
   const s = studentOf(me.name), info = me.info || {}, lv = info.lv || (s ? s.lv : 1);
-  const raw = me.look || (s && s.look) || defaultLook(lv), look = lookOfRaw(raw, lv), free = !!raw._free;
+  const raw0 = me.look || (s && s.look) || defaultLook(lv), isT = /(쌤|샘|선생님|교감|교장)$/.test(me.name);
+  const raw = isT ? Object.assign({}, raw0, { _free: true }) : raw0, look = lookOfRaw(raw, lv), free = !!raw._free;
   const t = info.today;
   const fresh = st.pub && st.pub.ds === todayStr();
   box.innerHTML = `

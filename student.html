@@ -1221,7 +1221,7 @@ function openVillage(opts){
       const p = plotOf(s.name);
       c = cats[s.name] = { name: s.name, x: Math.max(WALK.x0, Math.min(WALK.x1, p.x)), y: WALK.y0 + 30 + Math.random() * 80, tx: null, ty: null, anchor: null, wanderAt: 0, bubble: null, emo: null, face: 1, sc: 'out', sit: null };
     }
-    if (c.key !== key){ c.key = key; c.img = catSprite(s.look, s.lv); c.lv = s.lv; }
+    if (c.key !== key){ c.key = key; c.img = catSprite(/(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, s.look || {}, { _free: true }) : s.look, s.lv); c.lv = s.lv; }
     return c;
   }
   function seatPos(sc, sit, t){
@@ -2029,7 +2029,7 @@ function openVillage(opts){
             <div><b>🐱 하나와</b> ${escV((HANA.lvNames || [])[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).icon} ${(HOUSE_INFO[cd.house] || HOUSE_INFO.h_box).name}</div></div></div>
         ${pf.motto ? `<div class="idc-motto">💬 ${escV(pf.motto)}</div>` : ''}</div>
       <div style="text-align:center;margin-top:8px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">${name !== meName && !opts.viewOnly && opts.me ? `<button type="button" class="vg-cardgo" data-house="${escV(name)}">🏠 ${escV(name)}네 집 놀러 가기</button>` : ''}${isGod() ? `<button type="button" class="vg-cardgo" data-god="${escV(name)}" style="background:#E3D9FF;">👑 선생님 마법</button>` : ''}</div>`;
-    drawColors(panel.querySelector('canvas'), lookColorsRaw(cd.look || {}, cd.lv || 1));
+    drawColors(panel.querySelector('canvas'), lookColorsRaw(/(쌤|샘|선생님|교감|교장)$/.test(name) ? Object.assign({}, cd.look || {}, { _free: true }) : (cd.look || {}), cd.lv || 1));
     godInfo = { name, house: cd.house || 'h_box', aff: cd.hana || 0, title: cd.title || '', decor: ((state && state.inv && state.inv[name]) || {}).decor || [] };
   }
   /* 👑 선생님 마법: 'OO쌤'으로 들어오면 아무 친구의 집·하나 친밀도·칭호·꾸밈·위치·냥코인을 바로 바꿔요 */
@@ -2539,7 +2539,7 @@ function showTab(t){
 function coinText(){ return coin ? (coin.unlimited ? '∞' : coin.balance) : 0; }
 function toast(t){ const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
 function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
-function lookFor(s){ return (me && s.name === me.name && me.look) ? me.look : s.look; }
+function lookFor(s){ const r = (me && s.name === me.name && me.look) ? me.look : s.look; return /(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, r || defaultLook(s.lv), { _free: true }) : r; }
 
 function render(){
   const pub = st.pub || { students:[], clean:[] }, fresh = pub.ds === todayStr();
@@ -2662,7 +2662,8 @@ function renderMe(){
     return;
   }
   const s = studentOf(me.name), info = me.info || {}, lv = info.lv || (s ? s.lv : 1);
-  const raw = me.look || (s && s.look) || defaultLook(lv), look = lookOfRaw(raw, lv), free = !!raw._free;
+  const raw0 = me.look || (s && s.look) || defaultLook(lv), isT = /(쌤|샘|선생님|교감|교장)$/.test(me.name);
+  const raw = isT ? Object.assign({}, raw0, { _free: true }) : raw0, look = lookOfRaw(raw, lv), free = !!raw._free;
   const t = info.today;
   const fresh = st.pub && st.pub.ds === todayStr();
   box.innerHTML = `
