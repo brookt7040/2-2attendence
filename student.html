@@ -37,6 +37,7 @@ button,input,select{font-family:inherit;color:var(--ink);}
 
 /* 탭 */
 .tabs{display:flex;gap:8px;margin:16px 0 14px;flex-wrap:wrap;}
+.tn-agit{display:none;} html.agit .tn-full{display:none;} html.agit .tn-agit{display:inline;}
 .tab{flex:1;min-width:110px;border:3px solid var(--ink);border-radius:16px;padding:10px 6px;font-size:1.15rem;cursor:pointer;background:#fff;box-shadow:0 4px 0 var(--ink);position:relative;}
 .tab.active{background:var(--y);transform:translateY(-2px);box-shadow:0 6px 0 var(--ink);}
 .dot{position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:50%;background:var(--pink-deep);border:2px solid var(--ink);display:none;}
@@ -293,6 +294,12 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 .sc-kinds label{font-size:.98rem;}
 .sc-stk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #F3C9C9;} .sc-stk b{font-weight:normal;min-width:70px;}
 .sc-stk .btn{font-size:.85rem;padding:3px 10px;}
+/* 📢 알림·종례 탭 (앱) */
+html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,html.only-notice #cleanMe,html.only-notice #specialBox ~ .box:not(.nb-pub),html.only-notice #p-notice .guest-only,html.only-notice #penBar{display:none !important;}
+html.only-notice body.guest #p-notice > .nb-pub,html.only-notice body.guest #p-notice > #specialBox{display:block !important;}
+html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
+/* 🧸 아지트 (앱): 알림·종례는 따로 탭이 있어서 빼요 */
+html.agit #p-notice > .nb-pub{display:none !important;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
@@ -328,6 +335,10 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </style>
 </head>
 <body>
+<script>
+/* 📱 2-2😻 앱 안: ?only=notice 는 📢 알림·종례 탭 (로그인 없이), 아지트에서는 알림·종례 칸을 빼요 */
+(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (inApp) document.documentElement.classList.add('agit'); })();
+</script>
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
 #bootOv.hide{opacity:0;pointer-events:none;}
@@ -348,7 +359,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </div>
 
   <div class="tabs">
-    <button type="button" class="tab active" data-tab="notice">📢 알림·종례<span class="dot" id="dotNotice"></span></button>
+    <button type="button" class="tab active" data-tab="notice"><span class="tn-full">📢 알림·종례</span><span class="tn-agit">📮 출석·질문</span><span class="dot" id="dotNotice"></span></button>
     <button type="button" class="tab" data-tab="village">🏘️ 냥이 마을<span class="dot" id="dotVillage"></span></button>
     <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
     <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
@@ -362,9 +373,9 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div id="specialBox"></div>
     <div id="checkinBox"></div>
     <div id="cleanMe"></div>
-    <div class="box"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
-    <div class="box" id="closingBox"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
-    <div class="box"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
+    <div class="box nb-pub"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
+    <div class="box nb-pub" id="closingBox"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
+    <div class="box nb-pub"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
     <div class="box"><div class="box-head mint">📮 질문 · 건의</div><div id="askBox"></div></div>
     <div class="box"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
   </section>
@@ -2679,7 +2690,7 @@ async function statusSave(text){
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();   // 📱 2-2😻 앱 안
-addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
+addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !document.documentElement.classList.contains('only-notice') && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
 function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, location.origin); } catch(e){} }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
