@@ -19,7 +19,9 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .frames iframe.on{visibility:visible;}
 .bar .side{display:flex;align-items:center;gap:6px;margin-left:10px;padding-left:12px;border-left:2px dashed #D9C79A;}
 .bar .sub,.bar .inst{flex:0 0 auto;max-width:none;font-size:.88rem;padding:5px 12px;border-color:#B9A58A;color:#7A6552;}
-.bar .sub{background:#FFFDF6;} .bar .sub.on{background:#FFD84D;border-color:#5B4636;color:#5B4636;}
+.bar .sub{background:#FFFDF6;}
+.bar .rl{padding:5px 9px;} .bar .rl.spin{animation:rlSpin .6s linear;}
+@keyframes rlSpin{to{transform:rotate(360deg);}} .bar .sub.on{background:#FFD84D;border-color:#5B4636;color:#5B4636;}
 .bar .inst{background:#E8ECFF;}
 .bar .inst[hidden]{display:none;}
 #iosOv{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(80,60,45,.55);padding:16px;}
@@ -34,7 +36,7 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 @media (max-width:480px){ .bar > button[data-t]{font-size:.8rem !important;padding:6px 1px !important;} .bar .inst,.bar .sub{font-size:.8rem;padding:5px 7px;} .bar .side{margin-left:4px;padding-left:6px;gap:4px;} .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
 </style></head><body>
 <div class="bar"><div class="logo"><img src="icons/favicon-64.png" alt=""><span>2-2😻</span></div>
-  <button type="button" data-t="board">📋 출석부</button><button type="button" data-t="notice">📢 알림·종례</button><button type="button" data-t="me">🧸 아지트</button><span class="sp"></span><span class="side"><button type="button" data-t="guide" class="sub">📖 안내</button><button type="button" id="instBtn" class="inst">📲 설치</button></span></div>
+  <button type="button" data-t="board">📋 출석부</button><button type="button" data-t="notice">📢 알림·종례</button><button type="button" data-t="me">🧸 아지트</button><span class="sp"></span><span class="side"><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub">📖 안내</button><button type="button" id="instBtn" class="inst">📲 설치</button></span></div>
 <div id="iosOv"><div class="io-box"><button type="button" class="io-x" id="iosX">✕</button><h3>🍎 아이폰 · 아이패드는 직접 추가해요</h3><ol class="io-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
 <div class="frames" id="frames"></div>
 <script>
@@ -46,12 +48,15 @@ const SRC = { notice: 'student.html?only=notice&api=' + encodeURIComponent(API),
 const frames = {};
 function show(t){
   if (!SRC[t]) t = 'board';
+  curTab = t;
   if (!frames[t]){ const f = document.createElement('iframe'); f.src = SRC[t]; f.title = t; f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
   Object.entries(frames).forEach(([k, f]) => f.classList.toggle('on', k === t));
   try { frames[t].contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){}   // 아지트: 로그인 안 했으면 로그인 창
   document.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   history.replaceState(null, '', '?tab=' + t + (q.get('api') ? '&api=' + encodeURIComponent(q.get('api')) : ''));
 }
+let curTab = 'board';
+document.getElementById('reloadBtn').onclick = () => { const f = frames[curTab]; if (f){ try { f.contentWindow.location.reload(); } catch(e){ f.src = f.src; } } const b = document.getElementById('reloadBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); };
 document.querySelector('.bar').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); });
 addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang === 'go' && SRC[d.tab]) show(d.tab); });
 show(q.get('tab') || 'board');   // 처음엔 늘 출석부 (입장 코드 → 출석부)
