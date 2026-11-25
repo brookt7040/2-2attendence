@@ -6599,10 +6599,10 @@ function bindEvents(){
   document.addEventListener('click', e => { if (!e.target.closest('.mini-menu')) $('miniMenuPop').classList.remove('on'); });
   $('openCoinViewBtn').addEventListener('click', () => { $('miniMenuPop').classList.remove('on'); openCoinView(); });
   $('cvTabs').addEventListener('click', e => { const b = e.target.closest('[data-cv]'); if (b){ cvTab = b.dataset.cv; renderCoinView(); } });
-  $('cleanSide').addEventListener('click', e => { const c = e.target.closest('[data-clean]'); if (c) toggleClean(c.dataset.clean); });
+  $('cleanSide').addEventListener('click', e => { const c = e.target.closest('[data-clean]'); if (c) requirePin(() => toggleClean(c.dataset.clean), ['sub', 'late']); });
   $('menuBoard').addEventListener('click', e => {
     const mi = e.target.closest('[data-mi]'); if (mi){ openGive(Number(mi.dataset.mi)); return; }
-    const c = e.target.closest('[data-clean]'); if (c) toggleClean(c.dataset.clean);
+    const c = e.target.closest('[data-clean]'); if (c) requirePin(() => toggleClean(c.dataset.clean), ['sub', 'late']);
   });
   $('pickGrid').addEventListener('click', e => { const b = e.target.closest('.pick'); if (b) b.classList.toggle('on'); });
   $('pickAllBtn').addEventListener('click', () => document.querySelectorAll('#pickGrid .pick').forEach(b => b.classList.add('on')));
