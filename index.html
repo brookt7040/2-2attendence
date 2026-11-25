@@ -2894,7 +2894,7 @@ function editText(kind){
       $('teTitle').textContent = '📌 Must Read 고치기'; $('teHint').textContent = '비우고 저장하면 공지가 내려가요. (줄바꿈 가능 · 짧을수록 눈에 잘 띄어요)';
       $('teInput').value = db.urgent || ''; $('textEditOverlay').style.display = 'flex'; setTimeout(() => $('teInput').focus(), 50); return;
     }
-    $('teTitle').textContent = kind === 'notices' ? '✏️ 오늘의 알림 고치기' : '✏️ 종례 고치기';
+    $('teTitle').textContent = kind === 'notices' ? '✏️ Notice 고치기' : '✏️ 종례 고치기';
     $('teHint').textContent = kind === 'notices' ? '한 줄에 하나씩 · 메모지에 순서대로 나타나요 (4줄 이하 권장)' : "한 줄에 하나씩 · '종례하기' 화면과 학생 페이지에 떠요";
     $('teInput').value = (db[kind] || []).join('\n');
     $('textEditOverlay').style.display = 'flex'; setTimeout(() => $('teInput').focus(), 50);
@@ -3390,7 +3390,7 @@ function renderNotices(){
   const area = $('noticeArea'); area.classList.toggle('admin-on', noticeAdminActive());
   area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 Notice<button type="button" class="edit-mini" title="알림 고치기" onclick="event.stopPropagation(); editText(\'notices\')">✏️</button></div>';
   const list = (db.notices || []).filter(t => t && t.trim() !== '');
-  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">✏️ 눌러서 수정</div>'); return; }
+  if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty" onclick="editText(\'notices\')" style="cursor:pointer;">✏️ 눌러서 수정</div>'); return; }
   list.forEach((text, idx) => {
     const item = document.createElement('div');
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
