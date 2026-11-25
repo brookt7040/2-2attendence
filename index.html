@@ -684,6 +684,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .mini-menu{grid-column:1 / 3;position:relative;}
 .mini-menu-btn{font-family:inherit;font-size:1rem;padding:7px 14px;border:2px solid #CDBBA8;border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 2px 0 rgba(91,70,54,.12);}
 .mini-menu-btn:hover{border-color:var(--ink);}
+.mini-menu-btn.my-go{text-decoration:none;font-size:.9rem;height:42px;display:inline-flex;align-items:center;padding:0 14px;white-space:nowrap;background:#E4F7EA;border-color:#8CCBA2;}
 .mini-menu-pop{display:none;position:absolute;left:0;top:calc(100% + 6px);z-index:50;background:#fff;border:2px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 rgba(91,70,54,.2);padding:6px;min-width:220px;flex-direction:column;gap:4px;}
 .mini-menu-pop.on{display:flex;}
 .mini-menu-pop button{font-family:inherit;font-size:1.05rem;text-align:left;border:none;background:none;border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;flex-direction:column;color:var(--ink);}
@@ -808,7 +809,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
@@ -4543,7 +4544,7 @@ function makeAllPins(){
 }
 function studentLink(){
   const base = location.protocol.startsWith('http') ? location.href.replace(/[^/]*([?#].*)?$/, '') : 'https://brookt7040.github.io/2-2attendence/';
-  return `${base}student.html?api=${encodeURIComponent(sync.url)}`;
+  return `${base}student.html?api=${encodeURIComponent((typeof VIEW !== 'undefined' && VIEW && VIEW.api) || sync.url || '')}`;
 }
 async function copyStudentLink(){
   if (!sync.url || sync.api < 3){ alert('학생 페이지는 구글 시트 동기화(새 버전 코드)가 연결되어 있어야 써요.'); return; }
@@ -6576,6 +6577,11 @@ function bindEvents(){
     const p = e.target.closest('[data-np]'); if (p){ notePeriod = p.dataset.np; renderNotes(); return; }
     const a = e.target.closest('[data-nadd]'); if (a){ if ((a.dataset.nadd === 'swear' || a.dataset.nadd === 'classlate') && !noteRoleOk(a.dataset.nadd)) return; addNote(a.dataset.who, a.dataset.nadd); renderNotes(); return; }
     const d = e.target.closest('[data-ndel]'); if (d){ delNote(d.dataset.nds, d.dataset.ndel); }
+  });
+  $('myPageBtn').addEventListener('click', e => {
+    const api = (VIEW && VIEW.api) || sync.url;
+    if (!api){ e.preventDefault(); showToast('먼저 구글 시트 동기화를 연결해 주세요'); return; }
+    e.currentTarget.href = studentLink();
   });
   $('gateTestBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
