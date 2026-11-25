@@ -746,6 +746,9 @@ body.view-mode .card.waiting{cursor:default;}
 .nlog-h{font-weight:700;margin-bottom:6px;} .nl{display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px dashed #EFE3D3;} .nl span:first-child{color:var(--ink-soft);min-width:84px;}
 .nl button{margin-left:auto;border:none;background:none;color:#C9A0A0;cursor:pointer;}
 body.view-mode .note-side{display:none !important;}
+.mini-menu{display:flex;gap:8px;}
+.mini-menu-btn.icon{font-size:1.35rem;width:46px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;}
+.mini-menu-pop{top:calc(100% + 6px);}
 </style>
 </head>
 <body>
@@ -773,14 +776,14 @@ body.view-mode .note-side{display:none !important;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn" id="miniMenuBtn">📋 EXP · 🐾 냥코인 ▾</button>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
           </div></div>
         <div class="side-clean" id="cleanSide"></div>
         <div class="urgent-box" id="urgentBox"></div>
-        <div class="note-side" id="noteSide" title="눌러서 관리 수첩 열기"></div>
+
       </div>
     </div>
 
@@ -802,7 +805,7 @@ body.view-mode .note-side{display:none !important;}
         <div class="rp-ladder" id="rpLadder"></div>
       </div>
       <button type="button" class="closing-big" id="openClosingBtn">📋 종례하기</button>
-      <button type="button" class="meeting-big" id="openMeetingBtn">🗳️ 학급회의</button>
+      <button type="button" class="meeting-big" id="openMeetingBtn">🖍️ 칠판</button>
     </div>
   </div>
 
@@ -915,7 +918,7 @@ body.view-mode .note-side{display:none !important;}
   <div class="mt-wrap">
     <div class="mt-frame" id="mtFrame">
       <canvas class="mt-canvas" id="mtCanvas"></canvas>
-      <div class="mt-layer">
+      <div class="mt-layer" style="display:none;">
         <div class="mt-title" id="mtTitle" contenteditable="true" spellcheck="false" data-ph="🗳️ 오늘의 회의 주제"></div>
         <div class="mt-list" id="mtList"></div>
       </div>
@@ -930,8 +933,7 @@ body.view-mode .note-side{display:none !important;}
       <button type="button" id="mtEraser">🧽 지우개</button>
       <button type="button" id="mtClearInk">🗑 판서 지우기</button>
       <span class="sp"></span>
-      <span class="hint">칠판 아무 데나 손가락·펜으로 쓰고, 주제·안건 칸을 누르면 글자를 쳐요</span>
-      <button type="button" id="mtClearAll">🧹 전부 비우기</button>
+      <span class="hint">칠판 아무 데나 손가락·펜으로 써요</span>
       <button type="button" id="mtClose" style="background:#FFC9D3;">✕ 닫기</button>
     </div>
   </div>
@@ -2206,7 +2208,7 @@ function noteCounts(){
   return c;
 }
 function renderNoteSide(){
-  const el = $('noteSide'); if (!el) return;
+  const el = $('noteSide'); if (!el || el.tagName === 'BUTTON') return;
   const list = (db.notes && db.notes[getTodayStr()]) || [];
   const sw = list.filter(x => x.kind === 'swear').length, cl = list.filter(x => x.kind === 'classlate').length;
   el.innerHTML = `<div class="t">📓 우리반 관리 수첩 <small>오늘</small></div><span class="ns-chip">🤬 욕설 <b>${sw}</b></span><span class="ns-chip">⏰ 수업 지각 <b>${cl}</b></span>`;
@@ -2885,7 +2887,7 @@ function editText(kind){
   requirePin(() => {
     teKind = kind;
     if (kind === 'urgent'){
-      $('teTitle').textContent = '📌 중요 공지 고치기'; $('teHint').textContent = '비우고 저장하면 공지가 내려가요. (줄바꿈 가능 · 짧을수록 눈에 잘 띄어요)';
+      $('teTitle').textContent = '📌 Must Read 고치기'; $('teHint').textContent = '비우고 저장하면 공지가 내려가요. (줄바꿈 가능 · 짧을수록 눈에 잘 띄어요)';
       $('teInput').value = db.urgent || ''; $('textEditOverlay').style.display = 'flex'; setTimeout(() => $('teInput').focus(), 50); return;
     }
     $('teTitle').textContent = kind === 'notices' ? '✏️ 오늘의 알림 고치기' : '✏️ 종례 고치기';
@@ -2898,7 +2900,7 @@ function saveTextEdit(){
   if (teKind === 'urgent'){
     db.urgent = $('teInput').value.trim().slice(0, 200); saveDB();
     if (sync.api >= 10) syncOp({ op:'urgent', list: db.urgent.split('\n').map(t => t.trim()).filter(Boolean) }); else syncOp({ op:'config', data: configOf() });
-    $('textEditOverlay').style.display = 'none'; renderUrgent(); showToast(db.urgent ? '📌 중요 공지를 올렸어요' : '📌 중요 공지를 내렸어요'); return;
+    $('textEditOverlay').style.display = 'none'; renderUrgent(); showToast(db.urgent ? '📌 Must Read를 올렸어요' : '📌 Must Read를 내렸어요'); return;
   }
   const list = $('teInput').value.split('\n').map(t => t.trim()).filter(Boolean);
   if (JSON.stringify(list) !== JSON.stringify(db[teKind] || [])){
@@ -2963,7 +2965,7 @@ function bindMeeting(){
     if (e.key === 'Enter'){ e.preventDefault(); const d = mtRead(); d.items.splice(i + 1, 0, ''); mtRenderList(d.items, i + 1); mtSave(); }
     else if (e.key === 'Backspace' && !el.innerText.trim()){ e.preventDefault(); const d = mtRead(); d.items.splice(i, 1); mtRenderList(d.items, Math.max(0, i - 1)); mtSave(); }
   });
-  $('mtClearAll').addEventListener('click', () => {
+  if ($('mtClearAll')) $('mtClearAll').addEventListener('click', () => {
     if (!confirm('칠판의 주제·안건·판서를 모두 지울까요?')) return;
     $('mtTitle').textContent = ''; mtRenderList([]); const cv = $('mtCanvas'); cv.getContext('2d').clearRect(0, 0, cv.width, cv.height); mtSave(true);
   });
@@ -3381,7 +3383,7 @@ function scheduleBlink(){
    ========================================================= */
 function renderNotices(){
   const area = $('noticeArea');
-  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 오늘의 알림<button type="button" class="edit-mini" title="알림 고치기" onclick="event.stopPropagation(); editText(\'notices\')">✏️</button></div>';
+  area.innerHTML = '<div class="tape l"></div><div class="tape r"></div><div class="notice-header">📢 Notice<button type="button" class="edit-mini" title="알림 고치기" onclick="event.stopPropagation(); editText(\'notices\')">✏️</button></div>';
   const list = (db.notices || []).filter(t => t && t.trim() !== '');
   if (!list.length){ area.insertAdjacentHTML('beforeend', '<div class="notice-empty">✏️ 버튼을 눌러 오늘의 알림을 적어 주세요</div>'); return; }
   list.forEach((text, idx) => {
@@ -3405,7 +3407,7 @@ function renderUrgent(){
   const el = $('urgentBox'); if (!el) return;
   const t = (db.urgent || '').trim();
   el.classList.toggle('empty', !t);
-  el.innerHTML = `<div class="uh"><span class="dot"></span><span class="tag">📌 중요 공지</span><button type="button" class="edit-mini" title="고치기" style="margin-left:auto;">✏️</button></div><div class="ut">${t ? esc(t) : '눌러서 중요 공지를 적어요'}</div>`;
+  el.innerHTML = `<div class="uh"><span class="dot"></span><span class="tag">📌 Must Read</span><button type="button" class="edit-mini" title="고치기" style="margin-left:auto;">✏️</button></div><div class="ut">${t ? esc(t) : '눌러서 꼭 읽을 공지를 적어요'}</div>`;
 }
 function setFlip(id, value){
   const el = $(id);
