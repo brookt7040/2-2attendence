@@ -71,11 +71,30 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 #sleepOv .sl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 50% 12%,#fff,transparent);opacity:.7;}
 #sleepOv .sl-admin{margin-top:18px;font-family:inherit;font-size:.85rem;background:transparent;color:#BDB4E8;border:1px solid #6B62A0;border-radius:999px;padding:3px 12px;cursor:pointer;}
 @keyframes slZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+.inst{max-width:100%;margin:0 0 1.6rem;background:#fff;border:0.19rem solid #5B4636;border-radius:1.4rem;box-shadow:0 0.3rem 0 #5B4636;overflow:hidden;}
+.inst summary{cursor:pointer;list-style:none;padding:1rem 1.4rem;font-size:1.7rem;background:#E8ECFF;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+.inst summary::-webkit-details-marker{display:none;}
+.inst summary .inst-tip{margin-left:auto;font-size:1.2rem;color:#8A7563;}
+.inst[open] summary .inst-tip{visibility:hidden;}
+.inst-body{display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:1.2rem 1.4rem 1.4rem;}
+.inst-c{background:#FBF7EE;border-radius:1rem;padding:.9rem 1.1rem;}
+.inst-c h3{margin:0 0 .4rem;font-size:1.5rem;font-weight:normal;}
+.inst-c p{margin:0;font-size:1.35rem;line-height:1.6;word-break:keep-all;}
+.inst-note{grid-column:1/-1;margin:0;font-size:1.3rem;color:#8A7563;text-align:center;}
+@media (max-width:600px){ .inst-body{grid-template-columns:1fr;} }
 </style></head><body><div class="wrap">
 <div class="hero"><span class="cl">2학년 2반</span>
 <h1>🐾 온라인 학급<span class="ver" id="gVer"></span></h1><p>우리 반 출석 &amp; 냥이 마을 사용 안내</p>
 <div class="upd" id="gUpd" style="display:none;"><button type="button" id="gUpdBtn">📝 업데이트 내역</button><ul id="gUpdList" hidden></ul></div></div>
 
+<details class="inst"><summary>📲 이 페이지를 <b>바탕화면 · 홈 화면</b>에 추가하기 <span class="inst-tip">눌러서 보기</span></summary>
+<div class="inst-body">
+<div class="inst-c"><h3>💻 디벗 · 컴퓨터 (크롬)</h3><p>오른쪽 위 <b>⋮</b> → <b>전송, 저장, 공유</b> → <b>바로가기 만들기</b> → <b>"창으로 열기"</b> 체크 → 만들기</p></div>
+<div class="inst-c"><h3>💻 디벗 · 컴퓨터 (엣지)</h3><p>오른쪽 위 <b>⋯</b> → <b>앱</b> → <b>이 사이트를 앱으로 설치</b></p></div>
+<div class="inst-c"><h3>📱 안드로이드 · 갤럭시탭</h3><p>크롬 오른쪽 위 <b>⋮</b> → <b>홈 화면에 추가</b></p></div>
+<div class="inst-c"><h3>🍎 아이폰 · 아이패드</h3><p>사파리 아래쪽 <b>공유 버튼 □↑</b> → <b>홈 화면에 추가</b></p></div>
+<p class="inst-note">이 안내 페이지 하나만 추가하면 돼요. 여기서 내 화면 · 출석부로 다 갈 수 있어요!</p>
+</div></details>
 <div class="go">
 <a class="a1" href="student.html?api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">🐱</span>내 화면 가기<small>로그인 · 꾸미기 · 냥이 마을</small></a>
 <a class="a2" href="index.html?view=1&amp;api=https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c%2Fexec"><span class="ic">📋</span>출석부 보러가기<small>오늘 출석 현황 (입장 코드 필요)</small></a>
