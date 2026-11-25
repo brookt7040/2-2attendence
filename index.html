@@ -2279,15 +2279,15 @@ function renderNotes(){
   const c = noteCounts(), inR = noteRange();
   const P = [['today', '오늘'], ['week', '이번 주'], ['month', '이번 달'], ['all', '전체']];
   const rows = kids().map(n => { const v = c[n] || NOTE_ZERO(); return `<tr><td class="nm">${esc(n)}</td>
-    <td><b class="${v.swear ? 'hot' : ''}">${v.swear}</b> <small class="acc" title="전체 누적 (5번마다 청소 당번)">누적 ${swearList(n).length}</small> <button type="button" class="nb" data-nadd="swear" data-who="${esc(n)}" title="욕설 +1 (누적 5번마다 청소 당번)">🤬 +1</button></td>
+    <td class="good"><b class="star">${v.praise}</b> <button type="button" class="nb g" data-nadd="praise" data-who="${esc(n)}" title="칭찬 도장 꾹!">💮 꾹</button></td>
+    <td><b class="${v.swear ? 'hot' : ''}">${v.swear}</b> <button type="button" class="nb" data-nadd="swear" data-who="${esc(n)}" title="욕설 +1 (누적 5번마다 청소 당번)">🤬 +1</button></td>
     <td><b class="${v.classlate ? 'hot' : ''}">${v.classlate}</b> <button type="button" class="nb" data-nadd="classlate" data-who="${esc(n)}" title="수업 지각 +1">⏰ +1</button></td>
-    <td><b class="${v.attitude ? 'hot' : ''}">${v.attitude}</b> <button type="button" class="nb" data-nadd="attitude" data-who="${esc(n)}" title="수업태도 불량 +1">😴 +1</button></td>
-    <td class="good"><b class="star">${v.praise}</b> <button type="button" class="nb g" data-nadd="praise" data-who="${esc(n)}" title="칭찬 도장 꾹!">💮 꾹</button></td></tr>`; }).join('');
+    <td><b class="${v.attitude ? 'hot' : ''}">${v.attitude}</b> <button type="button" class="nb" data-nadd="attitude" data-who="${esc(n)}" title="수업태도 불량 +1">😴 +1</button></td></tr>`; }).join('');
   const log = Object.entries(db.notes || {}).filter(([ds]) => inR(ds)).flatMap(([ds, l]) => (l || []).map(x => ({ ...x, ds }))).sort((a, b) => (b.ds + b.t).localeCompare(a.ds + a.t)).slice(0, 60);
   box.innerHTML = `<div class="np">${P.map(([k, l]) => `<button type="button" data-np="${k}" class="${notePeriod === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-    <div class="nt-wrap"><div class="nt-box"><table class="nt"><thead><tr><th>이름</th><th>🤬 욕설</th><th>⏰ 수업 지각</th><th>😴 수업태도</th><th class="good">💮 칭찬 도장</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="nt-wrap"><div class="nt-box"><table class="nt"><thead><tr><th>이름</th><th class="good">💮 칭찬 도장</th><th>🤬 욕설</th><th>⏰ 수업 지각</th><th>😴 수업태도</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="nlog"><div class="nlog-h">🕘 최근 기록</div>${log.map(x => `<div class="nl${NOTE_KIND[x.kind] && NOTE_KIND[x.kind].good ? ' good' : ''}"><span>${x.ds.slice(5).replace('-', '/')} ${esc(x.t)}</span><span>${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].icon : ''} ${esc(x.who)} ${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].name : ''}</span><button type="button" data-ndel="${esc(x.id)}" data-nds="${x.ds}" title="지우기">✕</button></div>`).join('') || '<div class="hint">기록이 없어요</div>'}</div></div>
-    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 표의 <b>누적</b> 칸에서 몇 번째인지 볼 수 있어요.</div>`;
+    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 지금까지 몇 번인지는 <b>전체</b>를 눌러 보세요.</div>`;
 }
 let attEditName = null;
 function editTime(name){
