@@ -749,11 +749,11 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 /* 👀 학생용 출석부: Must Read 비었으면 숨김 · 청소 당번 ＋ · 종례하기 숨김 · 폰에서는 오른쪽 → 가운데 → 왼쪽 순서 */
 body.view-mode #urgentBox.empty,body.view-mode .clean-add,body.view-mode #openClosingBtn{display:none !important;}
 @media (max-width:760px){
-  body.view-mode .header{display:flex !important;flex-direction:column;}
-  body.view-mode .header-left,body.view-mode .side-btns{display:contents;}
-  body.view-mode .title-row{order:0;} body.view-mode .mini-menu{order:1;}
-  body.view-mode .header-right{display:contents;} body.view-mode .header-right > *{order:2;} body.view-mode .header-mid{order:3;}
-  body.view-mode #cleanSide{order:4;margin-top:22px;} body.view-mode #openMeetingBtn{order:5;max-width:none;} body.view-mode #urgentBox{order:6;}
+  .header{display:flex !important;flex-direction:column;}
+  .header-left,.side-btns{display:contents;}
+  .title-row{order:0;} .mini-menu{order:1;}
+  .header-right{display:contents;} .header-right > *{order:2;} .header-mid{order:3;}
+  #cleanSide{order:4;margin-top:22px;} #openMeetingBtn{order:5;max-width:none;} #openClosingBtn{order:5;max-width:none;} #urgentBox{order:6;}
 }
 
 @media (max-width:1100px){
