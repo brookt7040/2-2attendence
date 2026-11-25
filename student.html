@@ -1686,6 +1686,7 @@ function openVillage(opts){
   function frame(t){
     if (!alive) return;
     const dt = Math.min(0.05, (t - last) / 1000); last = t;
+    kbMove();
     const now = Date.now();
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = scene === 'arcade' ? '#20183F' : '#BFE8B4'; ctx.fillRect(0, 0, cv.width, cv.height);
     camera(false);
@@ -2396,12 +2397,44 @@ function openVillage(opts){
     $q('.vg-bar .send').addEventListener('click', talk);
     input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); talk(); } });
   }
-  function close(){ alive = false; editStop(false); cancelAnimationFrame(raf); clearInterval(poll); clearInterval(beat); window.removeEventListener('resize', resize); root.remove(); opts.onClose && opts.onClose(); }
+  function close(){ alive = false; editStop(false); cancelAnimationFrame(raf); clearInterval(poll); clearInterval(beat); window.removeEventListener('resize', resize); window.removeEventListener('keydown', kbDown); window.removeEventListener('keyup', kbUp); window.removeEventListener('blur', kbClear); root.remove(); opts.onClose && opts.onClose(); }
   resize(); updateTop(); pull().then(() => { if (!state) say('마을에 연결하지 못했어요'); });
   poll = setInterval(() => { if (!document.hidden) pull(); }, 4000);
   // 앉아 있거나 건물 안에 있을 때는 2분마다 "아직 여기 있어요" 알려요
   beat = setInterval(() => { const c = me(); if (c && !document.hidden && (c.sit || scene !== 'out')) sendMove(c, c.sit ? { s: c.sit.s, t: c.sit.t, a: c.sit.a } : null); }, 120000);
   raf = requestAnimationFrame(frame);
+  /* ⌨️ 키보드로 걷기: WASD · 방향키, 스페이스/엔터로 가까운 🐾 누르기 */
+  const kbKeys = new Set();
+  const KB = { KeyW:[0,-1], KeyA:[-1,0], KeyS:[0,1], KeyD:[1,0], ArrowUp:[0,-1], ArrowLeft:[-1,0], ArrowDown:[0,1], ArrowRight:[1,0] };
+  const kbTyping = () => { const a = document.activeElement; return !!(a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)); };
+  function kbBounds(){
+    if (isMap(scene)) return MAP_WALK[scene] || WALK;
+    if (scene.startsWith('house:')){ const g = roomGeom(); return { x0: g.x0 + 20, x1: g.x0 + g.w - 20, y0: g.y0 + 30, y1: g.y0 + g.h }; }
+    return { x0: 40, x1: VW - 40, y0: { hall: 340, arcade: 640, hana: 400, eng: 360 }[scene] || 360, y1: VH - 30 };
+  }
+  function kbMove(){
+    if (!kbKeys.size || editing) return;
+    const c = me(); if (!c) return;
+    let dx = 0, dy = 0; kbKeys.forEach(k => { dx += KB[k][0]; dy += KB[k][1]; });
+    if (!dx && !dy) return;
+    if (c.sit){ c.sit = null; showActs(null); if (scene === 'hall'){ toGroup = false; updateTo(); } }
+    goal = null;
+    const n = Math.hypot(dx, dy), B = kbBounds();
+    c.tx = Math.max(B.x0, Math.min(B.x1, c.x + dx / n * 40)); c.ty = Math.max(B.y0, Math.min(B.y1, c.y + dy / n * 40));
+  }
+  function kbDown(e){
+    if (!alive || opts.viewOnly || !opts.me || kbTyping() || panel.style.display === 'block') return;
+    if (KB[e.code]){ kbKeys.add(e.code); e.preventDefault(); return; }
+    if (e.code === 'Space' || e.code === 'Enter'){
+      const c = me(); if (!c) return; e.preventDefault();
+      const q = pawSpots().map(p => ({ p, d: Math.hypot(p.tx - c.x, p.ty - c.y) })).sort((a, b) => a.d - b.d)[0];
+      if (q && q.d < 170) tapAt(q.p.x, q.p.y); else say('가까이에 누를 수 있는 🐾 가 없어요');
+    }
+  }
+  function kbUp(e){ kbKeys.delete(e.code); }
+  function kbClear(){ kbKeys.clear(); }
+  window.addEventListener('keydown', kbDown); window.addEventListener('keyup', kbUp); window.addEventListener('blur', kbClear);
+  if (!opts.viewOnly && opts.me && window.matchMedia && matchMedia('(pointer:fine)').matches) setTimeout(() => say('⌨️ WASD·방향키로 걷고, 스페이스로 가까운 🐾 를 눌러요', 3500), 2500);
   const tapAt = (wx, wy) => { const r = cv.getBoundingClientRect(), dpr = cv.width / r.width; cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (wx * scale + ox) / dpr, clientY: r.top + (wy * scale + oy) / dpr, bubbles: true })); };
   return (openVillage.last = { close, say, enter, tapAt, info: () => ({ scene, me: me() && { x: me().x, y: me().y, sit: me().sit }, cats: Object.keys(cats).length }) });
 }
