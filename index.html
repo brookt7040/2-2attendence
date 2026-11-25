@@ -1384,13 +1384,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
       <div class="form-hint">비밀번호는 서로 달라야 해요. 관리자 비밀번호는 무엇이든 열 수 있어요.</div>
       <div class="row"><span>🚪 <b>출석부 입장 코드</b> · 출석부를 처음 열 때 물어봐요 (우리 반만 알려 주세요 · 비워 두면 안 물어봐요)</span><input type="text" id="accessCodeInput" maxlength="12" style="width:130px;" autocomplete="off"> <button type="button" class="btn" id="gateTestBtn" style="font-size:.85rem;padding:4px 10px;background:#fff;">🚪 입장 화면 시험해 보기</button> <button type="button" class="btn" id="gateResetBtn" style="font-size:.85rem;padding:4px 10px;background:#FFD6E0;">🔒 모두 다시 입력하게 하기</button></div>
       <div class="row"><span>⏳ 한 번 들어오면 다시 안 묻는 시간</span><span><input type="number" id="accessHoursInput" min="1" max="12" style="width:70px;"> 시간</span></div>
-      <div class="row" style="margin-top:12px;"><span>✨ <b>"새로 꾸몄어요" 알림</b> · 학생이 꾸미면 마을 위에 흘러요</span><span><label><input type="checkbox" id="tkLookOn"> 켜기</label> <input type="number" id="tkLookMin" min="1" max="1440" style="width:70px;"> 분 동안</span></div>
-      <div class="row"><span>📢 <b>확성기</b> · 학생이 냥코인으로 사서 마을·교실 화면 맨 위에 띄워요</span><span><label><input type="checkbox" id="tkMegaOn"> 팔기</label> <input type="number" id="tkMegaMin" min="1" max="1440" style="width:70px;"> 분 동안</span></div>
-      <div class="row" style="margin-top:12px;"><span>📋 <b>종례가 학생 화면 맨 위로 올라오는 시각</b> · 이때부터 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</span><input type="time" id="closingAtInput"></div>
       <div class="row" style="margin-top:12px;"><span>💤 <b>접속 금지 시간</b> · 교실 출석부·학생 화면·학생용 출석부·안내 사이트가 모두 잠겨요 (선생님 계정은 괜찮아요)</span></div>
       <div class="row"><label><input type="checkbox" id="sleepOnInput"> 사용</label><span><input type="time" id="sleepStartInput"> 부터 <input type="time" id="sleepEndInput"> 까지</span></div>
-      <div class="row" style="margin-top:12px;"><span>📖 <b>안내 사이트 버전</b> · 가이드 제목 옆에 떠요</span><input type="text" id="guideVerInput" maxlength="12" style="width:110px;" placeholder="예: v1.0"></div>
-      <div class="form-group"><label>📝 안내 사이트 업데이트 내역 (한 줄에 하나 · 맨 위가 최신)</label><textarea id="guideNotesInput" style="height:80px;" placeholder="11/25 마을 개선 의견 게시판이 생겼어요&#10;11/25 시간표 보기가 생겼어요"></textarea></div>
     </div>
 
     <div class="section">
@@ -2342,11 +2337,11 @@ function setupSettingsTabs(){
   n.innerHTML = `<div class="section-title">📢 알림 · 공지</div>
     <div class="form-hint">✍️ 바로 쓰기 · 누르면 쓰는 창이 열려요 (출석부 화면에서 눌러 쓰는 것과 똑같아요)</div>
     <div class="st-write"><button type="button" data-stw="notices">📢 Notice<small>오늘의 알림</small></button><button type="button" data-stw="urgent">📌 Must Read<small>중요 공지</small></button><button type="button" data-stw="closing">📋 종례<small>종례 화면 · 학생 화면</small></button><button type="button" data-stw="bubble">💬 하나 말풍선<small>긴급 호출도 여기서</small></button></div>
-    <div class="form-hint" style="margin-top:6px;">⚙️ 알림 설정</div><div class="st-move"></div>
-    <div class="row"><span>🏘️ <b>마을 소식 줄</b> · 학생 화면 마을 탭 위 (물 마시기 · 시험 통과 · 새로 꾸몄어요 …)</span><span><button type="button" class="btn" data-news="1" style="font-size:.85rem;padding:4px 10px;background:#E4F7EA;">켜기</button> <button type="button" class="btn" data-news="0" style="font-size:.85rem;padding:4px 10px;background:#FFE1EA;">끄기</button></span></div>`;
+    <div class="st-move"></div>
+    <div class="form-hint" style="margin-top:10px;background:#E8ECFF;border-radius:12px;padding:10px 12px;">🏘️ 마을 소식 줄 · 📢 확성기 · 📋 종례가 학생 화면 맨 위로 오는 시각 · 📖 안내 사이트 버전은<br><b>학생 화면 → 시내쌤 로그인 → 👑 관리 → ⚙️ 학생 화면 설정</b>에서 바꿔요.</div>
+    <div class="row" style="display:none;"><span>🏘️ <b>마을 소식 줄</b> · 학생 화면 마을 탭 위 (물 마시기 · 시험 통과 · 새로 꾸몄어요 …)</span><span><button type="button" class="btn" data-news="1" style="font-size:.85rem;padding:4px 10px;background:#E4F7EA;">켜기</button> <button type="button" class="btn" data-news="0" style="font-size:.85rem;padding:4px 10px;background:#FFE1EA;">끄기</button></span></div>`;
   secs[0].parentNode.insertBefore(n, secs[0]);
   const mv = n.querySelector('.st-move');
-  ['tkLookOn', 'tkMegaOn', 'closingAtInput', 'guideVerInput', 'guideNotesInput'].forEach(id => { const el = $(id); const row = el && (el.closest('.form-group') || el.closest('.row')); if (row) mv.appendChild(row); });
   $('stTabs').innerHTML = ST_TABS.map(([k, l]) => `<button type="button" data-st="${k}">${l}</button>`).join('');
   $('stTabs').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b) showStTab(b.dataset.st); });
   n.addEventListener('click', e => { const nb = e.target.closest('[data-news]'); if (nb){ syncOp({ op:'newsSet', on: nb.dataset.news === '1' }); showToast(nb.dataset.news === '1' ? '🏘️ 마을 소식 줄을 켰어요' : '🏘️ 마을 소식 줄을 껐어요'); return; } const b = e.target.closest('[data-stw]'); if (!b) return; const k = b.dataset.stw; if (k === 'bubble') openBubbleEdit(); else editText(k); });
@@ -2360,7 +2355,7 @@ function showStTab(k){
   const m = $('adminOverlay').querySelector('.modal'); if (m) m.scrollTop = 0;
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 31;
+const NEED_API = 32;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -4202,10 +4197,7 @@ function openAdminUI(){
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
   $('accessCodeInput').value = db.accessCode || ''; $('accessHoursInput').value = db.accessHours || 3;
-  { const tk = Object.assign({ look: true, lookMin: 60, mega: true, megaMin: 60 }, db.ticker || {}); $('tkLookOn').checked = tk.look; $('tkLookMin').value = tk.lookMin; $('tkMegaOn').checked = tk.mega; $('tkMegaMin').value = tk.megaMin; }
-  $('closingAtInput').value = db.closingAt === undefined ? '15:00' : (db.closingAt || '');
   { const sl = db.sleep || {}; $('sleepOnInput').checked = !!sl.on; $('sleepStartInput').value = sl.start || '22:00'; $('sleepEndInput').value = sl.end || '07:00'; }
-  $('guideVerInput').value = db.guideVer || ''; $('guideNotesInput').value = db.guideNotes || '';
   $('adminPinInput').value = db.adminPin || ''; $('subPinInput').value = db.subPin || ''; $('latePinInput').value = db.latePin || '';
   $('menuInput').value = db.menu.map(m => `${m.name}, ${m.exp}`).join('\n');
   const ac = db.alarmConfig;
@@ -4277,10 +4269,7 @@ async function saveAdminData(){
   db.subPin = $('subPinInput').value.trim(); db.latePin = $('latePinInput').value.trim();
   db.accessCode = $('accessCodeInput').value.trim(); db.accessHours = Math.min(12, Math.max(1, parseInt($('accessHoursInput').value, 10) || 3));
   if (db.accessCode) gatePass(db.accessCode);   // 지금 이 기기는 바로 통과
-  db.ticker = { look: $('tkLookOn').checked, lookMin: Math.min(1440, Math.max(1, parseInt($('tkLookMin').value, 10) || 60)), mega: $('tkMegaOn').checked, megaMin: Math.min(1440, Math.max(1, parseInt($('tkMegaMin').value, 10) || 60)) };
-  db.closingAt = $('closingAtInput').value || '';
   db.sleep = { on: $('sleepOnInput').checked, start: $('sleepStartInput').value || '22:00', end: $('sleepEndInput').value || '07:00' }; sleepTick();
-  db.guideVer = $('guideVerInput').value.trim().slice(0, 12); db.guideNotes = $('guideNotesInput').value.trim().slice(0, 1500);
   db.level = Object.assign({}, db.level, { max: lvMax, start: lvStart });
   db.menu = parseMenu($('menuInput').value);
   let vol = parseInt($('alarmVolumeInput').value, 10); if (isNaN(vol)) vol = 80;
@@ -4550,6 +4539,7 @@ async function pullSync(force){
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
     if (j.api) checkServerRev(j.api);
     if (j.strikes) applyStrikes(j.strikes, j.strikeFeed || []);
+    if (j.megaMin) megaMinNow = j.megaMin;
     if (j.presence){ serverPresence = j.presence; if ($('presOv').style.display === 'flex') $('presBody').innerHTML = presenceHTML(serverPresence, kids()); }
     if (typeof j.asksOpen === 'number'){ serverAsksOpen = j.asksOpen; updateGmDot(); }
     if (typeof j.reqOpen === 'number'){ serverReqOpen = j.reqOpen; updateGmDot(); }
@@ -4625,9 +4615,9 @@ function renderSongs(){
 }
 
 /* 📢 확성기 · 🐱 하나 꾸미기 (교실 화면) */
-let megaNow = [], hanaLookNow = {};
+let megaNow = [], hanaLookNow = {}, megaMinNow = 60;
 function setMega(list){
-  megaNow = (list || []).filter(m => Date.now() - m.ts < ((db.ticker && db.ticker.megaMin) || 60) * 60000);
+  megaNow = (list || []).filter(m => Date.now() - m.ts < (megaMinNow || 60) * 60000);
   const el = $('megaBar'); if (!el) return;
   el.style.display = megaNow.length ? 'block' : 'none';
   el.innerHTML = megaNow.length ? `<span class="mega-in">${megaNow.map(m => `📢 <b>${esc(m.n)}</b> : ${esc(m.text)}`).join('&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;')}</span>` : '';

@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v31 · 🏘️ 마을 소식(물 마시기·시험 통과…) · v30 ✨📢 마을 공지 켜기/끄기·시간 · v29 🟢 지금 접속 중 · v28 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v32 · ⚙️ 학생 화면 설정을 시내쌤 관리로 · v31 🏘️ 마을 소식 · v30 ✨📢 마을 공지 켜기/끄기·시간 · v29 🟢 지금 접속 중 · v28 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 31;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 32;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -100,6 +100,7 @@ function doPost(e) {
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
     if (body.action === 'chat') return out_({ ok: true, cfg: chatCfg_(), msgs: readChat_(Number(body.after || 0), function () { return true; }) });
     if (body.action === 'presence') return out_(presence_());
+    if (body.action === 'stuCfg') return out_({ ok: true, cfg: stuCfg_(), strikes: strikes_() });
     if (body.action === 'asks') return out_({ ok: true, asks: readAsks_(function () { return true; }) });
     if (body.action === 'coins') return out_(teacherCoins_());
     if (body.action === 'engUpload') return out_(engUpload_(body));
@@ -315,7 +316,7 @@ function publicGet_(p) {
   if (p.room) return roomState_(String(p.room));
   if (p.card) return cardOf_(String(p.card));
   if (p.board) { if (p.cid) touchAnon_(p.cid); return boardOf_(String(p.gate || '')); }
-  if (p.guide) { const cfg = readRows_().map.config || {}; return { ok: true, api: API_VERSION, ver: String(cfg.guideVer || ''), notes: String(cfg.guideNotes || ''), sleep: sleepCfg_(), now: Date.now() }; }   // 📖 안내 사이트 버전·업데이트 내역
+  if (p.guide) { const sc = stuCfg_(); return { ok: true, api: API_VERSION, ver: String(sc.guideVer || ''), notes: String(sc.guideNotes || ''), sleep: sleepCfg_(), now: Date.now() }; }   // 📖 안내 사이트 버전·업데이트 내역
   if (p.eng) return engPublic_();
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
@@ -326,7 +327,7 @@ function publicGet_(p) {
   }
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
-  res.sleep = sleepCfg_(); res.closingAt = props_().getProperty('closingAt') || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = props_().getProperty('newsOn') !== '0';
+  { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; }
   return res;
 }
 
@@ -346,6 +347,7 @@ function teacherPull_(body, auth) {
     });
     res.state = st;
     res.presence = presence_();
+    res.megaMin = stuCfg_().mega.min;
     res.strikes = strikes_(); try { res.strikeFeed = JSON.parse(props_().getProperty('strikeFeed') || '[]'); } catch (e) { res.strikeFeed = []; }
     res.asksOpen = readAsks_(function (a) { return !a.reply && !a.del && !a.done; }).length;
     res.counselUrgent = counselUrgent_();
@@ -383,7 +385,7 @@ function handlePost_(body, auth) {
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
           try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
-          try { props_().setProperty('sleepCfg', JSON.stringify((o.data && o.data.sleep) || null)); props_().setProperty('closingAt', String((o.data && o.data.closingAt) || '')); props_().setProperty('tickerCfg', JSON.stringify((o.data && o.data.ticker) || {})); } catch (e) {}
+          try { props_().setProperty('sleepCfg', JSON.stringify((o.data && o.data.sleep) || null)); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
         }
@@ -467,7 +469,8 @@ function handlePost_(body, auth) {
           if (s) { if (o.reset) delete all[o.name]; else { s.until = 0; s.perm = false; s.pub = false; } props_().setProperty('strikes', JSON.stringify(all)); }
           break;
         }
-        case 'newsSet': props_().setProperty('newsOn', o.on ? '1' : '0'); bump_(); break;   // 🏘️ 마을 소식 줄 켜기 · 끄기
+        case 'newsSet': stuCfgSet_({ news: Object.assign({}, stuCfg_().news, { on: !!o.on }) }); break;   // 🏘️ 마을 소식 줄 켜기 · 끄기
+        case 'stuCfgSet': stuCfgSet_(o.data); break;                // ⚙️ 학생 화면 설정
         case 'askDone': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '확인'); break;
         case 'megaDel': props_().setProperty('mega', JSON.stringify(megaList_().filter(function (m) { return m.ts !== Number(o.ts); }))); break;
         case 'hanaReset': props_().setProperty('hanaLook', '{}'); break;
@@ -1085,7 +1088,35 @@ function butlerToday_() {
   try { const b = JSON.parse(props_().getProperty('butler') || 'null'); return b && b.ds === todayStr_() ? b.n : ''; } catch (e) { return ''; }
 }
 /* ✨📢 마을 공지 설정 (선생님): 새로 꾸몄어요 · 확성기 켜기/끄기와 떠 있는 시간(분) */
-function tickerCfg_() { const d = { look: true, lookMin: 60, mega: true, megaMin: 60 }; try { return Object.assign(d, JSON.parse(props_().getProperty('tickerCfg') || '{}') || {}); } catch (e) { return d; } }
+/* ⚙️ 학생 화면 설정 (학생 화면 👑 관리 → 학생 화면 설정에서 시내쌤이 바꿔요 · 출석부 설정과 따로 저장) */
+const NEWS_GROUPS_ = { look: [], play: ['drink', 'fish', 'churu', 'camp', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide', 'photo'], eng: ['eng'], hana: ['hana'], house: ['house'], idea: ['idea'] };
+function stuCfg_() {
+  const P = props_(); let s = null;
+  try { s = JSON.parse(P.getProperty('stuCfg') || 'null'); } catch (e) {}
+  if (!s) {      // 처음 한 번: 예전 설정(출석부 설정에 있던 값)을 옮겨 와요
+    let t = {}; try { t = JSON.parse(P.getProperty('tickerCfg') || '{}') || {}; } catch (e) {}
+    let cf = {}; try { cf = readRows_().map.config || {}; } catch (e) {}
+    s = { news: { on: P.getProperty('newsOn') !== '0', min: Number(t.lookMin) || 60, kinds: { look: t.look !== false, play: true, eng: true, hana: true, house: true, idea: true } },
+      mega: { on: t.mega !== false, min: Number(t.megaMin) || 60 },
+      closingAt: P.getProperty('closingAt') !== null ? String(P.getProperty('closingAt')) : String(cf.closingAt === undefined ? '15:00' : (cf.closingAt || '')),
+      guideVer: String(cf.guideVer || ''), guideNotes: String(cf.guideNotes || '') };
+    try { P.setProperty('stuCfg', JSON.stringify(s)); } catch (e) {}
+  }
+  s.news = Object.assign({ on: true, min: 60 }, s.news || {}); s.news.kinds = Object.assign({ look: true, play: true, eng: true, hana: true, house: true, idea: true }, s.news.kinds || {});
+  s.mega = Object.assign({ on: true, min: 60 }, s.mega || {});
+  return s;
+}
+function stuCfgSet_(d) {
+  const s = stuCfg_(), n = d || {}, num = function (v, def) { v = Math.round(Number(v)); return v >= 1 && v <= 1440 ? v : def; };
+  if (n.news) { s.news.on = !!n.news.on; s.news.min = num(n.news.min, s.news.min); Object.keys(s.news.kinds).forEach(function (k) { if (n.news.kinds && k in n.news.kinds) s.news.kinds[k] = !!n.news.kinds[k]; }); }
+  if (n.mega) { s.mega.on = !!n.mega.on; s.mega.min = num(n.mega.min, s.mega.min); }
+  if (typeof n.closingAt === 'string') s.closingAt = /^\d\d:\d\d$/.test(n.closingAt) ? n.closingAt : '';
+  if (typeof n.guideVer === 'string') s.guideVer = n.guideVer.slice(0, 12);
+  if (typeof n.guideNotes === 'string') s.guideNotes = n.guideNotes.slice(0, 1500);
+  props_().setProperty('stuCfg', JSON.stringify(s)); bump_();
+  return s;
+}
+function tickerCfg_() { const s = stuCfg_(); return { look: s.news.on && s.news.kinds.look, lookMin: s.news.min, mega: s.mega.on, megaMin: s.mega.min }; }
 /* 🏘️ 마을 소식: 물 마시기 · 시험 통과 같은 소소한 일 (캐시 · 3시간) */
 const NEWS_KINDS_ = ['drink', 'fish', 'churu', 'camp', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide', 'photo', 'eng', 'hana', 'house', 'idea'];
 function addNews_(name, k) {
@@ -1099,7 +1130,7 @@ function addNews_(name, k) {
 }
 function newsList_() { try { return JSON.parse(cache_().get('news') || '[]'); } catch (e) { return []; } }
 function megaList_() {
-  const cut = Date.now() - (Number(tickerCfg_().megaMin) || 60) * 60000;
+  const cut = Date.now() - (Number(stuCfg_().mega.min) || 60) * 60000;
   try { return JSON.parse(props_().getProperty('mega') || '[]').filter(function (m) { return m.ts > cut; }); } catch (e) { return []; }
 }
 function houseReady_(inv, id) {
@@ -1536,7 +1567,7 @@ function studentCoins_(name, body) {
       else if (!T && it.stock > 0 && soldCount_(it.id) >= it.stock) error = 'soldout';
       else if (it.cat === 'house' && (inv.houses || []).indexOf(it.id) >= 0) error = 'owned';
       else if (it.cat === 'house' && !T && !houseReady_(inv, it.id)) error = 'order';
-      else if (it.cat === 'mega' && !tickerCfg_().mega) error = 'off';
+      else if (it.cat === 'mega' && !stuCfg_().mega.on) error = 'off';
       else if (['mega', 'song', 'banner', 'title'].indexOf(it.cat) >= 0 && !cleanText_(body.text, chatCfg_())) error = 'empty';
       else if (it.cat === 'butler' && butlerToday_()) error = 'soldout';
       else if (it.cat === 'decor' && !T && (inv.decor || []).length >= 4) error = 'full';

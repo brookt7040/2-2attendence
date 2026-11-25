@@ -269,6 +269,14 @@ body.guest #p-notice > :not(.guest-only),body.guest #p-village > :not(.guest-onl
 .pr-sec:nth-child(2) .pr-chip{border-color:#E8C35A;background:#FFF5D1;}
 .pr-none{color:var(--ink-soft);font-size:.9rem;} .pr-anon{margin-top:8px;font-size:.95rem;} .pr-note{margin-top:6px;font-size:.8rem;color:var(--ink-soft);}
 .ticker-off{display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:inherit;font-size:.8rem;border:2px solid var(--ink);border-radius:999px;background:#FFE1EA;padding:1px 10px;cursor:pointer;z-index:2;}
+.sc-box textarea{width:100%;box-sizing:border-box;font-family:inherit;font-size:1rem;border:2px solid var(--ink);border-radius:12px;padding:8px;}
+.sc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:1.05rem;}
+.sc-row input[type=number],.sc-row input[type=time],.sc-row input[type=text]{font-family:inherit;font-size:1rem;border:2px solid var(--ink);border-radius:10px;padding:3px 8px;width:80px;}
+.sc-row input[type=time]{width:130px;}
+.sc-kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 12px;margin-top:8px;padding-top:8px;border-top:2px dotted #E6D9CA;}
+.sc-kinds label{font-size:.98rem;}
+.sc-stk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed #F3C9C9;} .sc-stk b{font-weight:normal;min-width:70px;}
+.sc-stk .btn{font-size:.85rem;padding:3px 10px;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
@@ -525,7 +533,7 @@ async function pull(force){
     const prevNotice = JSON.stringify([st.notices, st.closing]);
     st.notices = j.notices || []; st.closing = j.closing || [];
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
-    megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn;
+    megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn; if (j.newsKinds) newsKinds = j.newsKinds;
     sleepCfgNow = j.sleep || null; sleepTick(); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
     special = { banners: j.banners || [], butler: j.butler || '' };
     if (JSON.stringify([st.notices, st.closing]) !== prevNotice && st.v !== -1 && current !== 'notice') $('dotNotice').classList.add('on');
@@ -746,7 +754,8 @@ async function enterVillage(){
   villageChatTimer = setInterval(() => { if (me && !document.hidden){ chatPull(); if (++vTick % 10 === 0) coinCall('coins'); } }, 3000);
   if (!me) toast('로그인하면 내 고양이로 걸어 다닐 수 있어요');
 }
-let tickerCfg = { look: true, lookMin: 60, mega: true, megaMin: 60 }, newsNow = [], newsOn = true;
+let tickerCfg = { look: true, lookMin: 60, mega: true, megaMin: 60 }, newsNow = [], newsOn = true, newsKinds = { look: true, play: true, eng: true, hana: true, house: true, idea: true };
+const NEWS_GROUP = k => ['eng', 'hana', 'house', 'idea'].includes(k) ? k : 'play';
 const NEWS_TXT = { drink:'물을 마셨어요 💧', fish:'낚시를 했어요 🎣', churu:'츄르를 뽑았어요 🍡', camp:'모닥불에 마시멜로를 구웠어요 🔥', swing:'그네를 탔어요 🎠', slide:'미끄럼틀을 탔어요 🛝', nap:'해먹에서 낮잠을 잤어요 😴', boat:'배를 탔어요 ⛵', surf:'서핑을 했어요 🏄', climb:'캣타워에 올랐어요 🗼', yarn:'털실을 굴렸어요 🧶', scratch:'스크래처를 긁었어요 🐾', sunbath:'햇볕을 쬐었어요 ☀️', build:'모래성을 쌓았어요 🏰', hide:'상자에 쏙 들어갔어요 📦', photo:'사진을 찍었어요 📸', eng:'영어 시험을 통과했어요! 🎉', hana:'하나랑 놀았어요 🐱', house:'새 집으로 이사했어요 🏠', idea:'마을 의견을 냈어요 💡' };
 let villageChatTimer = 0, hanaLookNow = {}, megaNow = [], tickerClear = 0, special = { banners: [], butler: '' };
 /* 🐱 머리 위 하나: 눌러서 말 시키기 + 꾸민 모습 */
@@ -804,12 +813,12 @@ function render(){
     $('sosTitle').textContent = `📨 ${tn}에게 연락하기`;
   }
   // 마을
-  const now = Date.now(), recent = !tickerCfg.look ? [] : pub.students.filter(s => s.lookAt && s.lookAt > tickerClear && now - s.lookAt < (tickerCfg.lookMin || 60) * 60000).sort((a, b) => b.lookAt - a.lookAt);
+  const now = Date.now(), recent = !(tickerCfg.look && newsKinds.look !== false) ? [] : pub.students.filter(s => s.lookAt && s.lookAt > tickerClear && now - s.lookAt < (tickerCfg.lookMin || 60) * 60000).sort((a, b) => b.lookAt - a.lookAt);
   $('megaTicker').style.display = megaNow.length ? 'block' : 'none';
   $('megaText').textContent = megaNow.map(m => `📢 ${m.n} : ${m.text}`).join('      ');
   const win = (tickerCfg.lookMin || 60) * 60000;
   const items = recent.map(s => ({ ts: s.lookAt, t: `✨ ${iga(givenName(s.name))} 새로 꾸몄어요!` }))
-    .concat((newsNow || []).filter(x => now - x.ts < win && x.ts > tickerClear && NEWS_TXT[x.k]).map(x => ({ ts: x.ts, t: `${iga(givenName(x.n))} ${NEWS_TXT[x.k]}` })))
+    .concat((newsNow || []).filter(x => now - x.ts < win && x.ts > tickerClear && NEWS_TXT[x.k] && newsKinds[NEWS_GROUP(x.k)] !== false).map(x => ({ ts: x.ts, t: `${iga(givenName(x.n))} ${NEWS_TXT[x.k]}` })))
     .sort((a, b) => b.ts - a.ts).slice(0, 12);
   const tOn = me && /(쌤|샘|선생님|교감|교장)$/.test(me.name) && !viewAsStudent;
   $('ticker').style.display = newsOn && items.length ? 'block' : 'none';
@@ -1243,13 +1252,14 @@ function setAsStudent(on){
   toast(on ? '👀 학생 화면으로 보는 중이에요' : '👑 선생님 화면으로 돌아왔어요');
 }
 function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsStudent'); $('asStuBar').style.display = 'none'; tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
-const T_TABS = [['online', '🟢 접속 중'], ['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['eng', '📚 영어'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기'], ['safe', '🛟 안전']];
+const T_TABS = [['online', '🟢 접속 중'], ['stucfg', '⚙️ 학생 화면 설정'], ['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['eng', '📚 영어'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기'], ['safe', '🛟 안전']];
 function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
 async function tLoad(){
   $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button>';
   $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
   try {
     if (tTab === 'online') tData.pres = await tCall({ action:'presence' });
+    if (tTab === 'stucfg') tData.sc = await tCall({ action:'stuCfg' });
     if (tTab === 'ask') tData.asks = (await tCall({ action:'asks' })).asks || [];
     if (tTab === 'coin') tData.coins = await tCall({ action:'coins' });
     if (tTab === 'att' || tTab === 'show') tData.today = await tCall({ action:'today' });
@@ -1262,6 +1272,26 @@ async function tLoad(){
 }
 function tRender(){
   const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담', '연락':'📨 로그인 전 연락' };
+  if (tTab === 'stucfg'){
+    const d = tData.sc || {}, c = d.cfg;
+    if (!c){ box.innerHTML = '<div class="empty">서버 코드를 최신(v32)으로 배포하면 보여요</div>'; return; }
+    const K = [['look', '✨ 새로 꾸몄어요'], ['play', '💧 마을 놀이 (물·그네·낚시…)'], ['eng', '📚 영어 시험 통과'], ['hana', '🐱 하나랑 놀기'], ['house', '🏠 새 집 이사'], ['idea', '💡 마을 의견']];
+    const st = d.strikes || {}, sn = Object.keys(st).filter(n => (st[n] || {}).n);
+    box.innerHTML = `<div class="box sc-box"><div class="box-head">🏘️ 마을 소식 줄</div><div class="hint">마을 탭 위에 흐르는 줄이에요</div>
+        <label class="sc-row"><input type="checkbox" id="scNewsOn" ${c.news.on ? 'checked' : ''}> 켜기 · <input type="number" id="scNewsMin" min="1" max="1440" value="${c.news.min}"> 분 동안 보이기</label>
+        <div class="sc-kinds">${K.map(([k, l]) => `<label><input type="checkbox" data-sck="${k}" ${c.news.kinds[k] !== false ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
+      <div class="box sc-box"><div class="box-head">📢 확성기</div><div class="hint">학생이 냥코인으로 사서 마을 · 교실 화면 맨 위에 띄워요</div>
+        <label class="sc-row"><input type="checkbox" id="scMegaOn" ${c.mega.on ? 'checked' : ''}> 팔기 · <input type="number" id="scMegaMin" min="1" max="1440" value="${c.mega.min}"> 분 동안 보이기</label></div>
+      <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
+        <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
+      <div class="box sc-box"><div class="box-head">📖 안내 사이트</div>
+        <label class="sc-row">버전 <input type="text" id="scGuideVer" maxlength="12" value="${esc(c.guideVer || '')}" placeholder="예: v1.0" style="width:110px;"></label>
+        <div class="hint" style="margin-top:6px;">📝 업데이트 내역 (한 줄에 하나 · 맨 위가 최신)</div><textarea id="scGuideNotes" rows="4">${esc(c.guideNotes || '')}</textarea></div>
+      <div class="t-row" style="justify-content:flex-end;"><button type="button" class="btn btn-y" id="scSave">💾 저장하기</button></div>
+      <div class="box sc-box"><div class="box-head pink">🚫 비속어 자동 제한</div><div class="hint">1회 경고 → 2회 1분 → 3회 10분(공개) → 4회 1시간(공개) → 5회 10일 → 6회 영구(공개) · 교실 출석부 📓 수첩에서도 볼 수 있어요</div>
+        ${sn.length ? sn.map(n => { const x = st[n], on = x.perm || Number(x.until) > Date.now(); return `<div class="sc-stk"><b>${esc(n)}</b><span>${x.n}회 · ${x.perm ? '⛔ 영구 정지' : on ? `🔇 ${new Date(+x.until).toTimeString().slice(0, 5)}까지` : '✅ 제한 없음'}</span>${on ? `<button type="button" class="btn btn-gray" data-stk="${esc(n)}">🔓 풀기</button>` : ''}<button type="button" class="btn btn-gray" data-stkr="${esc(n)}">🔄 0회로</button></div>`; }).join('') : '<div class="empty">아직 없어요 ✨</div>'}</div>`;
+    return;
+  }
   if (tTab === 'online'){ box.innerHTML = `<div class="box">${tData.pres && tData.pres.ok ? presenceHTML(tData.pres, tKids()) : '<div class="empty">서버 코드를 최신(v29)으로 배포하면 보여요</div>'}<div style="text-align:right;"><button type="button" class="btn btn-y" data-ttab="online">🔄 새로고침</button></div></div>`; return; }
   if (tTab === 'ask'){
     const open = a => !a.reply && !a.done;
@@ -1415,8 +1445,16 @@ document.addEventListener('click', e => {
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
   if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
+  if (t.closest('#scSave')){
+    const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
+    const data = { news: { on: $('scNewsOn').checked, min: +$('scNewsMin').value || 60, kinds }, mega: { on: $('scMegaOn').checked, min: +$('scMegaMin').value || 60 },
+      closingAt: $('scClosingAt').value || '', guideVer: $('scGuideVer').value.trim(), guideNotes: $('scGuideNotes').value.trim() };
+    tOps([{ op:'stuCfgSet', data }], '💾 학생 화면 설정을 저장했어요').then(ok => { if (ok){ pull(true); tLoad(); } }); return;
+  }
+  { const x = t.closest('[data-stk]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stk}의 지금 제한을 풀까요? (횟수는 그대로)`)) tOps([{ op:'strikeSet', name: x.dataset.stk, reset:false }], '🔓 제한을 풀었어요').then(() => tLoad()); return; } }
+  { const x = t.closest('[data-stkr]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
   { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
-  if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (교실 출석부 ⚙️ 설정 → 📢 알림에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
+  if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
   if (t.closest('#sleepT')){ $('sleepOv').classList.remove('on'); openLogin(); return; }
   if (t.closest('#ideaOpen')){ openIdeas(); return; }
   if (t.closest('#ideaSend')){ ideaSend(); return; }
