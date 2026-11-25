@@ -345,7 +345,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="sos-q">무슨 일이에요?</div>
     <div class="sos-rs"><label class="sos-r"><input type="radio" name="sosR" value="🔑 비밀번호를 잊어버렸어요"><span>🔑 비밀번호를 잊어버렸어요</span></label><label class="sos-r"><input type="radio" name="sosR" value="🚫 로그인이 안 돼요"><span>🚫 로그인이 안 돼요</span></label><label class="sos-r"><input type="radio" name="sosR" value="📋 출석이 잘못 기록됐어요"><span>📋 출석이 잘못 기록됐어요</span></label><label class="sos-r"><input type="radio" name="sosR" value="📱 출석 버튼이 안 눌려요"><span>📱 출석 버튼이 안 눌려요</span></label><label class="sos-r"><input type="radio" name="sosR" value="🐛 화면이 이상하거나 오류가 나요"><span>🐛 화면이 이상하거나 오류가 나요</span></label><label class="sos-r"><input type="radio" name="sosR" value="✏️ 기타"><span>✏️ 기타</span></label></div>
     <textarea id="sosText" rows="2" maxlength="200" placeholder="더 하고 싶은 말 (기타를 골랐으면 꼭 적어요)"></textarea>
-    <div class="sos-q">📮 답장 받을 곳 <small style="color:var(--ink-soft);">(선택 · 친구 이름이나 이메일)</small></div>
+    <div class="sos-q">📮 답장 받을 곳 <small style="color:#C0365C;">(꼭 적어요 · 친구 이름이나 이메일)</small><div class="hint" style="margin-top:2px;">친구 이름을 적으면 선생님 답이 그 친구에게 <b>💬 귓속말</b>로 가요. 친구에게 전해 달라고 해요!</div></div>
     <input type="text" id="sosReply" maxlength="40" placeholder="예: 김하늘 / abc@sen.go.kr">
     <div class="err" id="sosErr"></div>
     <button type="button" class="btn btn-sos" id="sosGo" disabled>📨 보내기</button>
@@ -478,13 +478,14 @@ async function sosSend(){
   const rr = document.querySelector('[name=sosR]:checked'), reason = rr ? rr.value : '';
   if (!who){ $('sosErr').textContent = '이름을 꼭 적어 주세요'; return; }
   if (!reason){ $('sosErr').textContent = '무슨 일인지 골라 주세요'; return; }
+  if (!reply){ $('sosErr').textContent = '답장 받을 친구 이름이나 이메일을 꼭 적어 주세요'; return; }
   if (reason === '✏️ 기타' && !text){ $('sosErr').textContent = '기타를 골랐으면 무슨 일인지 적어 주세요'; return; }
   const b = $('sosGo'); b.disabled = true;
   try {
     const j = await api(API, { method:'POST', body: JSON.stringify({ action:'sos', who, reason, text, reply }) });
-    if (j.error){ $('sosErr').textContent = { slow:'방금 다른 메시지가 갔어요. 20초 뒤에 다시 보내 주세요', full:'오늘은 더 보낼 수 없어요. 선생님을 직접 찾아가 주세요', who:'이름을 꼭 적어 주세요', empty:'무슨 일인지 적어 주세요' }[j.error] || '보내지 못했어요'; b.disabled = false; return; }
+    if (j.error){ $('sosErr').textContent = { slow:'방금 다른 메시지가 갔어요. 20초 뒤에 다시 보내 주세요', full:'오늘은 더 보낼 수 없어요. 선생님을 직접 찾아가 주세요', who:'이름을 꼭 적어 주세요', reply:'답장 받을 친구 이름이나 이메일을 꼭 적어 주세요', empty:'무슨 일인지 적어 주세요' }[j.error] || '보내지 못했어요'; b.disabled = false; return; }
     $('sosOv').style.display = 'none'; $('sosText').value = '';
-    toast(reply ? `📨 보냈어요! 답은 ${reply}(으)로 갈 거예요` : '📨 선생님께 보냈어요! 답은 선생님이 직접 알려 줘요');
+    toast(/@/.test(reply) ? `📨 보냈어요! 답은 ${reply}(으)로 갈 거예요` : `📨 보냈어요! 답은 ${reply}에게 귓속말로 갈 거예요`);
   } catch(e){ $('sosErr').textContent = '연결이 안 돼요. 선생님을 직접 찾아가 주세요'; b.disabled = false; }
 }
 async function studentCall(op, extra){

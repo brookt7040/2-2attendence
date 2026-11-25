@@ -416,7 +416,18 @@ function handlePost_(body, auth) {
         case 'chatSend': appendChat_(String(o.from || '선생님'), String(o.to || ''), String(o.text || '').slice(0, 200)); break;
         case 'askReply': {
           const r = findRow_(ASK_SHEET, ASK_HEADER, o.id);
-          if (r) r.sh.getRange(r.row, 7, 1, 2).setValues([[String(o.text || ''), "'" + nowStr_()]]);
+          if (r) {
+            r.sh.getRange(r.row, 7, 1, 2).setValues([[String(o.text || ''), "'" + nowStr_()]]);
+            // 📨 로그인 전 연락에 친구 이름을 적었으면 → 답을 그 친구에게 귓속말로도 보내요
+            try {
+              const row = r.sh.getRange(r.row, 1, 1, 5).getValues()[0], m = String(row[4]).match(/📮 답장: (.+)$/);
+              const names = ((map.pub || {}).students || []).map(function (x) { return x.name; });
+              if (String(row[3]) === '연락' && m && names.indexOf(m[1].trim()) >= 0 && String(o.text || '').trim()) {
+                const tn = names.filter(function (n) { return /(쌤|샘|선생님)$/.test(n); })[0] || '선생님';
+                appendChat_(tn, m[1].trim(), '📨 ' + String(row[2]).replace(' (로그인 전)', '') + '에게 전해 줘: ' + String(o.text).trim().slice(0, 150));
+              }
+            } catch (e) {}
+          }
           break;
         }
         case 'askDel': markRow_(ASK_SHEET, ASK_HEADER, o.id, 9, '삭제'); break;
@@ -792,6 +803,7 @@ function sos_(body) {
   const reply = String(body.reply || '').replace(/[^가-힣a-zA-Z0-9 @._+-]/g, '').trim().slice(0, 40);
   const detail = maskBad_(String(body.text || '').replace(/\s+/g, ' ').trim().slice(0, 200), (chatCfg_().ban) || []);
   if (!who) return { ok: true, error: 'who' };
+  if (!reply) return { ok: true, error: 'reply' };
   if (reason === '✏️ 기타' && !detail) return { ok: true, error: 'empty' };
   const c = cache_(), dk = 'sosN:' + todayStr_(), n = Number(c.get(dk) || 0);
   if (c.get('sosLast')) return { ok: true, error: 'slow' };
