@@ -7,13 +7,14 @@
 #sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:24px;font-family:inherit;}
 #sleepOv.on{display:flex;}
 #sleepOv .nyl-stars{position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(2px 2px at 10% 20%,#fff,transparent),radial-gradient(2px 2px at 80% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 30% 70%,#fff,transparent),radial-gradient(2px 2px at 65% 82%,#fff,transparent),radial-gradient(1.5px 1.5px at 45% 12%,#fff,transparent),radial-gradient(1.5px 1.5px at 90% 65%,#fff,transparent);opacity:.7;}
-#sleepOv .nyl-cat{position:relative;width:132px;height:132px;}
-#sleepOv .nyl-cat img{width:132px;height:132px;image-rendering:pixelated;border-radius:28px;filter:brightness(.92);}
+#sleepOv .nyl-cat{position:relative;width:150px;height:150px;}
+#sleepOv .nyl-cat img{width:150px;height:150px;image-rendering:pixelated;display:block;}
 #sleepOv .nyl-z{position:absolute;right:-16px;top:-4px;font-size:28px;animation:nylZ 2.4s ease-in-out infinite;}
 #sleepOv .nyl-z.b{right:-44px;top:-40px;font-size:20px;animation-delay:1.2s;}
 @keyframes nylZ{0%{opacity:0;transform:translateY(10px)}40%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
-#sleepOv h2{margin:6px 0 0;font-size:26px;font-weight:normal;}
-#sleepOv p{margin:0;font-size:16px;opacity:.85;line-height:1.5;word-break:keep-all;}
+#sleepOv h2{margin:6px 0 0;font-size:26px;font-weight:normal;line-height:1.35;}
+#sleepOv h2 span,#sleepOv p span{display:inline-block;white-space:nowrap;}
+#sleepOv p{margin:0;font-size:17px;opacity:.85;line-height:1.6;}
 .nyl-gate{position:fixed;inset:0;z-index:20050;display:none;align-items:center;justify-content:center;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);padding:16px;font-family:inherit;}
 .nyl-gate.on{display:flex;}
 .nyl-box{background:#FFFDF6;border:3px solid #5B4636;border-radius:22px;box-shadow:0 6px 0 #5B4636;padding:24px 26px 18px;text-align:center;max-width:380px;width:100%;display:flex;flex-direction:column;gap:8px;align-items:center;color:#5B4636;font-family:inherit;}
@@ -77,13 +78,13 @@
       css();
       if (!o){
         o = document.createElement('div'); o.id = 'sleepOv';
-        o.innerHTML = `<div class="nyl-stars"></div><div class="nyl-cat"><img src="icons/hana-192.png" alt=""><span class="nyl-z">Z</span><span class="nyl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><div class="nyl-tw-host"></div>`;
+        o.innerHTML = `<div class="nyl-stars"></div><div class="nyl-cat"><img src="icons/hana-sleep.png" alt=""><span class="nyl-z">Z</span><span class="nyl-z b">z</span></div><h2><span>💤 하나는 지금</span> <span>자는 중이에요</span></h2><p id="sleepMsg"></p><div class="nyl-tw-host"></div>`;
         document.body.appendChild(o);
         NyLock.teacherUI(o.querySelector('.nyl-tw-host'), () => { o.classList.remove('on'); if (gateOpen()) location.reload(); });
       }
       const c = cfg || {};
-      o.querySelector('#sleepMsg').textContent = c.end ? `${c.end}에 다시 만나요! 🌙\n(${c.start} ~ ${c.end}에는 쉬어요)` : '조금 뒤에 다시 만나요! 🌙';
-      o.querySelector('#sleepMsg').style.whiteSpace = 'pre-line';
+      const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+      o.querySelector('#sleepMsg').innerHTML = c.end ? `<span>${esc(c.end)}에 다시 만나요! 🌙</span> <span>(${esc(c.start)} ~ ${esc(c.end)}에는 쉬어요)</span>` : '<span>조금 뒤에 다시 만나요! 🌙</span>';
       o.classList.add('on');
     },
     refresh(){ if (lastSleep) NyLock.sleep(lastSleep.cfg, lastSleep.on); },
