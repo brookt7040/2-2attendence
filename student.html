@@ -346,6 +346,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #oathGo:disabled{opacity:.45;cursor:not-allowed;}
 .status{position:fixed;left:10px;bottom:10px;font-size:.8rem;background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 10px;}
 @media (max-width:560px){ .title{font-size:1.4rem;} #mascot{width:56px;height:56px;} .hana-wear{font-size:56px;} .n-item{font-size:1.15rem;} }
+.nopw{-webkit-text-security:disc;text-security:disc;}
 </style>
 </head>
 <body>
@@ -430,7 +431,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="x" data-close="loginOv">✕</button>
     <h2>🔑 내 고양이 로그인</h2>
     <select id="loginName"></select>
-    <input type="password" class="pin" id="loginPin" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore type="text" class="nopw pin" id="loginPin" inputmode="numeric" maxlength="4" placeholder="••••">
     <label class="hint"><input type="checkbox" id="loginKeep"> 이 기기에서 로그인 유지 (내 디벗일 때만!)</label>
     <div class="err" id="loginErr"></div>
     <button type="button" class="btn btn-y" id="loginBtn">들어가기</button>
@@ -465,7 +466,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div id="sleepOv"><div class="sl-stars"></div><div class="sl-cat"><canvas id="sleepCat" class="pix" width="16" height="16" style="width:150px;height:150px;image-rendering:pixelated;"></canvas><span class="sl-z">Z</span><span class="sl-z b">z</span></div><h2>💤 하나는 지금 자는 중이에요</h2><p id="sleepMsg"></p><button type="button" class="sl-admin" id="sleepT">👑 선생님 로그인</button></div>
 
 <div id="nGate"><div class="ng-box"><div style="font-size:3rem;">🔐</div><h2>입장 코드를 넣어 주세요</h2><div class="hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
-  <input type="password" id="ngInput" maxlength="12" autocomplete="off"><div id="ngErr"></div><button type="button" class="btn btn-y" id="ngBtn">들어가기</button></div></div>
+  <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" id="ngInput" maxlength="12"><div id="ngErr"></div><button type="button" class="btn btn-y" id="ngBtn">들어가기</button></div></div>
 
 <div class="overlay" id="penOv">
   <div class="modal pen-modal">
