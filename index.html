@@ -2428,12 +2428,12 @@ function renderMenuBoard(){
   html += '</div><div class="menu-auto">🎯 미션(코인만큼 EXP) · 📚 영어 학원 +25 · 📖 도감 완성 +30~100 · 🥇 1~5등 +5 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
   const cleaners = kids().filter(isCleaner);
-  html += `<div class="clean-row"><span>🧹 오늘의 청소 당번</span>${cleaners.length
+  html += `<div class="clean-row"><span>🧹 Cleaning Duty</span>${cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
   box.innerHTML = html;
   const side = $('cleanSide');
-  if (side) side.innerHTML = `<div class="t">🧹 오늘의 청소 당번</div>` + (cleaners.length
+  if (side) side.innerHTML = `<div class="t">🧹 Cleaning Duty</div>` + (cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! ✨</span>');
   renderNoteSide();
@@ -3016,7 +3016,7 @@ function renderClosing(){
     : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>';
   const cleaners = kids().filter(isCleaner);
   $('closingExtra').innerHTML = cleaners.length
-    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> 오늘의 청소 당번 <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}${swearToday(n) ? ' 🤬' : ''}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스이거나 고운 말을 안 쓴 친구들! 깨끗하게 부탁해 🐾</div></div>`
+    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> Cleaning Duty <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}${swearToday(n) ? ' 🤬' : ''}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스이거나 고운 말을 안 쓴 친구들! 깨끗하게 부탁해 🐾</div></div>`
     : `<div class="clean-big none">🧹 오늘은 청소 당번이 없어요! 모두 최고 ✨</div>`;
 }
 
