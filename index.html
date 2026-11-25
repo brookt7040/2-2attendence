@@ -754,6 +754,9 @@ body.view-mode .note-side{display:none !important;}
 .notice-area.big .notice-empty{color:#C9B9A6;font-size:1.05rem;opacity:.7;}
 .urgent-box.empty{opacity:.45;border-color:#EFC9C0;}
 .urgent-box.empty .ut{font-size:.9rem;}
+/* 지금 터치하면 · 아래 한마디 없애고 마감 시간만 오른쪽에 */
+.rp-top{justify-content:flex-end;}
+#rpSub{display:none !important;}
 </style>
 </head>
 <body>
@@ -804,7 +807,7 @@ body.view-mode .note-side{display:none !important;}
         <div class="flip-unit sec"><span class="flip-digits" id="flipSec">00</span></div>
       </div>
       <div class="reward-panel" id="rewardPanel">
-        <div class="rp-top"><span>⏱ 지금 터치하면</span><span class="deadline">🔔 출석 마감 <b id="lateTimeDisplay">08:40</b></span></div>
+        <div class="rp-top"><span class="deadline">🔔 출석 마감 <b id="lateTimeDisplay">08:40</b></span></div>
         <div class="rp-main"><span class="rp-icon" id="rpIcon">👑</span><span class="rp-exp" id="rpExp">+200</span><span class="rp-tier" id="rpTier">LEGEND</span></div>
         <div class="rp-sub" id="rpSub"></div>
         <div class="rp-ladder" id="rpLadder"></div>
