@@ -175,6 +175,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .pts.plus{color:#1F8A5F;} .pts.minus{color:#D6456E;}
 .clean-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:3px dashed #EAD49A;font-size:1.15rem;}
 .clean-chip{border:2px solid var(--ink);border-radius:999px;padding:2px 11px;background:var(--lav);cursor:pointer;font-size:1.1rem;}
+.clean-chip.cw-swear,.clean-big .cb-names span.cw-swear{background:#D9F5B8;} .clean-chip.cw-add,.clean-big .cb-names span.cw-add{background:#CDEBFF;}
 .clean-chip.done{background:var(--mint);text-decoration:line-through;color:#6D8F7F;}
 .clean-empty{color:var(--ink-soft);font-size:1rem;}
 .pick-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
@@ -2257,7 +2258,7 @@ function sleepShow(cfg, on){
 let sleepBypass = false, viewSleep = null;
 function sleepTick(){ const cfg = VIEW ? viewSleep : db.sleep; sleepShow(cfg, !sleepBypass && sleepIn(cfg, nowD())); }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 26;
+const NEED_API = 27;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2414,6 +2415,8 @@ const SWEAR_STEP = 5;
 function swearList(n){ return Object.entries(db.notes || {}).flatMap(([ds, l]) => (l || []).filter(x => x.who === n && x.kind === 'swear').map(x => ({ ...x, ds }))).sort((a, b) => (a.ds + a.t + a.id).localeCompare(b.ds + b.t + b.id)); }
 function swearToday(n, ds){ ds = ds || getTodayStr(); return swearList(n).some((x, i) => (i + 1) % SWEAR_STEP === 0 && x.ds === ds); }
 function cleanManual(n){ return !!((db.cleanDone || {})[getTodayStr()] || {})['+' + n]; }   // ➕ 관리자가 직접 넣은 청소 당번
+function cleanWhy(n){ if (VIEW) return viewCleanWhy[n] || ''; return dayTotal(n) < 0 ? 'late' : swearToday(n) ? 'swear' : cleanManual(n) ? 'add' : ''; }   // 🎨 지각(EXP 마이너스) · 욕설 · 그 외
+let viewCleanWhy = {};
 function isCleaner(n){ return !isTeacherName(n) && (dayTotal(n) < 0 || swearToday(n) || cleanManual(n)); }
 function flipCard(card){
   if (card.classList.contains('flipping')) return;
@@ -2838,12 +2841,12 @@ function renderMenuBoard(){
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
   const cleaners = kids().filter(isCleaner);
   html += `<div class="clean-row"><span>🧹 Cleaning Duty</span>${cleaners.length
-    ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
+    ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
   box.innerHTML = html;
   const side = $('cleanSide');
   if (side) side.innerHTML = `<div class="t">🧹 Cleaning Duty<button type="button" class="clean-add" data-cleanadd title="청소 당번 추가 · 빼기 (관리자)">＋</button></div>` + (cleaners.length
-    ? cleaners.map(n => `<button type="button" class="clean-chip ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
+    ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! ✨</span>');
   renderNoteSide();
 }
@@ -3426,7 +3429,7 @@ function renderClosing(){
     : (VIEW ? '<div class="closing-empty">오늘 종례 내용이 아직 없어요</div>' : '<div class="closing-empty">⚙️ 설정의 📋 종례 칸이나 구글 시트 \'종례\' 탭에 내용을 적어 주세요</div>');
   const cleaners = kids().filter(isCleaner);
   $('closingExtra').innerHTML = cleaners.length
-    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> Cleaning Duty <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span>${esc(n)}${swearToday(n) ? ' 🤬' : ''}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스이거나 고운 말을 안 쓴 친구들! 깨끗하게 부탁해 🐾</div></div>`
+    ? `<div class="clean-big"><div class="cb-head"><span class="cb-broom">🧹</span> Cleaning Duty <span class="cb-broom r">🧹</span></div><div class="cb-names">${cleaners.map(n => `<span class="cw-${cleanWhy(n)}">${esc(n)}${swearToday(n) ? ' 🤬' : ''}</span>`).join('')}</div><div class="cb-foot">오늘 EXP가 마이너스이거나 고운 말을 안 쓴 친구들! 깨끗하게 부탁해 🐾</div></div>`
     : `<div class="clean-big none">🧹 오늘은 청소 당번이 없어요! 모두 최고 ✨</div>`;
 }
 
@@ -4560,7 +4563,8 @@ function buildPub(){
       total: dayTotal(n), clean: isCleaner(n), dex: myDex(n), dexDone: (db.collect || {})[n] || {} };
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
-  return { title: db.mainTitle, ds: getTodayStr(), clean: kids().filter(isCleaner), students, priv };
+  const cl = kids().filter(isCleaner);
+  return { title: db.mainTitle, ds: getTodayStr(), clean: cl, cleanWhy: Object.fromEntries(cl.map(n => [n, cleanWhy(n)])), students, priv };
 }
 function publishPub(){
   if (!sync.url || sync.api < 3) return;
@@ -7067,7 +7071,7 @@ function viewApply(j){
   if (j.late) db.lateTimeSetting = j.late;
   if (j.tiers) db.expTiers = j.tiers;
   db.notices = j.notices || []; db.closing = j.closing || []; db.urgent = (j.urgent || []).join('\n');
-  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {}; viewSleep = j.sleep || null; sleepTick();
+  viewClean = Array.isArray(j.clean) ? j.clean : []; viewEpoch = Number(j.epoch) || 0; viewPunish = j.punish || {}; viewCleanWhy = j.cleanWhy || {}; viewSleep = j.sleep || null; sleepTick();
   if (j.timetable) db.timetable = j.timetable;
   db.bubbleCfg = j.bubble || null; $('mascotBubble').dataset.k = ''; renderAdminBubble();
   applyTitle(); renderNotices(); renderGrid(); updateStatsBoard(); renderUrgent(); renderLadder(); renderMenuBoard();

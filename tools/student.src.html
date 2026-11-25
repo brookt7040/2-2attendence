@@ -56,6 +56,7 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .clean-me{background:#FFE0E7;border:3px solid var(--ink);border-radius:14px;padding:10px 14px;font-size:1.2rem;margin-bottom:10px;}
 .clean-list{display:flex;flex-wrap:wrap;gap:8px;padding-top:2px;}
 .clean-list span{border:2px solid var(--ink);border-radius:999px;padding:2px 12px;background:var(--lav);}
+.clean-list span.cw-swear{background:#D9F5B8;} .clean-list span.cw-add{background:#CDEBFF;}
 
 /* 마을 */
 .ticker{background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 16px;font-size:1.05rem;margin-bottom:14px;overflow:hidden;white-space:nowrap;box-shadow:0 3px 0 var(--ink);}
@@ -764,7 +765,7 @@ function render(){
   }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">알림이 없어요</div>';
   $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
-    : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span>${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
+    : (pub.clean.length ? `<div class="clean-list">${pub.clean.map(n => `<span class="cw-${(pub.cleanWhy || {})[n] || ''}">${esc(n)}</span>`).join('')}</div>` : '<div class="empty">없어요! 모두 오늘 EXP 플러스 ✨</div>');
   renderCheckin(fresh);
   placeClosing();
   $('specialBox').innerHTML = special.banners.map(b => `<div class="sp-banner">${{ birthday:'🎂', congrats:'🎉', cheer:'💪', praise:'🏆', love:'💛' }[b.style] || '🎉'} <b>${esc(b.text)}</b> <small>from. ${esc(b.n)}</small></div>`).join('') +

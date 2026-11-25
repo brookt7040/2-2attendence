@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v26 · 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v27 · 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 26;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 27;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -281,6 +281,7 @@ function publicState_(map) {
     title: pub.title || '',
     ds: pub.ds || '',
     clean: pub.clean || [],
+    cleanWhy: pub.cleanWhy || {},
     students: (pub.students || []).map(function (s) {
       return { name: s.name, lv: s.lv, lvName: s.lvName, look: looks[s.name] || s.look || {}, lookAt: lookAt[s.name] || 0, status: ((map.statuses || {})[s.name] || {}).t || '' };
     })
@@ -1209,7 +1210,7 @@ function boardOf_(code) {
     b = { code: String(cfg.accessCode || ''), hours: Number(cfg.accessHours) || 3, data: {
       ok: true, api: API_VERSION, now: Date.now(), title: pub.title || cfg.mainTitle || '', ds: pub.ds || '', late: cfg.lateTimeSetting || '', tiers: cfg.expTiers || null,
       students: (pub.students || []).map(function (s) { const pv = priv[s.name] || {}; return { name: s.name, lv: s.lv, exp: pv.exp || 0, look: ((cfg.looks || {})[s.name]) || s.look || {}, status: (st[s.name] || {}).t || '' }; }),
-      epoch: Number(cfg.accessEpoch) || 0, clean: pub.ds && pub.ds === todayStr_() ? (pub.clean || []) : [], bubble: cfg.bubbleCfg || null, timetable: cfg.timetable || null,
+      epoch: Number(cfg.accessEpoch) || 0, cleanWhy: pub.cleanWhy || {}, clean: pub.ds && pub.ds === todayStr_() ? (pub.clean || []) : [], bubble: cfg.bubbleCfg || null, timetable: cfg.timetable || null,
       board: (function () { const o = {}; Object.keys(priv).forEach(function (n) { if (priv[n] && priv[n].today) o[n] = priv[n].today; }); return o; })()
     } };
     cachePut_('board:' + v, b);
