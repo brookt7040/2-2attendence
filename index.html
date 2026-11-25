@@ -736,6 +736,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
 #fx{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:10000;}
 #remoteBanner:not(.show){visibility:hidden;}
+#backView{position:fixed;right:10px;bottom:10px;z-index:9400;font-family:inherit;font-size:.85rem;border:2px solid var(--ink);border-radius:999px;background:#E8ECFF;color:var(--ink);padding:4px 12px;cursor:pointer;box-shadow:0 2px 0 var(--ink);opacity:.9;}
 #pinOverlay{z-index:40001 !important;}
 #sleepOv{position:fixed;inset:0;z-index:40000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,#1E2340,#3B3466);color:#F4F0FF;text-align:center;padding:20px;}
 #sleepOv.on{display:flex;}
@@ -813,6 +814,7 @@ body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .edit-min
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
 /* 👀 보기 전용: 하나 쓰다듬기 · 내 화면 보러가기 · 고양이 카드 · 칠판만 눌러져요 */
 body.view-mode .wrap{pointer-events:none;}
+body.view-mode .notice-header{pointer-events:auto;cursor:default;}
 body.view-mode #mascotWrap,body.view-mode #myPageBtn,body.view-mode .card,body.view-mode #openMeetingBtn{pointer-events:auto;}
 body.view-mode .notice-item,body.view-mode #urgentBox,body.view-mode #cleanSide,body.view-mode #openClosingBtn,body.view-mode .stat-pill,body.view-mode .ladder{cursor:default !important;}
 body.view-mode .card.waiting{cursor:default;}
@@ -1063,6 +1065,15 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </div>
 </div>
 <div id="graceWarn"><span class="gw-ic">⏰</span><span>출석 마감! <b id="graceLeft">10</b>초 안에 터치하지 않으면 <b>지각</b> 처리됩니다</span></div>
+<div class="overlay" id="swOv" style="z-index:20100;">
+  <div class="modal" style="max-width:360px;text-align:center;"><button type="button" class="modal-x" data-close="swOv" title="닫기">✕</button>
+    <h2>👑 관리자 출석부로</h2>
+    <div class="form-hint">관리자 · 부관리자 · 지각 관리자 비밀번호</div>
+    <input type="password" id="swPin" inputmode="numeric" maxlength="12" autocomplete="off" style="font-family:inherit;font-size:1.6rem;text-align:center;width:100%;box-sizing:border-box;border:3px solid var(--ink);border-radius:14px;padding:8px;margin:10px 0;">
+    <div id="swErr" style="color:#C0365C;min-height:1.3em;"></div>
+    <button type="button" class="btn btn-y" id="swGo" style="width:100%;">들어가기</button></div>
+</div>
+<button type="button" id="backView" style="display:none;">👀 학생용 출석부로 돌아가기</button>
 <div class="overlay" id="cleanAddOv">
   <div class="modal ca-modal"><button type="button" class="modal-x" data-close="cleanAddOv" title="닫기">✕</button>
     <h2>🧹 Cleaning Duty 추가</h2>
@@ -2257,8 +2268,32 @@ function sleepShow(cfg, on){
 }
 let sleepBypass = false, viewSleep = null;
 function sleepTick(){ const cfg = VIEW ? viewSleep : db.sleep; sleepShow(cfg, !sleepBypass && sleepIn(cfg, nowD())); }
+/* 👑 비밀 버튼: 학생용 출석부에서 Notice를 5번 연달아 누르면 관리자 비밀번호 → 관리자 출석부 */
+let swTaps = [];
+function swTap(){
+  if (!VIEW) return;
+  const now = Date.now(); swTaps = swTaps.filter(t => now - t < 3000); swTaps.push(now);
+  if (swTaps.length >= 5){ swTaps = []; $('swErr').textContent = ''; $('swPin').value = ''; $('swOv').style.display = 'flex'; setTimeout(() => $('swPin').focus(), 50); }
+}
+async function swGo(){
+  const pin = $('swPin').value.trim(); if (!pin) return;
+  $('swErr').textContent = '확인 중…';
+  try {
+    const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'pull', since:-1, apin: pin }) });
+    const j = await r.json();
+    if (!j.ok){ $('swErr').textContent = '❌ 비밀번호가 달라요'; $('swPin').value = ''; return; }
+    localStorage.setItem(SYNC_KEY, JSON.stringify({ url: VIEW.api, v: -1, queue: [], last: 0, api: j.api || 3, key: '', pubHash: '', tname: '', tpin: '', apin: pin }));
+    try { localStorage.setItem('nyangBackView', location.href); } catch(e){}
+    location.href = location.pathname;
+  } catch(e){ $('swErr').textContent = '연결이 안 돼요'; }
+}
+function backToView(){
+  if (!confirm('이 기기를 학생용 출석부로 되돌릴까요? (관리자 연결이 풀려요)')) return;
+  const back = localStorage.getItem('nyangBackView') || (location.pathname + '?view=1&api=' + encodeURIComponent(sync.url));
+  localStorage.removeItem(SYNC_KEY); localStorage.removeItem('nyangBackView'); location.href = back;
+}
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 27;
+const NEED_API = 28;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -4322,13 +4357,13 @@ function closeAlarmOverlay(stopSound){
    ☁️ 구글 시트 동기화
    ========================================================= */
 const SYNC_KEY = 'nyangSync_v1';
-let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null, api:0, key:'', needKey:false, pubHash:'', tname:'', tpin:'' };
+let sync = { url:'', v:-1, queue:[], last:0, ok:null, err:'', hasClosing:null, api:0, key:'', needKey:false, pubHash:'', tname:'', tpin:'', apin:'' };
 let serverPinSet = [], serverAcks = {}, serverAsksOpen = 0, serverReqOpen = 0;
 let syncBusy = false;
 function loadSync(){ try { Object.assign(sync, JSON.parse(localStorage.getItem(SYNC_KEY)) || {}); } catch(e){} sync.ok = null; }
-function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last, api:sync.api, key:sync.key, pubHash:sync.pubHash, tname:sync.tname, tpin:sync.tpin })); }
+function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify({ url:sync.url, v:sync.v, queue:sync.queue, last:sync.last, api:sync.api, key:sync.key, pubHash:sync.pubHash, tname:sync.tname, tpin:sync.tpin, apin:sync.apin })); }
 /* 서버에 보내는 선생님 확인: 교사 열쇠 또는 'OO쌤' 계정 */
-function authOf(){ return sync.key ? { key: sync.key } : (sync.tname && sync.tpin ? { tmode: true, name: sync.tname, pin: sync.tpin } : { key: '' }); }
+function authOf(){ return sync.apin ? { apin: sync.apin } : sync.key ? { key: sync.key } : (sync.tname && sync.tpin ? { tmode: true, name: sync.tname, pin: sync.tpin } : { key: '' }); }
 function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
@@ -6974,6 +7009,10 @@ function bindEvents(){
     e.currentTarget.href = studentLink();
   });
   $('revBar').addEventListener('click', () => requirePin(openRev));
+  $('noticeArea').addEventListener('click', e => { if (VIEW && e.target.closest('.notice-header')) swTap(); });
+  $('swGo').addEventListener('click', swGo);
+  $('swPin').addEventListener('keydown', e => { if (e.key === 'Enter') swGo(); });
+  $('backView').addEventListener('click', backToView);
   $('sleepAdmin').addEventListener('click', () => { if (VIEW) return; pinUntil = 0; requirePin(() => { sleepBypass = true; sleepTick(); showToast('👑 이 기기만 잠깐 깨웠어요 (새로고침하면 다시 잠겨요)'); }); });
   $('revOv').addEventListener('change', e => { const c = e.target.closest('[data-rev]'); if (c) try { localStorage.setItem('nyangRev:' + NEED_API + ':' + c.dataset.rev, c.checked ? '1' : ''); } catch(err){} });
   $('gateResetBtn').addEventListener('click', () => {
@@ -7102,6 +7141,7 @@ function init(){
     }
     loadDB();
     loadSync();
+    if (sync.apin) $('backView').style.display = 'block';
     if (db.accessCode && !gateOk(db.accessCode)) setTimeout(() => showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }), 50);
     gateCheckTimer();
     try { const qa = new URLSearchParams(location.search).get('api'); if (qa && !sync.url && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)) setTimeout(() => { openAdminUI(); $('syncUrlInput').value = qa; $('syncTName').focus(); $('syncStatusText').innerHTML = '🖥 이 기기를 연결해요: <b>선생님 계정(OO쌤 + 비밀번호)</b>을 넣고 <b>🔗 연결하기</b>를 눌러 주세요.'; }, 600); } catch(e){}

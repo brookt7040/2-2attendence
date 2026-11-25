@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v27 · 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v28 · 👑 학생용 출석부 비밀 관리자 전환 · v27 🧹 청소 당번 이유별 색 · v26 💤 접속 금지 시간 · v25 🚫 비속어 단계별 제한·애교 말로 바꾸기·선생님 알림 · v24 안내 사이트 버전·업데이트 내역 · 이전: 💡 마을 개선 의견 게시판·입장 코드 모두 다시 입력·로그인 전 선생님께 연락·보기 전용에 말풍선·청소당번·시간표·영어 다시 풀기(연습)·선생님 귓속말 보기 · 📓 관리 수첩(욕설·수업 지각)·출석부 입장 코드·보기 전용·💬 내 상태·빈 명단 덮어쓰기 막기·욕설 거르기 강화·마을 놀이 하루 20번·선생님 냥이 모든 아이템·캐시로 빠르게·잠금 줄이기·선생님 집 꾸미기 무제한·학급회의 칠판·선생님 마법·서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 27;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 28;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -93,7 +93,8 @@ function doPost(e) {
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
       const c = checkStudent_(String(body.name), body.pin);
       auth = c.ok ? { ok: true, needKey: false } : { ok: false };
-    } else auth = teacherAuth_(body.key);
+    } else if (body.apin) auth = apinAuth_(body.apin);
+    else auth = teacherAuth_(body.key);
     if (!auth.ok) return out_({ ok: false, error: 'auth', api: API_VERSION });
     if (body.tmode && auth.needKey) return out_({ ok: false, error: 'nokey', api: API_VERSION });   // 학생 페이지 선생님 모드는 열쇠가 꼭 있어야 해요
     if (body.action === 'pull') return out_(teacherPull_(body, auth));
@@ -266,6 +267,20 @@ function writeRows_(db, keys) {
 }
 
 /* ---------------- 🔐 교사 열쇠 ---------------- */
+/* 👑 학생용 출석부 → 관리자 출석부: 관리자 · 부관리자 · 지각 관리자 비밀번호로도 열 수 있어요 (틀리면 10분에 10번까지) */
+function apinAuth_(pin) {
+  const c = cache_(), f = Number(c.get('apinfail') || 0);
+  if (f >= 10) return { ok: false };
+  let list = null; try { list = JSON.parse(props_().getProperty('apins') || 'null'); } catch (e) {}
+  if (!list) {      // 처음 한 번: 설정에서 비밀번호를 읽어 와요
+    const cf = readRows_().map.config || {};
+    list = ['adminPin', 'subPin', 'latePin'].map(function (k) { return cf[k] ? hash_('P:' + cf[k]) : ''; }).filter(String);
+    try { props_().setProperty('apins', JSON.stringify(list)); } catch (e) {}
+  }
+  if (pin && list.indexOf(hash_('P:' + String(pin))) >= 0) return { ok: true, needKey: false };
+  try { c.put('apinfail', String(f + 1), 600); } catch (e) {}
+  return { ok: false };
+}
 function teacherAuth_(key) {
   const stored = props_().getProperty('teacherKey');
   if (!stored) return { ok: true, needKey: true };          // 아직 열쇠를 정하지 않았어요
@@ -365,6 +380,7 @@ function handlePost_(body, auth) {
           const keepLooks = map.config && map.config.looks;
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
+          try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
           try { props_().setProperty('sleepCfg', JSON.stringify((o.data && o.data.sleep) || null)); props_().setProperty('closingAt', String((o.data && o.data.closingAt) || '')); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
