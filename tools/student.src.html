@@ -337,7 +337,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <body>
 <script>
 /* 📱 2-2😻 앱 안: ?only=notice 는 📢 알림·종례 탭 (로그인 없이), 아지트에서는 알림·종례 칸을 빼요 */
-(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && q.get('only') !== 'notice' && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   // 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (inApp) document.documentElement.classList.add('agit'); })();
+(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && q.get('only') !== 'notice' && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (inApp) document.documentElement.classList.add('agit'); })();
 </script>
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
