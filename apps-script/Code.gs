@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v11 · 하나 하루 5번·회의 단상·마을 공지 지우기·중요공지 시트·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v12 · 학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -27,7 +27,7 @@ const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나�
 const CLOSING_SHEET = '종례';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 11;
+const API_VERSION = 12;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -70,13 +70,19 @@ const LOOK_SLOTS = ['eye', 'mouth', 'top', 'earR', 'earL', 'neck', 'back', 'fur'
 
 /* ---------------- 입구 ---------------- */
 function doGet(e) {
-  try { return out_(publicGet_((e && e.parameter) || {})); }
+  propsW_ = null;
+  try {
+    const mv = props_().getProperty('movedTo'); if (mv) return out_({ ok: false, error: 'moved', movedTo: mv, api: API_VERSION });
+    return out_(publicGet_((e && e.parameter) || {}));
+  }
   catch (err) { return out_({ ok: false, error: String(err) }); }
 }
 
 function doPost(e) {
+  propsW_ = null;
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    const mv = props_().getProperty('movedTo'); if (mv) return out_({ ok: false, error: 'moved', movedTo: mv, api: API_VERSION });
     if (body.action === 'student') return out_(handleStudent_(body));
     let auth;
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
@@ -114,7 +120,26 @@ function out_(obj) {
 }
 
 /* ---------------- 공통 도구 ---------------- */
-function props_() { return PropertiesService.getScriptProperties(); }
+/* 속성 저장소: 읽기는 캐시를 먼저 봐서 구글 하루 한도(속성 읽기·쓰기)를 아껴요 */
+const PROPS_NONE_ = '\u0000';
+let propsW_ = null;
+function props_() {
+  if (propsW_) return propsW_;
+  const P = PropertiesService.getScriptProperties(), C = CacheService.getScriptCache(), memo = {};
+  propsW_ = {
+    getProperty: function (k) {
+      if (k in memo) return memo[k];
+      let v = C.get('P:' + k);
+      if (v === null) { v = P.getProperty(k); try { C.put('P:' + k, v === null ? PROPS_NONE_ : v, 300); } catch (e) {} }   // 읽어서 채운 값은 5분만 (동시에 바뀌어도 오래 꼬이지 않게)
+      v = v === PROPS_NONE_ ? null : v; memo[k] = v; return v;
+    },
+    setProperty: function (k, v) { v = String(v); P.setProperty(k, v); memo[k] = v; try { C.put('P:' + k, v, 21600); } catch (e) { C.remove('P:' + k); } return propsW_; },
+    deleteProperty: function (k) { P.deleteProperty(k); memo[k] = null; try { C.put('P:' + k, PROPS_NONE_, 21600); } catch (e) {} return propsW_; },
+    getProperties: function () { return P.getProperties(); },
+    setProperties: function (o) { P.setProperties(o); Object.keys(o).forEach(function (k) { memo[k] = String(o[k]); C.remove('P:' + k); }); return propsW_; }
+  };
+  return propsW_;
+}
 function version_() { return Number(props_().getProperty('v') || 0); }
 function bump_() { const v = version_() + 1; props_().setProperty('v', String(v)); return v; }
 
@@ -325,6 +350,7 @@ function handlePost_(body, auth) {
         case 'songDone': props_().setProperty('songs', JSON.stringify(todayList_('songs').map(function (x) { if (x.id === Number(o.id)) x.done = true; return x; }))); break;
         case 'bannerDel': props_().setProperty('banners', JSON.stringify(todayList_('banners').filter(function (x) { return x.ts !== Number(o.ts); }))); break;
         case 'butlerDel': props_().deleteProperty('butler'); break;
+        case 'moveTo': if (/^https:\/\/script\.google\.com\/.+\/exec$|^http:\/\/localhost/.test(String(o.url || ''))) props_().setProperty('movedTo', String(o.url)); break;
         case 'tickerClear': props_().setProperty('tickerClear', String(Date.now())); props_().setProperty('mega', '[]'); break;
         case 'chatReset': archiveSheet_(CHAT_SHEET, CHAT_HEADER); cacheDrop_(['v:chat']); break;
         case 'askReset': archiveSheet_(ASK_SHEET, ASK_HEADER); break;
@@ -844,6 +870,36 @@ function cardOf_(name) {
 
 /* ---------------- 📚 영어 학원 ---------------- */
 // ▶ 처음 한 번: Apps Script 위쪽 함수 목록에서 '드라이브권한확인'을 고르고 실행 → 권한 허용 → 새 버전으로 배포
+/* 🚚 서버 이사 (일반 계정 → 학교 계정)
+ * 1) 지금(옛) 시트에서 이사준비 실행 → '_이사' 시트에 설정(학생 비밀번호 등)을 옮겨 적어요
+ * 2) 새 계정에서 시트 '사본 만들기' → 사본의 Apps Script에서 이사마무리 실행
+ * 3) 사본에서 새 배포 → 새 주소를 출석부 ⚙️ 설정 → 🚚 서버 이사 칸에 넣기 */
+function 이사준비() {
+  const all = PropertiesService.getScriptProperties().getProperties(), ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName('_이사'); if (sh) ss.deleteSheet(sh);
+  sh = ss.insertSheet('_이사');
+  const rows = Object.keys(all).filter(function (k) { return k !== 'movedTo'; }).map(function (k) { return [k, all[k]]; });
+  sh.getRange(1, 1, 1, 2).setValues([['이사용 설정 (이사마무리 후 자동으로 지워져요)', '']]);
+  if (rows.length) sh.getRange(2, 1, rows.length, 2).setNumberFormat('@').setValues(rows);
+  Logger.log('✅ 이사 준비 끝: 설정 ' + rows.length + '개를 _이사 시트에 적었어요. 이제 새 계정에서 이 시트의 사본을 만들어 주세요.');
+}
+function 이사마무리() {
+  const ss = SpreadsheetApp.getActive(), sh = ss.getSheetByName('_이사');
+  if (!sh) { Logger.log('❌ _이사 시트가 없어요. 옛 시트에서 이사준비를 먼저 실행하고 사본을 다시 만들어 주세요.'); return; }
+  const vals = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, 2).getValues() : [], o = {};
+  vals.forEach(function (r) { if (r[0]) o[String(r[0])] = String(r[1]); });
+  PropertiesService.getScriptProperties().setProperties(o, false);
+  Object.keys(o).forEach(function (k) { CacheService.getScriptCache().remove('P:' + k); });
+  PropertiesService.getScriptProperties().deleteProperty('movedTo'); CacheService.getScriptCache().remove('P:movedTo');
+  ss.deleteSheet(sh);
+  const it = DriveApp.getFoldersByName('냥냥 영어 문제'); if (!it.hasNext()) DriveApp.createFolder('냥냥 영어 문제');
+  Logger.log('✅ 이사 마무리 끝: 설정 ' + Object.keys(o).length + '개를 옮겼어요. 이제 [배포] → [새 배포] (웹 앱 · 실행: 나 · 액세스: 모든 사용자)를 해 주세요.');
+}
+function 이사취소() {
+  PropertiesService.getScriptProperties().deleteProperty('movedTo'); CacheService.getScriptCache().remove('P:movedTo');
+  Logger.log('✅ 이사 표시를 지웠어요. 이 서버를 다시 써요.');
+}
+
 function 드라이브권한확인() {
   const it = DriveApp.getFoldersByName('냥냥 영어 문제'), folder = it.hasNext() ? it.next() : DriveApp.createFolder('냥냥 영어 문제');
   Logger.log('✅ 드라이브 권한 OK · 폴더: ' + folder.getName());

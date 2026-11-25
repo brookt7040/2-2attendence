@@ -2353,7 +2353,12 @@ let busy = false;
 /* ---------- 서버 ---------- */
 async function api(url, opts){
   const r = await fetch(url, Object.assign({ redirect:'follow' }, opts || {}));
-  return r.json();
+  const j = await r.json();
+  if (j && j.error === 'moved' && j.movedTo && /^https:\/\/script\.google\.com\/|^http:\/\/localhost/.test(j.movedTo) && j.movedTo !== API){   // 🚚 서버가 이사했어요
+    try { localStorage.setItem('nyangApi', j.movedTo); } catch(e){}
+    location.replace(location.pathname + '?api=' + encodeURIComponent(j.movedTo));
+  }
+  return j;
 }
 async function pull(force){
   if (!API || busy) return;
