@@ -1378,6 +1378,10 @@ function bootDone(ok){
   bootDone(st.pub ? true : false);
   localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); tKey = '';
   if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
+  { // 🎨 출석부(보기 전용)의 꾸미기 방 버튼 → 내 고양이 탭으로, 로그인 안 했으면 이름을 골라 둔 로그인 창
+    const q = new URLSearchParams(location.search), who = q.get('who');
+    if (q.get('tab') === 'me'){ showTab('me'); if (!me){ openLogin(); if (who) $('loginName').value = who; } }
+  }
   setInterval(tPoll, 30000);
   setInterval(() => pull(), 20000);
   setInterval(() => { if (me && !document.hidden) chatPull(); }, current === 'village' ? 6000 : 6000);

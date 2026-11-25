@@ -772,7 +772,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 .gate-box h2{margin:6px 0;}
 .gate-box .pin-input{margin:10px auto 4px;display:block;}
 body.view-mode #openGmBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode .closing-reset,
-body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .closet-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
+body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .edit-mini,body.view-mode #syncPill,body.view-mode .touch-text{display:none !important;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
 /* 👀 보기 전용: 하나 쓰다듬기 · 내 화면 보러가기 · 고양이 카드 · 칠판만 눌러져요 */
 body.view-mode .wrap{pointer-events:none;}
@@ -2316,7 +2316,7 @@ function renderGrid(){
     card.classList.add('lv-' + li.lv);
     card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
     card.insertAdjacentHTML('beforeend', `<div class="lv-row" title="Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP ${li.exp}${li.next ? ` · 다음 레벨까지 ${li.need}` : ''}"><span class="lv-badge">Lv.${li.lv}</span><div class="lv-track"><div class="lv-fill" style="width:${Math.round(li.pct*100)}%"></div></div>${li.lv === 10 ? '<span class="lv-badge">MAX</span>' : ''}<button type="button" class="closet-btn" title="꾸미기 방">🎨</button></div>`);
-    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); requireKidPin(name, () => openCloset(name)); });
+    card.querySelector('.closet-btn').addEventListener('click', e => { e.stopPropagation(); if (VIEW){ location.href = studentLink() + '&tab=me&who=' + encodeURIComponent(name); return; } requireKidPin(name, () => openCloset(name)); });
     grid.append(card);
   });
   lastNew = null;
