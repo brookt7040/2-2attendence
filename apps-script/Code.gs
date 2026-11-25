@@ -1,5 +1,5 @@
 /**
- * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v12 · 학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
+ * 🐾 냥냥 출석 아일랜드 — 구글 시트 동기화 서버 (v13 · 서버 시계 맞추기·학교 계정으로 이사·속성 캐시·하나 하루 5번·회의 단상·영어 학원)
  *
  * 이 코드를 구글 시트의 [확장 프로그램] → [Apps Script]에 붙여넣고
  * [배포] → [새 배포] (이미 배포했다면 [배포 관리] → ✏️ → 새 버전)
@@ -27,7 +27,7 @@ const NOTICE_HEADER = '📢 오늘의 알림 — A2칸부터 한 줄에 하나�
 const CLOSING_SHEET = '종례';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 12;
+const API_VERSION = 13;
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -231,7 +231,7 @@ function publicGet_(p) {
   if (p.card) return cardOf_(String(p.card));
   if (p.eng) return engPublic_();
   const v = version_();
-  const res = { ok: true, api: API_VERSION, v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
+  const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
   if (p.since === undefined || Number(p.since) !== v) res.pub = publicState_(readRows_().map);
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
@@ -241,7 +241,7 @@ function publicGet_(p) {
 /* ---------------- 교사: 전체 읽기 ---------------- */
 function teacherPull_(body, auth) {
   const v = version_();
-  const res = { ok: true, api: API_VERSION, v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
+  const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER) };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
   res.lockdown = props_().getProperty('lockdown') === '1';
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');

@@ -360,6 +360,11 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .lv-table-bar i{display:block;height:100%;background:linear-gradient(90deg,#FFD84D,#FF9EC4);}
 
 /* ===== 🎨 꾸미기 방 ===== */
+.time-btn{font:inherit;border:1.5px dashed transparent;border-radius:8px;background:none;padding:0 3px;cursor:pointer;color:inherit;}
+.time-btn i{font-style:normal;font-size:.7em;opacity:.35;margin-left:1px;}
+.time-btn:hover{border-color:var(--ink);background:#fff;} .time-btn:hover i{opacity:1;}
+.time-add-btn{position:absolute;top:6px;left:6px;z-index:3;border:2px solid var(--ink);border-radius:999px;background:#fff;font-size:.8rem;padding:0 5px;cursor:pointer;opacity:.55;line-height:1.5;}
+.time-add-btn:hover{opacity:1;}
 .closet-btn{border:2px solid var(--ink);border-radius:999px;background:#fff;font-size:.8rem;padding:0 6px;cursor:pointer;line-height:1.45;}
 .closet-btn:hover{background:var(--y-soft);}
 .closet-body{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;}
@@ -1378,7 +1383,16 @@ let currentDayStr = '';
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad = n => String(n).padStart(2,'0');
-function getTodayStr(d = new Date()){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+/* ⏰ 서버(구글) 시간에 맞춘 지금 — 이 기기 시계가 빠르거나 느려도 출석 시간이 정확해요 */
+let clockSkew = (() => { try { return Number(localStorage.getItem('nyangClockSkew')) || 0; } catch(e){ return 0; } })();
+function nowD(){ return new Date(Date.now() + clockSkew); }
+function setClockSkew(serverNow, t0, t1){
+  if (!serverNow || t1 - t0 > 8000) return;            // 너무 느린 응답은 믿지 않아요
+  const s = serverNow - (t0 + t1) / 2;
+  clockSkew = Math.abs(s - clockSkew) > 60000 ? s : Math.round(clockSkew * 0.5 + s * 0.5);
+  try { localStorage.setItem('nyangClockSkew', String(clockSkew)); } catch(e){}
+}
+function getTodayStr(d = nowD()){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function parseDate(ds){ const [y,m,d] = ds.split('-').map(Number); return new Date(y, m-1, d); }
 function secOfDay(d){ return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds(); }
 function deadlineSec(){ const [h,m] = db.lateTimeSetting.split(':').map(Number); return h*3600 + m*60; }
@@ -1682,7 +1696,7 @@ function saveDB(){
 }
 
 function downloadBackup(){
-  const backup = { version:2, app:'nyang', exportedAt:new Date().toISOString(), db, fired:getFiredMap() };
+  const backup = { version:2, app:'nyang', exportedAt:nowD().toISOString(), db, fired:getFiredMap() };
   const blob = new Blob([JSON.stringify(backup)], { type:'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `nyang-class-backup-${getTodayStr()}.json`; a.click();
@@ -1731,7 +1745,7 @@ function resetForNewYear(){
 /* =========================================================
    ⏱ EXP 단계 계산
    ========================================================= */
-function getTier(d = new Date()){
+function getTier(d = nowD()){
   const t = db.expTiers, now = secOfDay(d), dl = deadlineSec();
   if (now <= dl){
     const early = dl - now;
@@ -1780,7 +1794,7 @@ function updateReward(now){
    ========================================================= */
 function todayData(){ return db.records[getTodayStr()] || {}; }
 function streakOf(name){
-  let n = 0; const d = new Date();
+  let n = 0; const d = nowD();
   for (let i = 0; i < 400; i++){
     const ds = getTodayStr(d), wd = d.getDay(), day = db.records[ds];
     if (wd !== 0 && wd !== 6 && day && Object.keys(day).length){
@@ -1807,9 +1821,10 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
+      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${bonusPill(name) ? `<div class="card-meta">${bonusPill(name)}${!isTeacherName(name) && dayTotal(name) < 0 ? ' 🧹' : ''}</div>` : ''}<div class="touch-text">▼ 터치해서 출석 ▼</div>`);
       card.addEventListener('click', () => { if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
       card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name)); });
+      card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name)); });
     } else {
       const tk = recTier(rec), meta = TIER_META[tk];
       card.className = `card t-${tk}${meta.sleepy ? ' sleepy' : ''}${lastNew === name ? ' new' : ''}`;
@@ -1823,8 +1838,9 @@ function renderGrid(){
       card.append(cv);
       card.insertAdjacentHTML('beforeend',
         `<div class="student-name">${numTag(nums, name)}${esc(name)}</div>` +
-        `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<span>${esc(rec.time || '')}</span>${rankPill(rec)}${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
+        `<div class="card-meta">${rec.remote ? '<span title="개인 기기로 원격 출석">📱</span>' : ''}<button type="button" class="time-btn" title="출석 시간 고치기 (관리자)">${esc(rec.time || '')}<i>✏️</i></button>${rankPill(rec)}${tk === 'absent' ? '' : expPill(rec.exp)}${bonusPill(name)}</div>`);
       card.title = recCharName(rec, name, ds);
+      card.querySelector('.time-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name)); });
     }
     card.classList.add('lv-' + li.lv);
     card.insertAdjacentHTML('afterbegin', `<div class="lv-frame"></div>${LEVELS[li.lv-1].deco ? `<div class="lv-deco">${LEVELS[li.lv-1].deco}</div>` : ''}`);
@@ -1911,9 +1927,44 @@ function checkCollection(name){
   if (!done.all && ['normal', 'rare', 'unique', 'legend'].every(t => done[t])) give('all');
   if (any){ saveDB(); syncOp({ op:'config', data: configOf() }); renderGrid(); setTimeout(() => queueLevelUps(lvBefore), 2000); }
 }
+/* ✏️ 출석 시간 고치기 (관리자) — 시간이 바뀌면 정시·지각 단계와 EXP도 그 시간에 맞춰요 */
+function parseHM(v){
+  const m = String(v || '').trim().replace(/\s/g, '').match(/^(\d{1,2})[:시.]?(\d{2})분?$/);
+  if (!m) return null; const h = +m[1], mi = +m[2];
+  return h < 24 && mi < 60 ? [h, mi] : null;
+}
+function editTime(name){
+  const ds = getTodayStr(), day = db.records[ds] = db.records[ds] || {}, old = day[name];
+  const cur = old && old.time && /^\d/.test(old.time) ? old.time : `${pad(nowD().getHours())}:${pad(nowD().getMinutes())}`;
+  const v = prompt(`${name} ${old && old.status !== 'dungeon' ? '출석 시간을 고쳐요' : '출석 처리할 시간을 넣어요'} (예: 08:39)`, cur);
+  if (v == null) return;
+  const t = parseHM(v); if (!t){ alert('시간은 08:39처럼 넣어 주세요'); return; }
+  const at = nowD(); at.setHours(t[0], t[1], 0, 0);
+  if (!old || old.status === 'dungeon'){
+    if (old) delete day[name];
+    handleTouch(name, { at: at.getTime(), remote: true, edited: true });
+    showToast(`✏️ ${name} ${pad(t[0])}:${pad(t[1])} 출석으로 넣었어요`); return;
+  }
+  const before = levelsNow(), rec = Object.assign({}, old);
+  rec.time = `${pad(t[0])}:${pad(t[1])}`; rec.sec = secOfDay(at); rec.edited = true;
+  if (!isTeacherName(name)){
+    const tier = getTier(at);
+    if (tier.key !== recTier(old)){
+      const others = Object.assign({}, day); delete others[name];
+      const ch = pickChar(tier.key, others);
+      rec.tier = tier.key; rec.status = tier.late ? 'late' : 'present'; rec.charId = ch.id;
+      rec.exp = tier.exp; delete rec.rankBonus; delete rec.fur;
+      if (rec.rank && rec.rank <= RANK_BONUS_TOP && !tier.late){ rec.rankBonus = RANK_BONUS; rec.exp += RANK_BONUS; }
+      if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
+    }
+  }
+  day[name] = rec; saveDB(); syncOp({ op:'rec', ds, name, rec });
+  renderGrid(); updateStatsBoard(); queueLevelUps(before, null, true);
+  showToast(`✏️ ${name} 출석 시간 → ${rec.time}${rec.tier !== old.tier ? ` (${TIER_META[recTier(rec)].icon} ${TIER_META[recTier(rec)].short})` : ''}`);
+}
 function handleTouch(name, opt = {}){
   if (revealing && !opt.remote) return;
-  const now = opt.at ? new Date(opt.at) : new Date(), ds = getTodayStr(now);
+  const now = opt.at ? new Date(opt.at) : nowD(), ds = getTodayStr(now);
   if (!db.records[ds]) db.records[ds] = {};
   const day = db.records[ds];
   if (day[name]) return;
@@ -1932,7 +1983,8 @@ function handleTouch(name, opt = {}){
     rec.rank = arrivals + 1;
     if (rec.rank <= RANK_BONUS_TOP && !tier.late){ rec.rankBonus = RANK_BONUS; rec.exp += RANK_BONUS; }
   }
-  if (opt.remote) rec.remote = true;
+  if (opt.remote && !opt.edited) rec.remote = true;
+  if (opt.edited) rec.edited = true;
   if (!isT && !tier.late){ rec.coins = (ATT_COINS[tier.key] || 0) + (rec.rankBonus ? 5 : 0); }
   day[name] = rec;
   saveDB(); syncOp({ op:'rec', ds, name, rec });
@@ -1941,7 +1993,7 @@ function handleTouch(name, opt = {}){
   setTimeout(() => autoMissions(ds, name), 50);
   lastNew = name;
   if (opt.remote){
-    remoteBanner(name, rec);
+    if (!opt.edited) remoteBanner(name, rec);
     if (revealing) pendingRemoteRender = true; else { renderGrid(); updateStatsBoard(); }
     queueLevelUps(lvBefore, checkParty);
     return;
@@ -1961,7 +2013,7 @@ function showReveal(name, rec, ds, done){
   drawColors($('revCanvas'), recColors(rec, name, ds));
   $('revCharName').textContent = recCharName(rec, name, ds);
   const demo = name === '미리보기';
-  const greet = greetingFor(demo ? '하나' : name, new Date());
+  const greet = greetingFor(demo ? '하나' : name, nowD());
   $('revHello').textContent = greet.hello;
   $('revMsg').textContent = greet.msg;
   const streak = demo ? 3 : streakOf(name);
@@ -2110,7 +2162,7 @@ function giveBonus(){
   const who = [...document.querySelectorAll('#pickGrid .pick.on')].map(b => b.dataset.pick);
   if (!who.length){ alert('받을 친구를 골라 주세요.'); return; }
   const lvBefore = levelsNow();
-  const ds = getTodayStr(), now = new Date(), t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const ds = getTodayStr(), now = nowD(), t = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   db.bonus[ds] = db.bonus[ds] || [];
   who.forEach(n => {
     const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), who:n, item:m.name, exp:m.exp, t };
@@ -2534,7 +2586,7 @@ function openClosing(){
   setBubble('오늘도 수고 많았다냥! 종례 시간이야 📋', 4000);
 }
 function renderClosing(){
-  const now = new Date(), days = ['일','월','화','수','목','금','토'];
+  const now = nowD(), days = ['일','월','화','수','목','금','토'];
   drawColors($('closingMascot'), catColors(MASCOT));
   $('closingDate').textContent = `${now.getMonth()+1}월 ${now.getDate()}일 (${days[now.getDay()]})`;
   const list = (db.closing || []).filter(t => t && t.trim());
@@ -2596,7 +2648,7 @@ let gmName = null;
 function openGm(){ gmName = gmName && db.students.includes(gmName) ? gmName : db.students[0]; renderGm(); $('gmOverlay').style.display = 'flex'; }
 function addAdj(name, exp, reason){
   if (!exp) return;
-  const ds = getTodayStr(), now = new Date();
+  const ds = getTodayStr(), now = nowD();
   const entry = { id: 'adm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), who:name, item: reason || '선생님 조정', exp, t:`${pad(now.getHours())}:${pad(now.getMinutes())}`, adm:true };
   db.bonus[ds] = db.bonus[ds] || []; db.bonus[ds].push(entry);
   saveDB(); syncOp({ op:'bonusAdd', ds, entry });
@@ -2631,7 +2683,7 @@ function gmSetToday(key){
   if (key === 'cancel'){ delete db.records[ds][name]; syncOp({ op:'rec', ds, name, rec:null }); }
   else if (key === 'absent'){ db.records[ds][name] = { status:'dungeon', tier:'absent', time:'결석', exp:0 }; syncOp({ op:'rec', ds, name, rec: db.records[ds][name] }); }
   else {
-    const meta = TIER_META[key], ch = pickChar(key, db.records[ds]), now = new Date();
+    const meta = TIER_META[key], ch = pickChar(key, db.records[ds]), now = nowD();
     const rec = { status: meta.sleepy ? 'late' : 'present', tier:key, time: old && old.time && old.time !== '결석' ? old.time : `${pad(now.getHours())}:${pad(now.getMinutes())}`,
       exp: getTierExp(key), charId: ch.id, edited:true };
     if (old && old.rank) rec.rank = old.rank;
@@ -2954,7 +3006,7 @@ function clockHeat(now){
   });
 }
 function tick(){
-  const now = new Date();
+  const now = nowD();
   setFlip('flipHour', pad(now.getHours()));
   setFlip('flipMin', pad(now.getMinutes()));
   setFlip('flipSec', pad(now.getSeconds()));
@@ -2980,7 +3032,7 @@ function loadStats(period){
   statsPeriod = period;
   document.querySelectorAll('#statsTabs .tab').forEach(b => b.classList.toggle('active', b.dataset.period === period));
   const box = $('statsContent');
-  const now = new Date(), ds = getTodayStr(now), isWeekend = now.getDay() === 0 || now.getDay() === 6;
+  const now = nowD(), ds = getTodayStr(now), isWeekend = now.getDay() === 0 || now.getDay() === 6;
 
   if (period === 'today'){
     const day = todayData();
@@ -3020,7 +3072,7 @@ function loadStats(period){
 }
 /* 🧹 기간별 · 레벨 · 도감 초기화 */
 const PERIOD_NAME = { week:'이번 주', month:'이번 달', year:'올해' };
-function periodRange(period, d = new Date()){
+function periodRange(period, d = nowD()){
   const y = d.getFullYear(), m = d.getMonth();
   if (period === 'week'){ const dow = d.getDay() === 0 ? 7 : d.getDay(), mon = new Date(d); mon.setDate(d.getDate() - dow + 1); const sun = new Date(mon); sun.setDate(mon.getDate() + 6); return [getTodayStr(mon), getTodayStr(sun)]; }
   if (period === 'month') return [getTodayStr(new Date(y, m, 1)), getTodayStr(new Date(y, m + 1, 0))];
@@ -3053,12 +3105,12 @@ function resetLevels(){
 function resetDex(){
   if (!confirm('냥이 도감을 비울까요?\n출석 기록은 그대로 남고, 지금부터 만나는 냥이만 도감에 모여요.')) return;
   if (!confirm('정말 도감을 전체 초기화할까요?')) return;
-  const now = new Date(); db.level.dexReset = { ds: getTodayStr(now), sec: secOfDay(now) };
+  const now = nowD(); db.level.dexReset = { ds: getTodayStr(now), sec: secOfDay(now) };
   saveDB(); syncOp({ op:'config', data: configOf() }); loadStats('dex');
   setBubble('도감을 새로 채워 보자냥! 📖', 3500);
 }
 function periodStats(period){
-  const today = new Date(), y = today.getFullYear(), mStr = pad(today.getMonth()+1);
+  const today = nowD(), y = today.getFullYear(), mStr = pad(today.getMonth()+1);
   const dow = today.getDay() === 0 ? 7 : today.getDay();
   const mon = new Date(today); mon.setDate(today.getDate() - dow + 1);
   const fri = new Date(today); fri.setDate(today.getDate() - dow + 5);
@@ -3084,7 +3136,7 @@ function periodStats(period){
   return map;
 }
 function renderDex(box){
-  const y = new Date().getFullYear(), counts = {};
+  const y = nowD().getFullYear(), counts = {};
   for (const [ds, day] of Object.entries(db.records)){
     if (!ds.startsWith(`${y}-`)) continue;
     const dr = db.level.dexReset;
@@ -3246,7 +3298,7 @@ async function saveAdminData(){
   };
   saveDB();
   syncOp({ op:'config', data: configOf() });
-  applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
+  applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(nowD());
   $('adminOverlay').style.display = 'none';
   setBubble('설정 저장 완료다냥! 💾', 3000);
 }
@@ -3318,7 +3370,7 @@ function getFiredMap(){ try { return JSON.parse(localStorage.getItem(FIRED_KEY))
 function markFired(idx){ const m = getFiredMap(); m[`${getTodayStr()}_${idx}`] = true; localStorage.setItem(FIRED_KEY, JSON.stringify(m)); }
 function isFired(idx){ return !!getFiredMap()[`${getTodayStr()}_${idx}`]; }
 function checkAlarms(){
-  const cfg = db.alarmConfig, now = new Date();
+  const cfg = db.alarmConfig, now = nowD();
   if (cfg.skipWeekend && (now.getDay() === 0 || now.getDay() === 6)) return;
   if (alarmOverlayOpen) return;
   const nowSec = secOfDay(now);
@@ -3466,10 +3518,11 @@ async function pullSync(force){
   syncBusy = true;
   try {
     if (sync.queue.length){ syncBusy = false; await flushSync(); return; }
-    const since = force ? -1 : sync.v;
+    const since = force ? -1 : sync.v, pullT0 = Date.now();
     const j = sync.api >= 3
       ? await syncFetch(sync.url, { method:'POST', body: JSON.stringify(Object.assign({ action:'pull', since, remoteOk: true }, authOf())) })
       : await syncFetch(`${sync.url}?since=${since}&t=${Date.now()}`);
+    if (j && j.now) setClockSkew(j.now, pullT0, Date.now());
     if (sync.api < 3 && j.api >= 3){ sync.api = j.api; saveSync(); syncBusy = false; return pullSync(true); }   // 시트 코드가 새 버전으로 바뀌었어요
     sync.needKey = !!j.needKey;
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
@@ -3664,7 +3717,7 @@ function onFreeClick(e){
   const b = e.target.closest('[data-free]'); if (!b) return;
   const now = Date.now() + freeSkew, m = b.dataset.min;
   let until = 0;
-  if (m === 'night'){ const d = new Date(); d.setHours(24, 0, 0, 0); until = d.getTime() + freeSkew; }
+  if (m === 'night'){ const d = nowD(); d.setHours(24, 0, 0, 0); until = d.getTime() + freeSkew; }
   else if (Number(m) > 0) until = now + Number(m) * 60000;
   const set = b.dataset.free === 'all' ? { chat: until, game: until } : { [b.dataset.free]: until };
   freeCall(set);
@@ -3758,13 +3811,13 @@ async function onAskAdmClick(e){
 let coTab = 'req', coData = null;
 const MISSION_CAT = { daily:'☀️ 매일', weekly:'📅 매주', all:'⭐ 특별' };
 const LIMIT_LABEL = { day:'하루 1번', week:'한 주 1번', once:'딱 1번', none:'제한 없음' };
-function weekStart(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return getTodayStr(x); }
-function periodKey(limit, d = new Date()){ return limit === 'day' ? getTodayStr(d) : limit === 'week' ? weekStart(d) : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
+function weekStart(d = nowD()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return getTodayStr(x); }
+function periodKey(limit, d = nowD()){ return limit === 'day' ? getTodayStr(d) : limit === 'week' ? weekStart(d) : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
 function coinGrant(name, m, auto){
   syncOp({ op:'coinAdd', name, amt:m.coins, why:'미션: ' + m.name, kind: auto ? '자동' : '선생님', key:`m:${m.id}:${name}:${periodKey(m.limit)}` });
 }
 function onTimeStreak(name){
-  let n = 0; const d = new Date();
+  let n = 0; const d = nowD();
   for (let i = 0; i < 400; i++){
     const ds = getTodayStr(d), wd = d.getDay(), day = db.records[ds];
     if (wd !== 0 && wd !== 6 && day && Object.keys(day).length){ const r = day[name]; if (r && r.status === 'present') n++; else if (!(i === 0 && !r)) break; }
@@ -3974,7 +4027,7 @@ async function saveTeacherKey(){
 }
 function refreshAfterRemote(){
   if (revealing){ pendingRemoteRender = true; return; }
-  applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(new Date());
+  applyTitle(); renderNotices(); renderLadder(); renderGrid(); updateStatsBoard(); updateReward(nowD());
   if ($('statsOverlay').style.display === 'flex') loadStats(statsPeriod);
   if ($('giveOverlay').style.display === 'flex') renderBonusLog();
   if ($('closingOverlay').style.display === 'flex') renderClosing();
