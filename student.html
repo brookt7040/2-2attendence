@@ -495,6 +495,16 @@ html.off-chat .ch-in,html.off-chat .ch-quick{display:none !important;}
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
 #bootOv.hide{opacity:0;pointer-events:none;}
+
+/* 🐾 로딩 화면 (접속 중 화면과 같은 모양) */
+.ldBox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 12px;margin:6px 0;border-radius:16px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.15rem;text-align:center;word-break:keep-all;}
+.ldBox .bp,.ldOv .bp{font-size:2.6rem;animation:bootHop .9s ease-in-out infinite;}
+.ldBox small,.ldOv small{font-size:.85rem;color:#8A7060;}
+.ldBox .bd span,.ldOv .bd span{display:inline-block;animation:bootDot 1.2s infinite;} .ldBox .bd span:nth-child(2),.ldOv .bd span:nth-child(2){animation-delay:.2s;} .ldBox .bd span:nth-child(3),.ldOv .bd span:nth-child(3){animation-delay:.4s;}
+.ldOv{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.35rem;text-align:center;transition:opacity .3s;word-break:keep-all;}
+.ldOv .bp{font-size:3.2rem;} .ldOv.hide{opacity:0;pointer-events:none;}
+@keyframes bootHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes bootDot{0%,60%,100%{opacity:.2}30%{opacity:1}}
 #bootOv .bp{font-size:3.4rem;animation:bootHop .9s ease-in-out infinite;}
 #bootOv .bd span{display:inline-block;animation:bootDot 1.2s infinite;} #bootOv .bd span:nth-child(2){animation-delay:.2s;} #bootOv .bd span:nth-child(3){animation-delay:.4s;}
 #bootOv small{font-size:.9rem;color:#8A7060;}
@@ -544,7 +554,7 @@ html.off-chat .ch-in,html.off-chat .ch-quick{display:none !important;}
     <div class="box ask-off-box"><div class="empty" style="line-height:1.7;"><b>우리 반 광장</b>은 지금 잠시 쉬고 있어요<br><small>불편한 일이 있으면 대화 말풍선이나 냥이 카드의 <b>신고</b>를 눌러요</small></div></div>
     <div class="subs" data-for="ask"><button type="button" data-sub="free"><i class="se">💬 </i>자유 게시판</button><button type="button" data-sub="op"><i class="se">💡 </i>의견함</button></div>
     <div class="box ns" data-sec="free op"><div class="box-head mint" id="plHead">💬 자유 게시판</div><div id="plCompose"></div></div>
-    <div class="box ns" data-sec="free op"><div id="plBar"></div><div id="plList"><div class="empty">불러오는 중…</div></div></div>
+    <div class="box ns" data-sec="free op"><div id="plBar"></div><div id="plList"><div class="ldBox"><div class="bp">💬</div><div>광장 여는 중<span class="bd"><span>.</span><span>.</span><span>.</span></span></div><small>친구들 글을 모으고 있어요</small></div></div></div>
   </section>
 
   <section class="panel" id="p-village">
@@ -1052,12 +1062,12 @@ const V_MAPS = { out:'🏙️ 냥냥 시티', west:'🌊 냥냥 해변', east:'�
 const isMap = sc => !!V_MAPS[sc];
 const MAP_WALK = { out: WALK, west: { x0:400, x1:1570, y0:90, y1:975 }, east: { x0:30, x1:1570, y0:90, y1:975 }, south: { x0:30, x1:1570, y0:330, y1:975 }, mall: { x0:30, x1:1570, y0:600, y1:840 }, alley: { x0:30, x1:1570, y0:120, y1:975 } };
 const V_SIGNS = {
-  out:   [{ to:'west', x:40, y:618, label:'⬅ 해변' }, { to:'east', x:1560, y:618, label:'숲 ➡' }, { to:'south', x:800, y:982, label:'⬇ ☁️ 하늘 정원' }, { to:'mall', x:330, y:982, label:'⬇ 🛍️ 상점가' }, { to:'alley', x:1270, y:982, label:'⬇ 🐾 길냥이집' }],
+  out:   [{ to:'west', x:40, y:618, label:'⬅ 해변' }, { to:'east', x:1560, y:618, label:'숲 ➡' }, { to:'south', x:545, y:362, label:'⬆ ☁️ 하늘 정원' }, { to:'mall', x:330, y:982, label:'⬇ 🛍️ 상점가' }, { to:'alley', x:1270, y:982, label:'⬇ 🐾 길냥이집' }],
   mall:  [{ to:'out', x:40, y:720, label:'⬅ 마을로' }],
   alley: [{ to:'out', x:800, y:982, label:'⬇ 시티로' }],
   west:  [{ to:'out', x:1555, y:520, label:'마을 ➡' }],
   east:  [{ to:'out', x:45, y:520, label:'⬅ 마을' }],
-  south: [{ to:'out', x:800, y:345, label:'⬆ 마을' }]
+  south: [{ to:'out', x:800, y:985, label:'⬇ 시티로 내려가기' }]
 };
 /* 🏗️ 집 부지: 처음엔 모두 🐾 길냥이집, 레벨이 오르면 시티 · 해변 · 숲 · 상점가 · ☁️ 하늘 정원으로 이사 (다음 날 완공) */
 const PLOTS = [[220, 520], [230, 800], [520, 965], [1380, 520], [1370, 800], [1080, 965]].map(([x, y], i) => ({ id: 'P' + (i + 1), map: 'south', lv: 7, x, y }));
@@ -1402,7 +1412,7 @@ function mountEngAdmin(el, tcall, toastFn){
   const E = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
   let imgs = [];
   async function load(){
-    el.innerHTML = '<div style="padding:10px;">불러오는 중…</div>';
+    el.innerHTML = LD('🐾', '불러오는 중', '우리 반 정보를 불러오고 있어요');
     let d = {}; try { d = await tcall({ action:'engResults' }); } catch(e){}
     const set = d.set || {}, res = (d.results || []).sort((a, b) => b.score - a.score);
     el.innerHTML = `
@@ -1573,6 +1583,7 @@ function openVillage(opts){
   const root = document.createElement('div'); root.className = 'vg';
   root.innerHTML = `<canvas></canvas>
     <div class="vg-top"><button type="button" class="vg-fold" title="왼쪽 위 정보 접기/펴기">◀ 접기</button><span class="vg-title"></span><button type="button" class="vg-out">🚪 나가기</button><button type="button" class="vg-x">✕ 마을 나가기</button></div>
+    <div class="vg-ld-wrap">${LD('🏝️', '마을로 가는 중', opts.viewOnly ? '친구들이 어디 있는지 보고 있어요' : '우리 집 앞으로 가고 있어요', 'ldOv vg-ld')}</div>
     <div class="vg-hud"></div><canvas class="vg-mini" width="450" height="312" title="마을 지도 · 누르면 그곳으로 가요"></canvas><div class="vg-mega"></div><div class="vg-msg"></div><div class="vg-group"></div>
     <div class="vg-acts"></div><div class="vg-panel"></div><div class="vg-edit"></div>
     ${opts.viewOnly ? '' : `<div class="vg-bar">${VILLAGE_EMOTES.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}
@@ -1580,6 +1591,17 @@ function openVillage(opts){
   document.body.appendChild(root);
   const $q = sel => root.querySelector(sel);
   const cv = $q('canvas'), ctx = cv.getContext('2d');
+  /* 🐾 마을 로딩 화면: 처음 들어올 때 · 지도/건물/집을 옮길 때 */
+  let ldT = 0, villageReady = false;
+  function vLoad(icon, title, sub){
+    const w = $q('.vg-ld-wrap'); if (!w) return;
+    w.innerHTML = LD(icon, title, sub, 'ldOv vg-ld'); ldT = Date.now();
+  }
+  function vLoadDone(){
+    const o = $q('.vg-ld'); if (!o) return;
+    setTimeout(() => { o.classList.add('hide'); setTimeout(() => { if (o.parentNode) o.remove(); }, 320); }, Math.max(0, 450 - (Date.now() - ldT)));
+  }
+  ldT = Date.now(); setTimeout(() => { if (!villageReady){ villageReady = true; vLoadDone(); } }, 9000);   // 연결이 느려도 9초 뒤엔 열어 줘요
   const msgEl = $q('.vg-msg'), actsEl = $q('.vg-acts'), panel = $q('.vg-panel'), editEl = $q('.vg-edit'), groupEl = $q('.vg-group');
   let state = null, cats = {}, seen = new Set(), raf = 0, poll = 0, alive = true, scale = 1, ox = 0, oy = 0, lastMoveSent = 0, follow = false;
   let scene = 'out', room = null, editing = null, pickFurn = null, toGroup = false, hanaInfo = null, beat = 0;
@@ -1679,8 +1701,8 @@ function openVillage(opts){
       });
       if (me && !me.placed && !opts.viewOnly && scene === 'out'){   // 🏠 마을에 들어오면 우리 집 앞에서 시작 (해변 집이면 해변, 길냥이면 박스집 앞)
         me.placed = true; const h = homeSpot(meName);
-        (h.sc !== 'out' ? enter(h.sc) : Promise.resolve()).then(() => { me.x = h.x; me.y = h.y; me.tx = null; me.sc = scene; camera(true); });
-      }
+        (h.sc !== 'out' ? enter(h.sc, true) : Promise.resolve()).then(() => { me.x = h.x; me.y = h.y; me.tx = null; me.sc = scene; camera(true); villageReady = true; vLoadDone(); });
+      } else if (!villageReady && (opts.viewOnly || !meName || !opts.me || !me)){ villageReady = true; vLoadDone(); }
       if (me) me.placed = true;
       (j.chat || []).forEach(m => { const k = 'c' + m.ts + m.n + m.text; if (seen.has(k)) return; seen.add(k); if (cats[m.n] && m.ts > T0 - 20000) cats[m.n].bubble = { text: m.text.length > 26 ? m.text.slice(0, 25) + '…' : m.text, until: Date.now() + 7000 }; });
       (j.emo || []).forEach(m => { const k = 'e' + m.ts + m.n; if (seen.has(k)) return; seen.add(k); if (m.n === '하나' && m.ts > T0 - 20000){ hana.bubble = { text: '💛', until: Date.now() + 2500 }; return; } if (cats[m.n] && m.ts > T0 - 20000) cats[m.n].emo = { e: m.e, until: Date.now() + 3500 }; });
@@ -2603,9 +2625,15 @@ function openVillage(opts){
     const hm = scene === 'out' && state && (state.mega || []).length;
     $q('.vg-mega').style.display = hm ? 'block' : 'none'; root.classList.toggle('has-mega', !!hm);
   }
-  async function enter(id){
+  const LD_SCENE = { out:['🏙️', '시티로 가는 중'], west:['🏖️', '해변으로 가는 중'], east:['🌲', '숲으로 가는 중'], south:['☁️', '하늘 정원으로 올라가는 중'], mall:['🛍️', '상점가로 가는 중'], alley:['📦', '길냥이집으로 가는 중'],
+    hall:['🏛️', '시청에 들어가는 중'], arcade:['🎮', '오락실에 들어가는 중'], hana:['🐱', '하나네 집에 들어가는 중'], eng:['📚', '아카데미에 들어가는 중'], cafe:['☕', '스터디카페에 들어가는 중'] };
+  async function enter(id, quiet){
     showActs(null); closePanel(); editStop(false);
     const prev = scene;
+    if (!quiet && villageReady){ const L = id.startsWith('house:') ? [isTch(id.slice(6)) ? '👑' : '🏠', `${id.slice(6)}${isTch(id.slice(6)) ? '의 궁전' : '네 집'}에 놀러 가는 중`] : LD_SCENE[id] || ['🐾', '이동 중']; vLoad(L[0], L[1], '문을 열고 있어요'); }
+    try { return await enter0(id, prev); } finally { if (villageReady) vLoadDone(); }
+  }
+  async function enter0(id, prev){
     if (id.startsWith('house:')){
       room = null;
       try { const r = await fetch(`${opts.api}?room=${encodeURIComponent(id.slice(6))}&t=${Date.now()}`, { redirect:'follow' }); room = await r.json(); } catch(e){ room = null; }
@@ -2818,7 +2846,7 @@ function openVillage(opts){
   /* 🪪 ID 카드 */
   async function openCard(name){
     panel.style.display = 'block';
-    panel.innerHTML = '<button type="button" class="px">✕</button><h3>🪪 냥이 카드</h3><div class="hint" style="text-align:center;">불러오는 중…</div>';
+    panel.innerHTML = '<button type="button" class="px">✕</button><h3>🪪 냥이 카드</h3>' + LD('🪪', '카드 불러오는 중', '냥이 카드를 꺼내고 있어요');
     let cd = null; try { const r = await fetch(`${opts.api}?card=${encodeURIComponent(name)}&t=${Date.now()}`, { redirect:'follow' }); cd = await r.json(); } catch(e){}
     if (!cd || !cd.ok){ panel.innerHTML = '<button type="button" class="px">✕</button><h3>🪪 냥이 카드</h3><div class="hint">카드를 불러오지 못했어요</div>'; return; }
     const pf = cd.profile || {}, F = [['nick', '🏷️ 닉네임'], ['bday', '🎂 생일'], ['mbti', '🧠 MBTI'], ['food', '🍙 최애 음식'], ['hobby', '🎮 취미·특기'], ['subject', '📚 좋아하는 과목'], ['dream', '🌟 장래희망'], ['song', '🎧 요즘 노래']];
@@ -2938,7 +2966,7 @@ function openVillage(opts){
   let hanaTab = 'play';
   async function openHanaPanel(){
     panel.style.display = 'block';
-    panel.innerHTML = '<button type="button" class="px">✕</button><h3>🐱 하나</h3><div class="hint" style="text-align:center;">불러오는 중…</div>';
+    panel.innerHTML = '<button type="button" class="px">✕</button><h3>🐱 하나</h3>' + LD('🐱', '하나 부르는 중', '하나가 달려오고 있어요');
     if (opts.me && opts.call && !opts.viewOnly){ try { hanaInfo = await opts.call('hana', {}); } catch(e){ hanaInfo = null; } }
     renderHana();
   }
@@ -3205,9 +3233,11 @@ function openVillage(opts){
     c.tx = Math.max(B.x0, Math.min(B.x1, c.x + dx / n * 40)); c.ty = Math.max(B.y0, Math.min(B.y1, c.y + dy / n * 40));
   }
   function kbDown(e){
-    if (!alive || opts.viewOnly || !opts.me || kbTyping() || panel.style.display === 'block') return;
+    if (!alive) return;
+    if (e.code === 'Escape' && panel.style.display === 'block'){ e.preventDefault(); closePanel(); return; }   // Esc: 열린 창만 닫아요
+    if (opts.viewOnly || !opts.me || kbTyping() || panel.style.display === 'block') return;
     if (KB[e.code]){ kbKeys.add(e.code); e.preventDefault(); return; }
-    if ((e.code === 'Escape' || e.code === 'KeyQ') && scene !== 'out' && !editing){ e.preventDefault(); goExit(); return; }
+    if ((e.code === 'Escape' || e.code === 'KeyQ') && !isMap(scene) && !editing){ e.preventDefault(); goExit(); return; }   // 건물·집 안에서만 나가기 (지도에서는 다른 지도로 안 가요)
     if (e.code === 'Space' || e.code === 'Enter'){
       const c = me(); if (!c) return; e.preventDefault();
       const q = pawSpots().map(p => ({ p, d: Math.hypot(p.tx - c.x, p.ty - c.y) })).sort((a, b) => a.d - b.d)[0];
@@ -3758,7 +3788,7 @@ async function openMail(owner, opt){
   if (!me){ toast('로그인해 주세요'); return; }
   opt = opt || {};
   if (owner && owner !== me.name){ mailCompose(owner, opt.praise); return; }
-  bOpen('mailOv', '<h2>📮 내 편지함</h2><div class="empty">불러오는 중…</div>');
+  bOpen('mailOv', '<h2>📮 내 편지함</h2>' + LD('📮', '편지함 여는 중', '받은 편지를 꺼내고 있어요'));
   try { mailData = await studentCall('mailList'); } catch(e){ mailData = null; }
   if (me) me.mailNew = 0; renderMailBan();
   mailInbox();
@@ -3812,7 +3842,7 @@ function renderMailBan(){
 let diaryData = null;
 async function openDiary(owner){
   if (!me){ toast('로그인해 주세요'); return; }
-  bOpen('diaryOv', `<h2>📔 ${esc(owner === me.name ? '내' : owner + '의')} 일기장</h2><div class="empty">불러오는 중…</div>`);
+  bOpen('diaryOv', `<h2>📔 ${esc(owner === me.name ? '내' : owner + '의')} 일기장</h2>${LD('📔', '일기장 펴는 중', '한 장씩 넘기고 있어요')}`);
   try { diaryData = await studentCall('diaryGet', { owner }); } catch(e){ diaryData = null; }
   renderDiary();
 }
@@ -3860,7 +3890,7 @@ let storyInVillage = false;
 async function openStory(inV){
   storyInVillage = !!inV;
   if (!me){ toast('로그인해 주세요'); return; }
-  bOpen('storyOv', '<h2>📸 시내T 스토리</h2><div class="empty">불러오는 중…</div>');
+  bOpen('storyOv', '<h2>📸 시내T 스토리</h2>' + LD('📸', '스토리 가져오는 중', '시내T 사진을 불러오고 있어요'));
   try { storyData = await studentCall('storyGet'); } catch(e){ storyData = null; }
   renderStory();
 }
@@ -4157,7 +4187,7 @@ async function openCat(s){
   }
 }
 async function catCard(nm){
-  const box = $('catBtns'); box.innerHTML = '<div class="hint" style="text-align:center;">카드 불러오는 중…</div>';
+  const box = $('catBtns'); box.innerHTML = LD('🪪', '카드 불러오는 중', '냥이 카드를 꺼내고 있어요');
   let cd = null; try { cd = await api(`${API}?card=${encodeURIComponent(nm)}&t=${Date.now()}`); } catch(e){}
   if (!catNow || catNow.name !== nm) return;
   if (!cd || !cd.ok){ box.innerHTML = '<div class="hint">카드를 불러오지 못했어요</div><div style="text-align:center;"><button type="button" class="btn" data-cmback="1">← 메뉴</button></div>'; return; }
@@ -4345,7 +4375,7 @@ function renderChat(){
   const box = $('chatBox'); if (!box) return;
   if (!me){ box.innerHTML = ''; return; }
   const c = chat.cfg;
-  if (!c){ box.innerHTML = '<div class="chat-off">대화 불러오는 중…</div>'; return; }
+  if (!c){ box.innerHTML = LD('💬', '대화 불러오는 중', '친구들 말을 모으고 있어요'); return; }
   if (!c.on){ box.innerHTML = '<div class="chat-off big">💤 선생님이 대화를 잠시 꺼 두었어요</div>'; return; }
   const T = /(쌤|샘|선생님|교감|교장)$/.test(me.name);
   const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
@@ -4582,7 +4612,7 @@ function lockerPoll(){ clearTimeout(lockerTimer); const G = coin && coin.locker 
 function renderCoin(){
   const box = $('coinBox'); if (!box) return;
   if (!me){ box.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">🐾 냥코인</div><p>🔑 로그인하면 미션·상점·게임을 이용할 수 있어요</p></div>'; return; }
-  if (!coin){ box.innerHTML = '<div class="box"><div class="box-head">🐾 냥코인</div><div class="empty">불러오는 중…</div></div>'; return; }
+  if (!coin){ box.innerHTML = LD('🎯', '미션 불러오는 중', '오늘의 미션을 가져오고 있어요'); return; }
   const eco = coin.economy, claimed = new Set(coin.claimed || []), pend = new Set((coin.reqs || []).filter(r => r.status === '대기' && r.type === '미션').map(r => r.itemId));
   const picks = coin.picks || { d:{ ids:[] }, w:{ ids:[] } }, lim = eco.pickLimit || { daily: 3, weekly: 3 };
   const groups = [['daily', '☀️ 오늘의 미션', 'd', lim.daily, '매일 아침 7시에 새로 골라요'], ['weekly', '📅 이번 주 미션', 'w', lim.weekly, '매주 월요일 아침 7시에 새로 골라요']];
@@ -4674,7 +4704,7 @@ function openShopSheet(tab, nm){
   if (featOff('coin') || featOff('shop') || (tab === 'mega' && featOff('mega'))){ toast(ERR.off); return; }
   shopTab = tab; if (tab === 'village') shopSub = 'house'; shopSheetOn = true;
   $('shopSheetName').textContent = nm || '🛒 상점'; $('shopSheet').classList.add('on');
-  if (coin) renderCoin(); else { $('shopSheetBody').innerHTML = '<div class="empty">불러오는 중…</div>'; }
+  if (coin) renderCoin(); else { $('shopSheetBody').innerHTML = LD('🛍', '가게 문 여는 중', '상품을 진열하고 있어요'); }
   coinCall('coins');
 }
 async function mallGo(){
@@ -4684,6 +4714,14 @@ async function mallGo(){
   setTimeout(() => { try { openVillage.last.enter('mall'); } catch(e){} }, 400);
 }
 function closeShopSheet(){ shopSheetOn = false; $('shopSheet').classList.remove('on'); renderCoin(); }
+/* ⎋ Esc: 맨 위에 열린 창(상점 · 팝업)만 닫아요 — 마을 지도는 그대로 */
+window.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  let done = false;
+  if (shopSheetOn){ closeShopSheet(); done = true; }
+  else { const ovs = [...document.querySelectorAll('.big-ov.on')]; const top = ovs.sort((a, b) => (+getComputedStyle(b).zIndex || 0) - (+getComputedStyle(a).zIndex || 0))[0]; if (top){ bClose(top.id); done = true; } }
+  if (done){ e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
 /* 🎮 게임 */
 let gameOne = '';
 const GAMES = {
@@ -4699,7 +4737,7 @@ function openGame(g){
   $('gameOv').style.display = 'flex'; renderGame(); coinCall('coins');
 }
 function renderGame(res){
-  const box = $('gameBox'); if (!box || !coin) { if (box) box.innerHTML = '<div class="empty">불러오는 중…</div>'; return; }
+  const box = $('gameBox'); if (!box || !coin) { if (box) box.innerHTML = LD('🎮', '오락기 켜는 중', '동전을 넣고 있어요'); return; }
   const g = coin.economy.game, bets = [5, 10, 20, 30, 50].filter(b => b <= g.maxBet);
   if (!bets.includes(betAmt)) betAmt = bets[bets.length - 1] || 1;
   const open = !!g.open;
@@ -4770,7 +4808,7 @@ async function tLoad(){
   const grp = tGroupOf(tTab);
   $('tTabs').innerHTML = `<div class="t-grp">${T_GROUPS.map(g => `<button type="button" data-tgrp="${g[0]}" class="${g === grp ? 'on' : ''}">${g[1]}${g[0] === 'msg' && tUrgent ? ' 🔴' : ''}</button>`).join('')}</div><div class="t-sub">`
     + grp[2].map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '</div><div class="t-sub t-tools"><button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button></div><div class="hint" style="margin:4px 0 0;">출석 · 시간표 · 알람 · 학생 비밀번호 · 백업은 <b>출석부(TV) 관리</b>에서 해요</div>';
-  $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
+  $('tBox').innerHTML = LD('👑', '관리 자료 불러오는 중', '우리 반 정보를 모으고 있어요');
   try {
     if (tTab === 'online') tData.pres = await tCall({ action:'presence' });
     if (tTab === 'stucfg' || tTab === 'safe') tData.sc = await tCall({ action:'stuCfg' });
@@ -5106,6 +5144,9 @@ $('ngInput').addEventListener('keydown', e => { if (e.key === 'Enter') nGateGo()
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pull(); });
 
 /* ---------- 시작 ---------- */
+/* 🐾 로딩 화면 조각: LD('🐾', '접속 중', '우리 반 정보를 불러오고 있어요') */
+function LD(icon, title, sub, cls){ return `<div class="${cls || 'ldBox'}"><div class="bp">${icon}</div><div>${title}<span class="bd"><span>.</span><span>.</span><span>.</span></span></div>${sub ? `<small>${sub}</small>` : ''}</div>`; }
+window.LD = LD;
 /* 🐾 접속 중 화면: 첫 데이터가 오면 사라져요 */
 function bootDone(ok){
   const o = document.getElementById('bootOv'); if (!o) return;

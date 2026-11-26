@@ -21,6 +21,10 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 @media (max-width:420px){ .bar{gap:3px;padding-left:4px;padding-right:4px;} .bar > button[data-t]{font-size:.76rem !important;padding:6px 0 !important;letter-spacing:-.3px;} .bar .side{margin-left:2px !important;padding-left:4px !important;gap:2px !important;border-left:none;} .bar .sub,.bar .inst{padding:4px 5px !important;font-size:.8rem !important;} .cchip{margin-left:2px !important;padding:4px 5px !important;} .bar .sp{display:none;} }
 @media (max-width:410px){ .bar > button[data-t] .em{display:none;} .bar > button[data-t]{font-size:.82rem !important;} }
 .frames{position:fixed;left:0;right:0;top:50px;bottom:0;}
+.tabLd{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.35rem;text-align:center;transition:opacity .3s;word-break:keep-all;}
+.tabLd.hide{opacity:0;pointer-events:none;} .tabLd .bp{font-size:3.2rem;animation:bootHop .9s ease-in-out infinite;} .tabLd small{font-size:.9rem;color:#8A7060;}
+.tabLd .bd span{display:inline-block;animation:bootDot 1.2s infinite;} .tabLd .bd span:nth-child(2){animation-delay:.2s;} .tabLd .bd span:nth-child(3){animation-delay:.4s;}
+@keyframes bootHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}} @keyframes bootDot{0%,60%,100%{opacity:.2}30%{opacity:1}}
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;visibility:hidden;}
 .frames iframe.on{visibility:visible;z-index:1;pointer-events:auto;}
 .frames iframe:not(.on){pointer-events:none;}
@@ -70,10 +74,15 @@ try { const moved = localStorage.getItem('nyangApi'); if (!q.get('api') && moved
 const fresh = u => u + (u.includes('?') ? '&' : '?') + '_=' + Date.now();
 const SRC = { notice: 'student.html?only=notice&api=' + encodeURIComponent(API), me: 'student.html?api=' + encodeURIComponent(API), board: 'index.html?view=1&api=' + encodeURIComponent(API), guide: 'guide.html?inapp=1', ask: 'student.html?only=ask&api=' + encodeURIComponent(API), comm: 'student.html?only=comm&api=' + encodeURIComponent(API) };
 const frames = {};
+/* 🐾 탭 로딩 화면 (접속 중 화면과 같은 모양) */
+const TAB_LD = { notice:['📢', '공지 가져오는 중', '오늘 알림과 급식을 모으고 있어요'], board:['🐾', '출석부 펼치는 중', '우리 반 정보를 불러오고 있어요'], me:['🏠', '아지트 문 여는 중', '내 고양이를 깨우고 있어요'], comm:['🎪', '커뮤니티 가는 중', '친구들이 모이고 있어요'], ask:['💌', '편지함 여는 중', '우리 반 정보를 불러오고 있어요'], guide:['📖', '안내서 펴는 중', '한 장씩 넘기고 있어요'] };
+function tabLoad(t){ const L = TAB_LD[t] || ['🐾', '접속 중', '우리 반 정보를 불러오고 있어요']; const d = document.createElement('div'); d.className = 'tabLd'; d.dataset.ld = t; d.innerHTML = `<div class="bp">${L[0]}</div><div>${L[1]}<span class="bd"><span>.</span><span>.</span><span>.</span></span></div><small>${L[2]}</small>`; document.getElementById('frames').appendChild(d); }
+function tabLoadDone(t){ const d = document.querySelector(`.tabLd[data-ld="${t}"]`); if (!d) return; d.classList.add('hide'); setTimeout(() => d.remove(), 350); }
 function show(t){
   if (!SRC[t]) t = 'board';
   curTab = t;
-  if (!frames[t]){ const f = document.createElement('iframe'); f.src = fresh(SRC[t]); f.title = t; f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
+  if (!frames[t]){ const f = document.createElement('iframe'); f.src = fresh(SRC[t]); f.title = t; tabLoad(t); f.addEventListener('load', () => tabLoadDone(t), { once: true }); f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
+  document.querySelectorAll('.tabLd').forEach(d => { d.style.display = d.dataset.ld === t ? 'flex' : 'none'; });
   Object.entries(frames).forEach(([k, f]) => { f.classList.toggle('on', k === t); if (k !== t) try { f.contentWindow.postMessage({ nyang:'hidden' }, location.origin); } catch(e){} });
   try { frames[t].contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){}   // 아지트: 로그인 안 했으면 로그인 창
   document.querySelectorAll('[data-t]').forEach(b => b.classList.toggle('on', b.dataset.t === t));
@@ -86,7 +95,7 @@ function sndShow(){ if (!window.NySnd) return; const s = NySnd.state(), b = docu
   b.title = s.muted ? (s.inClass && !s.manual ? '수업 중이라 소리가 꺼져 있어요 · 누르면 이번 시간만 켜요' : '소리 꺼짐 · 누르면 켜요') : (s.inClass ? '이번 시간만 소리 켜 둠 · 누르면 꺼요' : '소리 켜짐 · 누르면 이번 쉬는 시간 동안 꺼요'); }
 document.getElementById('sndBtn').onclick = () => { if (!window.NySnd) return; const s = NySnd.toggle(); sndShow(); };
 sndShow(); setInterval(sndShow, 10000); addEventListener('storage', e => { if (e.key === 'nyangClass' || e.key === 'nyangSndOv') sndShow(); });
-document.getElementById('reloadBtn').onclick = () => { const f = frames[curTab]; if (f){ f.src = fresh(SRC[curTab]); } const b = document.getElementById('reloadBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); };
+document.getElementById('reloadBtn').onclick = () => { const f = frames[curTab]; if (f){ const t0 = curTab; tabLoad(t0); f.addEventListener('load', () => tabLoadDone(t0), { once: true }); f.src = fresh(SRC[curTab]); } const b = document.getElementById('reloadBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); };
 document.querySelector('.bar').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); });
 addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang === 'go' && SRC[d.tab]) show(d.tab); });
 /* 🐱 출석부 고양이 메뉴 → 대화 · 아지트로 이어 주기 */

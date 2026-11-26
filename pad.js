@@ -190,7 +190,7 @@ function render(){
   const b = box(); if (!b) return;
   if (!me){ b.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">📔 내 수첩</div><p>🔑 로그인하면 내 수첩을 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>'; return; }
   if (!window.crypto || !crypto.subtle){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">이 브라우저에서는 수첩을 잠글 수 없어요. 다른 브라우저(크롬 · 사파리)로 열어 주세요.</div></div>'; return; }
-  if (NP.st === 'loading' || NP.st === 'idle'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">여는 중…</div></div>'; return; }
+  if (NP.st === 'loading' || NP.st === 'idle'){ b.innerHTML = window.LD ? LD('📔', '수첩 여는 중', '내 수첩을 꺼내고 있어요') : '<div class="empty">여는 중…</div>'; return; }
   if (NP.st === 'error'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">연결이 안 돼요. 잠시 뒤 다시 눌러 주세요.</div><button type="button" class="btn btn-y" data-np="retry">🔄 다시</button></div>'; return; }
   if (NP.st === 'setup' || NP.st === 'locked'){
     const S = NP.st === 'setup';
