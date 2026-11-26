@@ -60,7 +60,7 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 .upd button{font-family:inherit;font-size:1.25rem;border:0.13rem solid #CDBBA8;border-radius:999px;background:#fff;color:#5B4636;padding:.25rem 1rem;cursor:pointer;}
 .upd ul{list-style:none;max-width:44rem;margin:.8rem auto 0;text-align:left;background:#fff;border:0.19rem solid #5B4636;border-radius:1.2rem;padding:1rem 1.4rem;}
 .upd li{font-size:1.4rem;line-height:1.6;padding:.25rem 0 .25rem 1.8rem;}
-.upd li:first-child{color:#D9466F;}
+.upd li::before{content:none !important;} .upd li{padding-left:.2rem !important;} .upd li.vh{font-size:1.25rem;color:#8A7563;padding-left:0;margin-top:.5rem;border-top:0.13rem dashed #EFE3D3;padding-top:.5rem;} .upd li.vh:first-child{border-top:none;margin-top:0;padding-top:0;} .upd li.new{color:#D9466F;}
 .inst{max-width:100%;margin:0 0 1.6rem;background:#fff;border:0.19rem solid #5B4636;border-radius:1.4rem;box-shadow:0 0.3rem 0 #5B4636;overflow:hidden;}
 .inst-top{display:flex;align-items:center;gap:1rem;padding:1.1rem 1.4rem;background:#E8ECFF;flex-wrap:wrap;}
 .inst-top b{display:block;font-size:1.8rem;font-weight:normal;} .inst-top small{display:block;font-size:1.2rem;color:#8A7563;margin-top:.2rem;}
@@ -95,7 +95,7 @@ p,li,.step,.note,.warn,.view,.rule,.q span,.tab p,.foot{text-wrap:pretty;}
 <div class="upd" id="gUpd" style="display:none;"><button type="button" id="gUpdBtn">📝 업데이트 내역</button><ul id="gUpdList" hidden></ul></div></div>
 
 <div class="card inst-card"><h2><span class="num">📲</span>2-2😻 앱 설치하기</h2>
-<p class="inst-lead">설치하면 바탕화면 · 홈 화면에 <b>하나 아이콘</b>이 생기고, 누르면 <b>출석부 · 공지사항 · 아지트 · to. 시내T · 안내</b>가 한 창에 열려요.</p>
+<p class="inst-lead">설치하면 바탕화면 · 홈 화면에 <b>하나 아이콘</b>이 생기고, 누르면 <b>출석부 · 공지사항 · 아지트 · 안내</b>가 한 창에 열려요.</p>
 <div class="inst-grid">
 <div class="inst-c"><h3>💻 디벗 · 컴퓨터 · 📱 안드로이드</h3><ol class="inst-ol"><li>2-2😻 앱 화면 <b>오른쪽 위 📲 설치</b>를 눌러요</li><li>뜨는 창에서 <b>설치</b>를 눌러요</li><li>버튼이 안 되면 크롬 <b>⋮</b> → <b>전송, 저장, 공유</b> → <b>페이지를 앱으로 설치</b> (엣지는 <b>⋯</b> → <b>앱</b> → <b>이 사이트를 앱으로 설치</b>)</li></ol></div>
 <div class="inst-c"><h3>🍎 아이폰 · 아이패드 <small>버튼으로는 안 돼요! 직접 추가해요</small></h3><ol class="inst-ol"><li><b>사파리</b>로 <b>2-2😻 앱 화면</b>(맨 위에 출석부 · 공지사항 · 아지트 탭이 있는 화면)을 열어요</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div>
@@ -163,14 +163,21 @@ document.addEventListener('click', e => { const a = e.target.closest('[data-go]'
     if (!j || !j.ok) return;
     if (window.NyLock) NyLock.reload(j.reload);
     if (j.sleep && window.NyLock){ const chk = () => NyLock.sleep(j.sleep, NyLock.sleepIn(j.sleep, new Date())); chk(); setInterval(chk, 20000); }
-    if (j.ver) document.getElementById('gVer').textContent = j.ver;
-    const lines = String(j.notes || '').split('\n').map(x => x.trim()).filter(Boolean);
-    if (lines.length){
-      const ul = document.getElementById('gUpdList');
-      lines.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
-      document.getElementById('gUpd').style.display = 'block';
-      document.getElementById('gUpdBtn').onclick = () => { ul.hidden = !ul.hidden; };
-    }
+  } catch(e){}
+})();
+/* 📝 버전 · 업데이트 내역: updates.json (큰 기능이 생길 때만 자동으로 추가돼요) */
+(async () => {
+  try {
+    const r = await fetch('updates.json?t=' + Date.now()), list = await r.json();
+    if (!Array.isArray(list) || !list.length) return;
+    document.getElementById('gVer').textContent = list[0].v;
+    const ul = document.getElementById('gUpdList');
+    list.forEach((u, i) => {
+      const h = document.createElement('li'); h.className = 'vh'; h.textContent = `${u.v} · ${u.d}${i === 0 ? ' · NEW' : ''}`; ul.appendChild(h);
+      (u.items || []).forEach(t => { const li = document.createElement('li'); li.textContent = t; if (i === 0) li.className = 'new'; ul.appendChild(li); });
+    });
+    document.getElementById('gUpd').style.display = 'block';
+    document.getElementById('gUpdBtn').onclick = () => { ul.hidden = !ul.hidden; };
   } catch(e){}
 })();
 </script>

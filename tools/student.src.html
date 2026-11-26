@@ -1850,8 +1850,7 @@ function tRender(){
       <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
         <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
       <div class="box sc-box"><div class="box-head">📖 안내 사이트</div>
-        <label class="sc-row">버전 <input type="text" id="scGuideVer" maxlength="12" value="${esc(c.guideVer || '')}" placeholder="예: v1.0" style="width:110px;"></label>
-        <div class="hint" style="margin-top:6px;">📝 업데이트 내역 (한 줄에 하나 · 맨 위가 최신)</div><textarea id="scGuideNotes" rows="4">${esc(c.guideNotes || '')}</textarea></div>
+        <div class="hint">📝 버전과 업데이트 내역은 <b>큰 기능이 생길 때 자동으로</b> 바뀌어요 (작은 버그 수정·위치 이동은 안 적어요)</div></div>
       <div class="t-row" style="justify-content:flex-end;"><button type="button" class="btn btn-y" id="scSave">💾 저장하기</button></div>
       <div class="box sc-box"><div class="box-head pink">🚫 비속어 자동 제한</div><div class="hint">1회 경고 → 2회 1분 → 3회 10분(공개) → 4회 1시간(공개) → 5회 10일 → 6회 영구(공개) · 교실 출석부 📓 수첩에서도 볼 수 있어요</div>
         ${sn.length ? sn.map(n => { const x = st[n], on = x.perm || Number(x.until) > Date.now(); return `<div class="sc-stk"><b>${esc(n)}</b><span>${x.n}회 · ${x.perm ? '⛔ 영구 정지' : on ? `🔇 ${new Date(+x.until).toTimeString().slice(0, 5)}까지` : '✅ 제한 없음'}</span>${on ? `<button type="button" class="btn btn-gray" data-stk="${esc(n)}">🔓 풀기</button>` : ''}<button type="button" class="btn btn-gray" data-stkr="${esc(n)}">🔄 0회로</button></div>`; }).join('') : '<div class="empty">아직 없어요 ✨</div>'}</div>`;
@@ -2018,7 +2017,7 @@ document.addEventListener('click', e => {
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
     const data = { news: { on: $('scNewsOn').checked, min: +$('scNewsMin').value || 60, kinds }, mega: { on: $('scMegaOn').checked, min: +$('scMegaMin').value || 60 },
-      askOpen: $('scAskOpen').checked, closingAt: $('scClosingAt').value || '', guideVer: $('scGuideVer').value.trim(), guideNotes: $('scGuideNotes').value.trim() };
+      askOpen: $('scAskOpen').checked, closingAt: $('scClosingAt').value || '' };
     tOps([{ op:'stuCfgSet', data }], '💾 학생 화면 설정을 저장했어요').then(ok => { if (ok){ pull(true); tLoad(); } }); return;
   }
   { const x = t.closest('[data-stk]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stk}의 지금 제한을 풀까요? (횟수는 그대로)`)) tOps([{ op:'strikeSet', name: x.dataset.stk, reset:false }], '🔓 제한을 풀었어요').then(() => tLoad()); return; } }
