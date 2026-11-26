@@ -898,6 +898,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #mhBody .mh-empty{color:var(--ink-soft);text-align:center;padding:14px;}
 body.view-mode #mealSide,body.view-mode #hwSide{pointer-events:auto;}
 body.view-mode .mh-side.empty{display:none !important;}
+#enTip{position:fixed;z-index:40000;display:none;max-width:min(360px,90vw);background:#2F6B8F;color:#fff;border-radius:12px;padding:6px 11px;font-size:.95rem;line-height:1.45;white-space:pre-line;pointer-events:none;box-shadow:0 3px 0 #1d4a66;}
+.en-l{cursor:help;border-radius:6px;} .en-l:hover{background:#E8F4FF;} .en-mark{font-size:.75rem;color:#2F6B8F;margin-left:6px;}
 .mh-side{cursor:pointer;min-width:0;}
 .tr-bd{white-space:nowrap;margin-left:8px;font-size:.8rem;background:#FFE1EA;color:#C0365C;border:2px solid #E58AA8;border-radius:999px;padding:1px 8px;vertical-align:middle;animation:trBd 1.6s ease-in-out infinite;} @keyframes trBd{50%{background:#FFC2D4}} .mh-side:hover{border-color:#5B4636 !important;}
 .mh-side .mm{width:100%;font-size:1rem;line-height:1.5;white-space:pre-line;word-break:keep-all;}
@@ -4138,12 +4140,31 @@ function renderNotices(){
    ========================================================= */
 /* 📌 중요 공지 (조금 튀게) */
 /* 🍱 오늘 급식 · 📚 숙제 칸 (Must Read 아래) */
+
+/* 🇺🇸 급식: 한글 메뉴에 마우스를 올리면 영어가 말풍선으로 (줄 수가 같으면 줄마다) */
+function enMenuHTML(menu, en){
+  const ko = String(menu || '').split('\n').map(x => x.trim()).filter(Boolean), el = en ? String(en.text || '').split(/\n|·|,/).map(x => x.trim()).filter(Boolean) : [];
+  if (!en) return ko.map(x => `<div>${esc(x)}</div>`).join('');
+  if (el.length === ko.length) return ko.map((x, i) => `<div class="en-l" data-en="${esc(el[i])}">${esc(x)}</div>`).join('');
+  return `<div class="en-l" data-en="${esc(en.text)}">${ko.map(x => `<div>${esc(x)}</div>`).join('')}</div>`;
+}
+(function(){
+  let tip = null, tmr = 0;
+  const show = t => { if (!tip){ tip = document.createElement('div'); tip.id = 'enTip'; document.body.appendChild(tip); }
+    tip.textContent = '🇺🇸 ' + t.dataset.en; const r = t.getBoundingClientRect(); tip.style.display = 'block';
+    const w = tip.offsetWidth, h = tip.offsetHeight; let x = r.left + r.width / 2 - w / 2; x = Math.max(8, Math.min(innerWidth - w - 8, x));
+    let y = r.top - h - 8; if (y < 8) y = r.bottom + 8; tip.style.left = x + 'px'; tip.style.top = y + 'px'; };
+  const hide = () => { if (tip) tip.style.display = 'none'; };
+  document.addEventListener('mouseover', e => { const t = e.target.closest && e.target.closest('[data-en]'); if (t) show(t); else hide(); });
+  document.addEventListener('touchstart', e => { const t = e.target.closest && e.target.closest('[data-en]'); if (t){ show(t); clearTimeout(tmr); tmr = setTimeout(hide, 3000); } else hide(); }, { passive: true });
+  addEventListener('scroll', hide, true);
+})();
 let menuTrN = 0;   // 🇺🇸 확인 기다리는 급식 번역 (관리자 출석부)
 function renderMHSide(){
   const ms = $('mealSide'), hs = $('hwSide'); if (!ms || !hs) return;
   const today = getTodayStr(nowD()), menu = ((db.meal || {})[today] || '').trim();
   ms.classList.toggle('empty', !menu);
-  ms.innerHTML = `<div class="t">🍱 급식${!VIEW && menuTrN ? `<span class="tr-bd" title="눌러서 확인">🇺🇸 번역 ${menuTrN}</span>` : ''}</div><div class="mm">${menu ? esc(menu) : (VIEW ? ((db.menuPick || []).length ? '<span style="opacity:.5;font-size:.9rem;">눌러서 🇺🇸 영어로 번역하기</span>' : '') : '✏️ 눌러서 수정')}</div>${db.mealEn ? `<div class="mm" style="font-size:.92rem;color:#2F6B8F;margin-top:4px;">🇺🇸 ${esc(db.mealEn.text)}</div>` : ''}`;
+  ms.innerHTML = `<div class="t">🍱 급식${db.mealEn && menu ? '<span class="en-mark" title="메뉴에 마우스를 올리면 영어">🇺🇸</span>' : ''}${!VIEW && menuTrN ? `<span class="tr-bd" title="눌러서 확인">🇺🇸 번역 ${menuTrN}</span>` : ''}</div><div class="mm">${menu ? enMenuHTML(menu, db.mealEn) : (VIEW ? ((db.menuPick || []).length ? '<span style="opacity:.5;font-size:.9rem;">눌러서 🇺🇸 영어로 번역하기</span>' : '') : '✏️ 눌러서 수정')}</div>`;
    // 학생용: 오늘 급식이 없으면 칸을 숨겨요 (급식 관리자는 Notice 5번 → 급식 관리자 비번으로 열어요)
   const hw = (db.hw || []).filter(h => !h.due || h.due >= today).sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
   hs.classList.toggle('empty', !hw.length);
