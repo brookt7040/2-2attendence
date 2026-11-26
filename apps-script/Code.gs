@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 39;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 40;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -515,7 +515,7 @@ function handlePost_(body, auth) {
           break;
         }
         case 'chatCfg': props_().setProperty('chatCfg', JSON.stringify(Object.assign(chatCfg_(), o.cfg || {}))); break;
-        case 'chatDel': markRow_(CHAT_SHEET, CHAT_HEADER, o.id, 6, '삭제'); break;
+        case 'chatDel': markRow_(CHAT_SHEET, CHAT_HEADER, o.id, 6, '삭제'); chatDelPush_(o.id); break;
         case 'chatSend': appendChat_(String(o.from || '선생님'), String(o.to || ''), String(o.text || '').slice(0, 200)); break;
         case 'askReply': {
           const r = findRow_(ASK_SHEET, ASK_HEADER, o.id);
@@ -677,7 +677,7 @@ function handleStudentCore_(body) {
   if (!isTeacherName_(name) && sleepNow_()) return { ok: false, error: 'sleep', sleep: sleepCfg_() };   // 💤 하나가 자는 시간
   { const g = textGuard_(name, body); if (g) return g; }
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
-  if (body.op === 'chatPull') return studentChat_(name, body, null);
+  if (body.op === 'chatPull' || body.op === 'chatUnsend') return studentChat_(name, body, null);
   if (body.op === 'wReport') return whisperReport_(name, body);
   if (body.op === 'msgReport') {                 // 🚨 대화 말풍선 신고 (귓속말이면 앞뒤 대화를 선생님이 볼 수 있게)
     const id = Number(body.id), m = readChat_(id - 1, function (x) { return x.id === id; })[0];
@@ -961,6 +961,34 @@ function markRow_(name, header, id, col, value) {
   const r = findRow_(name, header, id);
   if (r) r.sh.getRange(r.row, col).setValue(value);
 }
+/* 👀 읽음: 학생마다 '어디까지 봤는지'를 따로 적어 둬요 (all = 전체 방에서 다 봄, t = 모둠 방별, w = 귓속말 친구별) */
+function chatSeenAll_() {
+  const all = props_().getProperties(), out = {}, pos = cacheGet_('v:pos', {});
+  Object.defineProperty(out, '__tb', { value: function (n) { const p = pos[n]; return (p && p.sc === 'hall' && p.s && Date.now() - p.ts < 600000) ? p.s : ''; } });
+  Object.keys(all).forEach(function (k) { if (k.indexOf('cs:') === 0) try { out[k.slice(3)] = JSON.parse(all[k]); } catch (e) {} });
+  return out;
+}
+function chatSeenMark_(name, view, maxId) {
+  const P = props_(), k = 'cs:' + name; let s = {}; try { s = JSON.parse(P.getProperty(k) || '{}') || {}; } catch (e) {}
+  const before = JSON.stringify(s);
+  if (view === '') s.all = Math.max(Number(s.all) || 0, maxId);
+  else if (view.charAt(0) === '#') { s.t = s.t || {}; s.t[view] = Math.max(Number(s.t[view]) || 0, maxId); }
+  else { s.w = s.w || {}; s.w[view] = Math.max(Number(s.w[view]) || 0, maxId); }
+  if (JSON.stringify(s) !== before) P.setProperty(k, JSON.stringify(s));
+}
+/* 이 말을 읽은 사람 수 (보낸 사람 빼고) */
+function chatReaders_(m, seen) {
+  const id = m.id; let n = 0;
+  Object.keys(seen).forEach(function (who) {
+    if (who === m.from) return; const s = seen[who] || {}, all = Number(s.all) || 0;
+    if (!m.to) { if (all >= id) n++; }
+    else if (m.to.charAt(0) === '#') { if ((Number((s.t || {})[m.to]) || 0) >= id || (all >= id && seen.__tb(who) === m.to.slice(1))) n++; }
+    else if (who === m.to && (all >= id || (Number(((s.w || {})[m.from])) || 0) >= id)) n++;
+  });
+  return n;
+}
+function chatDels_() { try { return JSON.parse(props_().getProperty('chatDels') || '[]') || []; } catch (e) { return []; } }
+function chatDelPush_(id) { const d = chatDels_(); d.push(Number(id)); props_().setProperty('chatDels', JSON.stringify(d.slice(-100))); }
 function studentChat_(name, body, pub) {
   const T = isTeacherName_(name);   // 👑 선생님은 쉬는 시간·잠금·속도 제한 없이
   const cfg = chatCfg_(), muted = !T && (cfg.muted || []).indexOf(name) >= 0, open = T || chatOpen_(cfg);
@@ -982,9 +1010,19 @@ function studentChat_(name, body, pub) {
       finally { lock.releaseLock(); }
     }
   }
+  if (body.op === 'chatUnsend') {                 // 🗑 아무도 안 읽었을 때만 지울 수 있어요 (선생님은 언제나)
+    const id = Number(body.id), m = readChat_(id - 1, function (x) { return x.id === id; })[0];
+    if (!m || m.from !== name || m.del) error = 'bad';
+    else if (!T && chatReaders_(m, chatSeenAll_()) > 0) error = 'read';
+    else { const lock = lightLock_(15000); try { markRow_(CHAT_SHEET, CHAT_HEADER, id, 6, '삭제'); chatDelPush_(id); } finally { lock.releaseLock(); } }
+  }
   const tb = myTable_(name), isT = /(쌤|샘|선생님)$/.test(name), reps = isT ? wReports_() : [];   // 👑 선생님은 모둠 대화는 모두, 🤫 귓속말은 신고된 것만 봐요
   const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (isT ? teacherSees_(m, reps, name) : (m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb))); }).map(function (m) { return isT ? markRep_(m, reps) : m; });
-  return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper || T, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs };
+  const recent = readChat_(0, function (m) { return !m.del; });
+  if (typeof body.view === 'string' && recent.length) chatSeenMark_(name, body.view, recent[recent.length - 1].id);   // 지금 대화방을 보고 있으면 '읽음'
+  const seen = chatSeenAll_(), reads = {};
+  recent.forEach(function (m) { if (m.from === name) reads[m.id] = chatReaders_(m, seen); });
+  return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper || T, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs, reads: reads, dels: chatDels_() };
 }
 
 /* ---------------- 📮 질문 · 건의함 ---------------- */

@@ -44,6 +44,7 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .subs button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
 .ns{display:none;} .ns.on{display:block;}
 .ask-off-box{display:none;} body.ask-off:not(.guest) #p-ask > .ask-off-box{display:block;} body.ask-off .ask-guest-msg{display:none;} body.ask-off .ask-guest-msg + .box-head{margin-top:0 !important;} body.ask-off #p-ask > .subs, body.ask-off #p-ask > .ns{display:none !important;}
+.cm .rd{color:#E58AA8;font-weight:700;margin-right:3px;} .unsend{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .unsend:hover{opacity:1;}
 .mrep{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .mrep:hover{opacity:1;}
 html.agit .tab{min-width:0;}
 @media (max-width:480px){ .subs{gap:4px;flex-wrap:nowrap;} .subs button{font-size:.85rem;padding:5px 7px;flex:1;white-space:nowrap;} html.agit .tab{font-size:1rem;padding:9px 2px;} }
@@ -3346,6 +3347,7 @@ function showTab(t){
   if (t === 'coin' && me) coinCall('coins');
   if (t === 'admin') tLoad();
   current = t;
+  if (t === 'chat' && me) setTimeout(chatPull, 0);
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
   document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
   if (t === 'notice') $('dotNotice').classList.remove('on');
@@ -3558,13 +3560,16 @@ function chatReset(){ chat = { msgs: [], last: 0, cfg: null, muted: false, to: '
 async function chatPull(){
   if (!me || !API) return;
   try {
-    const j = await studentCall('chatPull', { after: chat.last });
+    const vis = !document.hidden && (C_ONLY ? chatPopOpen : current === 'chat');   // 👀 대화방을 보고 있을 때만 '읽음'
+    const j = await studentCall('chatPull', vis ? { after: chat.last, view: chat.to || '' } : { after: chat.last });
     if (!j.ok) return;
     applyChat(j);
   } catch(e){}
 }
 function applyChat(j){
   chat.cfg = j.cfg; chat.muted = j.muted; if ('table' in j) chat.table = j.table || '';
+  if (j.reads) chat.reads = j.reads;
+  if (Array.isArray(j.dels) && j.dels.length){ const D = new Set(j.dels.map(Number)); chat.msgs = chat.msgs.filter(m => !D.has(m.id)); }
   const fresh = (j.msgs || []).filter(m => m.id > chat.last);
   if (fresh.length){
     chat.msgs = chat.msgs.concat(fresh).slice(-200); chat.last = fresh[fresh.length - 1].id;
@@ -3587,6 +3592,20 @@ addEventListener('message', e => { if (e.origin !== location.origin || !C_ONLY) 
 /* 💬 대화 탭: 방(📢 전체 · 🤫 친구와 귓속말 · 👥 우리 모둠)을 골라 보고 보내요 */
 const QUICK = ['👋 안녕!', '😂', '👍', '🙏 고마워', '🎉 축하해!', '😺 냥!'];
 function chatRoomOf(m){ if (!m.to) return ''; if (m.to.charAt(0) === '#') return m.to; return m.from === me.name ? m.to : (m.to === me.name ? m.from : '~' + m.from + '>' + m.to); }
+/* 👀 내가 보낸 말: 읽음 표시 · 아무도 안 읽었으면 🗑 지우기 (선생님은 언제나) */
+function chatReadTag(m, T){
+  const n = (chat.reads || {})[m.id]; if (n == null) return '';
+  const wh = !!m.to && m.to.charAt(0) !== '#';
+  const tag = n > 0 ? `<span class="rd">${wh ? '읽음' : n + '명 읽음'}</span>` : '';
+  return tag + (n === 0 || T ? `<button type="button" class="unsend" data-unsend="${m.id}" title="지우기 (아무도 안 읽었을 때만)">🗑</button>` : '');
+}
+async function chatUnsend(id){
+  if (!confirm('보낸 말을 지울까요?\n(아직 아무도 안 읽었을 때만 지울 수 있어요)')) return;
+  try { const j = await studentCall('chatUnsend', { id, after: chat.last }); if (!j.ok) return;
+    if (j.error === 'read') toast('벌써 읽어서 지울 수 없어요 👀'); else if (j.error) toast('지우지 못했어요'); else { chat.msgs = chat.msgs.filter(m => m.id !== id); toast('🗑 지웠어요'); }
+    applyChat(j);
+  } catch(e){ toast('연결이 안 돼요'); }
+}
 function renderChat(){
   const box = $('chatBox'); if (!box) return;
   if (!me){ box.innerHTML = ''; return; }
@@ -3609,7 +3628,7 @@ function renderChat(){
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${esc(String(m.t).slice(11, 16))}${!mine && !T && m.from !== '📮 우체부' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && m.from !== '📮 우체부' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
@@ -4123,7 +4142,7 @@ document.addEventListener('click', e => {
   if (t.closest('#loginOpenBtn') || t.closest('#loginOpenBtn2') || t.closest('[data-guest-login]')){ openLogin(); return; }
   if (t.closest('#sosOpen')){ $('sosErr').textContent = ''; document.querySelectorAll('[name=sosR]').forEach(r => r.checked = false); $('sosGo').disabled = true; $('sosOv').style.display = 'flex'; return; }
   if (IN_APP && t.closest('.board-link')){ e.preventDefault(); appGo('board'); return; }
-  { const r = t.closest('[data-room]'); if (r){ chat.to = r.dataset.room; renderChat(); return; } }
+  { const r = t.closest('[data-room]'); if (r){ chat.to = r.dataset.room; renderChat(); chatPull(); return; } }
   { const qk = t.closest('[data-quick]'); if (qk){ const i = $('chatText'); if (i){ i.value = (i.value ? i.value + ' ' : '') + qk.dataset.quick; i.focus(); } return; } }
   if (t.closest('#ngBtn')){ nGateGo(); return; }
   if (t.closest('#sosGo')){ sosSend(); return; }
@@ -4137,6 +4156,7 @@ document.addEventListener('click', e => {
   { const x = t.closest('[data-stkr]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
   { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
   if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
+  { const u = t.closest('[data-unsend]'); if (u){ chatUnsend(Number(u.dataset.unsend)); return; } }
   { const w = t.closest('[data-mrep]'); if (w){ if (!confirm('이 말을 신고할까요?\n선생님이 확인해요. (장난 신고는 안 돼요!)')) return;
       studentCall('msgReport', { id: Number(w.dataset.mrep) }).then(j => toast(j && j.ok && !j.error ? (j.already ? '이미 신고했어요' : '🚨 신고했어요. 선생님이 확인할게요') : '다시 해 주세요')).catch(() => toast('연결이 안 돼요')); return; } }
   { const w = t.closest('[data-wrep]'); if (w){ if (!confirm('이 귓속말을 신고할까요?\n선생님이 이 대화 앞뒤를 확인해요. (장난 신고는 안 돼요!)')) return;
@@ -4223,7 +4243,7 @@ $('loginBtn').addEventListener('click', doLogin);
 document.addEventListener('change', e => { if (e.target.name === 'ideaM') $('ideaModeHint').textContent = IDEA_HINT[e.target.value]; });
 document.addEventListener('change', e => { if (e.target.name === 'sosR') $('sosGo').disabled = false; });
 document.addEventListener('change', e => { if (e.target.id === 'oathChk') $('oathGo').disabled = !e.target.checked; });
-document.addEventListener('change', e => { if (e.target.id === 'chatWho' && e.target.value){ chat.to = e.target.value; renderChat(); const i = $('chatText'); if (i) i.focus(); return; } if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
+document.addEventListener('change', e => { if (e.target.id === 'chatWho' && e.target.value){ chat.to = e.target.value; renderChat(); chatPull(); const i = $('chatText'); if (i) i.focus(); return; } if (e.target.id === 'chatTo'){ chat.to = e.target.value; const i = $('chatText'); if (i) i.placeholder = chat.to ? '귓속말 보내기' : '메시지 보내기'; } });
 document.addEventListener('keydown', e => { if (e.target.id === 'chatText' && e.key === 'Enter' && !e.isComposing){ e.preventDefault(); chatSend(); } });
 $('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 $('ngInput').addEventListener('keydown', e => { if (e.key === 'Enter') nGateGo(); });
