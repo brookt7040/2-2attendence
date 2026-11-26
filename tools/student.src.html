@@ -2267,8 +2267,6 @@ function tRender(){
     box.innerHTML = `<div class="box sc-box"><div class="box-head">🏘️ 마을 소식 줄</div><div class="hint">마을 탭 위에 흐르는 줄이에요</div>
         <label class="sc-row"><input type="checkbox" id="scNewsOn" ${c.news.on ? 'checked' : ''}> 켜기 · <input type="number" id="scNewsMin" min="1" max="1440" value="${c.news.min}"> 분 동안 보이기</label>
         <div class="sc-kinds">${K.map(([k, l]) => `<label><input type="checkbox" data-sck="${k}" ${c.news.kinds[k] !== false ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
-      <div class="box sc-box"><div class="box-head">📢 확성기</div><div class="hint">학생이 냥코인으로 사서 마을 · 교실 화면 맨 위에 띄워요</div>
-        <label class="sc-row"><input type="checkbox" id="scMegaOn" ${c.mega.on ? 'checked' : ''}> 팔기 · <input type="number" id="scMegaMin" min="1" max="1440" value="${c.mega.min}"> 분 동안 보이기</label></div>
       <div class="box sc-box"><div class="box-head">🎛️ 기능 켜고 끄기</div><div class="hint">광장 · 마을 · 상점 · 미션 · 수첩 같은 기능은 <b>출석부(TV) 👑 관리자 모드 → 🎛️ 기능 스위치</b>에서 한 번에 켜고 꺼요.</div></div>
       <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
         <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
@@ -2459,7 +2457,7 @@ document.addEventListener('click', e => {
   if (t.closest('#sosGo')){ sosSend(); return; }
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
-    const data = { news: { on: $('scNewsOn').checked, min: +$('scNewsMin').value || 60, kinds }, mega: { on: $('scMegaOn').checked, min: +$('scMegaMin').value || 60 },
+    const data = { news: { on: $('scNewsOn').checked, min: +$('scNewsMin').value || 60, kinds }, mega: { on: true, min: 60 },
       closingAt: $('scClosingAt').value || '' };
     tOps([{ op:'stuCfgSet', data }], '💾 학생 화면 설정을 저장했어요').then(ok => { if (ok){ pull(true); tLoad(); } }); return;
   }
