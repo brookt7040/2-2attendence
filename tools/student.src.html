@@ -1433,7 +1433,7 @@ function chatReadTag(m, T){
   const n = (chat.reads || {})[m.id]; if (n == null) return '';
   const wh = !!m.to && m.to.charAt(0) !== '#';
   const tag = n > 0 ? `<span class="rd">${wh ? '읽음' : n + '명 읽음'}</span>` : '';
-  return tag + (n === 0 || T ? `<button type="button" class="unsend" data-unsend="${m.id}" title="지우기 (아무도 안 읽었을 때만)">🗑</button>` : '');
+  return tag + ((n === 0 || T) && n !== -1 ? `<button type="button" class="unsend" data-unsend="${m.id}" title="지우기 (아무도 안 읽었을 때만)">🗑</button>` : '');
 }
 async function chatUnsend(id){
   if (!confirm('보낸 말을 지울까요?\n(아직 아무도 안 읽었을 때만 지울 수 있어요)')) return;

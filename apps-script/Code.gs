@@ -976,16 +976,26 @@ function chatSeenMark_(name, view, maxId) {
   else { s.w = s.w || {}; s.w[view] = Math.max(Number(s.w[view]) || 0, maxId); }
   if (JSON.stringify(s) !== before) P.setProperty(k, JSON.stringify(s));
 }
-/* 이 말을 읽은 사람 수 (보낸 사람 빼고) */
-function chatReaders_(m, seen) {
-  const id = m.id; let n = 0;
-  Object.keys(seen).forEach(function (who) {
-    if (who === m.from) return; const s = seen[who] || {}, all = Number(s.all) || 0;
-    if (!m.to) { if (all >= id) n++; }
-    else if (m.to.charAt(0) === '#') { if ((Number((s.t || {})[m.to]) || 0) >= id || (all >= id && seen.__tb(who) === m.to.slice(1))) n++; }
-    else if (who === m.to && (all >= id || (Number(((s.w || {})[m.from])) || 0) >= id)) n++;
+/* 이 말을 읽은 사람 수 (보낸 사람 빼고): 대화방을 본 기록 + 그 뒤에 같은 방에서 말한 친구(답했으면 읽은 거예요 · 예전 대화도) */
+function chatReaders_(m, seen, recent) {
+  const id = m.id, who = {};
+  Object.keys(seen).forEach(function (w) {
+    if (w === m.from) return; const s = seen[w] || {}, all = Number(s.all) || 0;
+    if (!m.to) { if (all >= id) who[w] = 1; }
+    else if (m.to.charAt(0) === '#') { if ((Number((s.t || {})[m.to]) || 0) >= id || (all >= id && seen.__tb(w) === m.to.slice(1))) who[w] = 1; }
+    else if (w === m.to && (all >= id || (Number(((s.w || {})[m.from])) || 0) >= id)) who[w] = 1;
   });
-  return n;
+  (recent || []).forEach(function (x) {
+    if (x.id <= id || x.from === m.from || x.from === '📮 우체부') return;
+    if (!m.to ? !x.to : m.to.charAt(0) === '#' ? x.to === m.to : (x.from === m.to && x.to === m.from)) who[x.from] = 1;
+  });
+  return Object.keys(who).length;
+}
+/* 읽음 기록은 이 번호부터 시작 (그 전 대화는 🗑 지우기 금지) */
+function chatReadStart_() {
+  const P = props_(); let v = P.getProperty('chatReadStart');
+  if (v === null) { v = String(Number(P.getProperty('chatSeq') || 0) + 1); P.setProperty('chatReadStart', v); }
+  return Number(v);
 }
 function chatDels_() { try { return JSON.parse(props_().getProperty('chatDels') || '[]') || []; } catch (e) { return []; } }
 function chatDelPush_(id) { const d = chatDels_(); d.push(Number(id)); props_().setProperty('chatDels', JSON.stringify(d.slice(-100))); }
@@ -1013,15 +1023,15 @@ function studentChat_(name, body, pub) {
   if (body.op === 'chatUnsend') {                 // 🗑 아무도 안 읽었을 때만 지울 수 있어요 (선생님은 언제나)
     const id = Number(body.id), m = readChat_(id - 1, function (x) { return x.id === id; })[0];
     if (!m || m.from !== name || m.del) error = 'bad';
-    else if (!T && chatReaders_(m, chatSeenAll_()) > 0) error = 'read';
+    else if (!T && (id < chatReadStart_() || chatReaders_(m, chatSeenAll_(), readChat_(id, function (x) { return !x.del; })) > 0)) error = 'read';
     else { const lock = lightLock_(15000); try { markRow_(CHAT_SHEET, CHAT_HEADER, id, 6, '삭제'); chatDelPush_(id); } finally { lock.releaseLock(); } }
   }
   const tb = myTable_(name), isT = /(쌤|샘|선생님)$/.test(name), reps = isT ? wReports_() : [];   // 👑 선생님은 모둠 대화는 모두, 🤫 귓속말은 신고된 것만 봐요
   const msgs = readChat_(Number(body.after || 0), function (m) { return !m.del && (isT ? teacherSees_(m, reps, name) : (m.to === '' || m.to === name || m.from === name || (tb && m.to === '#' + tb))); }).map(function (m) { return isT ? markRep_(m, reps) : m; });
   const recent = readChat_(0, function (m) { return !m.del; });
   if (typeof body.view === 'string' && recent.length) chatSeenMark_(name, body.view, recent[recent.length - 1].id);   // 지금 대화방을 보고 있으면 '읽음'
-  const seen = chatSeenAll_(), reads = {};
-  recent.forEach(function (m) { if (m.from === name) reads[m.id] = chatReaders_(m, seen); });
+  const seen = chatSeenAll_(), reads = {}, rs = chatReadStart_();
+  recent.forEach(function (m) { if (m.from === name) { const n = chatReaders_(m, seen, recent); reads[m.id] = n || (m.id < rs && !T ? -1 : 0); } });   // -1 = 예전 대화 (지우기 금지)
   return { ok: true, error: error, sent: body.op === 'chatSend' ? cleanText_(body.text, cfg) : undefined, table: tb, cfg: { on: !!cfg.on || open, open: open, whisper: !!cfg.whisper || T, start: cfg.start, end: cfg.end }, muted: muted, msgs: msgs, reads: reads, dels: chatDels_() };
 }
 
