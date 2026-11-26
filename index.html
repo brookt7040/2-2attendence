@@ -720,7 +720,7 @@ td img.mini-cat{width:40px;height:40px;vertical-align:middle;}
 
 /* 파티 */
 .party-box{background:linear-gradient(180deg,#FFFBE6,#FFE3EE);border:5px solid var(--ink);border-radius:34px;box-shadow:0 10px 0 var(--ink);padding:30px 60px 24px;text-align:center;animation:popIn .35s cubic-bezier(.2,1.6,.4,1);}
-#partyMascot{width:200px;height:200px;animation:jump .6s ease-out infinite;}
+#partyMascot{width:160px;height:160px;animation:jump .6s ease-out 2;}
 .party-title{font-size:3.4rem;color:var(--y);text-shadow:3px 0 var(--ink),-3px 0 var(--ink),0 3px var(--ink),0 -3px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 7px var(--ink);}
 .party-sub{font-size:1.6rem;margin-top:14px;}
 
@@ -3911,9 +3911,9 @@ function checkParty(){
   $('partySub').textContent = `오늘 우리 반이 모은 EXP ${fmtExp(exp)} ✨`;
   const ov = $('partyOverlay'); ov.style.display = 'flex';
   sfx('party');
-  [0, 400, 800, 1300].forEach((t, i) => setTimeout(() => burst('party', innerWidth * (0.15 + 0.23*i), innerHeight * 0.3), t));
+  burst('partyLite', innerWidth / 2, innerHeight * 0.3);   // 🎉 가볍게 한 번만 (TV 렉 방지)
   const close = () => { ov.style.display = 'none'; ov.onclick = null; };
-  ov.onclick = close; setTimeout(close, 6000);
+  ov.onclick = close; setTimeout(close, 4000);
 }
 
 /* =========================================================
@@ -3937,12 +3937,12 @@ const FX_PAL = {
 function burst(kind, x, y){
   const W = innerWidth, H = innerHeight;
   x = x ?? W/2; y = y ?? H/2;
-  const n = { legend:150, unique:120, rare:95, normal:60, safe:40, sleepy:26, party:140 }[kind] || 60;
-  const pal = FX_PAL[kind] || FX_PAL.normal;
+  const n = { legend:150, unique:120, rare:95, normal:60, safe:40, sleepy:26, party:140, partyLite:50 }[kind] || 60;
+  const pal = FX_PAL[kind === 'partyLite' ? 'party' : kind] || FX_PAL.normal;
   for (let i = 0; i < n; i++){
     const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * (kind === 'legend' || kind === 'party' ? 11 : 8);
     const sleepy = kind === 'sleepy';
-    const shapes = sleepy ? ['z','z','★'] : (kind === 'normal' ? ['rect','circle','circle'] : ['rect','circle','star','heart','paw']);
+    const shapes = sleepy ? ['z','z','★'] : (kind === 'normal' || kind === 'partyLite' ? ['rect','circle','circle'] : ['rect','circle','star','heart','paw']);
     fx.parts.push({
       x: sleepy ? x + (Math.random()-.5)*360 : x, y: sleepy ? y + Math.random()*140 : y,
       vx: sleepy ? (Math.random()-.5)*.8 : Math.cos(a)*s, vy: sleepy ? -0.8 - Math.random()*1.4 : Math.sin(a)*s - 4,
