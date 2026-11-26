@@ -45,6 +45,7 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .ns{display:none;} .ns.on{display:block;}
 .ask-off-box{display:none;} body.ask-off:not(.guest) #p-ask > .ask-off-box{display:block;} body.ask-off .ask-guest-msg{display:none;} body.ask-off .ask-guest-msg + .box-head{margin-top:0 !important;} body.ask-off #p-ask > .subs, body.ask-off #p-ask > .ns{display:none !important;}
 .cm .rd{color:#E58AA8;font-weight:700;margin-right:3px;} .unsend{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .unsend:hover{opacity:1;}
+.ch-rooms .rdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:999px;background:#E8473A;color:#fff;font-size:10px;margin-left:4px;padding:0 3px;vertical-align:middle;}
 .mrep{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .mrep:hover{opacity:1;}
 html.agit .tab{min-width:0;}
 @media (max-width:480px){ .subs{gap:4px;flex-wrap:nowrap;} .subs button{font-size:.85rem;padding:5px 7px;flex:1;white-space:nowrap;} html.agit .tab{font-size:1rem;padding:9px 2px;} }
@@ -3665,13 +3666,22 @@ function chatReadKey(){ return 'nyangChatRead:' + (me && me.name || ''); }
 function chatReadSync(){
   if (!me) return; let r = 0, r0 = null; try { r0 = localStorage.getItem(chatReadKey()); r = Number(r0) || 0; } catch(e){}
   const seeing = !document.hidden && (C_ONLY ? chatPopOpen : current === 'chat');
-  if (seeing || r0 === null){ r = Math.max(r || 0, chat.last); try { localStorage.setItem(chatReadKey(), String(r)); } catch(e){} }   // 처음 쓰는 기기는 지금까지 대화를 읽은 걸로
-  chatUnread = chat.msgs.filter(m => m.id > r && m.from !== me.name && !isTch(m.from)).length;
+  if (r0 === null){ try { localStorage.setItem(chatReadKey() + ':base', String(chat.last)); } catch(e){} }
+  if ((seeing && !chatIsWh(chat.to)) || r0 === null){ r = Math.max(r || 0, chat.last); try { localStorage.setItem(chatReadKey(), String(r)); } catch(e){} }   // 처음 쓰는 기기는 지금까지 대화를 읽은 걸로
+  if (seeing && chatIsWh(chat.to)){ try { localStorage.setItem(chatReadKey() + ':w:' + chat.to, String(chat.last)); } catch(e){} }   // 🤫 귓속말은 그 방을 열어 봐야 읽음
+  chatWhNew = {};
+  chat.msgs.forEach(m => { if (m.from === me.name || isTch(m.from)) return;
+    if (chatIsWh(m.to) && !/^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from)){ if (m.id > chatWhRead(m.from)) chatWhNew[m.from] = (chatWhNew[m.from] || 0) + 1; } });
+  chatUnread = chat.msgs.filter(m => m.id > r && m.from !== me.name && !isTch(m.from) && !(chatIsWh(m.to) && !/^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from))).length
+    + Object.values(chatWhNew).reduce((a, n) => a + n, 0);
   /* 👑 선생님 메시지는 따로: 📢 전체나 👑 방을 보고 있을 때 읽은 걸로 */
   let tr = 0, t0 = null; try { t0 = localStorage.getItem(chatReadKey() + ':t'); tr = Number(t0) || 0; } catch(e){}
   if ((seeing && (chat.to === '' || chat.to === '👑')) || t0 === null){ tr = Math.max(tr || 0, chat.last); try { localStorage.setItem(chatReadKey() + ':t', String(tr)); } catch(e){} }
   chatTUnread = chat.msgs.filter(m => m.id > tr && m.from !== me.name && isTch(m.from)).length;
 }
+let chatWhNew = {};
+function chatIsWh(to){ return !!to && to !== '👑' && to.charAt(0) !== '#'; }
+function chatWhRead(friend){ try { const v = localStorage.getItem(chatReadKey() + ':w:' + friend); return v !== null ? Number(v) || 0 : Number(localStorage.getItem(chatReadKey() + ':base')) || 0; } catch(e){ return 0; } }
 function isTch(n){ return /(쌤|샘|선생님)$/.test(String(n || '')); }
 /* 💬 앱 위쪽 칩에 안 읽은 수 · 최근 친구 얼굴 알려 주기 */
 const C_ONLY = document.documentElement.classList.contains('only-chat');
@@ -3714,7 +3724,8 @@ function renderChat(){
   const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && !/^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from) && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
   const rooms = [['', '📢 전체'], ['👑', '👑 시내T']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
   if (room && !rooms.some(r => r[0] === room)) rooms.push([room, room.charAt(0) === '#' ? `👥 ${room.slice(2)}모둠` : `🤫 ${room}`]);
-  const shown = chat.msgs.filter(m => room === '' ? true : room === '👑' ? isTch(m.from) : chatRoomOf(m) === room);
+  const shown = chat.msgs.filter(m => room === '' ? (!m.to || m.to.charAt(0) === '#' || /^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from)) :   // 📢 전체: 귓속말은 빼고 (알림 메시지는 보여요)
+     room === '👑' ? isTch(m.from) : chatRoomOf(m) === room);
   let prev = null;
   const logHtml = shown.length ? shown.map(m => {
     const mine = m.from === me.name, wh = !!m.to && m.to.charAt(0) !== '#', grp = !!m.to && m.to.charAt(0) === '#', tch = /(쌤|샘|선생님)$/.test(m.from);
@@ -3726,7 +3737,7 @@ function renderChat(){
       <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && !tch && !/^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from) ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
-  const sig = JSON.stringify([c, chat.muted, rooms, room]);
+  const sig = JSON.stringify([c, chat.muted, rooms, room, chatWhNew]);
   const focus = document.activeElement && document.activeElement.id === 'chatText';
   if (box.dataset.sig === sig && $('chatLog')){
     const log = $('chatLog'), atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 40;
@@ -3736,7 +3747,7 @@ function renderChat(){
   box.dataset.sig = sig;
   const canWrite = c.open && !chat.muted;
   box.innerHTML = `<div class="ch">
-    <div class="ch-top"><div class="ch-rooms">${rooms.map(([k, l]) => `<button type="button" class="${k === room ? 'on' : ''}" data-room="${esc(k)}">${esc(l)}</button>`).join('')}
+    <div class="ch-top"><div class="ch-rooms">${rooms.map(([k, l]) => `<button type="button" class="${k === room ? 'on' : ''}" data-room="${esc(k)}">${esc(l)}${chatWhNew[k] && k !== room ? `<span class="rdot">${chatWhNew[k]}</span>` : ''}</button>`).join('')}
       ${c.whisper ? `<select id="chatWho"><option value="">＋ 🤫 귓속말 친구</option>${kidsList.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
       <div class="ch-warn">${T ? '🤫 귓속말은 학생이 🚨 신고한 대화만 볼 수 있어요' : '🤫 귓속말은 둘만 봐요 · 불편한 말은 옆의 🚨를 누르면 선생님이 확인해요 · 고운 말만! 💛'}</div></div>
     <div class="ch-log" id="chatLog">${logHtml}</div>
