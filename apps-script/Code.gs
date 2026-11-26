@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 48;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 49;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -654,7 +654,7 @@ function cleanLook_(look, lv, old, name, owned) {
     if (!rule || rule.slot !== slot || !(ci >= 0 && ci < rule.n) || Math.floor(ci) !== ci) return;
     if (rule.lv > lv && !(old && old._free) && !isTeacherName_(name || '')) return;   // 👑 선생님은 모든 아이템
     if (rule.teacher && !isTeacherName_(name || '')) return;
-    if (rule.buy && !isTeacherName_(name || '') && (owned || []).indexOf(parts[0]) < 0) return;   // 🛒 안 산 꾸미기
+    if (rule.buy && !isTeacherName_(name || '') && (owned || []).indexOf(parts[0]) < 0 && (owned || []).indexOf(parts[0] + ':' + ci) < 0) return;   // 🛒 안 산 꾸미기 (색깔마다 따로 사요)
     out[slot] = parts[0] + ':' + ci;
   });
   if ((old && old._free) || isTeacherName_(name || '')) out._free = true;           // '모든 아이템 열기'는 선생님만 바꿀 수 있어요

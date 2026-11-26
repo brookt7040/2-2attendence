@@ -1571,13 +1571,15 @@ function renderMe(){
     <div class="box"><div class="box-head mint">🎨 꾸미기</div>
       <div class="hint" style="margin-bottom:8px;">색을 누르면 바로 저장돼요. 같은 자리(머리 위·귀)는 하나만 쓸 수 있어요.</div>
       <div class="items" id="items">${ITEMS.filter(it => !it.teacher || /(쌤|샘|선생님|교감|교장)$/.test(me.name)).map(it => {
-        const tch = /(쌤|샘|선생님|교감|교장)$/.test(me.name), notBought = it.buy && !tch && !((coin && coin.inv && coin.inv.cats) || []).includes(it.id);
+        const tch = /(쌤|샘|선생님|교감|교장)$/.test(me.name), cats = (coin && coin.inv && coin.inv.cats) || [];
+        const has = i => !it.buy || tch || cats.includes(it.id) || cats.includes(it.id + ':' + i);   // 🛒 산 색깔만
+        const notBought = it.buy && !it.colors.some((c, i) => has(i));
         const locked = (it.lv > lv && !free && !it.buy) || notBought;
         const eq = look[it.slot] && look[it.slot].it.id === it.id ? look[it.slot].ci : -1;
-        const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot] || ''} · ${it.buy ? '🛒 상점' : 'Lv.' + it.lv}</small></div>`;
+        const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot] || ''} · ${it.buy ? (it.colors.length > 1 && !tch ? `🛒 ${it.colors.filter((c, i) => has(i)).length}/${it.colors.length}색` : '🛒 상점') : 'Lv.' + it.lv}</small></div>`;
         if (locked) return `<div class="ci locked">${head}<div class="ci-lock">${notBought ? '🛒 냥코인 → 상점 → 🐱 고양이에서 사요' : `🔒 Lv.${it.lv}가 되면 열려요`}</div></div>`;
         return `<div class="ci">${head}<div class="swatches">` +
-          it.colors.map((c, i) => `<button type="button" class="sw ${eq === i ? 'on' : ''}" data-it="${it.id}" data-ci="${i}" title="${c.n}" style="background:${swatchBg(c)}"></button>`).join('') +
+          it.colors.map((c, i) => has(i) ? `<button type="button" class="sw ${eq === i ? 'on' : ''}" data-it="${it.id}" data-ci="${i}" title="${c.n}" style="background:${swatchBg(c)}"></button>` : '').join('') +
           (eq >= 0 && it.slot !== 'eye' && it.slot !== 'mouth' ? `<button type="button" class="sw-off" data-off="${it.slot}">빼기</button>` : '') +
           `</div><div class="ci-on">${eq >= 0 ? `✔ ${it.colors[eq].n} 착용 중` : ''}</div></div>`;
       }).join('')}</div>
@@ -1986,8 +1988,8 @@ function renderCoin(){
     <div class="box"><div class="box-head lav">🎟 내 신청</div>${(coin.reqs || []).length ? coin.reqs.map(r => `<div class="req"><span>${r.type === '미션' ? '✅' : '🎟'} ${esc(r.item)}</span><span class="st">${esc(r.status)}</span></div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
     <div class="box"><div class="box-head">📜 코인 기록</div>${(coin.ledger || []).map(l => `<div class="req"><span>${esc(l.t.slice(5))} · ${esc(l.why)}</span><span style="color:${l.amt >= 0 ? '#1F8A5F' : '#D6456E'}">${l.amt >= 0 ? '+' : ''}${l.amt}</span></div>`).join('') || '<div class="empty">아직 없어요</div>'}</div>`;
   box.querySelectorAll('[data-spr]').forEach(el => { const it = eco.shop.find(x => x.id === el.dataset.spr); el.replaceWith(itemSprite(it)); });
-  box.querySelectorAll('[data-catspr]').forEach(el => { const it = ITEMS.find(x => x.id === el.dataset.catspr), c = document.createElement('canvas'); c.width = 16; c.height = 16; c.className = 'pix'; c.style.cssText = 'width:56px;height:56px;';
-    const base = Object.assign({}, defaultLook(1)); if (it) base[it.slot] = it.id + ':0'; drawColors(c, lookColorsRaw(Object.assign(base, { _free: true }), 1)); el.replaceWith(c); });
+  box.querySelectorAll('[data-catspr]').forEach(el => { const [cid, cci] = el.dataset.catspr.split(':'), it = ITEMS.find(x => x.id === cid), c = document.createElement('canvas'); c.width = 16; c.height = 16; c.className = 'pix'; c.style.cssText = 'width:56px;height:56px;';
+    const base = Object.assign({}, defaultLook(1)); if (it) base[it.slot] = it.id + ':' + (+cci || 0); drawColors(c, lookColorsRaw(Object.assign(base, { _free: true }), 1)); el.replaceWith(c); });
   lockerPoll();
 }
 /* 🎮 게임 */

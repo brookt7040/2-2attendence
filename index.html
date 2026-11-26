@@ -1803,6 +1803,17 @@ function shopPatch8(e){
   CAT_ITEMS8.forEach(([id, price]) => { if (!e.shop.some(x => x.id === 'k_' + id)){ const it = ITEMS.find(x => x.id === id); e.shop.push({ id:'k_' + id, cat:'catitem', item:id, name:`${it.icon} ${it.name}`, price }); } });
   e.shop.forEach(x => { if (x.cat === 'coupon' && REAL_IDS8.includes(x.id) && x.real == null) x.real = true; });
   e.ver = 8;
+  shopPatch9(e);
+}
+/* v9: 🐱 고양이 꾸미기는 색깔마다 따로 사요 (빨간 산타 모자 · 초록 산타 모자 … 모으는 재미) */
+const COLOR_ADJ9 = { 빨강:'빨간', 파랑:'파란', 까망:'까만', 하양:'하얀', 하늘:'하늘색', 분홍:'분홍', 초록:'초록', 보라:'보라', 갈색:'갈색', 금빛:'금빛', 기본:'' };
+function shopPatch9(e){
+  e.shop = (e.shop || []).filter(x => !(x.cat === 'catitem' && !String(x.item).includes(':')));
+  CAT_ITEMS8.forEach(([id, price]) => { const it = ITEMS.find(x => x.id === id); if (!it) return;
+    it.colors.forEach((c, ci) => { const sid = 'k_' + id + '_' + ci; if (e.shop.some(x => x.id === sid)) return;
+      const adj = it.colors.length > 1 ? (COLOR_ADJ9[c.n] != null ? COLOR_ADJ9[c.n] : c.n) : '';
+      e.shop.push({ id: sid, cat:'catitem', item: id + ':' + ci, name: `${it.icon} ${adj ? adj + ' ' : ''}${it.name}`, price }); }); });
+  e.ver = 9;
 }
 /* v3: 특별 상품 */
 const SPECIAL_ITEMS = [
@@ -1847,7 +1858,8 @@ SPECIAL_ITEMS.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id
 DEFAULT_ECONOMY.missions.forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; if (MISSION_COINS7[m.id] != null) m.coins = MISSION_COINS7[m.id]; });
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 8) return false;
+  if ((e.ver || 1) >= 9) return false;
+  if ((e.ver || 1) === 8){ shopPatch9(e); return true; }
   if ((e.ver || 1) === 7){ shopPatch8(e); return true; }
   if ((e.ver || 1) === 6){ balancePatch7(e); return true; }
   if ((e.ver || 1) === 5){ balancePatch6(e); return true; }
@@ -2471,7 +2483,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 48;
+const NEED_API = 49;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
