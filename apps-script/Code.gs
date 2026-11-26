@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 47;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 48;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -74,9 +74,13 @@ const ITEM_RULES = {
   crown:    { lv: 8,  slot: 'top',   n: 5 },
   wizard:   { lv: 9,  slot: 'top',   n: 5 },
   fur:      { lv: 10, slot: 'fur',   n: 6 },
-  tfur:     { lv: 1,  slot: 'fur',   n: 5, teacher: true }     // 👑 선생님 전용 털빛
+  tfur:     { lv: 1,  slot: 'fur',   n: 5, teacher: true },    // 👑 선생님 전용 털빛
+  /* 🛒 상점에서 산 친구만 (inv.cats) */
+  santa: { lv: 1, slot: 'top', n: 3, buy: true }, antler: { lv: 1, slot: 'top', n: 2, buy: true }, glasses: { lv: 1, slot: 'face', n: 3, buy: true },
+  sunglasses: { lv: 1, slot: 'face', n: 2, buy: true }, headphones: { lv: 1, slot: 'top', n: 1, buy: true }, halo: { lv: 1, slot: 'top', n: 2, buy: true },
+  heart: { lv: 1, slot: 'top', n: 2, buy: true }, cherry: { lv: 1, slot: 'earL', n: 1, buy: true }, strawberry: { lv: 1, slot: 'top', n: 1, buy: true }, nightcap: { lv: 1, slot: 'top', n: 2, buy: true }
 };
-const LOOK_SLOTS = ['eye', 'mouth', 'top', 'earR', 'earL', 'neck', 'back', 'fur'];
+const LOOK_SLOTS = ['eye', 'mouth', 'top', 'earR', 'earL', 'neck', 'back', 'fur', 'face'];
 
 /* ---------------- 입구 ---------------- */
 function doGet(e) {
@@ -641,7 +645,7 @@ function checkStudent_(name, pin) {
   return { ok: true };
 }
 
-function cleanLook_(look, lv, old, name) {
+function cleanLook_(look, lv, old, name, owned) {
   const out = {};
   LOOK_SLOTS.forEach(function (slot) {
     const v = look && look[slot];
@@ -650,6 +654,7 @@ function cleanLook_(look, lv, old, name) {
     if (!rule || rule.slot !== slot || !(ci >= 0 && ci < rule.n) || Math.floor(ci) !== ci) return;
     if (rule.lv > lv && !(old && old._free) && !isTeacherName_(name || '')) return;   // 👑 선생님은 모든 아이템
     if (rule.teacher && !isTeacherName_(name || '')) return;
+    if (rule.buy && !isTeacherName_(name || '') && (owned || []).indexOf(parts[0]) < 0) return;   // 🛒 안 산 꾸미기
     out[slot] = parts[0] + ':' + ci;
   });
   if ((old && old._free) || isTeacherName_(name || '')) out._free = true;           // '모든 아이템 열기'는 선생님만 바꿀 수 있어요
@@ -755,7 +760,7 @@ function handleStudentCore_(body) {
       map.config = map.config || {};
       map.config.looks = map.config.looks || {};
       const old = map.config.looks[name];
-      map.config.looks[name] = cleanLook_(body.look || {}, lv, old, name);
+      map.config.looks[name] = cleanLook_(body.look || {}, lv, old, name, (((map.inv || {})[name]) || {}).cats || []);
       map.lookAt = map.lookAt || {}; map.lookAt[name] = Date.now();
       writeRows_(db, ['config', 'lookAt']);
       cacheDrop_(['v:pub']);
@@ -1322,8 +1327,8 @@ function addNews_(name, k) {
 }
 function newsList_() { try { return JSON.parse(cache_().get('news') || '[]'); } catch (e) { return []; } }
 function megaList_() {
-  const cut = Date.now() - (Number(stuCfg_().mega.min) || 60) * 60000;
-  try { return JSON.parse(props_().getProperty('mega') || '[]').filter(function (m) { return m.ts > cut; }); } catch (e) { return []; }
+  const now = Date.now(), cut = now - (Number(stuCfg_().mega.min) || 60) * 60000;
+  try { return JSON.parse(props_().getProperty('mega') || '[]').filter(function (m) { return m.until ? m.until > now : m.ts > cut; }); } catch (e) { return []; }
 }
 function houseReady_(inv, id) {
   const i = HOUSE_ORDER.indexOf(id);
@@ -2158,6 +2163,7 @@ function studentCoins_(name, body) {
       else if (['mega', 'song', 'banner', 'title'].indexOf(it.cat) >= 0 && !cleanText_(body.text, chatCfg_())) error = 'empty';
       else if (it.cat === 'butler' && butlerToday_() && !T) error = 'soldout';
       else if (it.cat === 'decor' && !T && (inv.decor || []).length >= 4) error = 'full';
+      else if (it.cat === 'catitem' && (inv.cats || []).indexOf(it.item) >= 0) error = 'owned';
       else {
         if (!T) {
           addCoin_(name, -it.price, '구매: ' + it.name, '구매', '', rows);
@@ -2181,11 +2187,14 @@ function studentCoins_(name, body) {
         } else if (it.cat === 'butler') {        // 🐱 하나 하루 집사
           props_().setProperty('butler', JSON.stringify({ ds: todayStr_(), n: name })); bump_();
         } else if (it.cat === 'mega') {
-          const list = megaList_(); list.push({ n: name, text: cleanText_(body.text, chatCfg_()).slice(0, 60), ts: Date.now() });
+          const list = megaList_(), now = Date.now(), d = new Date(); d.setHours(23, 59, 59, 0);   // ⏱ 확성기 시간: 상품마다 (하루 종일 = 오늘 밤까지)
+          const until = it.min === 'day' ? d.getTime() : now + (Number(it.min) || Number(stuCfg_().mega.min) || 60) * 60000;
+          list.push({ n: name, text: cleanText_(body.text, chatCfg_()).slice(0, 60), ts: now, until: until });
           props_().setProperty('mega', JSON.stringify(list.slice(-5))); bump_();
         } else if (it.cat === 'house') { inv.houses = (inv.houses || []).concat([it.id]); inv.house = it.id; addNews_(name, 'house'); }
         else if (it.cat === 'decor') { inv.decor = (inv.decor || []).concat([it.id]); }
-        if (['house', 'decor', 'title'].indexOf(it.cat) >= 0) { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + name]); }
+        else if (it.cat === 'catitem') { inv.cats = (inv.cats || []).concat([String(it.item)]); }   // 🐱 고양이 꾸미기
+        if (['house', 'decor', 'title', 'catitem'].indexOf(it.cat) >= 0) { writeRows_(db, ['inv']); cacheDrop_(['v:inv', 'room:' + name]); }
         result = it.name;
       }
     } else if (body.op === 'buyFurn') {

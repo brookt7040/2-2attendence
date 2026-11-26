@@ -1625,8 +1625,8 @@ const LEVELS = [
   { name:'전설냥',   deco:'🏆', fill:'#FFE98A', line:'#B98A10' }
 ];
 /* 🎨 레벨마다 열리는 꾸미기 아이템 (색깔은 학생이 직접 골라요) */
-const SLOT_ORDER = ['back','neck','earL','earR','top'];
-const SLOT_LABEL = { eye:'얼굴', mouth:'얼굴', top:'머리 위', earR:'오른쪽 귀', earL:'왼쪽 귀', neck:'목', back:'등', fur:'털빛' };
+const SLOT_ORDER = ['back','neck','earL','earR','face','top'];
+const SLOT_LABEL = { eye:'얼굴', mouth:'얼굴', face:'얼굴 장식', top:'머리 위', earR:'오른쪽 귀', earL:'왼쪽 귀', neck:'목', back:'등', fur:'털빛' };
 const ITEMS = [
   { id:'eye', lv:1, icon:'👀', name:'눈 색', slot:'eye', colors:[
     { n:'갈색', c:'#9A7440', d:'#4A3523' }, { n:'까망', c:'#5A5A5A', d:'#1E1E1E' }, { n:'하늘', c:'#6FB8FF', d:'#2F6FB0' },
@@ -1660,6 +1660,17 @@ const ITEMS = [
   { id:'wizard', lv:9, icon:'🔮', name:'마법 모자', slot:'top', acc:'wizard', colors:[
     { n:'보라', pal:{V:'#9F86FF',Y:'#FFD84D'} }, { n:'분홍', pal:{V:'#FF8FB8',Y:'#FFF3B0'} }, { n:'밤하늘', pal:{V:'#5B6BD6',Y:'#FFD84D'} },
     { n:'민트', pal:{V:'#3DBE8B',Y:'#FFF3B0'} }, { n:'빨강', pal:{V:'#E84A5F',Y:'#FFD84D'} } ] },
+  /* 🛒 상점에서 사는 고양이 꾸미기 (산 친구만 · 레벨 상관없이) */
+  { id:'santa', lv:1, buy:true, icon:'🎅', name:'산타 모자', slot:'top', acc:'santa', colors:[ { n:'빨강' }, { n:'초록', pal:{R:'#4FB06D'} }, { n:'파랑', pal:{R:'#5FAEF5'} } ] },
+  { id:'antler', lv:1, buy:true, icon:'🦌', name:'루돌프 뿔', slot:'top', acc:'antler', colors:[ { n:'갈색' }, { n:'금빛', pal:{b:'#F2B705'} } ] },
+  { id:'glasses', lv:1, buy:true, icon:'👓', name:'동그란 안경', slot:'face', acc:'glasses', colors:[ { n:'분홍' }, { n:'까망', pal:{k:'#2E2A36'} }, { n:'하늘', pal:{k:'#5FAEF5'} } ] },
+  { id:'sunglasses', lv:1, buy:true, icon:'🕶️', name:'선글라스', slot:'face', acc:'sunglasses', colors:[ { n:'까망' }, { n:'보라', pal:{k:'#7A5BC4'} } ] },
+  { id:'headphones', lv:1, buy:true, icon:'🎧', name:'헤드폰', slot:'top', acc:'headphones', colors:[ { n:'기본' } ] },
+  { id:'halo', lv:1, buy:true, icon:'😇', name:'천사 고리', slot:'top', acc:'halo', colors:[ { n:'금빛' }, { n:'하양', pal:{h:'#FFFFFF'} } ] },
+  { id:'heart', lv:1, buy:true, icon:'💗', name:'하트 머리띠', slot:'top', acc:'heart', colors:[ { n:'분홍' }, { n:'빨강', pal:{R:'#E84A5F'} } ] },
+  { id:'cherry', lv:1, buy:true, icon:'🍒', name:'체리 핀', slot:'earL', acc:'cherry', colors:[ { n:'빨강' } ] },
+  { id:'strawberry', lv:1, buy:true, icon:'🍓', name:'딸기 모자', slot:'top', acc:'strawberry', colors:[ { n:'빨강' } ] },
+  { id:'nightcap', lv:1, buy:true, icon:'🌙', name:'수면 모자', slot:'top', acc:'nightcap', colors:[ { n:'하늘' }, { n:'분홍', pal:{b:'#FFB8D4'} } ] },
   { id:'tfur', lv:1, icon:'👑', name:'선생님 전용 털빛', slot:'fur', teacher:true, colors:[
     { n:'황금 선생님', grad:['#FFF3B0','#FFE066','#FFC93C','#FFE066'], diag:true, line:'#9A6A10', stars:true }, { n:'칠판 초록', fill:'#5E8F6E', line:'#2F4F3A' },
     { n:'분필 하양', grad:['#FFFFFF','#F3F3F3','#FFFFFF','#E9E9E9'], line:'#8A8A8A' }, { n:'빨간펜', grad:['#FF8A8A','#FF6F6F','#E84A5F'], line:'#8A1F2E' },
@@ -1774,6 +1785,25 @@ const ECONOMY_V2 = {
   meeting: { pres:'', vice:'', agenda:'' }
 };
 const MEGA_ITEM = { id:'x_mega', cat:'mega', name:'📢 확성기 (1시간 공지)', price:80 };
+/* 🛒 v8 상점: 📢 확성기 시간별 · 🐱 고양이 꾸미기 · 🎟 쿠폰 / 🎁 실물 아이템 나누기 */
+const MEGA_ITEMS8 = [
+  { id:'x_mega5',   cat:'mega', min:5,    name:'📢 확성기 5분',   price:20 },
+  { id:'x_mega10',  cat:'mega', min:10,   name:'📢 확성기 10분',  price:30 },
+  { id:'x_mega',    cat:'mega', min:60,   name:'📢 확성기 1시간', price:80 },
+  { id:'x_mega120', cat:'mega', min:120,  name:'📢 확성기 2시간', price:130 },
+  { id:'x_mega180', cat:'mega', min:180,  name:'📢 확성기 3시간', price:180 },
+  { id:'x_mega300', cat:'mega', min:300,  name:'📢 확성기 5시간', price:260 },
+  { id:'x_megaday', cat:'mega', min:'day', name:'📢 확성기 하루 종일', price:400 }
+];
+const CAT_ITEMS8 = [['santa', 150], ['antler', 150], ['glasses', 100], ['sunglasses', 120], ['headphones', 200], ['halo', 250], ['heart', 80], ['cherry', 80], ['strawberry', 120], ['nightcap', 120]];
+const REAL_IDS8 = ['c_hotpack', 'c_gimbap', 'c_postit', 'c_candy', 'c_sticker', 'c_eraser', 'c_pen', 'c_sharp', 'c_gacha'];
+function shopPatch8(e){
+  e.shop = (e.shop || []).filter(x => x.cat !== 'mega' || MEGA_ITEMS8.some(m => m.id === x.id));
+  MEGA_ITEMS8.forEach(m => { const o = e.shop.find(x => x.id === m.id); if (o) Object.assign(o, { min: m.min, name: m.name }); else e.shop.push(Object.assign({}, m)); });
+  CAT_ITEMS8.forEach(([id, price]) => { if (!e.shop.some(x => x.id === 'k_' + id)){ const it = ITEMS.find(x => x.id === id); e.shop.push({ id:'k_' + id, cat:'catitem', item:id, name:`${it.icon} ${it.name}`, price }); } });
+  e.shop.forEach(x => { if (x.cat === 'coupon' && REAL_IDS8.includes(x.id) && x.real == null) x.real = true; });
+  e.ver = 8;
+}
 /* v3: 특별 상품 */
 const SPECIAL_ITEMS = [
   { id:'c_seat',   cat:'coupon', name:'🪑 오늘 자리 선택권 (앉고 싶은 자리에 앉기)', price:60 },
@@ -1808,6 +1838,7 @@ function balancePatch7(e){
   e.engReward = { coins: 25, exp: 25 };
   db.level = Object.assign({}, db.level, { max: 2450 });
   e.ver = 7;
+  shopPatch8(e);
 }
 // 새로 시작하는 반도 v7 가격·EXP로
 DEFAULT_ECONOMY.shop.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id]; });
@@ -1816,7 +1847,8 @@ SPECIAL_ITEMS.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id
 DEFAULT_ECONOMY.missions.forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; if (MISSION_COINS7[m.id] != null) m.coins = MISSION_COINS7[m.id]; });
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 7) return false;
+  if ((e.ver || 1) >= 8) return false;
+  if ((e.ver || 1) === 7){ shopPatch8(e); return true; }
   if ((e.ver || 1) === 6){ balancePatch7(e); return true; }
   if ((e.ver || 1) === 5){ balancePatch6(e); return true; }
   if ((e.ver || 1) === 4){ e.locked = { missions: true, shop: true }; balancePatch6(e); return true; }
@@ -1976,6 +2008,8 @@ const ACC = {
   strawberry:{ at:[0,4],  rows:["...gg...",".RRRRRR.","RRwRRwRR"], pal:{R:'#FF6F8E',w:'#FFF3B0',g:'#4FB06D'} },
   wizard:    { at:[0,4],  rows:["...VY...","..VVVV..","VVVVVVVV"], pal:{V:'#9F86FF',Y:'#FFD84D'} },
   scarf:     { at:[10,3], rows:["yyyyyyyyyy",".......YY."], pal:{y:'#FFD84D',Y:'#F2B705'} },
+  santa:     { at:[0,4],  rows:["....RRW","..RRRR.",".RRRRRR","WWWWWWWW"], pal:{R:'#E84A5F',W:'#FFFFFF'} },
+  antler:    { at:[0,3],  rows:["b.b......b.b","bbb......bbb",".b........b."], pal:{b:'#A0703F'} },
   nightcap:  { at:[0,3],  rows:["...bbbbb...",".bbBbbBbbbW","bbbbbbbbbb."], pal:{b:'#A8C8FF',B:'#FFFFFF',W:'#FFFFFF'} },
   bubble:    { at:[6,13], rows:[".b.","bwb","bbb"], pal:{b:'#BFE6FF',w:'#FFFFFF'} },
   stars:     { fn:g => { [[4,4],[5,11],[11,6],[12,9],[13,5],[10,11]].forEach(([r,c]) => { if (g[r][c]) g[r][c] = '#FFFFFF'; }); g[0][7] = '#FFE066'; g[1][6] = '#FFE066'; g[1][8] = '#FFE066'; g[1][7] = '#FFF6B0'; g[2][7] = '#FFE066'; } },
@@ -2437,7 +2471,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 47;
+const NEED_API = 48;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -3395,7 +3429,7 @@ function levelsNow(){ const m = seasonExpMap(), o = {}; for (const n in m) o[n] 
 /*@@SHARED:begin*/
 function defaultLook(lv){
   const look = {};
-  ITEMS.filter(it => it.lv <= lv && !it.teacher).forEach(it => { look[it.slot] = it.id + ':0'; });
+  ITEMS.filter(it => it.lv <= lv && !it.teacher && !it.buy).forEach(it => { look[it.slot] = it.id + ':0'; });
   return look;
 }
 function lookOfRaw(raw, lv){
@@ -3468,14 +3502,14 @@ function renderCloset(){
   drawColors($('closetCanvas'), lookColors(name, lv));
   $('closetFrame').className = 'closet-frame lv-' + lv;
   $('closetLv').textContent = `Lv.${lv} ${LEVELS[lv - 1].name}`;
-  const next = ITEMS.find(it => it.lv > lv);
+  const next = ITEMS.find(it => it.lv > lv && !it.buy);
   $('closetNext').innerHTML = next
     ? `다음 아이템 ${next.icon} <b>${next.name}</b><br>Lv.${next.lv}까지 ${Math.max(0, th[next.lv - 1] - exp)} EXP 남았어요`
     : '모든 아이템을 모았어요! 🏆';
   const free = !!(db.looks && db.looks[name] && db.looks[name]._free);
   $('closetFreeWrap').style.display = closetAdmin ? 'block' : 'none';
   $('closetFree').checked = free;
-  $('closetItems').innerHTML = ITEMS.filter(it => !it.teacher || isTeacherName(name)).map(it => {
+  $('closetItems').innerHTML = ITEMS.filter(it => (!it.teacher || isTeacherName(name)) && (!it.buy || closetAdmin || isTeacherName(name))).map(it => {
     const locked = it.lv > lv && !free;
     const eq = look[it.slot] && look[it.slot].it.id === it.id ? look[it.slot].ci : -1;
     const head = `<div class="ci-head"><span>${it.icon} ${it.name}</span><small>${SLOT_LABEL[it.slot]} · Lv.${it.lv}</small></div>`;
@@ -3504,7 +3538,7 @@ function queueLevelUps(before, after, silent){
   let equipped = false;
   for (const n in now){
     if (before[n] === undefined || now[n] <= before[n]) continue;
-    const items = ITEMS.filter(it => it.lv > before[n] && it.lv <= now[n] && !it.teacher);
+    const items = ITEMS.filter(it => it.lv > before[n] && it.lv <= now[n] && !it.teacher && !it.buy);
     if (items.length){
       db.looks = db.looks || {};
       const look = Object.assign({}, db.looks[n] || defaultLook(before[n]));
@@ -4842,7 +4876,7 @@ function renderSongs(){
 /* 📢 확성기 · 🐱 하나 꾸미기 (교실 화면) */
 let megaNow = [], hanaLookNow = {}, megaMinNow = 60;
 function setMega(list){
-  megaNow = (list || []).filter(m => Date.now() - m.ts < (megaMinNow || 60) * 60000);
+  megaNow = (list || []).filter(m => m.until ? m.until > Date.now() : Date.now() - m.ts < (megaMinNow || 60) * 60000);
   const el = $('megaBar'); if (!el) return;
   el.style.display = megaNow.length ? 'block' : 'none';
   el.innerHTML = megaNow.length ? `<span class="mega-in">${megaNow.map(m => `📢 <b>${esc(m.n)}</b> : ${esc(m.text)}`).join('&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;')}</span>` : '';
@@ -5133,7 +5167,7 @@ function renderCoinAdmin(){
     const g = eco.game || {}, days = ['', '월', '화', '수', '목', '금'];
     const FL = { story:'스토리 자동', menu:'번역 승인 자동', sign:'서명', praise:'칭찬편지 자동', appon:'출석 1등 자동', eng:'영어 자동', allon:'자동', allon3:'자동', good:'자동', diary:'일기장 자동', cafe:'스터디카페 자동', locker:'가위바위보', teacher:'선생님이 줌' };
     const ml = eco.missions.map(m => `${{ daily:'매일', weekly:'매주', all:'특별' }[m.cat] || '매일'}, ${m.name}, ${m.coins}, ${m.req ? 'O' : 'X'}${m.cap ? `, ${m.cap}명` : ''}${FL[m.flow] ? ', ' + FL[m.flow] : m.auto ? ', 자동' : ''}`).join('\n');
-    const cl = eco.shop.filter(x => x.cat === 'coupon').map(x => `${x.name}, ${x.price}${x.stock ? ', ' + x.stock : ''}`).join('\n');
+    const cl = eco.shop.filter(x => x.cat === 'coupon').map(x => `${x.name}, ${x.price}, ${x.stock || ''}${x.real ? ', 실물' : ''}`.replace(/, $/, '')).join('\n');
     box.innerHTML = `
       <div class="section"><div class="section-title">🔒 학생 페이지 잠그기 (코인은 계속 모여요)</div>
         <div class="row" style="justify-content:flex-start;gap:18px;"><label><input type="checkbox" id="coLockM" ${(eco.locked || {}).missions ? 'checked' : ''}> 🎯 미션 잠그기</label><label><input type="checkbox" id="coLockS" ${(eco.locked || {}).shop ? 'checked' : ''}> 🛒 상점 잠그기 (마을 가구 사기 포함)</label></div>
@@ -5150,7 +5184,7 @@ function renderCoinAdmin(){
       <div class="section"><div class="section-title">📖 미션 안내 (학생이 🎯 고르기를 누르면 보여요)</div>
         ${eco.missions.map(m => `<div class="form-group"><label>${esc(m.name)} <small style="color:var(--ink-soft);">${m.flow === 'teacher' ? '👑 선생님이 줘요' : m.req || m.flow === 'sign' ? '✋ 수동 지급' : FL[m.flow] || m.auto ? '⚡ 자동' : ''}</small></label><textarea data-mhow="${m.id}" rows="2" style="width:100%;font-family:inherit;font-size:.95rem;">${esc(m.how || missionHowDef(m))}</textarea></div>`).join('')}
         <div class="form-hint">✋ 수동 지급 · ⚡ 자동 지급 안내는 앱이 알아서 붙여요. 비우면 기본 글로 돌아가요.</div></div>
-      <div class="section"><div class="section-title">🎟 쿠폰 상품 (이름, 가격, 수량 · 수량을 비우면 무제한)</div>
+      <div class="section"><div class="section-title">🎟 쿠폰 · 🎁 실물 아이템 (이름, 가격, 수량, 실물 · 수량을 비우면 무제한 · 끝에 '실물'을 쓰면 🎁 아이템 칸에 나와요)</div>
         <textarea id="coCoupons" style="height:200px;">${esc(cl)}</textarea>
         <div class="form-hint">학생이 사면 '확인 대기'에 올라와요. 실물을 주고 '지급 완료'를 누르세요. (취소하면 코인이 돌아가요)</div></div>
       <div class="section"><div class="section-title">🏠 마을 아이템 가격</div><div class="dex-grid">${eco.shop.filter(x => x.cat !== 'coupon').map(x => `
@@ -5212,7 +5246,7 @@ function saveCoinSettings(){
     const p = line.split(',').map(x => x.trim()); if (p.length < 2 || !p[0]) continue;
     const price = parseInt(p[1], 10); if (isNaN(price)) continue;
     const old = eco.shop.find(x => x.cat === 'coupon' && x.name === p[0]);
-    const it = { id: old ? old.id : slugId('c', p[0]), cat:'coupon', name: p[0], price }; const st = parseInt(p[2], 10); if (st > 0) it.stock = st;
+    const it = { id: old ? old.id : slugId('c', p[0]), cat:'coupon', name: p[0], price }; const st = parseInt(p[2], 10); if (st > 0) it.stock = st; if (p.slice(2).some(x => /^(실물|o|O|아이템)$/.test(x))) it.real = true;
     coupons.push(it);
   }
   const village = eco.shop.filter(x => x.cat !== 'coupon').map(x => {
