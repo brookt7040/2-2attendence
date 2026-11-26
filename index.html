@@ -3157,7 +3157,7 @@ function toggleClean(name){
   const ds = getTodayStr();
   db.cleanDone[ds] = db.cleanDone[ds] || {};
   db.cleanDone[ds][name] = !db.cleanDone[ds][name];
-  saveDB(); syncOp({ op:'clean', ds, name, v: !!db.cleanDone[ds][name] }); renderMenuBoard();
+  saveDB(); syncOp({ op:'clean', ds, name, v: !!db.cleanDone[ds][name] }); renderMenuBoard(); publishPub();
   if (db.cleanDone[ds][name]){ sfx('normal'); setBubble(`${name}, 청소 고마워냥! 반짝반짝 ✨`, 3500); }
 }
 
@@ -4882,10 +4882,10 @@ function buildPub(){
     const li = levelInfo(sm[n] || 0), r = day[n], tk = r ? recTier(r) : null;
     priv[n] = { lv: li.lv, lvName: LEVELS[li.lv - 1].name, exp: li.exp, need: li.need, next: li.next, pct: Math.round(li.pct * 100),
       today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0, rank: r.rank || 0, remote: !!r.remote, status: r.status, charId: r.charId || '', fur: r.fur || '', sec: r.sec, why: r.why || '' } : null,
-      total: dayTotal(n), clean: isCleaner(n), dex: myDex(n), dexIds: myDexIds(n), dexDone: (db.collect || {})[n] || {} };
+      total: dayTotal(n), clean: isCleaner(n) && !((db.cleanDone || {})[getTodayStr()] || {})[n], dex: myDex(n), dexIds: myDexIds(n), dexDone: (db.collect || {})[n] || {} };
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
-  const cl = kids().filter(isCleaner);
+  const dn = (db.cleanDone || {})[getTodayStr()] || {}, cl = kids().filter(n => isCleaner(n) && !dn[n]);   // ✔ 청소 끝낸 친구는 학생 화면에서 빠져요
   return { title: db.mainTitle, ds: getTodayStr(), clean: cl, cleanWhy: Object.fromEntries(cl.map(n => [n, cleanWhy(n)])), students, priv };
 }
 function publishPub(){
