@@ -43,6 +43,14 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .subs button.on{background:var(--y);}
 .subs button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
 .ns{display:none;} .ns.on{display:block;}
+/* 📢 공지사항: 탭 없이 카드 격자로 한눈에 (알림 맨 위 크게 · 종례 시각 지나면 종례가 맨 위) */
+.subs[data-for="notice"]{display:none !important;}
+.nb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;align-items:start;}
+.nb-grid > .ns{display:block;margin-top:24px;} .nb-grid > .nb-notice{grid-column:1 / -1;order:0;} .nb-grid > #closingBox{order:1;}
+.nb-grid > [data-sec=clean]{order:2;} .nb-grid > [data-sec=meal]{order:3;} .nb-grid > [data-sec=hw]{order:4;}
+.nb-grid > #closingBox.closing-hot{grid-column:1 / -1;order:-1;}
+.nb-grid .nb-notice #noticeList{font-size:1.15rem;}
+@media (max-width:640px){ .nb-grid{grid-template-columns:minmax(0,1fr);} }
 .ask-off-box{display:none;} body.ask-off:not(.guest) #p-ask > .ask-off-box{display:block;} body.ask-off .ask-guest-msg{display:none;} body.ask-off .ask-guest-msg + .box-head{margin-top:0 !important;} body.ask-off #p-ask > .subs, body.ask-off #p-ask > .ns{display:none !important;}
 .cm .rd{color:#E58AA8;font-weight:700;margin-right:3px;} .unsend{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .unsend:hover{opacity:1;}
 .ch-rooms .rdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:999px;background:#E8473A;color:#fff;font-size:10px;margin-left:4px;padding:0 3px;vertical-align:middle;}
@@ -375,7 +383,7 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 .sc-stk .btn{font-size:.85rem;padding:3px 10px;}
 /* 📢 알림·종례 탭 (앱) */
 html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,html.only-notice #cleanMe,html.only-notice #specialBox ~ .box:not(.nb-pub),html.only-notice #p-notice .guest-only,html.only-notice #penBar{display:none !important;}
-html.only-notice body.guest #p-notice > .nb-pub.on{display:block !important;} html.only-notice body.guest #p-notice > .subs{display:flex !important;}
+html.only-notice body.guest #p-notice > .nb-grid{display:grid !important;}
 html.only-ask .tabs,html.only-ask #penBar{display:none !important;} html.only-ask .panel:not(#p-ask){display:none !important;} html.only-ask #p-ask{display:block !important;}
 html.agit .tab[data-tab="notice"]{display:none !important;}
 html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
@@ -387,7 +395,7 @@ html.only-chat .ch{box-shadow:none;border:none;padding:0;background:transparent;
 html.only-chat .ch-log{height:calc(100vh - 190px);max-height:none;}
 html.agit .tab[data-tab="chat"]{display:none !important;}
 /* 🧸 아지트 (앱): 알림·종례는 따로 탭이 있어서 빼요 */
-html.agit #p-notice > .nb-pub,html.agit #checkinBox{display:none !important;}
+html.agit #p-notice > .nb-pub,html.agit #p-notice > .nb-grid,html.agit #checkinBox{display:none !important;}
 #penBar{position:sticky;top:0;z-index:50;margin:8px 0;background:#E8473A;color:#fff;border:3px solid #8A1F18;border-radius:14px;padding:8px 12px;text-align:center;font-size:1rem;}
 .pen-modal{max-width:440px;text-align:center;border-color:#C0365C !important;}
 .pen-modal h2{color:#C0365C;}
@@ -463,12 +471,13 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div class="subs" data-for="notice"><button type="button" data-sub="all"><i class="se">🗂️ </i>전체</button><button type="button" data-sub="closing"><i class="se">📋 </i>종례</button><button type="button" data-sub="notice"><i class="se">📢 </i>알림</button><button type="button" data-sub="clean"><i class="se">🧹 </i>청소</button><button type="button" data-sub="meal"><i class="se">🍱 </i>급식</button><button type="button" data-sub="hw"><i class="se">📚 </i>숙제</button></div>
     <div id="checkinBox"></div>
-    <div class="box nb-pub ns" data-sec="all"><div class="box-head">🗂️ 한눈에 보기</div><div id="sumList"></div></div>
+    <div class="nb-grid" id="nbGrid">
     <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
-    <div class="box nb-pub ns" data-sec="notice"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
+    <div class="box nb-pub ns nb-notice" data-sec="notice"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
     <div class="box nb-pub ns" data-sec="clean"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
     <div class="box nb-pub ns" data-sec="meal"><div class="box-head mint">🍱 급식</div><div id="mealList"></div></div>
     <div class="box nb-pub ns" data-sec="hw"><div class="box-head">📚 숙제</div><div id="hwList"></div></div>
+    </div>
   </section>
 
   <section class="panel" id="p-ask">
