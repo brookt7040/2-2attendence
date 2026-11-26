@@ -1460,7 +1460,7 @@ function dexBox(info){
     return `<div class="dx-row"><span>${R[k][0]}</span><div class="bar"><i style="width:${t ? Math.round(g / t * 100) : 0}%"></i></div><span>${g}/${t}</span><span class="st">${done[k] ? '✔ 보상 받음' : `완성 +${R[k][1]}`}</span></div>`; }).join('')}
     ${info.dexIds ? `<details class="dx-more"><summary>🔍 내가 모은 냥이 보기</summary>${[['legend', '👑 레전드'], ['unique', '🦄 유니크'], ['rare', '💎 레어'], ['normal', '🐱 노멀']].map(([k, t]) => `<div class="dx-t">${t}</div><div class="dx-cats">${CHARS.filter(c => c.tier === k && !c.sleepy).map(c => { const n = info.dexIds[c.id] || 0;
       return `<div class="dx-cat ${n ? '' : 'locked'}"><img class="pix" alt="" src="${n ? colorsToURL(catColors(c), 'dex_' + c.id) : colorsToURL(lockedColors(), 'locked')}"><div>${n ? esc(c.name) : '???'}</div><small>${n ? `×${n}` : '아직'}</small></div>`; }).join('')}</div>`).join('')}</details>` : ''}
-    <div class="hint">네 등급을 전부 모으면 보너스 +100✨ +200🐾! 일찍 올수록 높은 등급 냥이가 나와요.</div></div>`;
+    </div>`;
 }
 async function saveProfile(){
   const data = {}; document.querySelectorAll('[data-pf]').forEach(i => { data[i.dataset.pf] = i.value.trim(); });
