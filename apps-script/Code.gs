@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 50;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 51;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -731,6 +731,7 @@ function handleStudentCore_(body) {
   if (body.op === 'chatSend') return studentChat_(name, body, readRows_().map.pub || {});
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (/^idea/.test(String(body.op || ''))) return studentIdea_(name, body);
+  if (/^pad/.test(String(body.op || ''))) return studentPad_(name, body);
   if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
@@ -1181,6 +1182,44 @@ function studentIdea_(name, body) {
       real: isT ? x.from : undefined, n: x.likes.length, liked: x.likes.indexOf(name) >= 0, cat: x.cat, reply: x.reply, rt: x.rt };
   }).reverse();
   return { ok: true, error: error, ideas: list, teacher: isT };
+}
+
+/* 📔 내 수첩: 학생 기기에서 '수첩 비밀번호'로 잠근 글자만 저장해요 (선생님도 못 읽어요 · 시트 '수첩' 탭)
+ *  한 칸에 다 못 들어가면 여러 칸으로 나눠 담아요 · 버전이 다르면(다른 기기에서 먼저 저장) 'conflict' */
+const PAD_SHEET = '수첩', PAD_HEADER = ['이름', '저장 시간', '버전', '조각 수'], PAD_CHUNK_ = 45000, PAD_MAX_ = 450000;
+function padFind_(sh, name) {
+  const n = sh.getLastRow(); if (n < 2) return 0;
+  const names = sh.getRange(2, 1, n - 1, 1).getValues();
+  for (let i = 0; i < names.length; i++) if (String(names[i][0]) === name) return i + 2;
+  return 0;
+}
+function padRead_(sh, row) {
+  if (!row) return { blob: '', ver: 0 };
+  const head = sh.getRange(row, 1, 1, 4).getValues()[0], k = Number(head[3]) || 0;
+  const blob = k ? sh.getRange(row, 5, 1, k).getValues()[0].map(String).join('') : '';
+  return { blob: blob, ver: Number(head[2]) || 0, t: String(head[1] || '') };
+}
+function studentPad_(name, body) {
+  const sh = sheet_(PAD_SHEET, PAD_HEADER);
+  if (body.op === 'padGet') { const r = padRead_(sh, padFind_(sh, name)); return { ok: true, blob: r.blob, ver: r.ver }; }
+  const lock = lightLock_(15000);
+  try {
+    let row = padFind_(sh, name); const cur = padRead_(sh, row);
+    if (body.op === 'padReset') {
+      if (row) { const k = Math.max(1, Number(sh.getRange(row, 4).getValues()[0][0]) || 0); sh.getRange(row, 2, 1, 3 + k).setValues([["'" + nowStr_(), cur.ver + 1, 0].concat(new Array(k).fill(''))]); }
+      return { ok: true, blob: '', ver: cur.ver + 1 };
+    }
+    if (body.op !== 'padSet') return { ok: false, error: 'op' };
+    const blob = String(body.blob || '');
+    if (blob.length > PAD_MAX_) return { ok: false, error: 'big' };
+    if (!/^v1\.[zn]\.[A-Za-z0-9+/=.]+$/.test(blob)) return { ok: false, error: 'bad' };
+    if (Number(body.base || 0) !== cur.ver) return { ok: true, error: 'conflict', blob: cur.blob, ver: cur.ver };
+    const parts = []; for (let i = 0; i < blob.length; i += PAD_CHUNK_) parts.push(blob.slice(i, i + PAD_CHUNK_));
+    const oldK = row ? Number(sh.getRange(row, 4).getValues()[0][0]) || 0 : 0, width = Math.max(parts.length, oldK, 1);
+    const vals = [name, "'" + nowStr_(), cur.ver + 1, parts.length].concat(parts); while (vals.length < 4 + width) vals.push('');
+    if (!row) { sh.appendRow(vals); } else sh.getRange(row, 1, 1, vals.length).setValues([vals]);
+    return { ok: true, ver: cur.ver + 1 };
+  } finally { lock.releaseLock(); }
 }
 
 /* 📨 로그인 못 하는 학생의 연락 (비밀번호 분실 등) → 건의함에 '연락'으로 */

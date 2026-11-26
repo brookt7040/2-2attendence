@@ -497,6 +497,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
     <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
     <button type="button" class="tab active" data-tab="notice">📢 공지사항<span class="dot" id="dotNotice"></span></button>
+    <button type="button" class="tab" data-tab="pad">📔 내 수첩</button>
     <button type="button" class="tab tab-ask" data-tab="ask" title="우리 반 광장 (자유 게시판 · 의견함)">💬 우리 반 광장</button>
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
@@ -514,6 +515,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="box nb-pub ns" data-sec="hw"><div class="box-head">📚 숙제</div><button type="button" class="nb-edit" data-nbedit="hw" title="고치기">✏️</button><div id="hwList"></div></div>
     </div>
   </section>
+
+  <section class="panel" id="p-pad"><div id="padBox"></div></section>
 
   <section class="panel" id="p-ask">
     <div class="guest-only box guest-box"><div class="ask-guest-msg"><p>🔑 로그인하면 우리 반 광장에서 글을 보고 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
@@ -1062,7 +1065,7 @@ async function doLogin(){
     else tOff(true);
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
-function logout(){
+function logout(){ if (window.NP){ NP.st = "idle"; NP.data = null; NP.key = null; NP.owner = ""; const pb = document.getElementById("padBox"); if (pb) pb.innerHTML = ""; }
   if (tAuthByLogin){ tAuthByLogin = false; if (!tKey) tOff(true); }
   myProfile = null;
   me = null; chatReset(); asks = []; coin = null; localStorage.removeItem(CRED_KEY); sessionStorage.removeItem(CRED_KEY); render();
@@ -1406,6 +1409,7 @@ function showTab(t){
   if (t === 'coin' && me) coinCall('coins');
   if (t === 'admin') tLoad();
   if (t === 'ask' && me) ideaCall('ideaList');
+  if (t === 'pad' && window.NP) NP.open();
   current = t;
   if (t === 'chat' && me) setTimeout(chatPull, 0);
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
@@ -2518,5 +2522,6 @@ function bootDone(ok){
   setInterval(() => { if (me && !document.hidden && current === 'coin') coinCall('coins'); }, 30000);
 })();
 </script>
+<script src="pad.js?v=1"></script>
 </body>
 </html>
