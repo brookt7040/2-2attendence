@@ -7196,6 +7196,30 @@ function openVillage(opts){
     say(`${GATHER_SPOT[o.id].ic} ${GATHER_SPOT[o.id].doing}이에요. 앉아 있으면 ${gat.gap}초마다 하나씩!`, 3000);
   }
   function gatherStop(){ gat = null; }
+  /* ⏳ 꽉 찬 채집터: 줄 서기 → 자리가 나면 자동으로 앉아요 */
+  let gq = null;
+  async function joinQueue(o){
+    if (gq && gq.o === o.id){ say(`⏳ 줄 서서 기다리는 중이에요 (${gq.pos || 1}번째)`, 2500); return; }
+    leaveQueue(true);
+    const j = await opts.call('gqueue', { o: o.id }).catch(() => null);
+    if (!j || !j.ok || j.error){ say('자리가 꽉 찼어요', 2500); return; }
+    gq = { o: o.id, sc: scene, pos: j.queue || 1, t0: Date.now(), last: Date.now() };
+    say(`⏳ 자리가 꽉 찼어요! 줄을 섰어요 (${gq.pos}번째). 자리가 나면 자동으로 앉아요`, 4000);
+    gq.tm = setInterval(queueTick, 3000);
+  }
+  function leaveQueue(quiet){
+    if (!gq) return; clearInterval(gq.tm); const o = gq.o; gq = null;
+    if (opts.call) opts.call('gqueue', { o, leave: true }).catch(() => {});
+    if (!quiet) say('줄 서기를 그만했어요', 2000);
+  }
+  async function queueTick(){
+    if (!gq) return;
+    const c = me(); if (!c || scene !== gq.sc || (c.sit && c.sit.s !== gq.o) || Date.now() - gq.t0 > 600000){ leaveQueue(true); return; }
+    const o = V_OBJS.find(x => x.id === gq.o); if (!o) return leaveQueue(true);
+    const taken = new Set(Object.values(cats).filter(q => q !== c && q.sc === scene && q.sit && q.sit.s === o.id).map(q => q.sit.t));
+    if (o.seats.some((s0, i) => !taken.has(i))){ const oo = o; leaveQueue(true); say('🙌 자리가 났어요! 앉으러 가요', 2500); seatAt(oo, { x: oo.x, y: oo.y }); return; }
+    if (Date.now() - gq.last > 45000){ gq.last = Date.now(); const j = await opts.call('gqueue', { o: o.id }).catch(() => null); if (j && j.ok && gq) gq.pos = j.queue || gq.pos; }
+  }
   async function gatherTick(){
     if (!gat || gat.busy) return;
     const c = me(); if (!c || !c.sit || c.sit.s !== gat.o || c.sc !== scene){ gatherStop(); return; }
@@ -7209,10 +7233,18 @@ function openVillage(opts){
     if (j.error){
       if (j.error === 'slow'){ gat.t0 = Date.now() - (gat.gap - 5) * 1000; return; }
       if (j.error === 'seat'){ gat.t0 = Date.now() - (gat.gap - 3) * 1000; sendMove(c, c.sit ? { s: c.sit.s, t: c.sit.t, a: c.sit.a } : undefined); return; }
+      if (j.error === 'yield' || j.error === 'rest'){
+        c.sit = null; showActs(null); gatherStop(); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 50); sendMove(Object.assign({}, c, { y: c.ty }));
+        if (j.error === 'yield') say('👋 기다리던 친구에게 자리를 양보했어요! 다음 채집은 희귀 확률 2배 🍀', 4500);
+        else { const L = j.restLeft || 0; say(`😪 지쳐서 쉬어야 해요 (${Math.floor(L / 60)}분 ${L % 60}초). 다른 지도 채집터는 바로 할 수 있어요!`, 4500); }
+        return;
+      }
       say({ limit:'오늘 채집은 여기까지! 내일 또 와요', blocked:'지금은 채집을 할 수 없어요', closed:'지금은 마을 쉬는 시간이에요', off:'지금은 쉬는 중이에요', bad:'서버 코드를 새로 배포해야 해요' }[j.error] || '채집하지 못했어요', 3200);
       if (j.error !== 'off') gatherStop(); return;
     }
-    const it = j.item || {}, msg = `${it.ic} ${it.name}${j.coins ? '' : '을(를)'} ${spot.verb}! ${RAR_NM[it.rar] || ''} +${j.exp} EXP${j.coins ? ` +${j.coins}🐾` : ''}`;
+    if (j.warn) setTimeout(() => say('👋 친구가 기다리고 있어요! 30초 뒤에 자리를 양보해요 (양보하면 다음 채집 희귀 2배 🍀)', 4500), 2800);
+    if (j.tired){ setTimeout(() => { const c2 = me(); if (c2 && c2.sit && c2.sit.s === o0){ c2.sit = null; showActs(null); c2.ty = Math.min((MAP_WALK[scene] || WALK).y1, c2.y + 50); sendMove(Object.assign({}, c2, { y: c2.ty })); } gatherStop(); say(`😪 ${(j.run || {}).max || 20}번 연속 했더니 지쳤어요! ${j.tired}분 쉬거나 다른 지도 채집터로 가요`, 4500); }, 2800); }
+    const it = j.item || {}, msg = `${j.lucky ? '🍀 ' : ''}${it.ic} ${it.name}${j.coins ? '' : '을(를)'} ${spot.verb}! ${RAR_NM[it.rar] || ''} +${j.exp} EXP${j.coins ? ` +${j.coins}🐾` : ''}`;
     c.bubble = { text: `${it.ic} ${it.name}${it.rar ? ' ' + RAR_NM[it.rar] : ''}`, until: Date.now() + 4000 };
     say(msg, it.rar >= 2 ? 4500 : 2600); emote(it.rar >= 2 ? '🎉' : it.ic, true);
     if (it.rar >= 2) for (let i = 0; i < 10; i++) setTimeout(() => emote(['✨', '🎉', it.ic][i % 3], true), i * 180);
@@ -7636,7 +7668,8 @@ function openVillage(opts){
     const c = me();
     const taken = new Set(Object.values(cats).filter(q => q !== c && q.sc === scene && q.sit && q.sit.s === o.id).map(q => q.sit.t));
     const free = o.seats.map((s, i) => i).filter(i => !taken.has(i));
-    if (!free.length){ say(`자리가 꽉 찼어요 (${o.seats.length}명까지)`); return; }
+    if (!free.length){ if (GATHER_SPOT[o.id] && !opts.viewOnly && opts.call && opts.me){ joinQueue(o); return; } say(`자리가 꽉 찼어요 (${o.seats.length}명까지)`); return; }
+    if (gq && gq.o === o.id) leaveQueue(true);
     const t = free.sort((a, b) => Math.hypot(o.x + o.seats[a][0] - p.x, o.y + o.seats[a][1] - p.y) - Math.hypot(o.x + o.seats[b][0] - p.x, o.y + o.seats[b][1] - p.y))[0];
     walkTo(o.x + o.seats[t][0], o.y + o.seats[t][1], { type: 'seat', sit: o.id, t, act: o.act });
   }

@@ -754,7 +754,7 @@ function handleStudent_(body) {
 /* 🎛️ 기능 스위치 (출석부 👑 관리자 모드): 꺼진 기능은 학생 요청을 막아요 · 선생님은 그대로 */
 function feat_() { try { return JSON.parse(props_().getProperty('feat') || '{}') || {}; } catch (e) { return {}; } }
 function featOff_(k, f) { f = f || feat_(); return !!f.pause || f[k] === false; }
-const FEAT_OPS_ = { buy: ['coin', 'shop'], buyFurn: ['coin', 'shop'], equipHouse: ['coin', 'shop'], game: ['coin', 'game'], missionPick: ['coin', 'missions'], missionReq: ['coin', 'missions'], missionCancel: ['coin', 'missions'], gather: ['village'], sell: ['village'], sellFurn: ['village', 'shop'], bank: ['coin'], wish: ['village'], find: ['village'],
+const FEAT_OPS_ = { buy: ['coin', 'shop'], buyFurn: ['coin', 'shop'], equipHouse: ['coin', 'shop'], game: ['coin', 'game'], missionPick: ['coin', 'missions'], missionReq: ['coin', 'missions'], missionCancel: ['coin', 'missions'], gather: ['village'], gqueue: ['village'], sell: ['village'], sellFurn: ['village', 'shop'], bank: ['coin'], wish: ['village'], find: ['village'],
   move: ['village'], emote: ['village'], act: ['village'], vnews: ['village'], roomSave: ['village'], relocate: ['village'], hallMute: ['village'], cmHi: ['village'],
   hana: ['village', 'hana'], hanaDress: ['village', 'hana'], chatSend: ['chat'], ideaSend: ['plaza'], ideaLike: ['plaza'], ideaReport: ['plaza'],
   padGet: ['pad'], padSet: ['pad'], padReset: ['pad'], storyAns: ['story'], menuTr: ['menuTr'], engSubmit: ['eng'], engPass: ['eng'] };
@@ -817,7 +817,7 @@ function handleStudentCore_(body) {
     return { ok: true, changed: true };
   }
   if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
-  if (['gather', 'sell', 'sellFurn', 'bank', 'wish', 'find', 'bag'].indexOf(body.op) >= 0) return studentGather_(name, body);
+  if (['gather', 'gqueue', 'sell', 'sellFurn', 'bank', 'wish', 'find', 'bag'].indexOf(body.op) >= 0) return studentGather_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
   if (body.op === 'vnews') { addNews_(name, String(body.a || '')); let vx = 0; if (NEWS_KINDS_.slice(0, 16).indexOf(String(body.a || '')) >= 0) { const lock = lightLock_(8000); try { vx = villageExp_(name); } finally { lock.releaseLock(); } } return { ok: true, vexp: vx }; }
@@ -1395,7 +1395,7 @@ function villageState_() {
 const VEXP_EVERY_ = 3, VEXP_GAIN_ = 2, VEXP_MAX_ = 10;
 /* ---------------- ⏱ 횟수 제한 (학생 앱 👑 관리 → RPG → 횟수 제한) ----------------
  * 0 = 무제한 · 학생별로 따로 정하거나(per) 막을 수 있어요(block) · event 날짜는 그날 하루 전부 무제한 */
-const LIMIT_DEF_ = { hana: HANA_DAILY, act: VILLAGE_ACT_DAILY, game: null, bet: null, vexp: VEXP_MAX_, gather: 0, gatherExp: 0, gatherGap: 30, sell: 0, find: 0 };
+const LIMIT_DEF_ = { hana: HANA_DAILY, act: VILLAGE_ACT_DAILY, game: null, bet: null, vexp: VEXP_MAX_, gather: 0, gatherExp: 0, gatherGap: 30, gatherRun: 20, gatherRest: 3, sell: 0, find: 0 };
 function limitsRaw_() { try { return JSON.parse(props_().getProperty('limits') || '{}') || {}; } catch (e) { return {}; } }
 function limits_() {
   const L = limitsRaw_(), out = {};
@@ -1406,9 +1406,9 @@ function limits_() {
 /* 이 학생의 한도: -1 = 막힘 · 0 = 무제한 · 그 외 = 하루 횟수 */
 function lim_(key, name, fallback) {
   const L = limits_(), p = (L.per || {})[name] || {};
-  if (isTeacherName_(name)) return key === 'gatherGap' ? 3 : 0;
+  if (isTeacherName_(name)) return key === 'gatherGap' ? 3 : key === 'gatherRest' ? 1 : 0;
   if ((p.block || []).indexOf(key) >= 0) return -1;
-  if (L.event === todayStr_() && ['gatherGap', 'bet'].indexOf(key) < 0) return 0;
+  if (L.event === todayStr_() && ['gatherGap', 'bet', 'gatherRun', 'gatherRest'].indexOf(key) < 0) return 0;
   if (p[key] != null && p[key] !== '') return Number(p[key]);
   const v = L[key]; return v == null ? (fallback == null ? 0 : fallback) : v;
 }
@@ -1466,6 +1466,11 @@ function findsNow_() {
   if (!props_().getProperty('found:' + cid)) { const pts = [[1500, 960], [120, 980], [980, 300], [1560, 520]], pt = pts[Math.floor(hashF_(cid) * pts.length)]; out.push({ id: cid, map: 'east', x: pt[0], y: pt[1], kind: 'chest' }); }
   return out;
 }
+/* ⏳ 채집터 줄 서기 · 양보: 줄이 생기면 5분 넘게 앉은 친구 중 오늘 많이 한 친구부터 30초 뒤 양보 (양보하면 다음 채집 희귀 2배) */
+const GQ_FRESH_ = 90000, GQ_SIT_ = 300000, GQ_WARN_ = 30000;
+function gqOf_(o) { const now = Date.now(); return (cacheGet_('gq:' + o, []) || []).filter(function (x) { return now - x.ts < GQ_FRESH_; }); }
+function gqSet_(o, list) { cachePut_('gq:' + o, list); }
+function gsOf_(name) { try { return JSON.parse(props_().getProperty('gs:' + name) || 'null'); } catch (e) { return null; } }
 function studentGather_(name, body) {
   const cfg = chatCfg_(), T = isTeacherName_(name), op = body.op, ds = todayStr_();
   if (!T && !chatOpen_(cfg)) return { ok: true, error: 'closed' };
@@ -1477,13 +1482,30 @@ function studentGather_(name, body) {
       const last = Number(props_().getProperty('gl:' + name) || 0), cnt = dayCount_('gc:' + name);
       const ecap = lim_('gatherExp', name), eGot = dayCount_('ge:' + name);
       const here = (cacheGet_('v:pos', {}) || {})[name];
+      const o = String(body.o || ''), now = Date.now();
+      let gs = gsOf_(name); if (!gs || gs.o !== o || now - (gs.last || 0) > 300000) gs = { o: o, n: 0, t0: now, last: now };
+      let rest = null; try { rest = JSON.parse(props_().getProperty('gr:' + name) || 'null'); } catch (e) {}
+      // ⏳ 줄 선 친구가 있으면 양보할 사람 고르기 (5분 넘게 앉은 친구 중 오늘 많이 한 친구)
+      let yieldNow = false, warn = false;
+      if (!T && g) {
+        const sitters = (function () { const pos = cacheGet_('v:pos', {}) || {}; return Object.keys(pos).filter(function (n) { const q = pos[n]; return q && q.s === o && now - q.ts < 600000; }); })();
+        const q = gqOf_(o).filter(function (x) { return x.n !== name && sitters.indexOf(x.n) < 0; });
+        if (q.length) {
+          const cand = sitters.filter(function (n) { const s0 = gsOf_(n); return s0 && s0.o === o && now - s0.t0 >= GQ_SIT_; }).sort(function (a, b) { return dayCount_('gc:' + b) - dayCount_('gc:' + a); });
+          if (cand[0] === name) { const w = Number(props_().getProperty('gw:' + name) || 0); if (w && now - w >= GQ_WARN_) yieldNow = true; else { if (!w) props_().setProperty('gw:' + name, String(now)); warn = true; } }
+        } else props_().deleteProperty('gw:' + name);
+      }
       if (!g) error = 'bad';
       else if (!T && (!here || here.s !== String(body.o))) error = 'seat';   // 그 자리에 앉아 있어야 해요
+      else if (yieldNow) { error = 'yield'; props_().deleteProperty('gw:' + name); props_().deleteProperty('gs:' + name); props_().setProperty('gb:' + name, '1'); }
+      else if (rest && rest.o === o && now < rest.until) { error = 'rest'; res.restLeft = Math.ceil((rest.until - now) / 1000); }
       else if (lm < 0) error = 'blocked';
       else if (lm > 0 && cnt >= lm) error = 'limit';
       else if (Date.now() - last < (gap - 3) * 1000) error = 'slow';
       else {
-        const roll = Math.random(); let rar = 0, acc = 0; for (let i = 0; i < GATHER_ODDS_.length; i++) { acc += GATHER_ODDS_[i]; if (roll < acc) { rar = i; break; } rar = i; }
+        const lucky = props_().getProperty('gb:' + name) === '1'; if (lucky) props_().deleteProperty('gb:' + name);   // 🍀 양보 보너스: 희귀 이상 확률 2배
+        const odds = lucky ? [1 - 2 * (1 - GATHER_ODDS_[0]), GATHER_ODDS_[1] * 2, GATHER_ODDS_[2] * 2, GATHER_ODDS_[3] * 2] : GATHER_ODDS_;
+        const roll = Math.random(); let rar = 0, acc = 0; for (let i = 0; i < odds.length; i++) { acc += odds[i]; if (roll < acc) { rar = i; break; } rar = i; }
         let pool = GATHER_[g].items.filter(function (it) { return it[3] === rar; }); if (!pool.length) pool = GATHER_[g].items.filter(function (it) { return it[3] === 0; });
         const it = pool[Math.floor(Math.random() * pool.length)];
         let exp = GATHER_EXP_[it[3]] || 2; if (ecap > 0) exp = Math.max(0, Math.min(exp, ecap - eGot));
@@ -1493,8 +1515,19 @@ function studentGather_(name, body) {
         if (g === 'coin') { coins = it[4]; if (!T) addCoin_(name, coins, '분수 동전: ' + it[1], '채집', '', []); }
         else { const b = bagOf_(name); b.items[it[0]] = (b.items[it[0]] || 0) + 1; b.dex[it[0]] = 1; props_().setProperty('bag:' + name, JSON.stringify(b)); }
         if (it[3] >= 2) addNews_(name, 'gather:' + it[1]);
-        res = { item: { id: it[0], name: it[1], ic: it[2], rar: it[3] }, g: g, verb: GATHER_[g].verb, exp: exp, coins: coins, count: cnt + 1, left: lm > 0 ? lm - cnt - 1 : -1, gap: gap };
+        res = { item: { id: it[0], name: it[1], ic: it[2], rar: it[3] }, g: g, verb: GATHER_[g].verb, exp: exp, coins: coins, count: cnt + 1, left: lm > 0 ? lm - cnt - 1 : -1, gap: gap, warn: warn, lucky: lucky };
+        gqSet_(o, gqOf_(o).filter(function (x) { return x.n !== name; }));
+        // 😪 지침: 한 자리에서 N번 연속하면 M분 쉬어야 해요 (다른 지도 채집터는 바로 OK)
+        const run = lim_('gatherRun', name), restM = lim_('gatherRest', name) || 3;
+        gs.n += 1; gs.last = now;
+        if (run > 0 && gs.n >= run) { props_().setProperty('gr:' + name, JSON.stringify({ o: o, until: now + restM * 60000 })); props_().deleteProperty('gs:' + name); res.tired = restM; }
+        else props_().setProperty('gs:' + name, JSON.stringify(gs));
+        res.run = { n: gs.n, max: run };
       }
+    } else if (op === 'gqueue') {                  // ⏳ 줄 서기 (90초마다 다시 서야 해요) · leave: 그만 기다리기
+      const o = String(body.o || ''); let q = gqOf_(o).filter(function (x) { return x.n !== name; });
+      if (!body.leave && Object.keys(GATHER_).some(function (k) { return GATHER_[k].spot === o; })) { const old = gqOf_(o).filter(function (x) { return x.n === name; })[0]; q.push({ n: name, ts: Date.now(), at: old ? old.at : Date.now() }); q.sort(function (a, b) { return a.at - b.at; }); }
+      gqSet_(o, q); res = { queue: q.map(function (x) { return x.n; }).indexOf(name) + 1 };
     } else if (op === 'sell') {                    // 🏪 시장에 팔기 (그 가게가 사는 것만)
       const shop = String(body.shop || ''), id = String(body.item || ''), n = Math.max(1, Math.min(99, Math.floor(Number(body.n) || 1)));
       const it = gatherItem_(id), b = bagOf_(name), lm = lim_('sell', name), cnt = dayCount_('sc:' + name);
