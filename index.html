@@ -6153,9 +6153,9 @@ function openVillage(opts){
       .vg-bar .send{font-size:1rem;background:#FFD84D;}
       .vg-bar .to{font-size:.95rem;background:#E3D9FF;display:none;}
       .vg-msg{position:absolute;left:50%;top:64px;transform:translateX(-50%);background:#fff;border:3px solid #5B4636;border-radius:999px;padding:6px 16px;font-size:1rem;box-shadow:0 3px 0 #5B4636;white-space:nowrap;display:none;z-index:3;}
-      .vg canvas.vg-mini{flex:none;min-height:0;position:absolute;right:10px;bottom:calc(var(--vgb,12px) + 8px);width:180px;height:85px;border:3px solid #5B4636;border-radius:10px;background:#5B4636;box-shadow:0 3px 0 rgba(91,70,54,.35);z-index:2;cursor:pointer;image-rendering:auto;}
+      .vg canvas.vg-mini{flex:none;min-height:0;position:absolute;right:10px;bottom:calc(var(--vgb,12px) + 8px);width:165px;height:114px;border:3px solid #5B4636;border-radius:14px;background:#6FC0EE;box-shadow:0 3px 0 rgba(91,70,54,.35);z-index:2;cursor:pointer;image-rendering:auto;}
       .vg.has-mega canvas.vg-mini{bottom:calc(var(--vgb,12px) + 52px);}
-      @media (max-width:560px){ .vg canvas.vg-mini{width:150px;height:71px;} }
+      @media (max-width:560px){ .vg canvas.vg-mini{width:135px;height:94px;} }
       .vg-mega{position:absolute;left:10px;right:10px;bottom:var(--vgb,12px);overflow:hidden;white-space:nowrap;background:#FFF2BF;border:3px solid #5B4636;border-radius:14px;font-size:1.05rem;padding:4px 0;display:none;pointer-events:none;}
       .vg-mega span{display:inline-block;padding-left:100%;animation:vgm 18s linear infinite;}
       @keyframes vgm{to{transform:translateX(-100%)}}
@@ -6213,7 +6213,7 @@ function openVillage(opts){
   const root = document.createElement('div'); root.className = 'vg';
   root.innerHTML = `<canvas></canvas>
     <div class="vg-top"><button type="button" class="vg-fold" title="왼쪽 위 정보 접기/펴기">◀ 접기</button><span class="vg-title"></span><button type="button" class="vg-out">🚪 나가기</button><button type="button" class="vg-x">✕ 마을 나가기</button></div>
-    <div class="vg-hud"></div><canvas class="vg-mini" width="360" height="170" title="마을 지도 · 누르면 그곳으로 가요"></canvas><div class="vg-mega"></div><div class="vg-msg"></div><div class="vg-group"></div>
+    <div class="vg-hud"></div><canvas class="vg-mini" width="450" height="312" title="마을 지도 · 누르면 그곳으로 가요"></canvas><div class="vg-mega"></div><div class="vg-msg"></div><div class="vg-group"></div>
     <div class="vg-acts"></div><div class="vg-panel"></div><div class="vg-edit"></div>
     ${opts.viewOnly ? '' : `<div class="vg-bar">${VILLAGE_EMOTES.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}
       <button type="button" class="to">📢 전체</button><input type="text" maxlength="100" placeholder="말풍선으로 말하기 (전체 대화에도 올라가요)"><button type="button" class="send">말하기</button></div>`}`;
@@ -7097,35 +7097,73 @@ function openVillage(opts){
     const wait = 1200 - (Date.now() - lastMoveSent);
     clearTimeout(arrived.tm); arrived.tm = setTimeout(() => sendMove(c), Math.max(0, wait));
   }
-  /* 🗺️ 미니맵 (오른쪽 아래): 마을 전체 지도에서 내가 어디 있는지 · 우리 집(🏠) 표시 · 누르면 그 지도로 */
+  /* 🗺️ 미니맵 (오른쪽 아래): 동글 섬 지도 — 지역마다 색이 달라요 · 내 위치(빨간 점) · 우리 집(🏠) · 누르면 그 지도로 */
   const mini = $q('.vg-mini'), mctx = mini.getContext('2d');
-  const MINI_GRID = [['west', 0, 0, '해변', '#9BD3F5'], ['out', 1, 0, '시티', '#CFE8C0'], ['east', 2, 0, '숲', '#8CCB7E'], ['mall', 0, 1, '상점가', '#EAD9C2'], ['south', 1, 1, '하늘 정원', '#CFE6FF'], ['alley', 2, 1, '길냥이집', '#D9C7B2']];
-  const miniCell = () => { const W = mini.width, H = mini.height, pad = 6, gw = (W - pad * 4) / 3, gh = (H - pad * 3) / 2; return { pad, gw, gh }; };
+  // 150×104 기준 좌표 (지역 칸)
+  const MINI_REG = {
+    west:  { r:[18, 18, 32, 42],  nm:'해변',     c:'#FFE08A', c2:'#7EC8F2' },
+    out:   { r:[50, 14, 52, 44],  nm:'시티',     c:'#C9CCE8', c2:'#8E95C7' },
+    east:  { r:[102, 18, 32, 42], nm:'숲',       c:'#4FA65A', c2:'#2F7A3A' },
+    mall:  { r:[20, 60, 55, 30],  nm:'상점가',   c:'#FFA766', c2:'#FF7FAE' },
+    alley: { r:[75, 60, 57, 30],  nm:'길냥이집', c:'#B9895F', c2:'#8B5A3C' },
+    south: { r:[56, 0, 38, 12],   nm:'하늘 정원', c:'#FFFFFF', c2:'#FFC6E0', sky: true }
+  };
+  function islandPath(m){ m.beginPath(); m.moveTo(20, 30); m.quadraticCurveTo(30, 12, 75, 14); m.quadraticCurveTo(128, 12, 136, 40); m.quadraticCurveTo(142, 80, 110, 92); m.quadraticCurveTo(75, 100, 40, 92); m.quadraticCurveTo(10, 84, 14, 56); m.closePath(); }
   function drawMini(){
     const curMap = isMap(scene) ? scene : (V_BUILDINGS.find(b => b.id === scene) || {}).map || (scene === 'hana' ? 'out' : scene.startsWith('house:') ? houseMapOf(scene.slice(6)) : 'out');
     const show = !editing; mini.style.display = show ? 'block' : 'none'; if (!show) return;
-    const m = mctx, { pad, gw, gh } = miniCell();
-    m.setTransform(1, 0, 0, 1, 0, 0); m.fillStyle = '#5B4636'; m.fillRect(0, 0, mini.width, mini.height);
-    const myHome = meName ? houseMapOf(meName) : '', me0 = meName && cats[meName];
-    MINI_GRID.forEach(([id, gx, gy, nm, col]) => {
-      const x = pad + gx * (gw + pad), y = pad + gy * (gh + pad), here = id === curMap;
-      m.fillStyle = col; m.fillRect(x, y, gw, gh);
-      if (here){ m.strokeStyle = '#FFD84D'; m.lineWidth = 6; m.strokeRect(x + 3, y + 3, gw - 6, gh - 6); }
-      const n = Object.values(cats).filter(c => (c.sc || 'out') === id && c.name !== meName).length;
-      m.fillStyle = '#3E2E26'; m.font = `${Math.round(gh * .26)}px NeoDunggeunmo, sans-serif`; m.textAlign = 'center'; m.textBaseline = 'top'; m.fillText(nm, x + gw / 2, y + 6);
-      if (n){ m.font = `${Math.round(gh * .2)}px NeoDunggeunmo, sans-serif`; m.fillStyle = '#5B4636'; m.fillText(`친구 ${n}`, x + gw / 2, y + gh * .72); }
-      if (id === myHome){ m.font = `${Math.round(gh * .3)}px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif`; m.textAlign = 'right'; m.fillText('🏠', x + gw - 3, y + 4); }
-      if (here && me0){
-        const inside = !isMap(scene), px = inside ? x + gw / 2 : x + me0.x / VW * gw, py = inside ? y + gh * .55 : y + me0.y / VH * gh;
-        m.fillStyle = '#FF5C7A'; m.strokeStyle = '#FFFFFF'; m.lineWidth = 4; m.beginPath(); m.arc(px, py, 9 + Math.sin(Date.now() / 250) * 2, 0, Math.PI * 2); m.fill(); m.stroke();
-      }
+    const m = mctx, k = mini.width / 150, now = Date.now();
+    m.setTransform(k, 0, 0, k, 0, 0);
+    // 바다
+    m.fillStyle = '#6FC0EE'; m.fillRect(0, 0, 150, 104);
+    m.strokeStyle = 'rgba(255,255,255,.5)'; m.lineWidth = 1; for (let i = 0; i < 4; i++){ const y = 20 + i * 24, dx = (now / 120 + i * 30) % 160 - 10; m.beginPath(); m.moveTo(dx - 6, y); m.quadraticCurveTo(dx, y - 3, dx + 6, y); m.stroke(); }
+    // 모래 테두리
+    m.save(); m.translate(75, 54); m.scale(1.07, 1.1); m.translate(-75, -54); islandPath(m); m.fillStyle = '#F6E3B4'; m.fill(); m.restore();
+    // 지역 칠하기 (섬 모양 안에서)
+    m.save(); islandPath(m); m.clip();
+    ['west', 'out', 'east', 'mall', 'alley'].forEach(id => { const g = MINI_REG[id], [x, y, w, h] = g.r; m.fillStyle = g.c; m.fillRect(x, y, w, h); });
+    // 지역 무늬: 해변 물결 · 시티 빌딩 · 숲 나무 · 상점가 차양 · 길냥이집 박스
+    m.fillStyle = '#7EC8F2'; m.fillRect(14, 18, 10, 42); m.strokeStyle = '#fff'; m.lineWidth = .8; for (let y = 24; y < 58; y += 7){ m.beginPath(); m.moveTo(15, y); m.quadraticCurveTo(19, y - 2, 23, y); m.stroke(); }
+    m.fillStyle = '#8E95C7'; [[60, 22, 5, 14], [68, 18, 5, 18], [84, 24, 5, 12], [92, 20, 5, 16]].forEach(([x, y, w, h]) => m.fillRect(x, y, w, h));
+    m.fillStyle = '#2F7A3A'; [[110, 26], [120, 32], [114, 44], [126, 48], [106, 52]].forEach(([x, y]) => { m.beginPath(); m.arc(x, y, 3.6, 0, Math.PI * 2); m.fill(); });
+    for (let i = 0; i < 9; i++){ m.fillStyle = i % 2 ? '#FFFFFF' : '#FF7FAE'; m.fillRect(24 + i * 5.6, 62, 5.6, 4); }
+    m.fillStyle = '#8B5A3C'; [[84, 72], [96, 76], [108, 70], [118, 78]].forEach(([x, y]) => m.fillRect(x, y, 6, 5));
+    // 길 (흰 점선)
+    m.strokeStyle = 'rgba(255,255,255,.9)'; m.lineWidth = 1.6; m.setLineDash([2.5, 2.5]); m.beginPath(); m.moveTo(26, 58); m.lineTo(128, 58); m.moveTo(75, 58); m.lineTo(75, 96); m.moveTo(75, 14); m.lineTo(75, 58); m.stroke(); m.setLineDash([]);
+    // 지역 경계
+    m.strokeStyle = 'rgba(62,46,38,.35)'; m.lineWidth = .8; m.beginPath(); m.moveTo(50, 14); m.lineTo(50, 60); m.moveTo(102, 14); m.lineTo(102, 60); m.moveTo(14, 60); m.lineTo(140, 60); m.moveTo(75, 60); m.lineTo(75, 100); m.stroke();
+    m.restore();
+    islandPath(m); m.strokeStyle = '#5B4636'; m.lineWidth = 1.4; m.stroke();
+    // ☁️ 하늘 정원 (섬 위에 떠 있는 구름)
+    { const by = Math.sin(now / 700) * 1.2; m.fillStyle = '#FFFFFF'; m.beginPath(); m.ellipse(75, 6 + by, 19, 5.5, 0, 0, Math.PI * 2); m.ellipse(66, 4 + by, 7, 4, 0, 0, Math.PI * 2); m.ellipse(84, 3.5 + by, 8, 4.5, 0, 0, Math.PI * 2); m.fill();
+      ['#FF8FB8', '#FFE066', '#8CC8FF'].forEach((c, i) => { m.strokeStyle = c; m.lineWidth = 1; m.beginPath(); m.arc(75, 12 + by, 9 - i * 1.4, Math.PI, 0); m.stroke(); }); }
+    // 지금 있는 지역 강조
+    const cr = MINI_REG[curMap];
+    if (cr){ const [x, y, w, h] = cr.r; m.strokeStyle = '#FFF4A8'; m.lineWidth = 2.2; m.setLineDash([]); m.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3); }
+    // 이름
+    m.textAlign = 'center'; m.textBaseline = 'middle';
+    Object.entries(MINI_REG).forEach(([id, g]) => {
+      const [x, y, w, h] = g.r, cx = x + w / 2, cy = g.sky ? 6 + Math.sin(now / 700) * 1.2 : y + h / 2 + (id === 'mall' ? 3 : 0);
+      m.font = `${id === curMap ? 'bold ' : ''}7px NeoDunggeunmo, sans-serif`;
+      m.lineWidth = 2.4; m.strokeStyle = 'rgba(255,255,255,.95)'; m.strokeText(g.nm, cx, cy); m.fillStyle = '#3E2E26'; m.fillText(g.nm, cx, cy);
     });
+    // 🏠 우리 집
+    const home = meName ? houseMapOf(meName) : '';
+    if (MINI_REG[home]){ const [x, y, w] = MINI_REG[home].r; m.font = '8px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; m.fillText('🏠', home === 'south' ? x + w + 3 : x + w - 6, home === 'south' ? 6 : y + 7); }
+    // 🔴 내 위치
+    const me0 = meName && cats[meName];
+    if (cr && me0){
+      const [x, y, w, h] = cr.r, inside = !isMap(scene);
+      const px = inside ? x + w / 2 : x + 3 + me0.x / VW * (w - 6), py = cr.sky ? 7 : inside ? y + h * .7 : y + 3 + me0.y / VH * (h - 6);
+      m.fillStyle = 'rgba(255,92,122,.35)'; m.beginPath(); m.arc(px, py, 4.5 + Math.sin(now / 200) * 1.2, 0, Math.PI * 2); m.fill();
+      m.fillStyle = '#FF3D66'; m.strokeStyle = '#FFFFFF'; m.lineWidth = 1.2; m.beginPath(); m.arc(px, py, 2.6, 0, Math.PI * 2); m.fill(); m.stroke();
+    }
   }
   mini.addEventListener('pointerdown', e => {
     e.stopPropagation();
-    const r = mini.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * mini.width, y = (e.clientY - r.top) / r.height * mini.height, { pad, gw, gh } = miniCell();
-    const g = MINI_GRID.find(([, gx, gy]) => { const x0 = pad + gx * (gw + pad), y0 = pad + gy * (gh + pad); return x >= x0 && x <= x0 + gw && y >= y0 && y <= y0 + gh; });
-    if (g && g[0] !== scene){ closePanel(); enter(g[0]); }
+    const r = mini.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * 150, y = (e.clientY - r.top) / r.height * 104;
+    const hit = Object.entries(MINI_REG).find(([, g]) => { const [x0, y0, w, h] = g.r; return x >= x0 - 2 && x <= x0 + w + 2 && y >= y0 - 2 && y <= y0 + h + 2; });
+    if (hit && hit[0] !== scene){ closePanel(); enter(hit[0]); }
   });
   function walkTo(x, y, g){
     const c = me(); if (!c) return;
