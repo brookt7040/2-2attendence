@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2-2 냥냥 출석 아일랜드</title>
 <script src="lock.js?v=35"></script>
+<script src="snd.js?v=1"></script>
 <style>
 @font-face{
   font-family:'NeoDunggeunmo';
@@ -3996,6 +3997,7 @@ function note(freq, t0, dur, type = 'triangle', vol = .18){
 }
 function sfx(kind){
   if (!db.sfx) return;
+  if (VIEW && window.NySnd && NySnd.muted()) return;   // 🔇 앱: 수업 중 자동 음소거 · 위쪽 🔊 버튼
   try { unlockAudio(false); } catch(e){ return; }
   if (!audioCtx) return;
   const t = audioCtx.currentTime, v = .2;
@@ -4183,6 +4185,7 @@ function graceWarn(now){
 }
 function tick(){
   const now = nowD();
+  if (VIEW && window.NySnd && now.getSeconds() % 30 === 0){ const wd = now.getDay(); NySnd.setClass(getTodayStr(now), wd === 0 || wd === 6 ? [] : ttDayItems(now).filter(x => !x.lunch && !x.off).map(x => ({ s: x.start, e: x.end }))); }   // 🔇 오늘 수업 시간 알려 주기
   setFlip('flipHour', pad(now.getHours()));
   setFlip('flipMin', pad(now.getMinutes()));
   setFlip('flipSec', pad(now.getSeconds()));

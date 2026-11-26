@@ -36,6 +36,7 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .bar .side{display:flex;align-items:center;gap:6px;margin-left:10px;padding-left:12px;border-left:2px dashed #D9C79A;}
 .bar .sub,.bar .inst{flex:0 0 auto;max-width:none;font-size:.88rem;padding:5px 12px;border-color:#B9A58A;color:#7A6552;}
 .bar .sub{background:#FFFDF6;}
+.bar .snd{position:relative;} .bar .snd.off{background:#F1EFE8;} .bar .snd.auto{background:#E6F1FB;} .snd-b{position:absolute;bottom:-6px;right:-8px;background:#C0D9F5;border:1.5px solid #5B4636;border-radius:999px;font-size:10px;padding:0 4px;line-height:1.4;color:#0C447C;}
 .bar .rl{padding:5px 9px;} .bar .rl.spin{animation:rlSpin .6s linear;}
 @keyframes rlSpin{to{transform:rotate(360deg);}} .bar .sub.on{background:#FFD84D;border-color:#5B4636;color:#5B4636;}
 .bar .inst{background:#E8ECFF;}
@@ -52,10 +53,11 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 @media (max-width:480px){ .cchip .faces{display:none;} .cchip{margin-left:4px;padding:4px 7px !important;} #chatPop{right:6px;left:6px;width:auto;top:56px;height:calc(100vh - 64px);} .bar > button[data-t]{font-size:.8rem !important;padding:6px 1px !important;} .bar .inst,.bar .sub{font-size:.8rem;padding:5px 7px;} .bar .side{margin-left:4px;padding-left:6px;gap:4px;} .bar .logo span{display:none;} .bar button{font-size:.92rem;padding:6px 2px;} }
 </style></head><body>
 <div class="bar"><div class="logo"><img src="icons/favicon-64.png" alt=""><span>2-2😻</span></div>
-  <button type="button" data-t="board"><span class="em">📋 </span>출석부</button><button type="button" data-t="notice"><span class="em">📢 </span><span class="tl">공지사항</span><span class="ts">공지</span></button><button type="button" data-t="me"><span class="em">🧸 </span>아지트</button><span class="sp"></span><button type="button" data-t="ask" class="ask-t"><span class="em">💌 </span><span class="tl">to. 시내T</span><span class="ts">시내T</span></button><button type="button" id="chatChip" class="cchip" title="우리 반 대화">💬<span class="faces" id="chatFaces"></span><span class="cdot" id="chatDot" hidden></span></button><span class="side"><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub" title="안내">📖<span class="tl"> 안내</span></button><button type="button" id="instBtn" class="inst" title="설치">📲<span class="tl"> 설치</span></button></span></div>
+  <button type="button" data-t="board"><span class="em">📋 </span>출석부</button><button type="button" data-t="notice"><span class="em">📢 </span><span class="tl">공지사항</span><span class="ts">공지</span></button><button type="button" data-t="me"><span class="em">🧸 </span>아지트</button><span class="sp"></span><button type="button" data-t="ask" class="ask-t"><span class="em">💌 </span><span class="tl">to. 시내T</span><span class="ts">시내T</span></button><button type="button" id="chatChip" class="cchip" title="우리 반 대화">💬<span class="faces" id="chatFaces"></span><span class="cdot" id="chatDot" hidden></span></button><span class="side"><button type="button" id="sndBtn" class="sub snd" title="소리 (수업 중에는 저절로 꺼져요)">🔊<span class="snd-b" hidden>수업</span></button><button type="button" id="reloadBtn" class="sub rl" title="지금 보는 화면 새로고침">🔄</button><button type="button" data-t="guide" class="sub" title="안내">📖</button><button type="button" id="instBtn" class="inst" title="설치">📲<span class="tl"> 설치</span></button></span></div>
 <div id="iosOv"><div class="io-box"><button type="button" class="io-x" id="iosX">✕</button><h3>🍎 아이폰 · 아이패드는 직접 추가해요</h3><ol class="io-ol"><li><b>사파리</b>로 이 페이지를 열어요 (다른 앱 안이면 사파리로 열기)</li><li>아래쪽(아이패드는 위쪽) <b>공유 버튼 <svg class="ios-share" viewBox="0 0 24 24" aria-label="공유"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8A1.5 1.5 0 0 0 17.5 10H16" fill="none" stroke="#2F7BF6" stroke-width="2.2" stroke-linecap="round"/></svg></b>을 눌러요</li><li>목록을 내려서 <b>홈 화면에 추가</b>를 눌러요</li><li>이름이 <b>2-2😻</b>인지 보고 오른쪽 위 <b>추가</b>!</li></ol></div></div>
 <div class="frames" id="frames"></div>
 <div id="chatPop"><div class="cp-head"><b>💬 우리 반 대화</b><button type="button" id="chatClose">✕</button></div><div class="cp-body" id="chatBody"></div></div>
+<script src="snd.js?v=1"></script>
 <script>
 /* 📱 2-2😻 앱: 한 창 안에서 출석부 · 공지사항 · 아지트 · to. 시내T · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
 const q = new URLSearchParams(location.search);
@@ -75,6 +77,12 @@ function show(t){
   history.replaceState(null, '', '?tab=' + t + (q.get('api') ? '&api=' + encodeURIComponent(q.get('api')) : ''));
 }
 let curTab = 'board';
+/* 🔊 소리: 수업 중 자동 음소거 · 누르면 지금 시간만 반대로 (다음 구간이면 다시 자동) */
+function sndShow(){ if (!window.NySnd) return; const s = NySnd.state(), b = document.getElementById('sndBtn'); b.firstChild.textContent = s.muted ? '🔇' : '🔊';
+  b.classList.toggle('auto', s.muted && s.inClass && !s.manual); b.classList.toggle('off', s.muted && !(s.inClass && !s.manual)); b.querySelector('.snd-b').hidden = !(s.muted && s.inClass && !s.manual);
+  b.title = s.muted ? (s.inClass && !s.manual ? '수업 중이라 소리가 꺼져 있어요 · 누르면 이번 시간만 켜요' : '소리 꺼짐 · 누르면 켜요') : (s.inClass ? '이번 시간만 소리 켜 둠 · 누르면 꺼요' : '소리 켜짐 · 누르면 이번 쉬는 시간 동안 꺼요'); }
+document.getElementById('sndBtn').onclick = () => { if (!window.NySnd) return; const s = NySnd.toggle(); sndShow(); };
+sndShow(); setInterval(sndShow, 10000); addEventListener('storage', e => { if (e.key === 'nyangClass' || e.key === 'nyangSndOv') sndShow(); });
 document.getElementById('reloadBtn').onclick = () => { const f = frames[curTab]; if (f){ f.src = fresh(SRC[curTab]); } const b = document.getElementById('reloadBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); };
 document.querySelector('.bar').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); });
 addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang === 'go' && SRC[d.tab]) show(d.tab); });
