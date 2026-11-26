@@ -1622,12 +1622,21 @@ function openVillage(opts){
     const row = i < perRow ? 0 : 1, col = row ? i - perRow : i, w = (VW - 40) / perRow;
     return { x: 20 + col * w + w / 2, y: row ? 272 : 150, w };
   };
+  // 🏠 접속 안 한 고양이는 자기 집이 있는 지도, 집 앞에서 놀아요
+  function homeSpot(name){
+    const pl = plotOfName(name);
+    let sc = 'alley', x, y;
+    if (pl){ sc = pl.map; x = pl.x + (Math.random() - .5) * (pl.teacher ? 300 : 160); y = pl.y + (pl.back ? -150 : 40) + Math.random() * 30; }
+    else { const q = alleyOf(name); x = q.x + (Math.random() - .5) * 60; y = q.y + 30 + Math.random() * 20; }
+    const W = MAP_WALK[sc] || WALK;
+    return { sc, x: Math.max(W.x0, Math.min(W.x1, x)), y: Math.max(W.y0, Math.min(W.y1, y)) };
+  }
   function ensureCat(s){
     let c = cats[s.name];
     const key = JSON.stringify([s.look, s.lv]);
     if (!c){
-      const p = plotOf(s.name);
-      c = cats[s.name] = { name: s.name, x: Math.max(WALK.x0, Math.min(WALK.x1, p.x)), y: WALK.y0 + 30 + Math.random() * 80, tx: null, ty: null, anchor: null, wanderAt: 0, bubble: null, emo: null, face: 1, sc: 'out', sit: null };
+      const h = s.name === meName ? (() => { const p = plotOf(s.name); return { sc: scene || 'out', x: Math.max(WALK.x0, Math.min(WALK.x1, p.x)), y: WALK.y0 + 30 + Math.random() * 80 }; })() : homeSpot(s.name);
+      c = cats[s.name] = { name: s.name, x: h.x, y: h.y, tx: null, ty: null, anchor: { x: h.x, y: h.y, ts: 'home' }, wanderAt: 0, bubble: null, emo: null, face: 1, sc: h.sc, sit: null, lastSc: h.sc };
     }
     if (c.key !== key){ c.key = key; c.img = catSprite(/(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, s.look || {}, { _free: true }) : s.look, s.lv); c.lv = s.lv; }
     return c;
@@ -1651,8 +1660,13 @@ function openVillage(opts){
       Object.entries(j.pos || {}).forEach(([n, p]) => {
         const c = cats[n]; if (!c || !p || p.x == null || (me && c === me)) return;
         const fresh = now - p.ts < 600000;
-        c.sc = fresh ? (p.sc || 'out') : 'out';
-        c.sit = fresh && p.s ? { s: p.s, t: p.t, a: p.a } : null;
+        if (!fresh){   // 🏠 오래 안 들어온 친구는 집 앞으로
+          c.sit = null;
+          if (!c.anchor || c.anchor.ts !== 'home' || c.sc !== houseMapOf(n)){ const h = homeSpot(n); c.sc = h.sc; c.lastSc = h.sc; c.x = h.x; c.y = h.y; c.tx = null; c.anchor = { x: h.x, y: h.y, ts: 'home' }; }
+          return;
+        }
+        c.sc = p.sc || 'out';
+        c.sit = p.s ? { s: p.s, t: p.t, a: p.a } : null;
         if (!c.anchor || c.anchor.ts !== p.ts){
           c.anchor = { x: p.x, y: p.y, ts: p.ts };
           const sp = c.sit && seatPos(c.sc, c.sit.s, c.sit.t);
@@ -1660,7 +1674,10 @@ function openVillage(opts){
           if (c.sc !== c.lastSc){ c.x = c.tx; c.y = c.ty; c.lastSc = c.sc; }
         }
       });
-      if (me && !me.placed && j.pos && j.pos[meName] && j.pos[meName].sc === 'out' && j.pos[meName].x != null){ me.x = j.pos[meName].x; me.y = j.pos[meName].y; }
+      if (me && !me.placed && !opts.viewOnly && scene === 'out'){   // 🏠 마을에 들어오면 우리 집 앞에서 시작 (해변 집이면 해변, 길냥이면 박스집 앞)
+        me.placed = true; const h = homeSpot(meName);
+        (h.sc !== 'out' ? enter(h.sc) : Promise.resolve()).then(() => { me.x = h.x; me.y = h.y; me.tx = null; me.sc = scene; camera(true); });
+      }
       if (me) me.placed = true;
       (j.chat || []).forEach(m => { const k = 'c' + m.ts + m.n + m.text; if (seen.has(k)) return; seen.add(k); if (cats[m.n] && m.ts > T0 - 20000) cats[m.n].bubble = { text: m.text.length > 26 ? m.text.slice(0, 25) + '…' : m.text, until: Date.now() + 7000 }; });
       (j.emo || []).forEach(m => { const k = 'e' + m.ts + m.n; if (seen.has(k)) return; seen.add(k); if (m.n === '하나' && m.ts > T0 - 20000){ hana.bubble = { text: '💛', until: Date.now() + 2500 }; return; } if (cats[m.n] && m.ts > T0 - 20000) cats[m.n].emo = { e: m.e, until: Date.now() + 3500 }; });
@@ -2050,7 +2067,7 @@ function openVillage(opts){
     const taken = new Set(Object.values(cats).filter(c => c.sc === 'cafe' && c.sit).map(c => c.sit.s));
     CAFE_DESKS.forEach((d, i) => { box(d.x - 80, d.y - 34, 160, 56, taken.has(d.id) ? '#FFD8A8' : '#A9744F', 8); emoji('💡', d.x - 50, d.y - 48, 22); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(d.x - 18, d.y - 26, 40, 28); emoji('☕', d.x + 50, d.y - 12, 18); label(String(i + 1), d.x, d.y + 36, 12, '#FFFFFF'); });
     drawHanaAt(1470, 930, 100, -1, t, false); bubble('조용히 집중하자냥 🤫', 1470, 810, false);
-    box(740, 940, 120, 60, '#2F8F6B', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
+    box(740, 940, 120, 60, '#2F8F6B', 8); label('출입구 · 나가기 (Esc)', 800, 928, 13, '#FFFFFF');
   }
   /* ---------- 📚 냥글리시 아카데미 (교실) ---------- */
   function drawEng(t){
@@ -2064,7 +2081,7 @@ function openVillage(opts){
     const taken = new Set(Object.values(cats).filter(c => c.sc === 'eng' && c.sit).map(c => c.sit.s));
     ENG_DESKS.forEach((d, i) => { box(d.x - 70, d.y - 30, 140, 50, taken.has(d.id) ? '#D9CCFF' : '#C98B5A', 8); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(d.x - 30, d.y - 22, 34, 26); emoji('✏️', d.x + 30, d.y - 8, 18); label(String(i + 1), d.x - 52, d.y - 8, 11, '#FFF6DA'); });
     drawHanaAt(1450, 920, 100, -1, t, false); bubble('Hello! 영어 하자냥 🐾', 1450, 800, false);
-    box(740, 940, 120, 60, '#5B6BD6', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
+    box(740, 940, 120, 60, '#5B6BD6', 8); label('출입구 · 나가기 (Esc)', 800, 928, 13, '#FFFFFF');
   }
   /* ---------- 🏛️ 시청 회의실 ---------- */
   function drawHall(t){
@@ -2087,7 +2104,7 @@ function openVillage(opts){
       const taken = new Set(Object.values(cats).filter(c => c.sc === 'hall' && c.sit && c.sit.s === tb.id).map(c => c.sit.t));
       hallSeats(tb).forEach(([dx, dy], si) => { ctx.fillStyle = taken.has(si) ? 'rgba(140,116,240,.35)' : 'rgba(255,255,255,.8)'; ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(tb.x + dx, tb.y + dy + 2, 26, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); });
     });
-    box(740, 940, 120, 60, '#8C74F0', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
+    box(740, 940, 120, 60, '#8C74F0', 8); label('출입구 · 나가기 (Esc)', 800, 928, 13, '#FFFFFF');
   }
   /* ---------- 🎮 오락실 ---------- */
   function drawArcade(t){
@@ -2108,7 +2125,7 @@ function openVillage(opts){
     });
     box(60, 760, 300, 140, '#FFD84D', 14); emoji('🏆', 120, 830, 46); ctx.font = '18px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = '#5B4636'; ctx.fillText('잭팟은 🐾🐾🐾!', 160, 810); ctx.fillText('슬롯 ×9 배!', 160, 845);
     box(1260, 760, 280, 140, '#FFB3CF', 14); emoji('🍿', 1310, 830, 40); emoji('🥤', 1370, 830, 40); ctx.textAlign = 'left'; ctx.fillStyle = '#5B4636'; ctx.fillText('간식 코너', 1410, 830);
-    box(740, 940, 120, 60, '#FF6F9C', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
+    box(740, 940, 120, 60, '#FF6F9C', 8); label('출입구 · 나가기 (Esc)', 800, 928, 13, '#FFFFFF');
   }
   /* ---------- 🏰 하나네 집 ---------- */
   function drawHanaHome(t){
@@ -2284,9 +2301,9 @@ function openVillage(opts){
     else if (c.bubble && c.bubble.until > now) bubble(c.bubble.text, c.x, c.y - 56 - bob, false, chair);
   }
   function stepCat(c, dt, now){
-    if (c.sc === 'out' && c.tx == null && c.name !== meName && !c.sit && now > c.wanderAt){
+    if (isMap(c.sc || 'out') && c.tx == null && c.name !== meName && !c.sit && now > c.wanderAt){
       const a = c.anchor || { x: c.x, y: c.y };
-      const p = freeSpot(a.x + (Math.random() - .5) * 160, a.y + (Math.random() - .5) * 100, 'out');
+      const p = freeSpot(a.x + (Math.random() - .5) * 160, a.y + (Math.random() - .5) * 100, c.sc || 'out');
       c.tx = p.x; c.ty = p.y; c.wanderAt = now + 3000 + Math.random() * 5000;
     }
     c.walking = false;
@@ -2361,14 +2378,15 @@ function openVillage(opts){
   function exitPos(){
     if (isMap(scene)) return null;
     if (scene.startsWith('house:')){ const g = roomGeom(); return { x: g.x0 + g.w / 2, y: g.y0 + g.h + 6 }; }
-    if (scene === 'hana') return { x: 800, y: VH - 48 };
-    return { x: 110, y: VH - 52 };
+    return { x: 800, y: VH - 48 };   // 🚪 들어온 출입구 = 나가는 곳
   }
   function drawExit(t){
     const e = exitPos(); if (!e) return;
+    if (scene.startsWith('house:')){ label('나가기 (Esc)', e.x, e.y + 40, 13, '#FFFFFF'); return; }   // 집은 문 상자가 출입구
+    if (scene !== 'hana') return;   // 시청·오락실·카페·아카데미는 원래 출입구 상자가 나가는 곳
     ctx.fillStyle = '#8B5A3C'; ctx.beginPath(); ctx.ellipse(e.x, e.y, 62, 16, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#E6B980'; ctx.beginPath(); ctx.ellipse(e.x, e.y - 2, 54, 12, 0, 0, Math.PI * 2); ctx.fill();
-    label('나가기 (Esc)', e.x, e.y + 30, 15, '#FFFFFF');
+    label('출입구 · 나가기 (Esc)', e.x, e.y + 30, 14, '#FFFFFF');
   }
   function goExit(){ const b = $q('.vg-out'); if (b) b.click(); }
   function pawSpots(){
