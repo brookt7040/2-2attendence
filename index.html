@@ -2359,7 +2359,10 @@ async function swGo(){
   try {
     const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'pull', since:-1, apin: pin }) });
     const j = await r.json();
-    if (!j.ok){ $('swErr').textContent = '❌ 비밀번호가 달라요'; $('swPin').value = ''; return; }
+    if (!j.ok){
+      try { const r2 = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'menuTrList', mpin: pin }) }), j2 = await r2.json();   // 🍱 급식 관리자 비번이면 급식 쓰기로
+        if (j2.ok){ $('swOv').style.display = 'none'; openMH('meal'); mhEdit = true; renderMH(); setTimeout(() => { if ($('mealPin')) $('mealPin').value = pin; $('mealText') && $('mealText').focus(); }, 50); return; } } catch(e){}
+      $('swErr').textContent = '❌ 비밀번호가 달라요'; $('swPin').value = ''; return; }
     localStorage.setItem(SYNC_KEY, JSON.stringify({ url: VIEW.api, v: -1, queue: [], last: 0, api: j.api || 3, key: '', pubHash: '', tname: '', tpin: '', apin: pin }));
     if (window.NyLock) await NyLock.teacherPass(pin);   // 마스터 비번이면 👑 선생님 통과도
     try { localStorage.setItem('nyangBackView', location.href); } catch(e){}
@@ -4137,7 +4140,7 @@ function renderMHSide(){
   const today = getTodayStr(nowD()), menu = ((db.meal || {})[today] || '').trim();
   ms.classList.toggle('empty', !menu);
   ms.innerHTML = `<div class="t">🍱 급식</div><div class="mm">${menu ? esc(menu) : (VIEW ? ((db.menuPick || []).length ? '<span style="opacity:.5;font-size:.9rem;">눌러서 🇺🇸 영어로 번역하기</span>' : '') : '✏️ 눌러서 수정')}</div>${db.mealEn ? `<div class="mm" style="font-size:.92rem;color:#2F6B8F;margin-top:4px;">🇺🇸 ${esc(db.mealEn.text)}</div>` : ''}`;
-  if (VIEW && ((db.menuPick || []).length || db.mealEn)) ms.classList.remove('empty');   // 학생용: 번역 미션을 고른 친구가 있으면 비어 있어도 보여요
+   // 학생용: 오늘 급식이 없으면 칸을 숨겨요 (급식 관리자는 Notice 5번 → 급식 관리자 비번으로 열어요)
   const hw = (db.hw || []).filter(h => !h.due || h.due >= today).sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
   hs.classList.toggle('empty', !hw.length);
   hs.innerHTML = `<div class="t">📚 숙제${hw.length > 4 ? `<small style="color:var(--ink-soft);"> +${hw.length - 4}</small>` : ''}</div><div class="hl">${hw.length ? hw.slice(0, 4).map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '' : L.diff === 0 ? '오늘' : L.diff === 1 ? '내일' : `D-${L.diff}`;
