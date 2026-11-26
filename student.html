@@ -2975,7 +2975,7 @@ function openVillage(opts){
     if (panel.style.display !== 'block') return;
     const H = hanaInfo || {}, lv = H.lv || 0, th = [0, 20, 60, 120, 200, 320], cur = th[lv], nx = th[lv + 1];
     const pct = nx ? Math.round(((H.aff || 0) - cur) / (nx - cur) * 100) : 100;
-    const rank = (H.rank || []).map((r, i) => `${['🥇', '🥈', '🥉', '4', '5'][i]} ${escV(r.n)} (${r.p})`).join(' · ') || '아직 없어요';
+    const rank = (H.rank || []).filter(r => !isTch(r.n)).slice(0, 5).map((r, i) => `${['🥇', '🥈', '🥉', '4', '5'][i]} ${escV(r.n)} (${r.p})`).join(' · ') || '아직 없어요';
     const myLv = (opts.me && opts.me.lv) || 1, canDress = myLv >= 5 || /(쌤|샘|선생님)$/.test(meName || '');
     let body = '';
     if (!opts.me || opts.viewOnly) body = `<div class="hint" style="text-align:center;">학생 페이지에서 로그인하면 하나와 놀 수 있어요</div>`;

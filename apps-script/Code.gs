@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 57;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 58;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -1553,7 +1553,7 @@ function hanaLook_() { try { return JSON.parse(props_().getProperty('hanaLook') 
 function hanaOf_(name) { try { return JSON.parse(props_().getProperty('hana:' + name) || '{}'); } catch (e) { return {}; } }
 function hanaRank_() {
   const all = props_().getProperties(), out = [];
-  Object.keys(all).forEach(function (k) { if (k.indexOf('hana:') === 0) { try { out.push({ n: k.slice(5), p: JSON.parse(all[k]).p || 0 }); } catch (e) {} } });
+  Object.keys(all).forEach(function (k) { if (k.indexOf('hana:') === 0 && !isTeacherName_(k.slice(5))) { try { out.push({ n: k.slice(5), p: JSON.parse(all[k]).p || 0 }); } catch (e) {} } });   // 👑 선생님은 순위에서 빠져요
   return out.sort(function (a, b) { return b.p - a.p; }).slice(0, 5);
 }
 function hanaLvOf_(p) { let lv = 0; HANA_LV.forEach(function (t, i) { if (p >= t) lv = i; }); return lv; }
