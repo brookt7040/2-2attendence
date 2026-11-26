@@ -927,6 +927,9 @@ body.view-mode .mh-side.empty{display:none !important;}
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
 #bootOv.hide{opacity:0;pointer-events:none;}
+#rcodeBar{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:19990;display:flex;align-items:center;gap:14px;padding:6px 22px;border:3px solid #2B1B4F;border-top:0;border-radius:0 0 20px 20px;background:linear-gradient(90deg,#B388FF,#7CF2C9);color:#2B1B4F;box-shadow:0 5px 0 rgba(43,27,79,.35);white-space:nowrap;}
+#rcodeBar .rc-t{font-size:1.05rem;font-weight:bold;} #rcodeBar .rc-n{font-size:.85rem;opacity:.8;}
+#rcodeBar .rc-c{display:flex;gap:5px;} #rcodeBar .rc-c i{font-style:normal;font-size:2rem;line-height:1;background:#FFFFFF;border:3px solid #2B1B4F;border-radius:10px;padding:2px 8px;box-shadow:0 3px 0 #2B1B4F;}
 
 /* 🐾 로딩 화면 (접속 중 화면과 같은 모양) */
 .ldBox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:26px 12px;margin:6px 0;border-radius:16px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.15rem;text-align:center;word-break:keep-all;}
@@ -944,6 +947,7 @@ body.view-mode .mh-side.empty{display:none !important;}
 @keyframes bootHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes bootDot{0%,60%,100%{opacity:.2}30%{opacity:1}}
 </style>
+<div id="rcodeBar" style="display:none;"></div>
 <div id="bootOv" style="display:none;"><div class="bp">🐾</div><div>접속 중<span class="bd"><span>.</span><span>.</span><span>.</span></span></div><small>우리 반 정보를 불러오고 있어요</small></div>
 <script>if (/[?&]view=1/.test(location.search)) document.getElementById('bootOv').style.display = 'flex';</script>
 
@@ -1142,6 +1146,7 @@ body.view-mode .mh-side.empty{display:none !important;}
     <h2>🚨 잠깐! 원격 출석이에요</h2>
     <div class="form-hint" style="font-size:1rem;line-height:1.7;">교실 TV 출석부를 <b>직접 누르는 게 아니에요.</b><br>진짜 <b>교실 안</b>에 도착했나요? <span style="color:#C0365C;">집 · 버스 · 편의점 · 복도는 안 돼요 </span><br>📺 교실 화면에 <b>"원격 출석"</b>이라고 크게 떠요.</div>
     <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0;font-size:1.05rem;"><input type="checkbox" id="rOathChk" style="width:22px;height:22px;"> ✋ 저는 지금 <b>교실 안</b>에 있어요. 맹세해요!</label>
+    <input type="text" id="rOathCode" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="교실 화면 맨 위 코드 4자리" style="width:100%;font-size:1.3rem;text-align:center;letter-spacing:.3em;margin-bottom:10px;font-family:inherit;padding:8px;border:3px solid var(--ink);border-radius:12px;">
     <button type="button" class="btn btn-y" id="rOathGo" disabled style="width:100%;">📱 맹세하고 출석하기</button></div>
 </div>
 <div class="overlay" id="cleanAddOv">
@@ -1459,6 +1464,13 @@ body.view-mode .mh-side.empty{display:none !important;}
       <div class="form-group">
         <label>🔔 출석 마감 시각 = 1차 알람 시각</label>
         <input type="time" id="lateTimeInput">
+      </div>
+      <div class="form-group">
+        <label>🔢 원격 출석 코드 (2차 확인)</label>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;"><label style="display:flex;gap:4px;align-items:center;font-weight:normal;"><input type="checkbox" id="rcOnInput"> 켜기</label>
+          <input type="time" id="rcStartInput" style="width:auto;"> ~ <input type="time" id="rcEndInput" style="width:auto;">
+          <select id="rcStepInput" style="width:auto;"><option value="3">3분마다</option><option value="5">5분마다</option><option value="10">10분마다</option></select></div>
+        <div class="form-hint">켜면 이 시간 동안 교실 출석부 맨 위에 4자리 코드가 떠요 (학생용 출석부·학생 앱에는 안 떠요). 원격 출석은 코드를 입력해야 되고, 이 시간 밖에서는 원격 출석이 안 돼요. 지각 유예 시간까지 넉넉히 잡아 주세요.</div>
       </div>
     </div>
 
@@ -2534,27 +2546,44 @@ function showStTab(k){ try { renderSrvVer(); } catch(e){}
 let rName = '';
 function remoteStart(name){
   if (todayData()[name]) return;
-  requireKidPin(name, () => { rName = name; $('rOathChk').checked = false; $('rOathGo').disabled = true; $('rOathOv').style.display = 'flex'; }, null, `📱 ${name} 원격 출석`);
+  requireKidPin(name, () => { rName = name; $('rOathCode').value = ''; $('rOathChk').checked = false; $('rOathGo').disabled = true; $('rOathOv').style.display = 'flex'; }, null, `📱 ${name} 원격 출석`);
 }
 async function remoteGo(){
   if (!kidAuth || kidAuth.name !== rName) return;
   const b = $('rOathGo'); b.disabled = true; b.textContent = '출석하는 중…';
   try {
-    const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: rName, pin: kidAuth.pin, op:'checkin' }) });
+    const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: rName, pin: kidAuth.pin, op:'checkin', code: $('rOathCode').value.trim() }) });
     const j = await r.json();
+    if (j.ok && ['code', 'badcode'].includes(j.error)){ showToast(j.error === 'code' ? '🔢 교실 화면 맨 위의 코드 4자리를 적어 주세요' : '🔢 코드가 달라요. 교실 화면 맨 위 코드를 다시 확인해요'); $('rOathCode').focus(); return; }
     $('rOathOv').style.display = 'none'; kidAuth = null;
+    if (j.ok && j.error === 'window'){ showToast(`📱 원격 출석은 ${j.start}~${j.end}에만 돼요. 교실 출석부를 직접 눌러 주세요`); return; }
     if (!j.ok){ showToast(j.error === 'sleep' ? '💤 지금은 출석할 수 없는 시간이에요' : '다시 해 주세요'); return; }
     if (j.error === 'already'){ showToast('이미 출석했어요 '); return; }
     if (!j.done && !j.error){ showToast('지금은 원격 출석을 쓸 수 없어요. 교실 TV에서 눌러 주세요'); return; }
     showToast(j.error === 'pending' ? '이미 출석 신청했어요 ⏳' : `📱 출석 신청 완료! (${j.at || ''}) 교실 출석부에 곧 기록돼요`);
   } catch(e){ showToast('연결이 안 돼요. 다시 눌러 주세요'); }
-  finally { b.textContent = '📱 맹세하고 출석하기'; }
+  finally { b.textContent = '📱 맹세하고 출석하기'; b.disabled = !$('rOathChk').checked; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 58;
+const NEED_API = 59;
 /* 🐾 로딩 화면 조각: LD('🐾', '접속 중', '우리 반 정보를 불러오고 있어요') */
 function LD(icon, title, sub, cls){ return `<div class="${cls || 'ldBox'}"><div class="bp">${icon}</div><div>${title}<span class="bd"><span>.</span><span>.</span><span>.</span></span></div>${sub ? `<small>${sub}</small>` : ''}</div>`; }
 window.LD = LD;
+/* 🔢 원격 출석 코드 (교실 출석부 맨 위 · 학생용 출석부에는 안 떠요) — Code.gs 의 rcodeAt_ 와 같은 계산 */
+let rcode = null; try { rcode = JSON.parse(localStorage.getItem('nyangRcode') || 'null'); } catch(e){}
+function rcodeCfg(){ const c = rcode || {}; return { on: c.on !== false, start: c.start || '08:00', end: c.end || '09:00', step: Math.max(1, Number(c.step) || 5), secret: c.secret || '' }; }
+function rcHash(s){ let h = 2166136261; for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return (h % 100000) / 100000; }
+function rcMin(t){ const p = String(t || '0:0').split(':'); return (Number(p[0]) || 0) * 60 + (Number(p[1]) || 0); }
+function rcodeTick(){
+  const bar = $('rcodeBar'); if (!bar) return;
+  const c = rcodeCfg(), now = new Date(), m = now.getHours() * 60 + now.getMinutes(), s0 = rcMin(c.start), e0 = rcMin(c.end);
+  if (VIEW || !c.on || !c.secret || m < s0 || m >= e0){ bar.style.display = 'none'; return; }
+  const slot = Math.floor((m - s0) / c.step), code = String(1000 + Math.floor(rcHash(c.secret + ':' + getTodayStr() + ':' + slot) * 9000));
+  const nextMin = s0 + (slot + 1) * c.step, left = Math.max(0, (nextMin * 60) - (m * 60 + now.getSeconds()));
+  bar.style.display = 'flex';
+  bar.innerHTML = `<span class="rc-t">📱 원격 출석 코드</span><b class="rc-c">${code.split('').map(d => `<i>${d}</i>`).join('')}</b><span class="rc-n">${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} 뒤 바뀌어요</span>`;
+}
+setInterval(rcodeTick, 1000);
 let serverRev = 0;
 function renderSrvVer(){
   const sv = $('srvVer'); if (!sv) return;
@@ -4518,6 +4547,7 @@ function openAdminUI(){
   $('mainTitleInput').value = db.mainTitle || '';
   $('studentNamesInput').value = db.students.join('\n');
   $('lateTimeInput').value = db.lateTimeSetting;
+  { const rc = rcodeCfg(); $('rcOnInput').checked = rc.on; $('rcStartInput').value = rc.start; $('rcEndInput').value = rc.end; $('rcStepInput').value = String(rc.step); }
   { const tt = ttCfg(); $('ttTimesInput').value = tt.times.map(x => `${x.name} ${x.start}-${x.end}`).join('\n'); for (let d = 1; d <= 5; d++) $('ttSubj' + d).value = (tt.subj[d] || []).join(', '); }
   TIER_FIELDS.forEach(k => $(k).value = db.expTiers[k]);
   $('sfxInput').checked = !!db.sfx;
@@ -4586,6 +4616,8 @@ async function saveAdminData(){
   db.mainTitle = $('mainTitleInput').value.trim() || DEFAULT_TITLE;
   db.students = students;
   db.lateTimeSetting = late;
+  { const c = { on: $('rcOnInput').checked, start: $('rcStartInput').value || '08:00', end: $('rcEndInput').value || '09:00', step: Number($('rcStepInput').value) || 5 };
+    if (JSON.stringify(c) !== JSON.stringify((({ on, start, end, step }) => ({ on, start, end, step }))(rcodeCfg()))){ rcode = Object.assign({}, rcode || {}, c); try { localStorage.setItem('nyangRcode', JSON.stringify(rcode)); } catch(e){} if (sync.url) syncOp({ op:'rcodeSet', cfg: c }); } }
   { const times = parseTtTimes($('ttTimesInput').value), subj = {};
     for (let d = 1; d <= 5; d++) subj[d] = $('ttSubj' + d).value.split(/[,，\s]+/).map(x => x.trim()).filter(Boolean).slice(0, 10);
     db.timetable = { times, subj, chg: (db.timetable || {}).chg || {} }; }
@@ -4868,6 +4900,7 @@ async function pullSync(force){
     sync.needKey = !!j.needKey;
     if (j.api && j.api > sync.api){ sync.api = j.api; saveSync(); }
     if (j.api) checkServerRev(j.api);
+    if (j.rcode && j.rcode.secret){ rcode = j.rcode; try { localStorage.setItem('nyangRcode', JSON.stringify(rcode)); } catch(e){} }
     if (j.strikes) applyStrikes(j.strikes, j.strikeFeed || []);
     if (j.megaMin) megaMinNow = j.megaMin;
     if (j.presence){ serverPresence = j.presence; if ($('presOv').style.display === 'flex') $('presBody').innerHTML = presenceHTML(serverPresence, kids()); }

@@ -692,6 +692,7 @@ html.off-chat .ch-in,html.off-chat .ch-quick{display:none !important;}
       <p>📺 교실 화면에 <b>"원격 출석"</b>이라고 크게 떠요.<br><span class="soft">교실에 없으면… 각오해라냥 😾</span></p>
     </div>
     <label class="oath-chk"><input type="checkbox" id="oathChk"><span>✋ 저는 지금 <b>교실 안</b>에 있어요. 맹세해요!</span></label>
+    <input type="text" id="oathCode" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="교실 화면 맨 위 코드 4자리" style="width:100%;font-size:1.3rem;text-align:center;letter-spacing:.3em;margin:0 0 10px;font-family:inherit;padding:8px;border:3px solid var(--ink);border-radius:12px;">
     <button type="button" class="btn btn-y" id="oathGo" disabled>맹세하고 출석하기</button>
   </div>
 </div>
@@ -4293,12 +4294,14 @@ function renderCheckin(fresh){
   if (checkinSent === todayStr()){ box.innerHTML = '<div class="checkin wait">📱 출석 신청 완료! 교실 출석부에 곧 기록돼요 ⏳</div>'; return; }
   box.innerHTML = '<button type="button" class="checkin go" id="checkinBtn">📱 출석하기 <small>교실에 도착했으면 눌러요</small></button>';
 }
-function openOath(){ $('oathChk').checked = false; $('oathGo').disabled = true; $('oathOv').style.display = 'flex'; }
+function openOath(){ $('oathCode').value = ''; $('oathChk').checked = false; $('oathGo').disabled = true; $('oathOv').style.display = 'flex'; }
 async function doCheckin(){
   $('oathGo').disabled = true; $('oathGo').textContent = '출석하는 중…';
   try {
-    const j = await studentCall('checkin');
+    const j = await studentCall('checkin', { code: $('oathCode').value.trim() });
+    if (j && j.ok && ['code', 'badcode'].includes(j.error)){ toast(j.error === 'code' ? '🔢 교실 화면 맨 위의 코드 4자리를 적어 주세요' : '🔢 코드가 달라요. 교실 화면 맨 위 코드를 다시 확인해요'); $('oathCode').focus(); return; }
     $('oathOv').style.display = 'none';
+    if (j && j.ok && j.error === 'window'){ toast(`📱 원격 출석은 ${j.start}~${j.end}에만 돼요. 교실 출석부를 직접 눌러 주세요`); return; }
     if (!j.ok){ toast('다시 로그인해 주세요'); return; }
     if (j.error === 'already'){ toast('이미 출석했어요 '); refreshMe(true).then(render); return; }
     if (!j.done && !j.error){ alert('⚠️ 아직 원격 출석을 쓸 수 없어요.\n(선생님이 서버를 업데이트해야 해요)\n교실 출석부 화면에서 직접 눌러 주세요!'); return; }
@@ -4307,7 +4310,7 @@ async function doCheckin(){
     render();
     setTimeout(() => refreshMe(true).then(render), 25000);
   } catch(e){ toast('연결이 안 돼요. 다시 눌러 주세요'); }
-  finally { $('oathGo').textContent = '✋ 맹세하고 출석하기'; }
+  finally { $('oathGo').textContent = '✋ 맹세하고 출석하기'; $('oathGo').disabled = !$('oathChk').checked; }
 }
 /* 🪪 내 냥이 카드 (자기소개) */
 const PROFILE_FORM = [

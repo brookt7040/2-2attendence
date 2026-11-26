@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 58;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 59;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -419,6 +419,7 @@ function teacherPull_(body, auth) {
   const v = version_();
   const res = { ok: true, api: API_VERSION, now: Date.now(), v: v, needKey: auth.needKey, notices: readNotices_(), closing: readList_(CLOSING_SHEET, CLOSING_HEADER), urgent: readList_(URGENT_SHEET, URGENT_HEADER), meeting: readMeeting_() };
   if (body.remoteOk) { res.remote = claimRemote_(); res.expq = claimExp_(); }
+  res.rcode = rcodeCfg_();
   res.lockdown = props_().getProperty('lockdown') === '1';
   res.meal = mealData_(); res.hw = hwData_(); res.reload = reloadInfo_(); res.mealEn = menuEnToday_(); res.menuTrN = readMenuTr_(function (x) { return x.status === '대기'; }).length; res.story = storyPub_();
   res.mega = megaList_(); res.hanaLook = hanaLook_(); res.butler = butlerToday_(); res.banners = todayList_('banners'); res.songs = todayList_('songs');
@@ -608,6 +609,7 @@ function handlePost_(body, auth) {
           props_().setProperty('expq', JSON.stringify(q.filter(function (x) { return ids.indexOf(String(x.id)) < 0; })));
           break;
         }
+        case 'rcodeSet': { const c0 = rcodeCfg_(), c = o.cfg || {}; props_().setProperty('rcode', JSON.stringify({ on: c.on !== false, start: /^\d{1,2}:\d{2}$/.test(c.start) ? c.start : c0.start, end: /^\d{1,2}:\d{2}$/.test(c.end) ? c.end : c0.end, step: Math.max(1, Math.min(30, Number(c.step) || 5)), secret: c0.secret })); break; }   // 🔢 원격 출석 코드 설정
         case 'remoteAdd': {                    // 선생님이 대신 원격 출석 (교실 출석부가 등급을 계산해요)
           const ds = todayStr_(), list = remoteList_(), recs = ((map['day:' + ds] || {}).records) || {};
           if (!recs[o.name] && !list.some(function (x) { return x.n === o.name && !x.done; })) { list.push({ n: String(o.name), ts: Date.now(), ds: ds }); props_().setProperty('remote', JSON.stringify(list)); }
@@ -839,7 +841,7 @@ function handleStudentCore_(body) {
     const db = readRows_(), map = db.map;
     const pub = map.pub || {}, priv = (pub.priv || {})[name] || null;
     const ds = todayStr_();
-    if (body.op === 'checkin') return studentCheckin_(name, map);
+    if (body.op === 'checkin') return studentCheckin_(name, map, body);
     if (body.op === 'look') {
       const lv = priv ? priv.lv : 1;
       map.config = map.config || {};
@@ -896,12 +898,28 @@ function claimRemote_() {
     return out.map(function (x) { return { n: x.n, ts: x.ts }; });
   } finally { lock.releaseLock(); }
 }
-function studentCheckin_(name, map) {
+/* 🔢 원격 출석 코드: 정한 시간 동안 N분마다 바뀌는 4자리 (교실 출석부 맨 위에만 떠요) */
+function rcodeCfg_() {
+  let c = {}; try { c = JSON.parse(props_().getProperty('rcode') || '{}') || {}; } catch (e) {}
+  if (!c.secret) { c.secret = Utilities.getUuid(); props_().setProperty('rcode', JSON.stringify(c)); }
+  return { on: c.on !== false, start: c.start || '08:00', end: c.end || '09:00', step: Math.max(1, Number(c.step) || 5), secret: c.secret };
+}
+function hmMin_(t) { const p = String(t || '0:0').split(':'); return (Number(p[0]) || 0) * 60 + (Number(p[1]) || 0); }
+function rcodeSlot_(cfg) { const m = hmMin_(Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm')), s = hmMin_(cfg.start), e = hmMin_(cfg.end); return m < s || m >= e ? -1 : Math.floor((m - s) / cfg.step); }
+function rcodeAt_(cfg, slot) { return String(1000 + Math.floor(hashF_(cfg.secret + ':' + todayStr_() + ':' + slot) * 9000)); }
+function studentCheckin_(name, map, body) {
   const ds = todayStr_();
   const day = map['day:' + ds] || {}, recs = day.records || {};
   if (recs[name]) return { ok: true, error: 'already' };
   const list = remoteList_();
   if (list.some(function (x) { return x.n === name && !x.done; })) return { ok: true, error: 'pending' };
+  const rc = rcodeCfg_();
+  if (rc.on && !isTeacherName_(name)) {           // 🔢 2차 확인: 교실 화면의 코드 (방금 전 코드까지 인정)
+    const sl = rcodeSlot_(rc), code = String((body || {}).code || '').trim();
+    if (sl < 0) return { ok: true, error: 'window', start: rc.start, end: rc.end };
+    if (!code) return { ok: true, error: 'code' };
+    if (code !== rcodeAt_(rc, sl) && !(sl > 0 && code === rcodeAt_(rc, sl - 1))) return { ok: true, error: 'badcode' };
+  }
   list.push({ n: name, ts: Date.now(), ds: ds });
   props_().setProperty('remote', JSON.stringify(list));
   bump_();
