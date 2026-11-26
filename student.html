@@ -91,8 +91,7 @@ html.agit .tab{min-width:0;}
 #catOv .idc-status{display:inline-block;background:#fff;border:2px solid #5B4636;border-radius:12px;padding:2px 10px;margin:2px 0 6px;font-size:.95rem;}
 #catOv .idc-motto{border-top:2px dashed #5B4636;padding:8px 12px;font-size:1rem;}
 .shop-tabs.sub{margin-top:-2px;} .shop-tabs.sub button{font-size:.85rem;padding:3px 10px;}
-.tab.tab-ask{flex:0 0 auto;min-width:0;order:99;margin-left:auto;width:46px;height:46px;padding:0;font-size:0;border-width:2px;border-radius:50%;box-shadow:0 2px 0 var(--ink);background:#FFF0F4;align-self:center;}   /* 💌 to. 시내T: 오른쪽 끝 작은 동그라미 */
-.tab.tab-ask::before{content:'💌';font-size:1.3rem;} .tab.tab-ask.active{background:#FFD3E0;}
+.tab.tab-ask{order:99;}   /* 💬 우리 반 광장: 맨 오른쪽 */
 .nb-pub{position:relative;} .nb-edit{position:absolute;top:8px;right:10px;border:none;background:none;font-size:1.05rem;opacity:.35;cursor:pointer;padding:4px;} .nb-edit:hover{opacity:1;}
 html.agit .nb-edit{display:none;} .nbe-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;} .nbe-chips button{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:3px 10px;cursor:pointer;} .nbe-chips button.on{background:var(--lav);}
 .mg-coin{text-align:center;font-size:1.05rem;margin:-4px 0 10px;color:var(--ink-soft);}
@@ -459,6 +458,13 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 
 .ms-rule{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#FFF3C4;padding:2px 10px;font-size:.85rem;cursor:pointer;color:var(--ink);}
 .mr-sec{background:#FFFDF6;border:2px dashed #E8C35A;border-radius:14px;padding:8px 12px;margin:8px 0;line-height:1.6;word-break:keep-all;} .mr-sec ul{margin:4px 0 0;padding-left:1.2rem;}
+
+.pl-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;} .pl-cats button,.pl-mode button{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:4px 12px;cursor:pointer;color:var(--ink);font-size:.95rem;}
+.pl-cats button.on{background:#FFE58A;} .pl-cats.sm button{font-size:.85rem;padding:2px 10px;border-width:1.5px;}
+.pl-mode{display:flex;gap:6px;margin-top:8px;} .pl-mode button{flex:1;border-radius:12px;} .pl-mode button.on{background:#E4F7EA;}
+#plText{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;}
+.pl-tag{background:#FFF3C4;border:1.5px solid #E8C35A;border-radius:999px;padding:0 8px;font-size:.82rem;color:var(--ink);}
+.pl-reply{margin-top:6px;background:#F1ECFF;border-left:0;border:2px solid #B9A6E8;border-radius:12px;padding:6px 10px;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -491,7 +497,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
     <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
     <button type="button" class="tab active" data-tab="notice">📢 공지사항<span class="dot" id="dotNotice"></span></button>
-    <button type="button" class="tab tab-ask" data-tab="ask" title="to. 시내T (질문 · 건의 · 상담)">💌 to. 시내T</button>
+    <button type="button" class="tab tab-ask" data-tab="ask" title="우리 반 광장 (자유 게시판 · 의견함)">💬 우리 반 광장</button>
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
 
@@ -510,17 +516,17 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-ask">
-    <div class="guest-only box guest-box"><div class="ask-guest-msg"><p>🔑 로그인하면 시내T에게 질문 · 건의 · 상담을 보낼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
+    <div class="guest-only box guest-box"><div class="ask-guest-msg"><p>🔑 로그인하면 우리 반 광장에서 글을 보고 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
       <div class="box-head pink" style="margin-top:16px;">📨 로그인이 안 될 때</div><div id="sosTeacher"></div></div>
-    <div class="box ask-off-box"><div class="empty" style="line-height:1.7;">💌 <b>to. 시내T</b>는 지금 잠시 쉬고 있어요<br><small>불편한 일이 있으면 💬 대화 말풍선이나 🪪 냥이 카드의 <b>🚨 신고</b>를 눌러요</small></div></div>
-    <div class="subs" data-for="ask"><button type="button" data-sub="q"><i class="se">❓ </i>질문</button><button type="button" data-sub="s"><i class="se">💡 </i>건의</button><button type="button" data-sub="c"><i class="se">💬 </i>상담</button></div>
-    <div class="box ns" data-sec="q s"><div class="box-head mint" id="askHead">❓ 질문</div><div id="askBox"></div></div>
-    <div class="box ns" data-sec="c"><div class="box-head lav">💬 상담</div><div id="counselBox"></div></div>
+    <div class="box ask-off-box"><div class="empty" style="line-height:1.7;">💬 <b>우리 반 광장</b>은 지금 잠시 쉬고 있어요<br><small>불편한 일이 있으면 💬 대화 말풍선이나 🪪 냥이 카드의 <b>🚨 신고</b>를 눌러요</small></div></div>
+    <div class="subs" data-for="ask"><button type="button" data-sub="free"><i class="se">💬 </i>자유 게시판</button><button type="button" data-sub="op"><i class="se">💡 </i>의견함</button></div>
+    <div class="box ns" data-sec="free op"><div class="box-head mint" id="plHead">💬 자유 게시판</div><div id="plCompose"></div></div>
+    <div class="box ns" data-sec="free op"><div id="plBar"></div><div id="plList"><div class="empty">불러오는 중…</div></div></div>
   </section>
 
   <section class="panel" id="p-village">
     <div class="guest-only box guest-box"><p>🔑 마을은 로그인하면 들어갈 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button>
-      <div class="hint" style="margin-top:10px;">로그인이 안 되면 <b>💌 to. 시내T</b> 탭에서 연락해요</div></div>
+      <div class="hint" style="margin-top:10px;">로그인이 안 되면 <b>💬 우리 반 광장</b> 탭에서 연락해요</div></div>
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button> <button type="button" class="btn btn-mint" id="ideaOpen" style="font-size:1.1rem;padding:10px 20px;">💡 마을 개선 의견</button>
       <div class="hint" style="margin-top:6px;">땅을 눌러 걷고, 이모트와 말풍선으로 인사해요. 게임 광장도 있어요!</div></div>
     <div class="ticker mega" id="megaTicker" style="display:none;" title=""><span id="megaText"></span></div>
@@ -2992,12 +2998,13 @@ function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}ind
 let ideas = [], ideaSort = 'new', ideaT = false, ideaReveal = {};
 const IDEA_HINT = { name:'친구들에게 내 이름이 보여요', anon:'친구들에게는 "익명"으로 보여요 (선생님은 누군지 알 수 있어요)', secret:'🔒 선생님만 볼 수 있어요. 친구들에게는 안 보여요' };
 async function ideaCall(op, extra){
-  try { const j = await studentCall(op, extra); if (j && j.ok !== false){ ideas = j.ideas || []; ideaT = !!j.teacher; renderIdeas(); } return j; }
+  try { const j = await studentCall(op, extra); if (j && j.ok !== false){ ideas = j.ideas || []; ideaT = !!j.teacher; renderIdeas(); renderPlaza(); } return j; }
   catch(e){ toast('연결이 안 돼요'); return null; }
 }
 const IDEA_EX = ['마을에 수영장이 있으면 좋겠어요 🏊', '하나랑 숨바꼭질 게임 만들어 주세요', '내 집에 둘 수 있는 가구가 더 많았으면!', '낚시에서 전설 물고기 나오게 해 주세요 🎣', '친구 집에 놀러 가는 기능 있으면 좋겠어요', '마을 밤 모드(별 뜨는 거) 만들어 주세요 🌙', '게임 광장에서 ○○ 게임이 잘 안 돼요 (고장 제보)', '생일인 친구 집에 풍선 달아 주세요 🎈'];
 function openIdeas(){ if (!me){ openLogin(); return; } { const a = Math.floor(Math.random() * IDEA_EX.length); let b = Math.floor(Math.random() * (IDEA_EX.length - 1)); if (b >= a) b++; $('ideaText').placeholder = `예) ${IDEA_EX[a]}\n예) ${IDEA_EX[b]}`; } $('ideaErr').textContent = ''; $('ideaOv').style.display = 'flex'; $('ideaList').innerHTML = '<div class="empty">불러오는 중…</div>'; ideaCall('ideaList'); }
 function renderIdeas(){
+  if (!$('ideaList')) return;
   document.querySelectorAll('[data-isort]').forEach(b => b.classList.toggle('on', b.dataset.isort === ideaSort));
   const list = ideas.slice(); if (ideaSort === 'like') list.sort((a, b) => b.n - a.n || b.id - a.id);
   $('ideaList').innerHTML = list.length ? list.map(x => {
@@ -3005,6 +3012,57 @@ function renderIdeas(){
     return `<div class="idea ${x.secret ? 'secret' : ''} ${x.mine ? 'mine' : ''}"><div class="ih"><b>${who}</b>${x.secret ? '<span>🔒 비밀 제보</span>' : ''}<span style="margin-left:auto;">${esc(String(x.t).slice(5, 16))}</span></div>
       <div class="it">${esc(x.text)}</div><div class="if">${x.mine || ideaT ? `<button type="button" class="idel" data-idel="${x.id}">🗑 지우기</button>` : ''}${x.secret ? '' : `<button type="button" class="like ${x.liked ? 'on' : ''}" data-ilike="${x.id}">❤️ ${x.n}</button>`}</div></div>`;
   }).join('') : '<div class="empty">아직 의견이 없어요. 첫 의견을 올려 보자! 💡</div>';
+}
+/* 💬 우리 반 광장: 💬 자유 게시판(모두) · 💡 의견함(출석부·고양이·상점·마을·질문·기타 · 이름/익명/🔒 선생님만) */
+const PL_CATS = [['board', '📋 출석부'], ['cat', '🐱 고양이'], ['shop', '🛒 상점'], ['village', '🏘️ 마을'], ['q', '❓ 질문'], ['etc', '💭 기타']];
+const PL_EX = { free:'오늘 있었던 일, 하고 싶은 말을 자유롭게 써요 ✏️', board:'예) 출석할 때 효과음 더 넣어 주세요', cat:'예) 고양이 모자 더 많았으면 좋겠어요', shop:'예) 확성기 1분짜리도 있으면 좋겠어요', village:'예) 마을에 수영장이 있으면 좋겠어요 🏊', q:'예) 미션은 몇 시에 바뀌어요?', etc:'무엇이든 적어요' };
+let plCat = 'board', plFilter = 'all', plMode = 'name', plDraft = '';
+function plSub(){ return subNow.ask === 'op' ? 'op' : 'free'; }
+function renderPlaza(compose){
+  const box = $('plList'); if (!box || !me) return;
+  const sub = plSub(), T = ideaT;
+  if ($('plHead')) $('plHead').textContent = sub === 'op' ? '💡 의견함' : '💬 자유 게시판';
+  if (compose !== false && $('plCompose') && (compose || !$('plText'))){
+    if ($('plText')) plDraft = $('plText').value;
+    if (sub === 'free' && plMode === 'secret') plMode = 'name';
+    const modes = [['name', '🙂 이름'], ['anon', '🙈 익명']].concat(sub === 'op' ? [['secret', '🔒 선생님만']] : []);
+    $('plCompose').innerHTML = `${sub === 'op' ? `<div class="pl-cats">${PL_CATS.map(([k, n]) => `<button type="button" data-plcat="${k}" class="${plCat === k ? 'on' : ''}">${n}</button>`).join('')}</div>` : '<div class="hint" style="margin-bottom:6px;">모두가 보는 게시판이에요. 친구를 기분 나쁘게 하는 글은 안 돼요 🙅</div>'}
+      <textarea id="plText" rows="3" maxlength="300" placeholder="${esc(PL_EX[sub === 'op' ? plCat : 'free'])}">${esc(plDraft)}</textarea>
+      <div class="pl-mode">${modes.map(([k, n]) => `<button type="button" data-plmode="${k}" class="${plMode === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="hint" id="plHint">${IDEA_HINT[plMode]}</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;"><span id="plErr" style="color:#D6456E;flex:1;"></span><button type="button" class="btn btn-y" id="plSend">✏️ 올리기</button></div>`;
+  }
+  let list = ideas.filter(x => sub === 'free' ? x.cat === 'free' : x.cat !== 'free' && (plFilter === 'all' || x.cat === plFilter));
+  if (ideaSort === 'like') list = list.slice().sort((a, b) => b.n - a.n || b.id - a.id);
+  $('plBar').innerHTML = `<div class="pl-bar">${sub === 'op' ? `<div class="pl-cats sm">${[['all', '🗂️ 전체']].concat(PL_CATS).map(([k, n]) => `<button type="button" data-plf="${k}" class="${plFilter === k ? 'on' : ''}">${n}</button>`).join('')}</div>` : ''}
+    <div class="idea-sort" style="margin-top:6px;border:0;padding-top:0;"><button type="button" data-plsort="new" class="${ideaSort === 'new' ? 'on' : ''}">🆕 최신</button><button type="button" data-plsort="like" class="${ideaSort === 'like' ? 'on' : ''}">❤️ 공감</button></div></div>`;
+  const CN = Object.fromEntries(PL_CATS);
+  box.innerHTML = list.length ? list.map(x => {
+    const who = x.mine ? `나${x.anon ? ' (익명)' : ''}` : (x.anon ? (T ? `<span class="anon-who" data-reveal="${x.id}" title="눌러서 누군지 보기">${ideaReveal[x.id] ? '🙈 ' + esc(x.real || '') : '🙈 익명'}</span>` : '🙈 익명') : esc(x.from));
+    return `<div class="idea ${x.secret ? 'secret' : ''} ${x.mine ? 'mine' : ''}"><div class="ih">${x.cat !== 'free' ? `<span class="pl-tag">${CN[x.cat] || ''}</span>` : ''}<b>${who}</b>${x.secret ? '<span>🔒 선생님만</span>' : ''}<span style="margin-left:auto;">${esc(String(x.t).slice(5, 16))}</span></div>
+      <div class="it">${esc(x.text)}</div>
+      ${x.reply ? `<div class="pl-reply">💌 <b>시내T</b> ${esc(x.reply)}</div>` : ''}
+      <div class="if">${T ? `<button type="button" class="idel" data-plreply="${x.id}">✍️ ${x.reply ? '답 고치기' : '답하기'}</button>` : ''}${x.mine || T ? `<button type="button" class="idel" data-idel="${x.id}">🗑 지우기</button>` : ''}${!x.mine && !T && !x.secret ? `<button type="button" class="idel" data-plrep="${x.id}">🚨 신고</button>` : ''}${x.secret ? '' : `<button type="button" class="like ${x.liked ? 'on' : ''}" data-ilike="${x.id}">❤️ ${x.n}</button>`}</div></div>`;
+  }).join('') : `<div class="empty">${sub === 'op' ? '아직 의견이 없어요. 첫 의견을 올려 보자! 💡' : '아직 글이 없어요. 첫 글을 써 보자! ✏️'}</div>`;
+}
+async function plSend(){
+  const text = ($('plText').value || '').trim(), sub = plSub();
+  if (!text){ $('plErr').textContent = '내용을 적어 주세요'; return; }
+  const b = $('plSend'); b.disabled = true;
+  const j = await ideaCall('ideaSend', { text, cat: sub === 'op' ? plCat : 'free', anon: plMode === 'anon', secret: sub === 'op' && plMode === 'secret' });
+  b.disabled = false; if (!j) return;
+  if (j.error){ $('plErr').textContent = j.error === 'slow' ? '조금 뒤에 다시 올려 주세요 (15초)' : '올리지 못했어요'; return; }
+  plDraft = ''; renderPlaza(true); toast(plMode === 'secret' ? '🔒 선생님께만 보냈어요' : '✏️ 올렸어요!');
+}
+function plazaClick(t){
+  const c = t.closest('[data-plcat]'); if (c){ plCat = c.dataset.plcat; renderPlaza(true); return true; }
+  const m = t.closest('[data-plmode]'); if (m){ plMode = m.dataset.plmode; renderPlaza(true); return true; }
+  const f = t.closest('[data-plf]'); if (f){ plFilter = f.dataset.plf; if (plFilter !== 'all') plCat = plFilter; renderPlaza(true); return true; }
+  const so = t.closest('[data-plsort]'); if (so){ ideaSort = so.dataset.plsort; renderPlaza(false); return true; }
+  if (t.closest('#plSend')){ plSend(); return true; }
+  const rp = t.closest('[data-plreply]'); if (rp){ const x = ideas.find(i => i.id === +rp.dataset.plreply); const v = prompt('💌 시내T 답 (비우면 답이 지워져요)', (x && x.reply) || ''); if (v !== null) ideaCall('ideaReply', { id: +rp.dataset.plreply, text: v.trim() }).then(j => { if (j && !j.error) toast('💌 답을 달았어요'); }); return true; }
+  const rr = t.closest('[data-plrep]'); if (rr){ const why = prompt('🚨 왜 신고하나요? (선생님만 봐요 · 장난 신고는 안 돼요)', ''); if (why !== null) ideaCall('ideaReport', { id: +rr.dataset.plrep, why: why.trim() }).then(j => { if (j) toast(j.error === 'slow' ? '조금 있다 다시 보내요 🐢' : j.error ? '보내지 못했어요' : '🚨 신고했어요. 선생님이 확인할게요'); }); return true; }
+  return false;
 }
 async function ideaSend(){
   const text = $('ideaText').value.trim(), m = (document.querySelector('[name=ideaM]:checked') || {}).value || 'name';
@@ -3045,13 +3103,13 @@ function sleepShow(cfg, on){ if (window.NyLock) NyLock.sleep(cfg, on); }
 if (window.NyLock) NyLock.api = () => API;
 let sleepCfgNow = null, closingAtNow = '';
 /* 📋 정해진 시각이 지나면 종례를 맨 위에 크게 */
-/* 📑 하위 탭: 공지사항(종례·알림·청소·급식·숙제) · to. 시내T(질문·건의·상담) */
-const subNow = { notice: '', ask: 'q' }, subPicked = {};
+/* 📑 하위 탭: 공지사항(종례·알림·청소·급식·숙제) · 우리 반 광장(자유 게시판·의견함) */
+const subNow = { notice: '', ask: 'free' }, subPicked = {};
 function showSub(panel, key){
   subNow[panel] = key;
   document.querySelectorAll(`.subs[data-for="${panel}"] button`).forEach(b => b.classList.toggle('on', b.dataset.sub === key));
   document.querySelectorAll(`#p-${panel} .ns`).forEach(x => x.classList.toggle('on', x.dataset.sec.split(' ').includes(key)));
-  if (panel === 'ask'){ const h = $('askHead'); if (h) h.textContent = key === 's' ? '💡 건의' : '❓ 질문'; if ($('askBox')) $('askBox').dataset.n = ''; renderAsk(); }
+  if (panel === 'ask') renderPlaza(true);
 }
 /* 📋 정해진 시각이 지나면 종례를 먼저 보여 줘요 (직접 고른 탭은 그대로) */
 function placeClosing(){
@@ -3524,6 +3582,7 @@ function hanaTalk(){
 function showTab(t){
   if (t === 'coin' && me) coinCall('coins');
   if (t === 'admin') tLoad();
+  if (t === 'ask' && me) ideaCall('ideaList');
   current = t;
   if (t === 'chat' && me) setTimeout(chatPull, 0);
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
@@ -3672,7 +3731,7 @@ async function openCat(s){
   const B = (act, ic, label) => `<button type="button" data-cmact="${act}">${ic}<small>${label}</small></button>`;
   $('catBtns').innerHTML = !me ? '<div class="cm-login">🔑 로그인하면 같이 놀 수 있어요<br><button type="button" class="btn btn-y" data-cmact="login" style="margin-top:8px;">로그인</button></div>'
     : mine ? `<div class="cm-g">${B('closet', '🎨', '꾸미기')}${B('myhouse', '🏠', '우리 집')}${B('mailbox', '📮', '내 편지함')}${B('card', '🪪', '냥이 카드')}</div>`
-    : T ? `<div class="cm-g">${B('troom', '👑', '시내T 방')}${B('ask', '💌', 'to. 시내T')}${B('card', '🪪', '냥이 카드')}</div>`
+    : T ? `<div class="cm-g">${B('troom', '👑', '시내T 방')}${B('ask', '💬', '우리 반 광장')}${B('card', '🪪', '냥이 카드')}</div>`
     : `<div class="cm-g" id="cmG">${B('card', '🪪', '냥이 카드')}${B('whisper', '🤫', '귓속말')}${B('mail', '💌', '편지 쓰기')}${B('house', '🏠', '놀러 가기')}${B('hi', '👋', '냥 인사')}</div>`;
   $('catOv').style.display = 'flex';
   if (me && !mine && !T){   // 📔 일기를 읽을 수 있으면 버튼 추가 · 👋 오늘 인사했으면 흐리게
@@ -4255,7 +4314,7 @@ function setAsStudent(on){
 }
 function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsStudent'); $('asStuBar').style.display = 'none'; tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
 /* 👑 관리 탭: 📮 소통 · 🎮 학생 앱 · 🛟 안전 (출석부·EXP·냥코인·비번·백업은 관리자 출석부 🖥) */
-const T_GROUPS = [['msg', '📮 소통', [['ask', '🚨 상담·질문'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
+const T_GROUPS = [['msg', '📮 소통', [['ask', '🚨 신고·연락'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
   ['app', '🎮 학생 앱', [['stucfg', '⚙️ 화면 설정'], ['show', '📢 마을 게시물'], ['free', '⏰ 쉬는 시간'], ['eng', '📚 영어 문제']]],
   ['safe', '🛟 안전', [['online', '🟢 접속 중'], ['safe', '🚫 잠금 · 비속어 · 초기화']]]];
 const T_TABS = T_GROUPS.flatMap(g => g[2]);
@@ -4292,7 +4351,7 @@ function tRender(){
         <div class="sc-kinds">${K.map(([k, l]) => `<label><input type="checkbox" data-sck="${k}" ${c.news.kinds[k] !== false ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <div class="box sc-box"><div class="box-head">📢 확성기</div><div class="hint">학생이 냥코인으로 사서 마을 · 교실 화면 맨 위에 띄워요</div>
         <label class="sc-row"><input type="checkbox" id="scMegaOn" ${c.mega.on ? 'checked' : ''}> 팔기 · <input type="number" id="scMegaMin" min="1" max="1440" value="${c.mega.min}"> 분 동안 보이기</label></div>
-      <div class="box sc-box"><div class="box-head">💌 to. 시내T</div><div class="hint">끄면 학생은 질문 · 건의 · 상담을 못 보내요 (로그인 안 될 때 연락은 그대로 · 신고는 대화 · 냥이 카드에서)</div>
+      <div class="box sc-box"><div class="box-head">💬 우리 반 광장</div><div class="hint">끄면 학생 화면에서 광장(자유 게시판 · 의견함)이 쉬어요 (로그인 안 될 때 연락은 그대로 · 신고는 대화 · 냥이 카드에서)</div>
         <label class="sc-row"><input type="checkbox" id="scAskOpen" ${c.askOpen ? 'checked' : ''}> 학생에게 열기</label></div>
       <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
         <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
@@ -4395,7 +4454,7 @@ async function tPoll(){
   try { const j = await tCall({ action:'asks' }); const n = (j.asks || []).filter(a => a.kind === '긴급' && !a.reply && !a.done && !a.del).length;
     if (n > tUrgent){ toast(`⭐ 중요 상담 ${n}건!`); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch(e){} }
     tUrgent = n; tDot(); if (current === 'admin' && tTab === 'ask'){ tData.asks = j.asks || []; tRender(); }
-    if (current === 'admin') document.querySelectorAll('[data-ttab="ask"]').forEach(b => b.textContent = '🚨 상담·질문' + (tUrgent ? ' 🔴' : ''));
+    if (current === 'admin') document.querySelectorAll('[data-ttab="ask"]').forEach(b => b.textContent = '🚨 신고·연락' + (tUrgent ? ' 🔴' : ''));
   } catch(e){}
 }
 function tPeriod(limit){ return limit === 'day' ? todayStr() : limit === 'week' ? weekStartS() : limit === 'once' ? 'all' : String(Date.now()) + Math.random().toString(36).slice(2, 5); }
@@ -4503,12 +4562,13 @@ document.addEventListener('click', e => {
       studentCall('wReport', { id: Number(w.dataset.wrep) }).then(j => toast(j && j.ok && !j.error ? (j.already ? '이미 신고한 귓속말이에요' : '🚨 신고했어요. 선생님이 확인할게요') : '다시 해 주세요')).catch(() => toast('연결이 안 돼요')); return; } }
   { const gs = t.closest('[data-gosub]'); if (gs){ subPicked.notice = true; showSub('notice', gs.dataset.gosub); window.scrollTo(0, 0); return; } }
   { const sb = t.closest('.subs [data-sub]'); if (sb){ const pn = sb.closest('.subs').dataset.for; subPicked[pn] = true; showSub(pn, sb.dataset.sub); return; } }
-  if (t.closest('#ideaOpen')){ openIdeas(); return; }
+  if (t.closest('#ideaOpen')){ plFilter = 'village'; plCat = 'village'; showTab('ask'); showSub('ask', 'op'); return; }
+  if (plazaClick(t)) return;
   if (t.closest('#ideaSend')){ ideaSend(); return; }
   { const x = t.closest('[data-isort]'); if (x){ ideaSort = x.dataset.isort; renderIdeas(); return; } }
   { const x = t.closest('[data-ilike]'); if (x){ ideaCall('ideaLike', { id: +x.dataset.ilike }); return; } }
-  { const x = t.closest('[data-idel]'); if (x){ if (confirm('이 의견을 지울까요?')) ideaCall('ideaDel', { id: +x.dataset.idel }); return; } }
-  { const x = t.closest('[data-reveal]'); if (x){ ideaReveal[x.dataset.reveal] = !ideaReveal[x.dataset.reveal]; renderIdeas(); return; } }
+  { const x = t.closest('[data-idel]'); if (x){ if (confirm('이 글을 지울까요?')) ideaCall('ideaDel', { id: +x.dataset.idel }); return; } }
+  { const x = t.closest('[data-reveal]'); if (x){ ideaReveal[x.dataset.reveal] = !ideaReveal[x.dataset.reveal]; renderIdeas(); renderPlaza(false); return; } }
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
   { const ca = t.closest('[data-cmact]'); if (ca){ catAct(ca.dataset.cmact, ca); return; } }
@@ -4622,7 +4682,7 @@ function bootDone(ok){
   if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
   if (document.documentElement.classList.contains('agit')) showTab('me');   // 🧸 아지트는 내 고양이부터
   if (C_ONLY){ showTab('chat'); chatTell(); }
-  showSub('ask', 'q'); if (!subNow.notice) showSub('notice', 'all');
+  showSub('ask', 'free'); if (!subNow.notice) showSub('notice', 'all');
   if (document.documentElement.classList.contains('only-ask')) showTab('ask');
   { // 🎨 출석부(보기 전용)의 꾸미기 방 버튼 → 내 고양이 탭으로, 로그인 안 했으면 이름을 골라 둔 로그인 창
     const q = new URLSearchParams(location.search), who = q.get('who');

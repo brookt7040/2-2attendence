@@ -62,7 +62,7 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 <div id="chatPop"><div class="cp-head"><b>💬 우리 반 대화</b><button type="button" id="chatClose">✕</button></div><div class="cp-body" id="chatBody"></div></div>
 <script src="snd.js?v=1"></script>
 <script>
-/* 📱 2-2😻 앱: 한 창 안에서 출석부 · 공지사항 · 아지트 · to. 시내T · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
+/* 📱 2-2😻 앱: 한 창 안에서 출석부 · 공지사항 · 아지트 · 우리 반 광장 · 안내를 탭으로 오가요 (한 번 연 화면은 그대로 살아 있어요) */
 const q = new URLSearchParams(location.search);
 let API = q.get('api') || 'https://script.google.com/macros/s/AKfycbz9ZcvHtg8iI1biBkXBW4DA3A-taLQzSrZq4qFEM17kTNKTpqDeX9UFyq2qLVxu00c/exec';
 try { const moved = localStorage.getItem('nyangApi'); if (!q.get('api') && moved && /^https:\/\/script\.google\.com\//.test(moved)) API = moved; } catch(e){}

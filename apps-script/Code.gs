@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 49;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 50;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -52,7 +52,8 @@ const MAIL_SHEET = '편지함', MAIL_HEADER = ['번호', '시간', '보낸 사�
 const DIARY_SHEET = '일기장', DIARY_HEADER = ['번호', '날짜', '이름', '내용(가림)', '시간'];
 const MENU_SHEET = '급식번역', MENU_HEADER = ['번호', '날짜', '이름', '영어 메뉴', '상태', '시간'];
 const STORY_SHEET = '스토리답', STORY_HEADER = ['스토리', '이름', '답', '시간'];
-const IDEA_SHEET = '마을의견', IDEA_HEADER = ['번호', '시간', '보낸 사람', '익명', '비밀', '내용', '좋아요', '상태'];
+const IDEA_SHEET = '마을의견', IDEA_HEADER = ['번호', '시간', '보낸 사람', '익명', '비밀', '내용', '좋아요', '상태', '종류', '시내T 답', '답 시간'];
+const IDEA_CATS_ = ['free', 'board', 'cat', 'shop', 'village', 'q', 'etc'];   // 💬 우리 반 광장: 자유 게시판 · 💡 의견함(출석부·고양이·상점·마을·질문·기타)
 const ASK_SHEET = '건의함', ASK_HEADER = ['번호', '시간', '보낸 사람', '종류', '내용', '익명', '답변', '답변 시간', '상태'];
 // 기본 금지어 (선생님이 설정에서 더 넣을 수 있어요) — 걸리면 민망한 애교 말로 바뀌어요
 const BASE_BAN = ['시발', '씨발', '씨빨', 'ㅅㅂ', 'ㅆㅂ', '병신', 'ㅂㅅ', '븅신', '개새', '새끼', 'ㅅㄲ', '지랄', 'ㅈㄹ', '좆', '존나', 'ㅈㄴ',
@@ -1112,9 +1113,11 @@ function studentAsk_(name, body) {
 function readIdeas_() {
   const sh = sheet_(IDEA_SHEET, IDEA_HEADER), n = sh.getLastRow();
   if (n < 2) return [];
-  return sh.getRange(2, 1, n - 1, 8).getValues().map(function (r, i) {
+  return sh.getRange(2, 1, n - 1, 11).getValues().map(function (r, i) {
     let likes = []; try { likes = JSON.parse(String(r[6] || '[]')) || []; } catch (e) {}
-    return { row: i + 2, id: Number(r[0]), t: String(r[1]), from: String(r[2]), anon: String(r[3]) === '예', secret: String(r[4]) === '예', text: String(r[5]), likes: likes, del: String(r[7]) === '삭제' };
+    const cat = IDEA_CATS_.indexOf(String(r[8])) >= 0 ? String(r[8]) : 'village';
+    return { row: i + 2, id: Number(r[0]), t: String(r[1]), from: String(r[2]), anon: String(r[3]) === '예', secret: String(r[4]) === '예', text: String(r[5]), likes: likes, del: String(r[7]) === '삭제',
+      cat: cat, reply: String(r[9] || ''), rt: String(r[10] || '') };
   }).filter(function (x) { return x.id && !x.del; });
 }
 function studentIdea_(name, body) {
@@ -1129,9 +1132,35 @@ function studentIdea_(name, body) {
       const lock = lightLock_(15000);
       try {
         const id = Number(props_().getProperty('ideaSeq') || 0) + 1; props_().setProperty('ideaSeq', String(id));
-        sheet_(IDEA_SHEET, IDEA_HEADER).appendRow([id, "'" + nowStr_(), name, body.anon ? '예' : '', body.secret ? '예' : '', text, '[]', '']);
-        if (!body.anon && !body.secret) addNews_(name, 'idea');
+        const cat = IDEA_CATS_.indexOf(String(body.cat)) >= 0 ? String(body.cat) : 'village', secret = !!body.secret && cat !== 'free';
+        const sh = sheet_(IDEA_SHEET, IDEA_HEADER);
+        if (String(sh.getRange(1, 9).getValues()[0][0]) !== '종류') sh.getRange(1, 1, 1, IDEA_HEADER.length).setValues([IDEA_HEADER]);
+        sh.appendRow([id, "'" + nowStr_(), name, body.anon ? '예' : '', secret ? '예' : '', text, '[]', '', cat, '', '']);
+        if (!body.anon && !secret && cat === 'village') addNews_(name, 'idea');
         props_().setProperty('ideaLast:' + name, String(Date.now()));
+      } finally { lock.releaseLock(); }
+    }
+  } else if (body.op === 'ideaReply') {
+    if (!isT) error = 'auth';
+    else {
+      const lock = lightLock_(15000);
+      try {
+        const it = readIdeas_().filter(function (x) { return x.id === Number(body.id); })[0], sh = sheet_(IDEA_SHEET, IDEA_HEADER);
+        const text = String(body.text || '').trim().slice(0, 300);
+        if (!it) error = 'none'; else { sh.getRange(it.row, 10, 1, 2).setValues([[text, text ? "'" + nowStr_() : '']]); }
+      } finally { lock.releaseLock(); }
+    }
+  } else if (body.op === 'ideaReport') {
+    const it = readIdeas_().filter(function (x) { return x.id === Number(body.id); })[0];
+    const last = Number(props_().getProperty('askLast:' + name) || 0);
+    if (!it) error = 'none';
+    else if (Date.now() - last < 15000 && !isT) error = 'slow';
+    else {
+      const lock = lightLock_(15000);
+      try {
+        const sh = sheet_(ASK_SHEET, ASK_HEADER), aid = Number(props_().getProperty('askSeq') || 0) + 1; props_().setProperty('askSeq', String(aid));
+        sh.appendRow([aid, "'" + nowStr_(), name, '신고', '🚨 광장 글 신고 · #' + it.id + ' · 쓴 사람: ' + it.from + (it.anon ? ' (익명)' : '') + ' · ' + String(body.why || '').slice(0, 30) + ' · 「' + it.text.slice(0, 80) + '」', '', '', '', '']);
+        bump_(); props_().setProperty('askLast:' + name, String(Date.now()));
       } finally { lock.releaseLock(); }
     }
   } else if (body.op === 'ideaLike' || body.op === 'ideaDel') {
@@ -1149,7 +1178,7 @@ function studentIdea_(name, body) {
   const list = readIdeas_().filter(function (x) { return !x.secret || isT || x.from === name; }).map(function (x) {
     const mine = x.from === name;
     return { id: x.id, t: x.t, text: x.text, anon: x.anon, secret: x.secret, mine: mine, from: x.anon && !mine ? '' : x.from,
-      real: isT ? x.from : undefined, n: x.likes.length, liked: x.likes.indexOf(name) >= 0 };
+      real: isT ? x.from : undefined, n: x.likes.length, liked: x.likes.indexOf(name) >= 0, cat: x.cat, reply: x.reply, rt: x.rt };
   }).reverse();
   return { ok: true, error: error, ideas: list, teacher: isT };
 }
@@ -1299,7 +1328,7 @@ function stuCfg_() {
   }
   s.news = Object.assign({ on: true, min: 60 }, s.news || {}); s.news.kinds = Object.assign({ look: true, play: true, eng: true, hana: true, house: true, idea: true }, s.news.kinds || {});
   s.mega = Object.assign({ on: true, min: 60 }, s.mega || {});
-  s.askOpen = !!s.askOpen;   // 💌 to. 시내T 질문·건의·상담 (기본: 잠금 · 신고만)
+  s.askOpen = s.plazaOpen !== false;   // 💬 우리 반 광장 (기본: 열림 · 선생님이 끌 수 있어요)
   return s;
 }
 function stuCfgSet_(d) {
@@ -1309,7 +1338,7 @@ function stuCfgSet_(d) {
   if (typeof n.closingAt === 'string') s.closingAt = /^\d\d:\d\d$/.test(n.closingAt) ? n.closingAt : '';
   if (typeof n.guideVer === 'string') s.guideVer = n.guideVer.slice(0, 12);
   if (typeof n.guideNotes === 'string') s.guideNotes = n.guideNotes.slice(0, 1500);
-  if ('askOpen' in n) s.askOpen = !!n.askOpen;
+  if ('askOpen' in n) s.plazaOpen = !!n.askOpen;
   props_().setProperty('stuCfg', JSON.stringify(s)); bump_();
   return s;
 }
