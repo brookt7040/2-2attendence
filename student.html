@@ -505,11 +505,11 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 
   <div class="tabs">
     <button type="button" class="tab" data-tab="me">🐱 내 고양이</button>
+    <button type="button" class="tab" data-tab="pad">📔 내 수첩</button>
     <button type="button" class="tab" data-tab="village">🏘️ 마을<span class="dot" id="dotVillage"></span></button>
     <button type="button" class="tab" data-tab="coin">🐾 냥코인</button>
     <button type="button" class="tab" data-tab="chat">💬 대화<span class="dot" id="dotChat"></span></button>
     <button type="button" class="tab active" data-tab="notice">📢 공지사항<span class="dot" id="dotNotice"></span></button>
-    <button type="button" class="tab" data-tab="pad">📔 내 수첩</button>
     <button type="button" class="tab tab-ask" data-tab="ask" title="우리 반 광장 (자유 게시판 · 의견함)">💬 우리 반 광장</button>
     <button type="button" class="tab tab-t" data-tab="admin" style="display:none;">👑 관리<span class="dot" id="dotAdmin"></span></button>
   </div>
@@ -2668,7 +2668,6 @@ function openVillage(opts){
       if (!isOpen()){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
       const a = (HANA.acts || []).find(x => x.id === ac.dataset.hact);
       if (a.cost && !confirm(`${a.name} — ${a.cost}🐾를 쓸까요?`)) return;
-      if (a.aff < 0 && !(a.flip != null && ((hanaInfo || {}).lv || 0) >= a.flip) && !confirm(`😾 하나가 싫어할 것 같아요… 친밀도가 ${-a.aff} 내려가요. 그래도 할까요?`)) return;
       ac.disabled = true;
       try {
         const j = await opts.call('hana', { act: a.id });

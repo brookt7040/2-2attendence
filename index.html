@@ -7314,7 +7314,6 @@ function openVillage(opts){
       if (!isOpen()){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
       const a = (HANA.acts || []).find(x => x.id === ac.dataset.hact);
       if (a.cost && !confirm(`${a.name} — ${a.cost}🐾를 쓸까요?`)) return;
-      if (a.aff < 0 && !(a.flip != null && ((hanaInfo || {}).lv || 0) >= a.flip) && !confirm(`😾 하나가 싫어할 것 같아요… 친밀도가 ${-a.aff} 내려가요. 그래도 할까요?`)) return;
       ac.disabled = true;
       try {
         const j = await opts.call('hana', { act: a.id });
