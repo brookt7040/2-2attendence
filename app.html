@@ -24,7 +24,7 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;visibility:hidden;}
 .frames iframe.on{visibility:visible;}
 .cchip{position:relative;flex:0 0 auto !important;max-width:none !important;display:flex;align-items:center;gap:4px;font-size:1.05rem !important;border:2px solid #8CCBA2 !important;background:#E4F7EA !important;border-radius:14px !important;padding:4px 10px !important;margin-left:8px;}
-.tchip{border-color:#A996FF !important;background:#EEE8FF !important;} .tchip .tl{font-size:.85rem;} .tchip .cdot{background:#8B6CF0;}
+.tchip[hidden]{display:none !important;} .tchip{border-color:#A996FF !important;background:#EEE8FF !important;} .tchip .tl{font-size:.85rem;} .tchip .cdot{background:#8B6CF0;}
 .cchip.on{background:#C9F0D8 !important;border-color:#5B4636 !important;box-shadow:0 3px 0 #5B4636;}
 .cchip .faces{display:inline-flex;} .cchip .faces img{width:22px;height:22px;image-rendering:pixelated;border:2px solid #fff;border-radius:50%;background:#FFF5D1;margin-left:-7px;} .cchip .faces img:first-child{margin-left:2px;}
 .cdot{position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;border-radius:999px;background:#E8473A;color:#fff;font-size:11px;line-height:14px;text-align:center;border:2px solid #fff;padding:0 3px;}
@@ -87,6 +87,13 @@ sndShow(); setInterval(sndShow, 10000); addEventListener('storage', e => { if (e
 document.getElementById('reloadBtn').onclick = () => { const f = frames[curTab]; if (f){ f.src = fresh(SRC[curTab]); } const b = document.getElementById('reloadBtn'); b.classList.remove('spin'); void b.offsetWidth; b.classList.add('spin'); };
 document.querySelector('.bar').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) show(b.dataset.t); });
 addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang === 'go' && SRC[d.tab]) show(d.tab); });
+/* 🐱 출석부 고양이 메뉴 → 대화 · 아지트로 이어 주기 */
+addEventListener('message', e => { if (e.origin !== location.origin) return; const d = e.data || {}; if (d.nyang !== 'act') return;
+  if (d.act === 'whisper'){ chatToggle(true, d.name); return; }
+  if (d.act === 'troom'){ chatToggle(true, '👑'); return; }
+  try { sessionStorage.setItem('nyangAct', JSON.stringify({ act: d.act, name: d.name, at: Date.now() })); } catch(err){}
+  show('me');
+  try { frames.me.contentWindow.postMessage({ nyang:'act' }, location.origin); } catch(err){} });
 show(q.get('tab') || 'board');   // 처음엔 늘 출석부 (입장 코드 → 출석부)
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 /* 💬 대화 팝업: 처음부터 숨겨서 열어 두고(안 읽은 수를 받으려고), 칩을 누르면 보여요 */

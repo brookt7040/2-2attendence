@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 41;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 42;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -690,6 +690,18 @@ function handleStudentCore_(body) {
     } finally { lock.releaseLock(); }
     return { ok: true };
   }
+  if (body.op === 'cmInfo' || body.op === 'cmHi') {   // 🐱 출석부 고양이 메뉴: 일기 읽기 가능? · 👋 냥 인사 (친구마다 하루 한 번)
+    const to = String(body.to || ''), map = readRows_().map, kids = kidNames_(map), ds = todayStr_(), hk = 'hi:' + ds + ':' + name + ':' + to;
+    if (kids.indexOf(to) < 0 || to === name) return { ok: true, error: 'bad' };
+    let hi = !!cache_().get(hk);
+    if (body.op === 'cmHi' && !hi) {
+      try { cache_().put(hk, '1', 21600); } catch (e) {}
+      const lock = lightLock_(15000);
+      try { appendChat_('👋 냥 인사', to, '👋 냥냥! ' + name + '의 인사가 도착했어요 💛'); } finally { lock.releaseLock(); }
+      return { ok: true, sent: true, hi: true };
+    }
+    return { ok: true, hi: hi, diary: isTeacherName_(name) || diaryReaders_(to).indexOf(name) >= 0 };
+  }
   if (/^mail/.test(String(body.op || ''))) return studentMail_(name, body);
   if (/^diary/.test(String(body.op || ''))) return studentDiary_(name, body);
   if (/^cafe/.test(String(body.op || ''))) return studentCafe_(name, body);
@@ -988,7 +1000,7 @@ function chatReaders_(m, seen, recent) {
     else if (w === m.to && (all >= id || (Number(((s.w || {})[m.from])) || 0) >= id)) who[w] = 1;
   });
   (recent || []).forEach(function (x) {
-    if (x.id <= id || x.from === m.from || x.from === '📮 우체부') return;
+    if (x.id <= id || x.from === m.from || x.from === '📮 우체부' || x.from === '👋 냥 인사') return;
     if (!m.to ? !x.to : m.to.charAt(0) === '#' ? x.to === m.to : (x.from === m.to && x.to === m.from)) who[x.from] = 1;
   });
   return Object.keys(who).length;

@@ -2444,6 +2444,75 @@ function showStTab(k){
 }
 /* 📱 학생용 출석부: 아직 출석 안 한 내 카드를 누르면 → 내 비밀번호 → 맹세 → 원격 출석 */
 let rName = '';
+/* 🐱 학생용 출석부: 고양이를 누르면 아래에서 메뉴 카드가 올라와요 (앱 안에서는 아지트·대화로 이어져요) */
+function cmCred(){ try { return JSON.parse(localStorage.getItem('nyangStudent_v1') || sessionStorage.getItem('nyangStudent_v1') || 'null'); } catch(e){ return null; } }
+const CM_IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();
+function cmGo(act, name){ try { window.parent.postMessage({ nyang:'act', act, name }, location.origin); } catch(e){} closeCatMenu(); }
+function closeCatMenu(){ const o = $('cmOv'); if (o) o.classList.remove('on'); }
+async function openCatMenu(name){
+  let o = $('cmOv');
+  if (!o){
+    const st = document.createElement('style'); st.textContent = `
+      #cmOv{position:fixed;inset:0;z-index:24000;background:rgba(80,60,45,.45);display:none;align-items:flex-end;justify-content:center;}
+      #cmOv.on{display:flex;}
+      #cmOv .cm-box{width:min(560px,100vw);background:#FFFDF6;border:3px solid var(--ink);border-bottom:none;border-radius:24px 24px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));animation:cmUp .18s ease-out;}
+      @keyframes cmUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+      #cmOv .cm-hd{display:flex;align-items:center;gap:14px;margin-bottom:12px;position:relative;}
+      #cmOv .cm-hd canvas{width:96px;height:96px;flex:0 0 auto;}
+      #cmOv .cm-nm{font-size:1.5rem;} #cmOv .cm-sub{color:var(--ink-soft);font-size:.95rem;margin-top:2px;} #cmOv .cm-st{margin-top:6px;font-size:.95rem;background:#FFF3C4;border-radius:10px;padding:3px 8px;display:inline-block;}
+      #cmOv .cm-x{position:absolute;top:-4px;right:-2px;border:2px solid var(--ink);border-radius:10px;background:#FFC9D3;font-family:inherit;font-size:1rem;width:36px;height:34px;cursor:pointer;}
+      #cmOv .cm-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;}
+      #cmOv .cm-g button{font-family:inherit;border:2px solid #E6D9CA;border-radius:14px;background:#fff;padding:10px 4px;font-size:1.6rem;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--ink);}
+      #cmOv .cm-g button small{font-size:.85rem;} #cmOv .cm-g button:hover{border-color:var(--ink);background:#FFF8E1;}
+      #cmOv .cm-g button.main{background:#FFE58A;border-color:var(--ink);} #cmOv .cm-g button.done{opacity:.45;}
+      #cmOv .cm-login{text-align:center;padding:10px;border:2px dashed #E6D9CA;border-radius:14px;color:var(--ink-soft);}
+      #cmOv .cm-login button{font-family:inherit;margin-top:8px;border:2px solid var(--ink);border-radius:12px;background:#FFE58A;padding:6px 14px;font-size:1rem;cursor:pointer;}`;
+    document.head.appendChild(st);
+    o = document.createElement('div'); o.id = 'cmOv'; o.innerHTML = '<div class="cm-box"></div>'; document.body.appendChild(o);
+    o.addEventListener('click', e => {
+      if (e.target === o || e.target.closest('.cm-x')){ closeCatMenu(); return; }
+      const b = e.target.closest('[data-cm]'); if (!b) return; const act = b.dataset.cm, nm = o.dataset.name;
+      if (act === 'checkin'){ closeCatMenu(); remoteStart(nm); return; }
+      if (act === 'mail'){ showToast('💌 지금은 미션 기간이라, 친구 집에 직접 가서 📮 편지함에 써 주세요 🏠'); return; }
+      if (act === 'hi'){ cmHi(nm, b); return; }
+      if (act === 'login' && !CM_IN_APP){ showToast('🔑 아지트에서 로그인해 주세요'); return; }
+      cmGo(act, nm);
+    });
+  }
+  const T = isTeacherName(name), cred = cmCred(), meName = cred && cred.name, mine = meName === name;
+  const lvi = levelInfo(seasonExpMap()[name] || 0), L = LEVELS[lvi.lv - 1] || {}, rec = todayData()[name];
+  const tk = rec ? recTier(rec) : null, meta = tk ? TIER_META[tk] : null, stt = ((db.statuses || {})[name] || {}).t || '';
+  const B = (act, ic, label, cls) => `<button type="button" data-cm="${act}" class="${cls || ''}">${ic}<small>${label}</small></button>`;
+  let btns;
+  if (!CM_IN_APP) btns = !rec && !T ? `<div class="cm-g">${B('checkin', '⭐', '출석하기', 'main')}</div>` : '';
+  else if (!cred) btns = (!rec && !T ? `<div class="cm-g" style="margin-bottom:8px;">${B('checkin', '⭐', '출석하기', 'main')}</div>` : '') + `<div class="cm-login">🔑 로그인하면 같이 놀 수 있어요<br><button type="button" data-cm="login">로그인하러 가기</button></div>`;
+  else if (mine) btns = `<div class="cm-g">${!rec && !T ? B('checkin', '⭐', '출석하기', 'main') : ''}${B('closet', '🎨', '꾸미기')}${B('myhouse', '🏠', '우리 집')}${B('mailbox', '📮', '내 편지함')}</div>`;
+  else if (T) btns = `<div class="cm-g">${B('troom', '👑', '시내T 방')}${B('ask', '💌', 'to. 시내T')}${B('card', '🪪', '냥이 카드')}</div>`;
+  else btns = `<div class="cm-g" id="cmG">${B('card', '🪪', '냥이 카드')}${B('whisper', '🤫', '귓속말')}${B('mail', '💌', '편지 쓰기')}${B('house', '🏠', '놀러 가기')}${B('hi', '👋', '냥 인사')}</div>`;
+  o.dataset.name = name;
+  o.querySelector('.cm-box').innerHTML = `<div class="cm-hd"><canvas class="pix" width="16" height="16"></canvas><div><div class="cm-nm">${T ? '👑 ' : ''}${esc(name)}${mine ? ' <small style="font-size:.9rem;">(나)</small>' : ''}</div>
+      <div class="cm-sub">Lv.${lvi.lv} ${esc(L.name || '')}${meta ? ` · ${meta.icon} ${esc(meta.short)}${rec && rec.time ? ' ' + esc(String(rec.time).slice(0, 5)) : ''}` : (T ? '' : ' · 아직 출석 전')}</div>
+      ${stt ? `<div class="cm-st">💬 ${esc(stt)}</div>` : ''}</div><button type="button" class="cm-x">✕</button></div>${btns}`;
+  drawColors(o.querySelector('.cm-hd canvas'), lookColors(name, lvi.lv));
+  o.classList.add('on');
+  if (CM_IN_APP && cred && !mine && !T && VIEW && VIEW.api){   // 📔 일기를 읽을 수 있는 친구면 버튼 추가 · 👋 오늘 인사했으면 흐리게
+    try { const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: cred.name, pin: cred.pin, op:'cmInfo', to: name, where:'board' }) }), j = await r.json();
+      const g = $('cmG'); if (!g || o.dataset.name !== name || !j.ok) return;
+      if (j.diary) g.insertAdjacentHTML('beforeend', B('diary', '📔', '일기 보기'));
+      if (j.hi){ const h = g.querySelector('[data-cm=hi]'); if (h){ h.classList.add('done'); h.querySelector('small').textContent = '인사 완료'; } }
+    } catch(e){}
+  }
+}
+async function cmHi(name, btn){
+  const cred = cmCred(); if (!cred || !VIEW) return;
+  if (btn.classList.contains('done')){ showToast('오늘은 벌써 인사했어요 💛'); return; }
+  btn.classList.add('done'); btn.querySelector('small').textContent = '인사 완료';
+  try { const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name: cred.name, pin: cred.pin, op:'cmHi', to: name, where:'board' }) }), j = await r.json();
+    if (j.ok && j.sent){ showToast(`👋 ${name}에게 냥냥 인사를 보냈어요 💛`); const c = [...document.querySelectorAll('.card')].find(x => (x.textContent || '').includes(name)); const rr = c && c.getBoundingClientRect(); if (rr) burst('safe', rr.left + rr.width / 2, rr.top + rr.height / 3); }
+    else if (j.ok && j.hi) showToast('오늘은 벌써 인사했어요 💛');
+    else showToast('보내지 못했어요');
+  } catch(e){ showToast('연결이 안 돼요'); }
+}
 function remoteStart(name){
   if (todayData()[name]) return;
   requireKidPin(name, () => { rName = name; $('rOathChk').checked = false; $('rOathGo').disabled = true; $('rOathOv').style.display = 'flex'; }, null, `📱 ${name} 원격 출석`);
@@ -2463,7 +2532,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 41;
+const NEED_API = 42;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2726,7 +2795,7 @@ function renderGrid(){
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
       card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${statusLine(name)}<div class="touch-text">${VIEW ? '📱 내 카드면 눌러서 원격 출석' : '▼ 터치해서 출석 ▼'}</div>`);
-      card.addEventListener('click', () => { if (VIEW){ remoteStart(name); return; } if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
+      card.addEventListener('click', () => { if (VIEW){ openCatMenu(name); return; } if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
       card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name), isTeacherName(name) ? [] : ['late']); });
       card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
     } else {
@@ -2746,7 +2815,7 @@ function renderGrid(){
       card.title = recCharName(rec, name, ds);
       // 🔄 누르면 뒤집혀서 오늘 뽑은 냥이 등급·이름이 나와요
       card.insertAdjacentHTML('beforeend', `<div class="card-back" style="--tc:${meta.color};--tcap:${meta.cap || meta.color}"><div class="cbk-ic">${meta.icon}</div><div class="cbk-tier">${esc(meta.label || meta.short)}</div><div class="cbk-name">${esc(tk === 'absent' ? '집에서 쉬는 중' : recCharName(rec, name, ds))}</div><div class="cbk-sub">${esc(name)} · ${esc(rec.time || '')}${tk === 'absent' ? '' : ` · ${fmtExp(rec.exp)} EXP`}${rec.rank ? ` · ${rec.rank}등` : ''}${rec.why ? `<br>📝 ${esc(rec.why)}` : ''}</div></div>`);
-      card.addEventListener('click', () => flipCard(card));
+      card.addEventListener('click', () => VIEW ? openCatMenu(name) : flipCard(card));
       card.querySelector('.time-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
     }
     card.classList.add('lv-' + li.lv);
@@ -7283,7 +7352,7 @@ function openVillage(opts){
   window.addEventListener('keydown', kbDown); window.addEventListener('keyup', kbUp); window.addEventListener('blur', kbClear);
   if (!opts.viewOnly && opts.me && window.matchMedia && matchMedia('(pointer:fine)').matches) setTimeout(() => say('⌨️ WASD·방향키로 걷고, 스페이스로 가까운 🐾 를 눌러요', 3500), 2500);
   const tapAt = (wx, wy) => { const r = cv.getBoundingClientRect(), dpr = cv.width / r.width; cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (wx * scale + ox) / dpr, clientY: r.top + (wy * scale + oy) / dpr, bubbles: true })); };
-  return (openVillage.last = { close, say, enter, tapAt, info: () => ({ scene, me: me() && { x: me().x, y: me().y, sit: me().sit }, cats: Object.keys(cats).length }) });
+  return (openVillage.last = { close, say, enter, tapAt, openCard, info: () => ({ scene, me: me() && { x: me().x, y: me().y, sit: me().sit }, cats: Object.keys(cats).length }) });
 }
 
 /*@@SHARED:end*/

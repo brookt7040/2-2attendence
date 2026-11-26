@@ -2779,7 +2779,7 @@ function openVillage(opts){
   window.addEventListener('keydown', kbDown); window.addEventListener('keyup', kbUp); window.addEventListener('blur', kbClear);
   if (!opts.viewOnly && opts.me && window.matchMedia && matchMedia('(pointer:fine)').matches) setTimeout(() => say('⌨️ WASD·방향키로 걷고, 스페이스로 가까운 🐾 를 눌러요', 3500), 2500);
   const tapAt = (wx, wy) => { const r = cv.getBoundingClientRect(), dpr = cv.width / r.width; cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (wx * scale + ox) / dpr, clientY: r.top + (wy * scale + oy) / dpr, bubbles: true })); };
-  return (openVillage.last = { close, say, enter, tapAt, info: () => ({ scene, me: me() && { x: me().x, y: me().y, sit: me().sit }, cats: Object.keys(cats).length }) });
+  return (openVillage.last = { close, say, enter, tapAt, openCard, info: () => ({ scene, me: me() && { x: me().x, y: me().y, sit: me().sit }, cats: Object.keys(cats).length }) });
 }
 
 /* =========================================================
@@ -2859,6 +2859,25 @@ async function statusSave(text){
 }
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();   // 📱 2-2😻 앱 안
 addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !document.documentElement.classList.contains('only-notice') && !(document.documentElement.classList.contains('only-ask') && !st.askOpen) && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
+/* 🐱 출석부 고양이 메뉴에서 온 일 (앱이 sessionStorage 'nyangAct'에 적어 둬요 · 로그인 전이면 로그인 뒤에) */
+let actWait = 0;
+function actRun(){
+  let a = null; try { a = JSON.parse(sessionStorage.getItem('nyangAct') || 'null'); } catch(e){}
+  if (!a || Date.now() - a.at > 60000){ try { sessionStorage.removeItem('nyangAct'); } catch(e){} return; }
+  if (a.act === 'login' || !me){ if (!me && !actWait){ let n = 0; actWait = setInterval(() => { if (me || ++n > 120){ clearInterval(actWait); actWait = 0; if (me) actRun(); } }, 500); } if (a.act === 'login') try { sessionStorage.removeItem('nyangAct'); } catch(e){} return; }
+  try { sessionStorage.removeItem('nyangAct'); } catch(e){}
+  const nm = a.name;
+  const vil = async fn => { if (!document.querySelector('.vg') || !openVillage.last){ showTab('village'); await enterVillage(); } setTimeout(() => { try { fn(openVillage.last); } catch(e){} }, 400); };
+  if (a.act === 'ask') showTab('ask');
+  else if (a.act === 'closet') showTab('me');
+  else if (a.act === 'mailbox') openMail();
+  else if (a.act === 'diary') openDiary(nm);
+  else if (a.act === 'card') vil(v => v.openCard(nm));
+  else if (a.act === 'house') vil(v => v.enter('house:' + nm));
+  else if (a.act === 'myhouse') vil(v => v.enter('house:' + me.name));
+}
+addEventListener('message', e => { if (e.origin === location.origin && (e.data || {}).nyang === 'act') setTimeout(actRun, 50); });
+setTimeout(actRun, 1500);
 function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, location.origin); } catch(e){} }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
@@ -3629,7 +3648,7 @@ function renderChat(){
   const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
   const room = chat.to || '';
   // 방마다 안 읽은 표시 · 최근 귓속말 친구
-  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && m.from !== '📮 우체부' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
+  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && m.from !== '📮 우체부' && m.from !== '👋 냥 인사' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
   const rooms = [['', '📢 전체'], ['👑', '👑 시내T']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
   if (room && !rooms.some(r => r[0] === room)) rooms.push([room, room.charAt(0) === '#' ? `👥 ${room.slice(2)}모둠` : `🤫 ${room}`]);
   const shown = chat.msgs.filter(m => room === '' ? true : room === '👑' ? isTch(m.from) : chatRoomOf(m) === room);
@@ -3641,7 +3660,7 @@ function renderChat(){
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && !tch && m.from !== '📮 우체부' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && !tch && m.from !== '📮 우체부' && m.from !== '👋 냥 인사' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
