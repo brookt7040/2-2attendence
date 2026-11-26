@@ -1948,13 +1948,14 @@ function openVillage(opts){
   }
   const isTch = n => /(쌤|샘|선생님|교감|교장)$/.test(n || '');
   const invPlot = n => state && state.inv && state.inv[n] && state.inv[n].plot;
-  const tchHome = () => kidList().find(s => isTch(s.name) && (!invPlot(s.name) || invPlot(s.name).id === 'S0' || !plotReady(invPlot(s.name))));   // 👑 다른 데로 이사 안 했으면 하늘 궁전
-  const plotOwner = id => id === 'S0' ? tchHome() : kidList().find(s => { const pl = invPlot(s.name); return pl && pl.id === id; });
+  const livePlot = n => { if (isTch(n)) return null; const pl = invPlot(n); return pl && pl.id !== 'S0' && plotReady(pl) && VPLOTS.some(q => q.id === pl.id) ? pl : null; };   // 없어진 부지(예전 하늘 정원 7~12번 등)는 무시
+  const tchHome = () => kidList().find(s => isTch(s.name) && !livePlot(s.name));   // 👑 다른 데로 이사 안 했으면 하늘 궁전
+  const plotOwner = id => id === 'S0' ? tchHome() : kidList().find(s => { const pl = invPlot(s.name); return !isTch(s.name) && pl && pl.id === id; });   // 👑 시내쌤 집은 언제나 하늘 궁전
   const todayLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const plotReady = pl => pl && todayLocal() >= pl.ready;
   const tchIsHome = name => { const h = isTch(name) && tchHome(); return !!h && h.name === name; };
-  const movedAway = name => plotReady(invPlot(name)) || tchIsHome(name);
-  const plotOfName = name => { const pl = invPlot(name); if (pl && plotReady(pl) && pl.id !== 'S0') return VPLOTS.find(q => q.id === pl.id) || null; return tchIsHome(name) ? T_PLOT : null; };
+  const movedAway = name => !!livePlot(name) || tchIsHome(name);
+  const plotOfName = name => { const pl = livePlot(name); if (pl) return VPLOTS.find(q => q.id === pl.id); return tchIsHome(name) ? T_PLOT : null; };
   const houseMapOf = name => { const q = plotOfName(name); return q ? q.map : 'alley'; };
   const alleyOf = name => alleyPos(kidList().map(s => s.name), name);
   /* 👑 시내쌤 하늘 궁전 (상점에서 살 수 없는 단 하나뿐인 집) */
@@ -2691,7 +2692,7 @@ function openVillage(opts){
   async function plotTap(pl){
     const ow = plotOwner(pl.id);
     if (ow && plotReady(state.inv[ow.name].plot)){ enter('house:' + ow.name); return; }
-    if (pl.teacher){ if (ow) enter('house:' + ow.name); else say('시내쌤만을 위한 특별 부지예요', 2500); return; }
+    if (pl.teacher){ if (ow) enter('house:' + ow.name); return; }
     if (ow){ say(ow.name === meName ? '🚧 우리 집 공사 중이에요! 내일 완공돼요' : `🚧 ${ow.name}네 집 공사 중이에요`, 3000); return; }
     if (opts.viewOnly || !opts.me){ say('빈 부지예요'); return; }
     const T = /(쌤|샘|선생님)$/.test(meName || '');
