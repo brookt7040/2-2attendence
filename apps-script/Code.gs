@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 42;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 43;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -1831,13 +1831,16 @@ function menuEnToday_() { const t = todayStr_(), a = readMenuTr_(function (x) { 
 function menuTrList_() { const t = todayStr_(); return readMenuTr_(function (x) { return x.status === '대기' || x.ds === t; }).slice(-40).reverse().map(function (x) { return { id: x.id, ds: x.ds, name: x.name, text: x.text, status: x.status }; }); }
 function menuTrSet_(id, ok) {
   const it = readMenuTr_(function (x) { return x.id === Number(id); })[0]; if (!it) return;
-  sheet_(MENU_SHEET, MENU_HEADER).getRange(it.row, 5).setValue(ok ? '승인' : '반려');
+  if (ok && readMenuTr_(function (x) { return x.ds === it.ds && x.status === '승인' && x.id !== it.id; }).length) return;   // 🇺🇸 하루에 하나만 승인
+  const sh = sheet_(MENU_SHEET, MENU_HEADER); sh.getRange(it.row, 5).setValue(ok ? '승인' : '반려');
+  if (ok) readMenuTr_(function (x) { return x.ds === it.ds && x.status === '대기'; }).forEach(function (x) { sh.getRange(x.row, 5).setValue('마감'); });   // 나머지 대기는 마감
   if (ok) { try { const map = readRows_().map; autoSettle_(it.name, economy_(map), readCoins_(), map); } catch (e) {} }
   bump_();
 }
 function studentMenu_(name, body) {
   const text = maskBad_(String(body.text || '').trim().slice(0, 400), (chatCfg_().ban) || []);
   if (!isTeacherName_(name) && menuPickers_().indexOf(name) < 0) return { ok: true, error: 'nopick' };   // 미션을 고른 학생만
+  { const en = menuEnToday_(); if (en) return { ok: true, error: en.name === name ? 'done' : 'closed' }; }   // 🇺🇸 오늘 번역이 승인되면 마감
   if (!mealData_()[todayStr_()]) return { ok: true, error: 'nomenu' };   // 급식 관리자가 오늘 메뉴를 올린 뒤에만
   if (text.replace(/\s/g, '').length < 5) return { ok: true, error: 'short' };
   const lock = lightLock_(15000);

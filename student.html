@@ -3271,6 +3271,7 @@ async function storyAns(a){
 /* 🇺🇸 급식 영어 번역 (학생 화면) */
 function openMenuTr(){
   const today = todayStr(), menu = (st.meal || {})[today] || '';
+  if (st.mealEn){ bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="empty">🎉 오늘 번역은 <b>${esc(st.mealEn.name)}</b>이(가) 승인받아서 마감됐어요<br>내일 또 도전해요!</div>`); return; }
   if (!menu){ bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="empty">🍱 급식 관리자가 오늘 메뉴를 올리면 번역할 수 있어요<br>조금 이따 다시 와 줘요!</div>`); return; }
   bOpen('msOv', `<h2>🇺🇸 오늘 급식을 영어로!</h2><div class="mail-body" style="font-size:1rem;">${esc(menu)}</div>
     <textarea id="menuTrText" rows="4" maxlength="400" placeholder="예: Rice / Kimchi stew / Pork cutlet"></textarea>
@@ -3279,7 +3280,7 @@ function openMenuTr(){
 }
 async function menuTrSend(){
   const text = $('menuTrText').value.trim(); if (text.replace(/\s/g, '').length < 5){ toast('조금 더 적어 주세요'); return; }
-  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 🎯 번역 미션을 골라요', nomenu:'급식 관리자가 오늘 메뉴를 올린 뒤에 번역해요 🍱' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
+  try { const j = await studentCall('menuTr', { text }); if (j.error){ toast({ short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 🎯 번역 미션을 골라요', closed:'오늘 번역은 다른 친구가 먼저 승인받았어요 🎉', nomenu:'급식 관리자가 오늘 메뉴를 올린 뒤에 번역해요 🍱' }[j.error] || '보내지 못했어요'); return; } bClose('msOv'); toast('🇺🇸 보냈어요! 급식 관리자가 확인해요'); } catch(e){ toast('연결이 안 돼요'); }
 }
 /* ☕ 스터디카페: 1시간 집중 (화면을 끄거나 앱을 나가면 실패) */
 let cafe = null;

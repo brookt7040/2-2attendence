@@ -898,7 +898,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #mhBody .mh-empty{color:var(--ink-soft);text-align:center;padding:14px;}
 body.view-mode #mealSide,body.view-mode #hwSide{pointer-events:auto;}
 body.view-mode .mh-side.empty{display:none !important;}
-.mh-side{cursor:pointer;min-width:0;} .mh-side:hover{border-color:#5B4636 !important;}
+.mh-side{cursor:pointer;min-width:0;}
+.tr-bd{white-space:nowrap;margin-left:8px;font-size:.8rem;background:#FFE1EA;color:#C0365C;border:2px solid #E58AA8;border-radius:999px;padding:1px 8px;vertical-align:middle;animation:trBd 1.6s ease-in-out infinite;} @keyframes trBd{50%{background:#FFC2D4}} .mh-side:hover{border-color:#5B4636 !important;}
 .mh-side .mm{width:100%;font-size:1rem;line-height:1.5;white-space:pre-line;word-break:keep-all;}
 .mh-side .hl{display:flex;flex-direction:column;gap:4px;font-size:1rem;word-break:keep-all;}
 .mh-side .hl span.dd{font-size:.8rem;border-radius:999px;padding:1px 7px;background:#E8F4FF;margin-right:5px;white-space:nowrap;}
@@ -2532,7 +2533,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 42;
+const NEED_API = 43;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -2650,7 +2651,7 @@ function renderMH(){
     const days = VIEW ? (meal[today] ? [today] : []) : [today];   // 🍱 오늘 것만
     $('mhBody').innerHTML = (days.length ? days.map(d => { const L = mhLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b>${VIEW ? `<div class="mt">${esc(meal[d] || '')}</div>` : `<textarea rows="4" data-meal="${d}" placeholder="메뉴를 한 줄에 하나씩 (비우면 안 보여요)">${esc(meal[d] || '')}</textarea>`}</div>`; }).join('') : '<div class="mh-empty">오늘 급식 메뉴가 아직 없어요 🍚</div>')
       + (db.mealEn ? `<div class="meal-d"><b>🇺🇸 English <small style="color:var(--ink-soft);">by ${esc(db.mealEn.name)}</small></b><div class="mt">${esc(db.mealEn.text)}</div></div>` : '')
-      + (VIEW ? '<div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;">' + ((db.menuPick || []).length && meal[today] ? '<button type="button" class="mini-btn" id="trOpenBtn" style="background:#E8F4FF;">🇺🇸 영어로 번역하기</button>' : '') + '<button type="button" class="mini-btn" id="mealEditBtn" style="background:#FFFDF6;">✏️ 급식 관리자</button></div>' : '<div id="mhTrList"></div>' + '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요 · 🔒 관리자 · 🍱 급식 관리자만 저장할 수 있어요</div>');
+      + (VIEW ? '<div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;">' + ((db.menuPick || []).length && meal[today] && !db.mealEn ? '<button type="button" class="mini-btn" id="trOpenBtn" style="background:#E8F4FF;">🇺🇸 영어로 번역하기</button>' : '') + '<button type="button" class="mini-btn" id="mealEditBtn" style="background:#FFFDF6;">✏️ 급식 관리자</button></div>' : '<div id="mhTrList"></div>' + '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요 · 🔒 관리자 · 🍱 급식 관리자만 저장할 수 있어요</div>');
   } else {
     const list = VIEW ? hw : hw;
     $('mhBody').innerHTML = (list.length ? list.map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff < 0 ? '지남' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
@@ -2680,7 +2681,7 @@ async function trSend(){
   $('trErr').textContent = '보내는 중…';
   try { const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name, pin, op:'menuTr', text }) }), j = await r.json();
     if (!j.ok){ $('trErr').textContent = j.error === 'wrong' ? '❌ 비밀번호가 달라요' : j.error === 'sleep' ? '💤 지금은 쉬는 시간이에요' : '보내지 못했어요'; return; }
-    if (j.error){ $('trErr').textContent = { short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 아지트에서 🎯 번역 미션을 골라요', nomenu:'급식 관리자가 오늘 메뉴를 올린 뒤에 번역할 수 있어요 🍱' }[j.error] || '보내지 못했어요'; return; }
+    if (j.error){ $('trErr').textContent = { short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 아지트에서 🎯 번역 미션을 골라요', closed:'오늘 번역은 다른 친구가 먼저 승인받았어요 🎉 내일 또 도전!', nomenu:'급식 관리자가 오늘 메뉴를 올린 뒤에 번역할 수 있어요 🍱' }[j.error] || '보내지 못했어요'; return; }
     mhTr = false; renderMH(); showToast('🇺🇸 번역을 보냈어요! 급식 관리자가 확인해요');
   } catch(e){ $('trErr').textContent = '연결이 안 돼요'; }
 }
@@ -4206,11 +4207,12 @@ function renderNotices(){
    ========================================================= */
 /* 📌 중요 공지 (조금 튀게) */
 /* 🍱 오늘 급식 · 📚 숙제 칸 (Must Read 아래) */
+let menuTrN = 0;   // 🇺🇸 확인 기다리는 급식 번역 (관리자 출석부)
 function renderMHSide(){
   const ms = $('mealSide'), hs = $('hwSide'); if (!ms || !hs) return;
   const today = getTodayStr(nowD()), menu = ((db.meal || {})[today] || '').trim();
   ms.classList.toggle('empty', !menu);
-  ms.innerHTML = `<div class="t">🍱 급식</div><div class="mm">${menu ? esc(menu) : (VIEW ? ((db.menuPick || []).length ? '<span style="opacity:.5;font-size:.9rem;">눌러서 🇺🇸 영어로 번역하기</span>' : '') : '✏️ 눌러서 수정')}</div>${db.mealEn ? `<div class="mm" style="font-size:.92rem;color:#2F6B8F;margin-top:4px;">🇺🇸 ${esc(db.mealEn.text)}</div>` : ''}`;
+  ms.innerHTML = `<div class="t">🍱 급식${!VIEW && menuTrN ? `<span class="tr-bd" title="눌러서 확인">🇺🇸 번역 ${menuTrN}</span>` : ''}</div><div class="mm">${menu ? esc(menu) : (VIEW ? ((db.menuPick || []).length ? '<span style="opacity:.5;font-size:.9rem;">눌러서 🇺🇸 영어로 번역하기</span>' : '') : '✏️ 눌러서 수정')}</div>${db.mealEn ? `<div class="mm" style="font-size:.92rem;color:#2F6B8F;margin-top:4px;">🇺🇸 ${esc(db.mealEn.text)}</div>` : ''}`;
    // 학생용: 오늘 급식이 없으면 칸을 숨겨요 (급식 관리자는 Notice 5번 → 급식 관리자 비번으로 열어요)
   const hw = (db.hw || []).filter(h => !h.due || h.due >= today).sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
   hs.classList.toggle('empty', !hw.length);
@@ -4839,6 +4841,7 @@ async function pullSync(force){
     if (j.meal && typeof j.meal === 'object' && !sync.queue.some(o => o.op === 'meal') && JSON.stringify(j.meal) !== JSON.stringify(db.meal || {})){ db.meal = j.meal; saveDB(); renderMHSide(); if ($('mhOv').style.display === 'flex' && mhKind === 'meal' && !document.activeElement.matches('#mhBody textarea')) renderMH(); }
     if (Array.isArray(j.hw) && !sync.queue.some(o => o.op === 'hw') && JSON.stringify(j.hw) !== JSON.stringify(db.hw || [])){ db.hw = j.hw; saveDB(); renderMHSide(); if ($('mhOv').style.display === 'flex' && mhKind === 'hw') renderMH(); }
     if ('mealEn' in j){ db.mealEn = j.mealEn; renderMHSide(); }
+    if ('menuTrN' in j && j.menuTrN !== menuTrN){ menuTrN = Number(j.menuTrN) || 0; renderMHSide(); }
     if ('reload' in j){ reloadNow = j.reload; if (window.NyLock) NyLock.reload(j.reload); renderReloadBtns(); }
     if (j.meeting) mtApplyRemote(j.meeting);
     const nl = (j.notices || []);
