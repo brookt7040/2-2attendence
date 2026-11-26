@@ -4139,8 +4139,7 @@ function renderNotices(){
     const item = document.createElement('div');
     item.className = 'notice-item' + (noticeChecked[idx] ? ' done' : '');
     const acked = ackNames(text);
-    item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>` +
-      (sync.url && sync.api >= 3 ? `<button type="button" class="ack-badge" title="학생 확인 현황">✔ ${acked.length}/${kids().length}</button>` : '');
+    item.innerHTML = `<div class="notice-mark">${noticeChecked[idx] ? '✔' : '🐾'}</div><div class="notice-text">${esc(text)}</div>`;   // ✔ 확인 수는 안 보여요
     const badge = item.querySelector('.ack-badge');
     if (badge) badge.onclick = e => { e.stopPropagation(); if (noticeAdminActive()) showAcks(text); };
     // 🔒 관리자(또는 부관리자) 비밀번호가 살아 있을 때만 눌러서 지울 수 있어요. 그 밖엔 눌러도 아무 일 없어요

@@ -1356,10 +1356,8 @@ function render(){
 
   // 알림
   $('noticeList').innerHTML = st.notices.length ? st.notices.map(t => {
-    const done = me && me.acked.includes(t);
-    const btn = me ? `<button type="button" class="ack ${done ? 'done' : ''}" data-ack="${esc(t)}">${done ? '✔ 확인함' : '확인했어요'}</button>` : '';
-    return `<div class="n-item"><span>🐾</span><span class="n-text">${esc(t)}</span>${btn}</div>`;
-  }).join('') + (me ? '' : '<div class="hint" style="margin-top:6px;">로그인하면 \'확인했어요\'를 누를 수 있어요</div>') : '<div class="empty">알림이 없어요</div>';
+    return `<div class="n-item"><span>🐾</span><span class="n-text">${esc(t)}</span></div>`;   // '확인했어요' 버튼은 없어요
+  }).join('') : '<div class="empty">알림이 없어요</div>';
   renderMealHw(); renderSummary(fresh);
   $('closingList').innerHTML = st.closing.length ? st.closing.map((t, i) => `<div class="n-item"><span class="num">${i + 1}</span><span class="n-text">${esc(t)}</span></div>`).join('') : '<div class="empty">아직 종례 내용이 없어요</div>';
   $('cleanList').innerHTML = !fresh ? '<div class="empty">오늘 출석부가 아직 열리지 않았어요</div>'
