@@ -257,6 +257,16 @@ textarea{width:100%;padding:10px;font-size:1.1rem;border:3px solid var(--ink);bo
 .g-prob{font-size:.85rem;color:var(--ink-soft);}
 
 /* 창 */
+.overlay#catOv{align-items:flex-end;padding:0;}
+#catOv .cm-sheet{width:min(580px,100vw);border-radius:26px 26px 0 0;border-bottom:none;box-shadow:none;padding:18px 18px calc(20px + env(safe-area-inset-bottom));animation:cmUp .18s ease-out;gap:12px;}
+@keyframes cmUp{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+#catOv .cm-hd{display:flex;gap:16px;align-items:center;text-align:left;} #catOv .cm-hd .frame{width:120px;height:120px;flex:0 0 auto;box-shadow:0 4px 0 var(--ink);} #catOv .cm-hd .frame canvas{width:96px;height:96px;}
+#catOv .cm-info{min-width:0;} #catOv .cm-info h2{margin:0;font-size:1.35rem;text-align:left !important;padding:0 40px 0 0 !important;} #catOv .cm-st{margin-top:6px;font-size:.95rem;background:#FFF3C4;border-radius:10px;padding:3px 8px;display:inline-block;} #catOv .cm-st:empty{display:none;}
+#catOv .cm-wear{margin-top:6px;font-size:.88rem;color:var(--ink-soft);line-height:1.5;white-space:pre-line;}
+#catOv .cm-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;}
+#catOv .cm-g button{font-family:inherit;border:2px solid #E6D9CA;border-radius:14px;background:#fff;padding:10px 4px;font-size:1.6rem;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;color:var(--ink);}
+#catOv .cm-g button small{font-size:.85rem;} #catOv .cm-g button:hover{border-color:var(--ink);background:#FFF8E1;} #catOv .cm-g button.done{opacity:.45;}
+#catOv .cm-login{text-align:center;padding:12px;border:2px dashed #E6D9CA;border-radius:14px;color:var(--ink-soft);}
 .overlay{position:fixed;inset:0;background:rgba(80,60,45,.55);display:none;justify-content:center;align-items:center;z-index:100;padding:12px;}
 .modal{position:relative;width:420px;max-width:100%;max-height:92vh;overflow-y:auto;background:var(--cream);border:4px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);padding:20px 20px 18px;display:flex;flex-direction:column;gap:12px;animation:pop .22s ease-out;}
 @keyframes pop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -573,11 +583,11 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 </div>
 
 <div class="overlay" id="catOv">
-  <div class="modal" style="align-items:center;text-align:center;">
+  <div class="modal cm-sheet">
     <button type="button" class="x" data-close="catOv">✕</button>
-    <div class="frame" id="catFrame"><div class="lv-frame"></div><canvas id="catCanvas" class="pix" width="16" height="16"></canvas></div>
-    <h2 id="catName"></h2>
-    <div id="catWear" class="hint" style="font-size:1rem;line-height:1.6;"></div>
+    <div class="cm-hd"><div class="frame" id="catFrame"><div class="lv-frame"></div><canvas id="catCanvas" class="pix" width="16" height="16"></canvas></div>
+      <div class="cm-info"><h2 id="catName"></h2><div id="catStatus" class="cm-st"></div><div id="catWear" class="cm-wear"></div></div></div>
+    <div id="catBtns"></div>
   </div>
 </div>
 
@@ -1336,13 +1346,53 @@ function wearList(raw, lv){
   const look = lookOfRaw(raw, lv);
   return ['eye','mouth','top','earR','earL','neck','back','fur'].filter(k => look[k]).map(k => `${look[k].it.icon} ${look[k].c.n} ${look[k].it.name}`).join(' · ');
 }
-function openCat(s){
-  const raw = lookFor(s);
+/* 🐱 마을 탭 고양이를 누르면 아래에서 메뉴 카드: 입은 모습 · 냥이 카드 · 귓속말 · 편지 · 놀러 가기 · 냥 인사 · 일기 */
+let catNow = null;
+async function openCat(s){
+  catNow = s;
+  const raw = lookFor(s), T = /(쌤|샘|선생님|교감|교장)$/.test(s.name), mine = me && me.name === s.name;
   $('catFrame').className = 'frame lv-' + s.lv;
   drawColors($('catCanvas'), lookColorsRaw(raw, s.lv));
-  $('catName').textContent = `${s.name} · Lv.${s.lv} ${s.lvName || ''}`;
-  $('catWear').textContent = (s.status ? `💬 ${s.status}\n` : '') + (wearList(raw, s.lv) || '아직 꾸미지 않았어요');
+  $('catName').textContent = `${T ? '👑 ' : ''}${s.name}${mine ? ' (나)' : ''} · Lv.${s.lv} ${s.lvName || ''}`;
+  $('catStatus').textContent = s.status ? `💬 ${s.status}` : '';
+  $('catWear').textContent = '👗 ' + ((wearList(raw, s.lv) || '아직 꾸미지 않았어요').replace(/\n/g, ' · '));
+  const B = (act, ic, label) => `<button type="button" data-cmact="${act}">${ic}<small>${label}</small></button>`;
+  $('catBtns').innerHTML = !me ? '<div class="cm-login">🔑 로그인하면 같이 놀 수 있어요<br><button type="button" class="btn btn-y" data-cmact="login" style="margin-top:8px;">로그인</button></div>'
+    : mine ? `<div class="cm-g">${B('closet', '🎨', '꾸미기')}${B('myhouse', '🏠', '우리 집')}${B('mailbox', '📮', '내 편지함')}${B('card', '🪪', '냥이 카드')}</div>`
+    : T ? `<div class="cm-g">${B('troom', '👑', '시내T 방')}${B('ask', '💌', 'to. 시내T')}${B('card', '🪪', '냥이 카드')}</div>`
+    : `<div class="cm-g" id="cmG">${B('card', '🪪', '냥이 카드')}${B('whisper', '🤫', '귓속말')}${B('mail', '💌', '편지 쓰기')}${B('house', '🏠', '놀러 가기')}${B('hi', '👋', '냥 인사')}</div>`;
   $('catOv').style.display = 'flex';
+  if (me && !mine && !T){   // 📔 일기를 읽을 수 있으면 버튼 추가 · 👋 오늘 인사했으면 흐리게
+    try { const j = await studentCall('cmInfo', { to: s.name }); const g = $('cmG'); if (!g || catNow !== s || !j.ok || j.error) return;
+      if (j.diary) g.insertAdjacentHTML('beforeend', B('diary', '📔', '일기 보기'));
+      if (j.hi){ const h = g.querySelector('[data-cmact=hi]'); if (h){ h.classList.add('done'); h.querySelector('small').textContent = '인사 완료'; } }
+    } catch(e){}
+  }
+}
+async function catAct(act, btn){
+  const s = catNow; if (!s) return; const nm = s.name, close = () => { $('catOv').style.display = 'none'; };
+  const vil = async fn => { close(); if (!document.querySelector('.vg') || !openVillage.last){ showTab('village'); await enterVillage(); } setTimeout(() => { try { fn(openVillage.last); } catch(e){} }, 400); };
+  if (act === 'login'){ close(); openLogin(); return; }
+  if (act === 'mail'){ toast('💌 지금은 미션 기간이라, 친구 집에 직접 가서 📮 편지함에 써 주세요 🏠'); return; }
+  if (act === 'hi'){
+    if (btn.classList.contains('done')){ toast('오늘은 벌써 인사했어요 💛'); return; }
+    btn.classList.add('done'); btn.querySelector('small').textContent = '인사 완료';
+    try { const j = await studentCall('cmHi', { to: nm }); toast(j.ok && j.sent ? `👋 ${nm}에게 냥냥 인사를 보냈어요 💛` : j.ok && j.hi ? '오늘은 벌써 인사했어요 💛' : '보내지 못했어요'); } catch(e){ toast('연결이 안 돼요'); }
+    return;
+  }
+  if (act === 'whisper' || act === 'troom'){
+    close(); const room = act === 'troom' ? '👑' : nm;
+    if (IN_APP){ try { window.parent.postMessage({ nyang:'act', act, name: nm }, location.origin); } catch(e){} }
+    else { chat.to = room; showTab('chat'); renderChat(); }
+    return;
+  }
+  if (act === 'ask'){ close(); showTab('ask'); return; }
+  if (act === 'closet'){ close(); showTab('me'); return; }
+  if (act === 'mailbox'){ close(); openMail(); return; }
+  if (act === 'diary'){ close(); openDiary(nm); return; }
+  if (act === 'card') return vil(v => v.openCard(nm));
+  if (act === 'house') return vil(v => v.enter('house:' + nm));
+  if (act === 'myhouse') return vil(v => v.enter('house:' + me.name));
 }
 
 function renderMe(){
@@ -2040,6 +2090,7 @@ document.addEventListener('click', e => {
   { const x = t.closest('[data-reveal]'); if (x){ ideaReveal[x.dataset.reveal] = !ideaReveal[x.dataset.reveal]; renderIdeas(); return; } }
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
+  { const ca = t.closest('[data-cmact]'); if (ca){ catAct(ca.dataset.cmact, ca); return; } }
   const cat = t.closest('[data-cat]'); if (cat){ const cs = st.pub.students[+cat.dataset.cat]; markSeen(cs); const nb = cat.querySelector('.new'); if (nb) nb.remove(); openCat(cs); return; }
   const ack = t.closest('[data-ack]');
   if (ack && me && !ack.classList.contains('done')){
