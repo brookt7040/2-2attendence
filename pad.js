@@ -1,4 +1,4 @@
-/* 📔 내 수첩: 나만 보는 위젯 (수첩 비밀번호로 잠가서 서버에 저장 · 선생님도 못 읽어요)
+/* 📔 내 수첩: 위젯 (수첩 비밀번호로 잠가서 서버에 저장 · 마스터 열쇠는 선생님 관리 화면)
  * student.html 안에서 돌아가요: me · studentCall · toast · esc · $ · bOpen · bClose · todayStr · coin 을 써요 */
 (function(){
 const NP = window.NP = { st: 'idle', data: null, ver: 0, key: null, salt: null, edit: false, saveTm: 0, busy: false, cal: null, timer: null, show: {} };
@@ -17,19 +17,43 @@ async function deriveKey(pw, salt){
   const base = await crypto.subtle.importKey('raw', TE.encode(pw), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
 }
+/* v2: 내용은 무작위 열쇠(DEK)로 잠그고, 그 열쇠를 수첩 비밀번호로 한 번 더 잠가요 (비밀번호를 바꿔도 내용은 그대로) */
+const importDek = raw => crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+async function newDek(){ NP.dekRaw = crypto.getRandomValues(new Uint8Array(32)); NP.dek = await importDek(NP.dekRaw); NP.mw = null; }
+async function wrapPw(pw){   // 수첩 비밀번호로 DEK 잠그기
+  NP.salt = crypto.getRandomValues(new Uint8Array(16)); NP.key = await deriveKey(pw, NP.salt);
+  NP.wiv = crypto.getRandomValues(new Uint8Array(12)); NP.wpw = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: NP.wiv }, NP.key, NP.dekRaw));
+}
+async function wrapM(){
+  if (!NP.mpub) return '-';
+  if (NP.mw && NP.mwFor === NP.mpub) return NP.mw;
+  try { const k = await crypto.subtle.importKey('spki', unb64(NP.mpub), { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['encrypt']);
+    NP.mw = b64(new Uint8Array(await crypto.subtle.encrypt({ name: 'RSA-OAEP' }, k, NP.dekRaw))); NP.mwFor = NP.mpub; return NP.mw; } catch(e){ return '-'; }
+}
 async function lockData(obj){
   let raw = TE.encode(JSON.stringify(obj)), z = 'n';
   if (window.CompressionStream){ try { raw = await pipe(raw, CompressionStream); z = 'z'; } catch(e){} }
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, NP.key, raw));
-  return `v1.${z}.${b64(NP.salt)}.${b64(iv)}.${b64(ct)}`;
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, NP.dek, raw));
+  return `v2.${z}.${b64(NP.salt)}.${b64(NP.wiv)}.${b64(NP.wpw)}.${await wrapM()}.${b64(iv)}.${b64(ct)}`;
+}
+async function openCt(z, iv, ct, dek){
+  let raw = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, dek, unb64(ct)));
+  if (z === 'z') raw = await pipe(raw, DecompressionStream);
+  return JSON.parse(TD.decode(raw));
 }
 async function unlockBlob(blob, pw){
-  const [v, z, s, iv, ct] = blob.split('.'); if (v !== 'v1') throw new Error('ver');
-  const salt = unb64(s), key = await deriveKey(pw, salt);
-  let raw = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, key, unb64(ct)));
-  if (z === 'z') raw = await pipe(raw, DecompressionStream);
-  return { data: JSON.parse(TD.decode(raw)), key, salt };
+  const P = blob.split('.');
+  if (P[0] === 'v1'){   // 예전 수첩: 비밀번호 열쇠로 바로 잠겨 있어요 → 열면 v2로 바꿔 저장해요
+    const salt = unb64(P[2]), key = await deriveKey(pw, salt), data = await openCt(P[1], P[3], P[4], key);
+    await newDek(); await wrapPw(pw); NP.migrate = true; return { data };
+  }
+  if (P[0] !== 'v2') throw new Error('ver');
+  const salt = unb64(P[2]), key = await deriveKey(pw, salt);
+  const dekRaw = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(P[3]) }, key, unb64(P[4])));
+  const dek = await importDek(dekRaw), data = await openCt(P[1], P[6], P[7], dek);
+  Object.assign(NP, { salt, key, wiv: unb64(P[3]), wpw: unb64(P[4]), dekRaw, dek, mw: P[5] !== '-' ? P[5] : null, mwFor: P[5] !== '-' ? NP.mpub : null });
+  return { data };
 }
 
 /* 🧩 위젯 18개 */
@@ -75,7 +99,7 @@ const W = {
     r(x){ const M = x.mood = x.mood || {}, t = D(), o = M[t] || {}, m = t.slice(0, 7), n = new Date(+m.slice(0, 4), +m.slice(5), 0).getDate();
       let cells = ''; for (let d = 1; d <= n; d++){ const v = M[`${m}-${String(d).padStart(2, '0')}`]; cells += `<span class="np-mc" style="background:${v && v.m != null ? MOODS[v.m][1] : '#EFE6D8'}" title="${d}일${v && v.t ? ' · ' + esc(v.t) : ''}"></span>`; }
       return `<div class="np-moods">${MOODS.map(([e], k) => `<button type="button" class="${o.m === k ? 'on' : ''}" data-np="mood" data-w="mood" data-k="${k}">${e}</button>`).join('')}</div>
-        <input type="text" class="np-line" data-npc="moodt" maxlength="60" placeholder="오늘 한 줄 (나만 봐요)" value="${esc(o.t || '')}">
+        <input type="text" class="np-line" data-npc="moodt" maxlength="60" placeholder="오늘 한 줄" value="${esc(o.t || '')}">
         <div class="np-sub">${+m.slice(5)}월의 기분</div><div class="np-mgrid">${cells}</div>`; } },
   habit: { i: '🌱', n: '습관 잔디', sz: 'b', d: '매일 하는 습관 · 연속 🔥',
     r(x){ const h = x.habit = x.habit || { list: [], log: {} }, t = D(), days = [...Array(7)].map((_, i) => addDays(t, i - 6));
@@ -119,7 +143,7 @@ const W = {
       return (L.length ? `<div class="np-shelf">${L.slice(0, 24).map((o, k) => `<span style="background:${COLORS[k % COLORS.length]};height:${24 + (o.n.length * 3) % 18}px" title="${esc(o.n)}"></span>`).join('')}</div>` + L.slice(0, 5).map((o, k) => `<div class="np-row"><span class="np-grow">${esc(o.n)} <small>${'★'.repeat(o.s)}${o.m ? ' · ' + esc(o.m) : ''}</small></span>${del('books', k)}</div>`).join('') + `<div class="np-sub">모두 ${L.length}권</div>` : nothing('다 읽은 책을 꽂아요'))
         + add('books', inp('n', '책 제목', 'text', 'maxlength="30"') + `<select data-f="s">${[5, 4, 3, 2, 1].map(v => `<option value="${v}">${'★'.repeat(v)}</option>`).join('')}</select>` + inp('m', '한 줄 느낌', 'text', 'maxlength="40"')); },
     add(x, f){ if (!f.n) return '책 제목을 적어요'; x.books.unshift({ n: f.n, s: +f.s || 5, m: f.m || '' }); } },
-  diary: { i: '🔐', n: '비밀 일기', sz: 'b', d: '나만 보는 일기 · 평소엔 가려져요',
+  diary: { i: '🔐', n: '비밀 일기', sz: 'b', d: '평소엔 가려져 있는 일기',
     r(x){ const G = x.diary = x.diary || {}, t = D(), past = Object.keys(G).filter(d => d !== t && G[d]).sort().reverse();
       if (!NP.show.diary) return `<button type="button" class="np-veil" data-np="veil" data-w="diary">🙈 가려 뒀어요 · 눌러서 열기<br><small>지금까지 ${past.length + (G[t] ? 1 : 0)}일 썼어요</small></button>`;
       const v = NP.show.diaryDay;
@@ -164,7 +188,7 @@ function fmtT(T){ const s = Math.max(0, Math.ceil((T.end - Date.now()) / 1000));
 function box(){ return $('padBox'); }
 function render(){
   const b = box(); if (!b) return;
-  if (!me){ b.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">📔 내 수첩</div><p>🔑 로그인하면 나만 보는 수첩을 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>'; return; }
+  if (!me){ b.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">📔 내 수첩</div><p>🔑 로그인하면 내 수첩을 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>'; return; }
   if (!window.crypto || !crypto.subtle){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">이 브라우저에서는 수첩을 잠글 수 없어요. 다른 브라우저(크롬 · 사파리)로 열어 주세요.</div></div>'; return; }
   if (NP.st === 'loading' || NP.st === 'idle'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">🔐 여는 중…</div></div>'; return; }
   if (NP.st === 'error'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">연결이 안 돼요. 잠시 뒤 다시 눌러 주세요.</div><button type="button" class="btn btn-y" data-np="retry">🔄 다시</button></div>'; return; }
@@ -172,21 +196,21 @@ function render(){
     const S = NP.st === 'setup';
     b.innerHTML = `<div class="box np-lock"><div class="box-head">📔 내 수첩</div>
       <div class="np-lockic">🔐</div>
-      <p>${S ? '<b>나만 보는 수첩</b>이에요. 선생님도, 친구도 못 봐요.<br>수첩을 잠글 <b>수첩 비밀번호</b>를 만들어요.' : '수첩 비밀번호를 넣어요'}</p>
+      <p>${S ? '<b>내 수첩</b>이에요. 친구들은 못 봐요.<br>수첩을 잠글 <b>수첩 비밀번호</b>를 만들어요.' : '수첩 비밀번호를 넣어요'}</p>
       <input type="password" id="npPw" maxlength="30" placeholder="${S ? '수첩 비밀번호 (4자 이상)' : '수첩 비밀번호'}" autocomplete="off">
       ${S ? '<input type="password" id="npPw2" maxlength="30" placeholder="한 번 더" autocomplete="off">' : ''}
       <label class="np-rem"><input type="checkbox" id="npRem" checked> 이 기기에서 기억하기 <small>(학교 TV · 친구 폰에서는 끄기)</small></label>
       <div class="np-err" id="npErr"></div>
       <button type="button" class="btn btn-y" data-np="${S ? 'create' : 'unlock'}" style="width:100%;">${S ? '📔 수첩 만들기' : '🔓 열기'}</button>
-      <div class="hint" style="margin-top:10px;">⚠️ 수첩 비밀번호는 <b>선생님도 몰라요.</b> 잊어버리면 수첩을 처음부터 다시 써야 해요.</div>
+      <div class="hint" style="margin-top:10px;">⚠️ 수첩 비밀번호를 잊어버리면 수첩을 처음부터 다시 써야 해요. 로그인 비밀번호와 다르게 만들어요.</div>
       ${S ? '' : '<div style="text-align:center;margin-top:8px;"><button type="button" class="np-link" data-np="forgot">비밀번호를 잊었어요 (수첩 새로 시작)</button></div>'}</div>`;
     return;
   }
   const x = NP.data, ws = x.w.filter(id => W[id]);
   const html = ws.map((id, k) => { const w = W[id];
     return `<div class="np-w ${w.sz === 's' ? 's' : ''}" data-wid="${id}"><div class="np-wh"><span>${w.i} ${w.n}</span>${NP.edit ? `<span class="np-ed"><button type="button" data-np="up" data-k="${k}" title="위로">▲</button><button type="button" data-np="down" data-k="${k}" title="아래로">▼</button><button type="button" data-np="rm" data-k="${k}" title="빼기">🗑</button></span>` : ''}</div><div class="np-wb">${NP.edit ? `<div class="np-sub">${w.d}</div>` : w.r(x)}</div></div>`; }).join('');
-  b.innerHTML = `<div class="np-top"><b>📔 내 수첩</b><span class="np-sec">🔐 나만 봐요</span><span style="flex:1"></span>
-      <button type="button" class="np-btn" data-np="edit">${NP.edit ? '✔ 다 했어요' : '✏️ 편집'}</button><button type="button" class="np-btn" data-np="lock" title="잠그기">🔒</button></div>
+  b.innerHTML = `<div class="np-top"><b>📔 내 수첩</b><span class="np-sec">🔐 잠금</span><span style="flex:1"></span>
+      <button type="button" class="np-btn" data-np="edit">${NP.edit ? '✔ 다 했어요' : '✏️ 편집'}</button><button type="button" class="np-btn" data-np="pwchg" title="수첩 비밀번호 바꾸기">🔑</button><button type="button" class="np-btn" data-np="lock" title="잠그기">🔒</button></div>
     <div class="np-grid">${html || '<div class="np-empty" style="grid-column:1/-1;text-align:center;">위젯을 추가해 봐요 👇</div>'}</div>
     <button type="button" class="btn btn-y np-plus" data-np="addw">➕ 위젯 추가</button>
     <div class="np-saved" id="npSaved">${NP.saveTm ? '저장 중…' : ''}</div>`;
@@ -199,7 +223,8 @@ function openAddSheet(){
 /* 💾 저장 · 불러오기 */
 function changed(){ clearTimeout(NP.saveTm); NP.saveTm = setTimeout(save, 1500); const s = $('npSaved'); if (s) s.textContent = '저장 중…'; }
 async function save(){
-  clearTimeout(NP.saveTm); NP.saveTm = 0; if (NP.st !== 'open' || !NP.key) return;
+  clearTimeout(NP.saveTm); NP.saveTm = 0; if (NP.st !== 'open' || !NP.dek) return;
+  crisisScan();
   if (NP.busy){ NP.saveTm = setTimeout(save, 800); return; }
   NP.busy = true;
   try {
@@ -216,10 +241,8 @@ async function save(){
   finally { NP.busy = false; }
 }
 async function unlockBlobKey(blob){
-  const [v, z, s, iv, ct] = blob.split('.');
-  let raw = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, NP.key, unb64(ct)));
-  if (z === 'z') raw = await pipe(raw, DecompressionStream);
-  return JSON.parse(TD.decode(raw));
+  const P = blob.split('.'); if (P[0] !== 'v2') throw new Error('ver');
+  return openCt(P[1], P[6], P[7], NP.dek);
 }
 function norm(x){ x = x && typeof x === 'object' ? x : {}; if (!Array.isArray(x.w)) x.w = ['dday', 'todo', 'memo']; let ch = false; Object.values(W).forEach(w => { if (w.prep && w.prep(x)) ch = true; }); if (ch) setTimeout(changed, 0); return x; }
 NP.open = async function(){
@@ -229,7 +252,7 @@ NP.open = async function(){
   NP.st = 'loading'; render();
   let j; try { j = await studentCall('padGet'); } catch(e){ j = null; }
   if (!j || j.ok === false){ NP.st = 'error'; render(); return; }
-  NP.ver = j.ver || 0; NP.blob = j.blob || '';
+  NP.ver = j.ver || 0; NP.blob = j.blob || ''; NP.mpub = j.mpub || '';
   if (!NP.blob){ NP.st = 'setup'; render(); return; }
   let pw = ''; try { pw = localStorage.getItem(pwKey()) || ''; } catch(e){}
   if (pw){ try { await unlockWith(pw, false); return; } catch(e){ try { localStorage.removeItem(pwKey()); } catch(e2){} } }
@@ -237,24 +260,28 @@ NP.open = async function(){
 };
 async function unlockWith(pw, remember){
   const r = await unlockBlob(NP.blob, pw);
-  NP.key = r.key; NP.salt = r.salt; NP.data = norm(r.data); NP.st = 'open';
+  NP.data = norm(r.data); NP.st = 'open';
   if (remember){ try { localStorage.setItem(pwKey(), pw); } catch(e){} }
+  if (NP.migrate || (NP.mpub && !NP.mw)){ NP.migrate = false; changed(); }   // 새 방식으로 다시 저장
   render();
 }
-function lockNow(){ save(); try { localStorage.removeItem(pwKey()); } catch(e){} NP.key = null; NP.data = null; NP.st = 'idle'; if (NP.timer){ clearInterval(NP.timer.iv); NP.timer = null; } NP.open(); toast('🔒 수첩을 잠갔어요'); }
+function lockNow(){ save(); try { localStorage.removeItem(pwKey()); } catch(e){} NP.key = null; NP.dek = null; NP.dekRaw = null; NP.data = null; NP.st = 'idle'; if (NP.timer){ clearInterval(NP.timer.iv); NP.timer = null; } NP.open(); toast('🔒 수첩을 잠갔어요'); }
 
 /* 👆 누르기 */
 function formOf(el){ const f = {}; el.querySelectorAll('[data-f]').forEach(i => { f[i.dataset.f] = i.value.trim(); }); return f; }
 async function onClick(e){
-  const t = e.target.closest('[data-np]'); if (!t || !box() || !(box().contains(t) || $('msOv').contains(t))) return;
+  const t = e.target.closest('[data-np]'); if (!t) return;
   const a = t.dataset.np, wid = t.dataset.w, k = t.dataset.k, x = NP.data;
+  if (/^m[A-Z]/.test(a)){ mClick(a, k, t); return; }
+  if (a === 'careSelf'){ try { await studentCall('padAlert', { self: true, snip: '' }); } catch(e2){} bClose('msOv'); crisisCare(); return; }
+  if (!box() || !(box().contains(t) || $('msOv').contains(t))) return;
   if (a === 'retry'){ NP.st = 'idle'; NP.open(); return; }
   if (a === 'create' || a === 'unlock'){
     const pw = $('npPw').value, rem = $('npRem').checked, err = $('npErr');
     if (a === 'create'){
       if (pw.length < 4){ err.textContent = '4자 이상으로 만들어요'; return; }
       if (pw !== $('npPw2').value){ err.textContent = '두 번 넣은 비밀번호가 달라요'; return; }
-      t.disabled = true; NP.salt = crypto.getRandomValues(new Uint8Array(16)); NP.key = await deriveKey(pw, NP.salt);
+      t.disabled = true; await newDek(); await wrapPw(pw);
       NP.data = norm({ w: ['dday', 'todo', 'memo', 'mood'] }); NP.st = 'open'; if (rem){ try { localStorage.setItem(pwKey(), pw); } catch(e2){} }
       render(); await save(); toast('📔 내 수첩을 만들었어요!'); return;
     }
@@ -271,6 +298,17 @@ async function onClick(e){
   if (NP.st !== 'open') return;
   if (a === 'edit'){ NP.edit = !NP.edit; render(); return; }
   if (a === 'lock'){ lockNow(); return; }
+  if (a === 'pwchg'){ bOpen('msOv', `<h2>🔑 수첩 비밀번호 바꾸기</h2><p class="hint">내용은 그대로예요. 새 비밀번호로만 열려요.</p>
+      <input type="password" id="npOld" class="pc-in" maxlength="30" placeholder="지금 수첩 비밀번호" autocomplete="off"><input type="password" id="npN1" class="pc-in" maxlength="30" placeholder="새 수첩 비밀번호 (4자 이상)" autocomplete="off"><input type="password" id="npN2" class="pc-in" maxlength="30" placeholder="한 번 더" autocomplete="off">
+      <div class="np-err" id="npPcErr"></div><button type="button" class="btn btn-y" data-np="pwchgGo" style="width:100%;">🔑 바꾸기</button>`); return; }
+  if (a === 'pwchgGo'){
+    const o = $('npOld').value, n1 = $('npN1').value, err = $('npPcErr');
+    try { const k = await deriveKey(o, NP.salt); await crypto.subtle.decrypt({ name: 'AES-GCM', iv: NP.wiv }, k, NP.wpw); } catch(e2){ err.textContent = '지금 비밀번호가 달라요'; return; }
+    if (n1.length < 4){ err.textContent = '4자 이상으로 만들어요'; return; }
+    if (n1 !== $('npN2').value){ err.textContent = '새 비밀번호 두 개가 달라요'; return; }
+    await wrapPw(n1); try { if (localStorage.getItem(pwKey())) localStorage.setItem(pwKey(), n1); } catch(e2){}
+    await save(); bClose('msOv'); toast('🔑 수첩 비밀번호를 바꿨어요'); return;
+  }
   if (a === 'addw'){ openAddSheet(); return; }
   if (a === 'addone'){ if (!x.w.includes(k)){ x.w.push(k); norm(x); changed(); } bClose('msOv'); render(); setTimeout(() => { const el = document.querySelector(`[data-wid="${k}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50); return; }
   if (a === 'up' || a === 'down'){ const i = +k, j2 = a === 'up' ? i - 1 : i + 1; if (j2 < 0 || j2 >= x.w.length) return; [x.w[i], x.w[j2]] = [x.w[j2], x.w[i]]; changed(); render(); return; }
@@ -317,6 +355,106 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isCompos
 setInterval(() => { if (NP.data && (!me || me.name !== NP.owner)){ Object.assign(NP, { st: 'idle', data: null, key: null, owner: '' }); const b = box(); if (b) b.innerHTML = ''; } }, 1500);
 document.addEventListener('visibilitychange', () => { if (document.hidden && NP.saveTm) save(); });
 addEventListener('pagehide', () => { if (NP.saveTm) save(); });
+
+
+/* 🆘 걱정되는 말 살피기: 처음엔 학생에게 묻고, 또 나오면 선생님께 알려요 (같은 글은 한 번만) */
+const CRISIS_RE = /자살|자해|죽고싶|죽고시퍼|죽고싶|죽을래|죽어버리|죽어버릴|죽어야겠|뒤지고싶|뒤져버리|살기싫|살고싶지않|사라지고싶|없어지고싶|태어나지말|뛰어내리|투신|목매|목을매|손목을?긋|칼로긋|긋고싶|그어버리|유서|극단적선택|수면제.{0,6}(많이|한꺼번|다먹|모아)|약을?다먹|죽는게낫|자1살|자ㅅ살|ㅈ살/;
+function crisisTexts(o, out = []){ if (typeof o === 'string') out.push(o); else if (o && typeof o === 'object') for (const k in o) if (k !== '_crisis') crisisTexts(o[k], out); return out; }
+function hashStr(s){ let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+let crisisBusy = false;
+async function crisisScan(){
+  const x = NP.data; if (!x || crisisBusy) return; const seen = x._crisis = x._crisis || [];
+  const hits = crisisTexts(x).filter(t => CRISIS_RE.test(t.replace(/[\s.,!?~…·\-_'"^ㅋㅎㅠㅜ]/g, ''))).filter(t => !seen.includes(hashStr(t)));
+  if (!hits.length) return;
+  crisisBusy = true; hits.forEach(t => seen.push(hashStr(t)));
+  try {
+    const j = await studentCall('padAlert', { snip: hits[0].slice(0, 200) });
+    if (j && j.warn) crisisWarn(); else if (j && j.reported) crisisCare();
+  } catch(e){} finally { crisisBusy = false; }
+}
+function crisisWarn(){
+  bOpen('msOv', `<div class="np-care"><div style="font-size:2.4rem;">💛</div><h2>혹시 많이 힘든가요?</h2>
+    <p>수첩에 걱정되는 말이 보여서 물어봐요.</p>
+    <p>장난으로 썼다면 지워 주세요. <b>다음에 또 쓰면 선생님께 바로 알려져요.</b></p>
+    <p>정말 힘들다면 혼자 참지 말고 꼭 이야기해요.</p>
+    <div class="np-help">📞 자살예방 상담전화 <b>109</b> (24시간)<br>📞 청소년 상담 <b>1388</b> · 문자 <b>#1388</b></div>
+    <button type="button" class="btn btn-pink" data-np="careSelf" style="width:100%;margin-top:10px;">🙋 선생님과 이야기하고 싶어요</button>
+    <button type="button" class="btn btn-gray" data-bclose="msOv" style="width:100%;margin-top:8px;">장난이었어요. 지울게요</button></div>`);
+}
+function crisisCare(){
+  bOpen('msOv', `<div class="np-care"><div style="font-size:2.4rem;">💛</div><h2>선생님께 알렸어요</h2>
+    <p>혼자 힘들어하지 않아도 돼요. 선생님이 곧 이야기해 줄 거예요.</p>
+    <div class="np-help">📞 자살예방 상담전화 <b>109</b> (24시간)<br>📞 청소년 상담 <b>1388</b> · 문자 <b>#1388</b></div>
+    <button type="button" class="btn btn-y" data-bclose="msOv" style="width:100%;margin-top:10px;">알겠어요</button></div>`);
+}
+
+/* 👑 선생님: 마스터 관리자 비밀번호로 학생 수첩 보기 (관리 탭 전용) */
+const M = { pin: '', priv: null, list: [], view: null, msg: '' };
+async function mUnwrapPriv(wpriv, pin){
+  const [s, iv, ct] = wpriv.split('.'), k = await deriveKey(pin, unb64(s));
+  const raw = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(iv) }, k, unb64(ct)));
+  return crypto.subtle.importKey('pkcs8', raw, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['decrypt']);
+}
+async function mWrapPriv(rawPriv, pin){
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)), k = await deriveKey(pin, salt);
+  return `${b64(salt)}.${b64(iv)}.${b64(new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, rawPriv)))}`;
+}
+const mCall = body => fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ action: 'padMaster', mpin: M.pin }, body)) }).then(r => r.json());
+NP.masterHTML = function(){
+  if (!M.priv) return `<div class="box"><div class="box-head">📔 학생 수첩</div><p class="hint">마스터 관리자 비밀번호로 열어요. (처음 한 번은 열쇠를 만들어요)</p>
+    <input type="password" id="npmPin" class="pc-in" placeholder="마스터 관리자 비밀번호" autocomplete="off"><div class="np-err" id="npmErr">${esc(M.msg)}</div>
+    <button type="button" class="btn btn-y" data-np="mOpen" style="width:100%;">🔓 열기</button></div>`;
+  const V = M.view;
+  return `<div class="box"><div class="box-head">📔 학생 수첩</div><div class="np-chips">${M.list.length ? M.list.map(o => `<button type="button" class="${V && V.name === o.name ? 'on' : ''}" data-np="mGet" data-k="${esc(o.name)}">${esc(o.name)}</button>`).join('') : '<span class="np-empty">아직 수첩을 만든 학생이 없어요</span>'}</div>
+    <div class="hint" style="margin-top:6px;">학생이 수첩을 한 번 열어야(저장돼야) 볼 수 있게 돼요. 보기만 하고 고칠 수는 없어요.</div>
+    ${V ? `<div class="np-mview"><div class="np-sub">${esc(V.name)} · 마지막 저장 ${esc(V.t || '')}</div>${V.err ? `<div class="empty">${V.err}</div>` : mRender(V.data)}</div>` : ''}
+    <div style="text-align:right;margin-top:8px;"><button type="button" class="np-btn" data-np="mClose">🔒 닫기</button></div></div>`;
+};
+function mRender(x){
+  x = JSON.parse(JSON.stringify(x || {})); x.todo = x.todo || { items: [] }; x.prep = x.prep || { items: [] };
+  const keep = NP.show, keepCal = NP.cal; NP.show = { diary: true }; NP.cal = null;
+  const has = id => { const v = x[id]; return v && (Array.isArray(v) ? v.length : typeof v === 'object' ? Object.keys(v).length && JSON.stringify(v) !== '{"list":[],"log":{}}' && JSON.stringify(v) !== '{"log":{}}' : 0); };
+  const ids = ORDER.filter(id => id === 'todo' ? x.todo.items.length : id === 'prep' ? x.prep.items.length : has(id));
+  let html = ids.map(id => { let body = ''; try { body = W[id].r(x); } catch(e){ body = '<div class="np-empty">—</div>'; }
+    if (id === 'future') body += (x.future || []).map(o => `<div class="np-quote">📮 ${esc(o.open)} 열림 · ${esc(o.t)}</div>`).join('');
+    if (id === 'diary') body += Object.keys(x.diary || {}).sort().reverse().map(d => `<div class="np-quote">${md(d)} · ${esc(x.diary[d])}</div>`).join('');
+    return `<div class="np-w"><div class="np-wh"><span>${W[id].i} ${W[id].n}</span></div><div class="np-wb">${body}</div></div>`; }).join('');
+  NP.show = keep; NP.cal = keepCal;
+  return `<div class="np-grid np-ro">${html || '<div class="np-empty">비어 있어요</div>'}</div>`;
+}
+async function mClick(a, k, t){
+  const box2 = t.closest('.box'), rer = () => { const host = $('tBody') || box2.parentNode; box2.outerHTML = NP.masterHTML(); };
+  if (a === 'mClose'){ Object.assign(M, { pin: '', priv: null, list: [], view: null, msg: '' }); rer(); return; }
+  if (a === 'mOpen'){
+    M.pin = $('npmPin').value; M.msg = '🔐 여는 중…'; $('npmErr').textContent = M.msg;
+    let j; try { j = await mCall({ op: 'info' }); } catch(e){ j = null; }
+    if (!j || !j.ok){ M.msg = j && j.error === 'wrong' ? '❌ 비밀번호가 달라요' : '연결이 안 돼요 (서버 코드 v52 이상)'; M.pin = ''; rer(); return; }
+    try {
+      if (!j.pub){   // 처음: 열쇠 만들기
+        const kp = await crypto.subtle.generateKey({ name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['encrypt', 'decrypt']);
+        const pub = b64(new Uint8Array(await crypto.subtle.exportKey('spki', kp.publicKey))), rawPriv = new Uint8Array(await crypto.subtle.exportKey('pkcs8', kp.privateKey));
+        const r = await mCall({ op: 'set', pub, wpriv: await mWrapPriv(rawPriv, M.pin) }); if (!r.ok) throw new Error('set');
+        j = await mCall({ op: 'info' }); toast('🔑 수첩 열쇠를 만들었어요. 이제부터 저장되는 수첩을 볼 수 있어요');
+      }
+      try { M.priv = await mUnwrapPriv(j.wpriv, M.pin); }
+      catch(e){   // 마스터 비밀번호가 바뀐 경우: 예전 비밀번호로 풀어서 새 비밀번호로 다시 잠가요
+        const old = prompt('마스터 비밀번호가 바뀌었나 봐요. 열쇠를 만들 때의 예전 마스터 비밀번호를 넣어 주세요'); if (!old) throw e;
+        const pk = await mUnwrapPriv(j.wpriv, old); M.priv = pk;
+        toast('예전 비밀번호로 열었어요');
+      }
+      M.list = j.list || []; M.msg = '';
+    } catch(e){ M.priv = null; M.msg = '열지 못했어요'; }
+    rer(); return;
+  }
+  if (a === 'mGet'){
+    const j = await mCall({ op: 'get', name: k }); M.view = { name: k, t: j && j.t };
+    try { const P = String(j.blob || '').split('.');
+      if (P[0] !== 'v2' || P[5] === '-') M.view.err = '아직 열 수 없어요. 학생이 다음에 수첩을 열면 볼 수 있게 돼요.';
+      else { const dekRaw = new Uint8Array(await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, M.priv, unb64(P[5]))); M.view.data = await openCt(P[1], P[6], P[7], await importDek(dekRaw)); }
+    } catch(e){ M.view.err = '열지 못했어요 (열쇠가 바뀌기 전에 저장된 수첩일 수 있어요)'; }
+    rer(); return;
+  }
+}
 
 /* 🎨 모양 */
 const css = document.createElement('style');
@@ -372,6 +510,9 @@ css.textContent = `
 .np-rem{display:block;margin:6px 0;font-size:.92rem;} .np-err{color:#D6456E;min-height:1.2em;margin:4px 0;}
 .np-link{font-family:inherit;border:none;background:none;color:var(--ink-soft);text-decoration:underline;cursor:pointer;}
 .np-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;} .np-pick button{font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;border:2px solid var(--ink);border-radius:14px;background:#FFFDF6;padding:10px 6px;cursor:pointer;color:var(--ink);box-shadow:0 3px 0 var(--ink);}
+.np-care{text-align:center;line-height:1.7;} .np-care p{margin:6px 0;} .np-help{background:#FFF3C4;border:2px solid #E8C35A;border-radius:14px;padding:8px;margin-top:8px;}
+.np-ro button,.np-ro input,.np-ro textarea,.np-ro select,.np-ro .np-add,.np-ro .np-x{pointer-events:none;} .np-ro .np-add,.np-ro .np-x{display:none !important;}
+.np-mview{margin-top:10px;border-top:2px dashed #EFE3D3;padding-top:8px;}
 .np-pick span{font-size:1.6rem;} .np-pick small{color:var(--ink-soft);font-size:.78rem;line-height:1.4;}
 @media (max-width:420px){ .np-cell{width:17px;height:17px;} .np-mgrid{grid-template-columns:repeat(11,1fr);} }
 `;

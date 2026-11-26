@@ -409,6 +409,8 @@ html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,htm
 html.only-notice body.guest #p-notice > .nb-grid{display:block !important;}
 html.only-ask .tabs,html.only-ask #penBar{display:none !important;} html.only-ask .panel:not(#p-ask){display:none !important;} html.only-ask #p-ask{display:block !important;}
 html.agit .tab[data-tab="notice"]{display:none !important;}
+html.agit:not(.only-comm) .tab[data-tab="village"],html.agit:not(.only-comm) .tab[data-tab="ask"]{display:none !important;}   /* 🎪 마을 · 광장은 커뮤니티 칸으로 */
+html.only-comm .tab:not([data-tab="village"]):not([data-tab="ask"]){display:none !important;} html.only-comm .tabs{grid-template-columns:1fr 1fr !important;}
 html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
 /* 💬 대화 팝업 (앱 위쪽 💬 칩) */
 html.only-chat .top,html.only-chat .tabs,html.only-chat #penBar{display:none !important;}
@@ -465,12 +467,22 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #plText{width:100%;box-sizing:border-box;font-family:inherit;font-size:1.05rem;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;}
 .pl-tag{background:#FFF3C4;border:1.5px solid #E8C35A;border-radius:999px;padding:0 8px;font-size:.82rem;color:var(--ink);}
 .pl-reply{margin-top:6px;background:#F1ECFF;border-left:0;border:2px solid #B9A6E8;border-radius:12px;padding:6px 10px;line-height:1.6;}
+
+.pc-in{display:block;width:100%;box-sizing:border-box;font-family:inherit;font-size:1.1rem;border:3px solid var(--ink);border-radius:12px;padding:8px 10px;margin:6px 0;}
+.seen-t{width:100%;border-collapse:collapse;font-size:.92rem;margin-top:6px;} .seen-t th,.seen-t td{border-bottom:1.5px dashed #EFE3D3;padding:5px 4px;text-align:left;} .seen-t th{color:var(--ink-soft);font-weight:normal;} .seen-t tr.old td{color:#B8A898;}
+.np-btn{font-family:inherit;border:2px solid var(--ink);border-radius:10px;background:#fff;padding:3px 9px;cursor:pointer;color:var(--ink);font-size:.92rem;box-shadow:0 2px 0 var(--ink);}
+
+#coinBox #shopBoxC{display:none;}
+#shopSheet{position:fixed;inset:0;z-index:24000;background:rgba(60,40,30,.35);display:none;align-items:flex-end;justify-content:center;}
+#shopSheet.on{display:flex;} #shopSheet .ss-in{width:min(760px,100%);max-height:82vh;overflow:auto;background:var(--cream);border:3px solid var(--ink);border-bottom:none;border-radius:22px 22px 0 0;padding:12px 12px 24px;box-sizing:border-box;}
+#shopSheet .ss-h{display:flex;align-items:center;gap:8px;font-size:1.2rem;margin-bottom:4px;} #shopSheet .ss-h b{flex:1;} #shopSheet .ss-h .btn{padding:4px 10px;}
+#shopSheet #shopBoxC{margin-top:22px;} #shopSheet .shop-tabs:not(.sub){display:none;}
 </style>
 </head>
 <body>
 <script>
 /* 📱 2-2😻 앱 안: ?only=notice 는 📢 알림·종례 탭 (로그인 없이), 아지트에서는 알림·종례 칸을 빼요 */
-(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && !q.get('only') && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (q.get('only') === 'chat') document.documentElement.classList.add('only-chat'); else if (q.get('only') === 'ask') document.documentElement.classList.add('only-ask'); else if (inApp) document.documentElement.classList.add('agit'); })();
+(function(){ const q = new URLSearchParams(location.search); let inApp = false; try { inApp = window.parent !== window && window.parent.location.origin === location.origin; } catch(e){} if (window.parent === window && !q.get('only') && !q.get('direct')){ const api = q.get('api'); location.replace('app.html?tab=me' + (api ? '&api=' + encodeURIComponent(api) : '')); return; }   /* 🔀 예전 주소로 오면 2-2😻 앱(탭 화면)으로 */ if (q.get('only') === 'notice') document.documentElement.classList.add('only-notice'); else if (q.get('only') === 'chat') document.documentElement.classList.add('only-chat'); else if (q.get('only') === 'ask') document.documentElement.classList.add('only-ask'); else if (q.get('only') === 'comm') document.documentElement.classList.add('agit', 'only-comm'); else if (inApp) document.documentElement.classList.add('agit'); })();
 </script>
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
@@ -548,6 +560,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div id="specialBox"></div>
     <div id="cleanMe"></div>
     <div id="meBox"></div>
+    <div class="me-only" style="text-align:center;margin:18px 0 6px;"><button type="button" class="np-btn" id="pinChgBtn">🔑 로그인 비밀번호 바꾸기</button></div>
   </section>
 
   <section class="panel" id="p-coin">
@@ -601,6 +614,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 <div id="nGate" class="nyl-gate"><div class="nyl-box"><div class="nyl-ic">🔐</div><h2>입장 코드를 넣어 주세요</h2><div class="nyl-hint">선생님이 알려 준 우리 반 코드예요 🐾</div>
   <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw nyl-in" type="text" id="ngInput" maxlength="12" inputmode="numeric"><div id="ngErr" class="nyl-err"></div><button type="button" class="nyl-go" id="ngBtn">들어가기</button><div id="ngT"></div></div></div>
 
+<div id="shopSheet"><div class="ss-in"><div class="ss-h"><b id="shopSheetName">🛒 상점</b><span id="shopSheetBal"></span><button type="button" class="btn btn-gray" id="shopSheetX">✕</button></div><div id="shopSheetBody"></div></div></div>
 <div class="big-ov" id="msOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="msOv">✕</button><div id="msBody"></div></div></div>
 <div class="big-ov" id="mailOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="mailOv">✕</button><div id="mailBody"></div></div></div>
 <div class="big-ov" id="diaryOv"><div class="sheet"><button type="button" class="btn btn-gray x" data-bclose="diaryOv">✕</button><div id="diaryBody"></div></div></div>
@@ -1023,11 +1037,12 @@ const DECOR_INFO = {
   d_mailbox:{ name:'우체통', icon:'📮' }, d_lamp:{ name:'가로등', icon:'🏮' }, d_tree:{ name:'나무', icon:'🌳' }, d_fountain:{ name:'작은 분수', icon:'⛲' }
 };
 /* 🗺️ 마을 지도 (가장자리 표지판으로 옆 지도에 가요) */
-const V_MAPS = { out:'🏘️ 냥이 마을', west:'🌊 냥냥 해변', east:'🌲 숲속 마을', south:'🏡 새 주택단지' };
+const V_MAPS = { out:'🏘️ 냥이 마을', west:'🌊 냥냥 해변', east:'🌲 숲속 마을', south:'🏡 새 주택단지', mall:'🛍️ 냥냥 상점가' };
 const isMap = sc => !!V_MAPS[sc];
-const MAP_WALK = { out: WALK, west: { x0:400, x1:1570, y0:90, y1:975 }, east: { x0:30, x1:1570, y0:90, y1:975 }, south: { x0:30, x1:1570, y0:330, y1:975 } };
+const MAP_WALK = { out: WALK, west: { x0:400, x1:1570, y0:90, y1:975 }, east: { x0:30, x1:1570, y0:90, y1:975 }, south: { x0:30, x1:1570, y0:330, y1:975 }, mall: { x0:30, x1:1570, y0:600, y1:975 } };
 const V_SIGNS = {
-  out:   [{ to:'west', x:40, y:618, label:'⬅ 해변' }, { to:'east', x:1560, y:618, label:'숲 ➡' }, { to:'south', x:800, y:982, label:'⬇ 주택단지' }],
+  out:   [{ to:'west', x:40, y:618, label:'⬅ 해변' }, { to:'east', x:1560, y:618, label:'숲 ➡' }, { to:'south', x:800, y:982, label:'⬇ 주택단지' }, { to:'mall', x:330, y:982, label:'⬇ 🛍️ 상점가' }],
+  mall:  [{ to:'out', x:800, y:982, label:'⬇ 마을로' }],
   west:  [{ to:'out', x:1555, y:520, label:'마을 ➡' }],
   east:  [{ to:'out', x:45, y:520, label:'⬅ 마을' }],
   south: [{ to:'out', x:800, y:345, label:'⬆ 마을' }]
@@ -1040,7 +1055,13 @@ const V_BUILDINGS = [
   { id:'hana',   map:'out',  name:'🏰 하나네 집',             x:690,  y:360, w:220, h:170, door:[800, 555] },
   { id:'arcade', map:'out',  name:'🎮 냥냥 오락실',           x:1250, y:400, w:290, h:190, door:[1395, 615] },
   { id:'eng',    map:'east', name:'📚 냥글리시 아카데미',     x:1020, y:330, w:340, h:210, door:[1190, 565] },
-  { id:'cafe',   map:'east', name:'☕ 냥냥 스터디카페',       x:560,  y:150, w:300, h:190, door:[710, 365] }
+  { id:'cafe',   map:'east', name:'☕ 냥냥 스터디카페',       x:560,  y:150, w:300, h:190, door:[710, 365] },
+  /* 🛍️ 상점가: 가게마다 파는 게 달라요 (문으로 들어가면 그 가게 상점이 열려요) */
+  { id:'s_cat',    map:'mall', shop:'cat',     name:'🎨 냥냥 꾸미기 가게', x:40,   y:330, w:280, h:220, door:[180, 575], c:['#FF8FB8', '#FFFFFF'], ic:'🎀' },
+  { id:'s_mega',   map:'mall', shop:'mega',    name:'📢 확성기 가게',      x:350,  y:330, w:280, h:220, door:[490, 575], c:['#FFB347', '#FFF3C4'], ic:'📢' },
+  { id:'s_home',   map:'mall', shop:'village', name:'🏠 냥냥 부동산·가구', x:660,  y:330, w:280, h:220, door:[800, 575], c:['#7ED6A0', '#FFFFFF'], ic:'🛋' },
+  { id:'s_coupon', map:'mall', shop:'coupon',  name:'🎟 쿠폰 가게',        x:970,  y:330, w:280, h:220, door:[1110, 575], c:['#8CC8FF', '#FFFFFF'], ic:'🎟' },
+  { id:'s_goods',  map:'mall', shop:'goods',   name:'🎁 냥냥 문구점',      x:1280, y:330, w:280, h:220, door:[1420, 575], c:['#C9A6FF', '#FFFFFF'], ic:'✏️' }
 ];
 /* 📚 냥글리시 아카데미 책상 (1인석 12개) — Code.gs의 SEAT_CAP.eng 과 같아야 해요 */
 /* ☕ 스터디카페 1인석 10개 — Code.gs의 SEAT_CAP.cafe 와 같아야 해요 */
@@ -1108,6 +1129,12 @@ const ARCADE_MACHINES = [
 const HANA_LINES = ['냥? 🐾', '나는 하나다냥! 반가워 💛', '츄르 먹고 싶다냥…', '오늘도 화이팅이다냥!', '2반 최고냥!', '꼬리 살랑살랑~', '골골골골… 😽',
   '지각하면 혼난다냥 😾', '숙제는 했냥?', '낮잠 잘 시간이다냥 💤', '거기 너! 쓰다듬어 줘라냥', '물 마시고 오자냥 💧', '선생님 몰래 간식 먹을까냥?', '나랑 사진 찍을래냥? 📸'];
 const HANA_REPLY = {
+  meh: ['흥! 나도 메롱이다냥 😾', '…무시할 거다냥'], meh_f: ['메롱~ 너랑 노는 거 좋다냥 😜'],
+  paw: ['젤리는 소중하다냥! 😾', '발 만지지 마라냥!'], paw_f: ['…특별히 허락한다냥 🐾💛'],
+  tail: ['꼬리는 안 된다냥!! 💢', '하악! 😾'], tail_f: ['너니까 봐준다냥~ 살랑살랑 💛'],
+  belly: ['배는 함정이다냥! 콱! 💢', '배 만지면 문다냥 😾'], belly_f: ['배 보여 주는 건 너뿐이다냥… 골골 💛'],
+  wake: ['자는데 왜 깨우냥… 😾💤', '꿈에서 츄르 먹고 있었는데!'], wake_f: ['너 기다리다 잠들었다냥! 💛'],
+  cuke: ['꺄아악!! 오이다냥!! 🙀', '용서 못 한다냥… 💢'], lemon: ['으악 냄새!! 🍋🙀', '코가 아프다냥 😿'], loud: ['귀 아프다냥!! 🙉💢', '깜짝이야! 😿'],
   pet:['골골골… 😽 거기 좋다냥', '한 번 더! 한 번 더냥!', '손이 따뜻하다냥 💛'], feed:['냠냠냠! 맛있다냥 🍚', '배부르다냥… 😋', '오늘 밥 최고냥!'],
   talk:['응응 듣고 있다냥 👂', '그랬구냥~ 😺', '너 오늘 멋있다냥!', '하나도 할 말 많다냥!'], wash:['으아앙 물 싫다냥 😿', '…그래도 뽀송해졌다냥 ✨', '향기 나는 하나다냥 🌸'],
   brush:['털이 반짝반짝냥 ✨', '시원하다냥~', '털뭉치 생겼다냥! 🐾'], play:['잡았다냥!! 🧶', '한 판 더 하자냥!', '하나가 이겼다냥 😼'],
@@ -1471,6 +1498,7 @@ function openVillage(opts){
       .vg-panel .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:8px 0;}
       .vg-panel .grid button{font-family:inherit;font-size:1rem;padding:8px 6px;border:2px solid #5B4636;border-radius:12px;background:#fff;cursor:pointer;box-shadow:0 2px 0 #5B4636;}
       .vg-panel .grid button.lock{opacity:.45;cursor:not-allowed;}
+      .vg-panel .grid button.neg{background:#FFEDEF;border-color:#E7A1AE;} .vg-panel .grid button small.flip{display:block;color:#B07AA1;font-size:.72rem;}
       .vg-panel .grid button.on{background:#FFE066;}
       .vg-panel .bar{height:14px;border:2px solid #5B4636;border-radius:999px;background:#fff;overflow:hidden;margin:4px 0;}
       .vg-panel .bar i{display:block;height:100%;background:linear-gradient(90deg,#FF9EC4,#FFD84D);}
@@ -1850,6 +1878,26 @@ function openVillage(opts){
     objsOf('south').forEach(o => drawObj(o, t)); drawSigns('south');
     label('🏡 새 주택단지 · Lv.7부터 이사할 수 있어요', 800, 300, 16, '#FFFFFF');
   }
+  /* ---------- 🛍️ 상점가 ---------- */
+  function drawShopFront(b, t){
+    const { x, y, w, h } = b, [c1, c2] = b.c;
+    box(x, y + 50, w, h - 50, '#FFF8EC', 10);
+    for (let i = 0; i < 7; i++){ ctx.fillStyle = i % 2 ? c2 : c1; ctx.fillRect(x - 12 + i * (w + 24) / 7, y + 30, (w + 24) / 7 + 1, 34); }
+    ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.strokeRect(x - 12, y + 30, w + 24, 34);
+    box(x + 20, y - 8, w - 40, 36, '#5B4636', 8); ctx.font = '19px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#FFE8C2'; ctx.fillText(b.name, x + w / 2, y + 11);
+    [x + 22, x + w - 92].forEach((wx, i) => { box(wx, y + 82, 70, 60, '#DFF3FF', 6); emoji(i ? b.ic : '🐾', wx + 35, y + 112 + Math.sin(t / 500 + i) * 2, 26); });
+    box(x + w / 2 - 30, y + h - 66, 60, 66, '#8B5A3C', 6); ctx.fillStyle = '#FFE066'; ctx.beginPath(); ctx.arc(x + w / 2 + 18, y + h - 33, 4, 0, Math.PI * 2); ctx.fill();
+    label('OPEN', x + w / 2, y + h - 80, 11, '#FFF2BF');
+  }
+  function drawMall(t){
+    ctx.fillStyle = '#F7E9D2'; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = '#E9D3B0'; for (let i = 0; i < 40; i++) ctx.fillRect((i % 10) * 160 + ((Math.floor(i / 10)) % 2) * 80, 620 + Math.floor(i / 10) * 90, 150, 80);
+    ctx.fillStyle = '#CFEFC4'; ctx.fillRect(0, 0, VW, 300);
+    for (let i = 0; i < 9; i++) emoji(i % 3 ? '🌳' : '🎈', 90 + i * 180, 270 + (i % 2) * 10, 34);
+    V_BUILDINGS.filter(b => b.map === 'mall').forEach(b => drawShopFront(b, t));
+    drawSigns('mall');
+    label('🛍️ 냥냥 상점가 · 가게 문을 누르면 들어가요', 800, 300, 16, '#FFFFFF');
+  }
   /* ---------- ☕ 스터디카페 ---------- */
   function drawCafeBuilding(b, t){
     const { x, y, w, h } = b;
@@ -1998,7 +2046,14 @@ function openVillage(opts){
 
   /* ---------- 고양이 그리기 ---------- */
   function poseOf(c){ return c.sit ? (V_OBJS.find(o => o.id === c.sit.s) || {}).act || (c.sc === 'hall' ? 'sit' : '') : ''; }
+  function openShopB(b){ if (opts.onShop) opts.onShop(b.shop, b.name); else say(`${b.name} · 학생 앱(아지트 → 커뮤니티 → 마을)에서 살 수 있어요 🐾`, 3500); }
+  const CAT_K = 1.35;   // 🐱 지도에서는 고양이를 크게 (마을이 덜 넓어 보이게)
   function drawCat(c, t, now){
+    if (!isMap(c.sc || 'out')) return drawCat0(c, t, now);
+    ctx.save(); ctx.translate(c.x, c.y); ctx.scale(CAT_K, CAT_K); ctx.translate(-c.x, -c.y);
+    try { drawCat0(c, t, now); } finally { ctx.restore(); }
+  }
+  function drawCat0(c, t, now){
     const pose = isMap(c.sc) ? poseOf(c) : (c.sit ? 'sit' : '');
     const walking = c.walking;
     let bob = walking ? Math.abs(Math.sin(t / 90)) * 5 : Math.sin(t / 600 + c.x) * 1.5, dx = 0, sz = 48, rot = 0;
@@ -2073,7 +2128,7 @@ function openVillage(opts){
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = scene === 'arcade' ? '#20183F' : '#BFE8B4'; ctx.fillRect(0, 0, cv.width, cv.height);
     camera(false);
     ctx.setTransform(scale, 0, 0, scale, ox, oy);
-    if (scene === 'out') drawOut(t); else if (scene === 'west') drawWest(t); else if (scene === 'east') drawEast(t); else if (scene === 'south') drawSouth(t);
+    if (scene === 'out') drawOut(t); else if (scene === 'west') drawWest(t); else if (scene === 'east') drawEast(t); else if (scene === 'south') drawSouth(t); else if (scene === 'mall') drawMall(t);
     else if (scene === 'hall') drawHall(t); else if (scene === 'arcade') drawArcade(t); else if (scene === 'hana') drawHanaHome(t); else if (scene === 'eng') drawEng(t); else if (scene === 'cafe') drawCafe(t); else drawRoom(t);
     const here = Object.values(cats).filter(c => c.sc === scene || (scene === 'out' && !c.sc));
     const list = here.slice().sort((a, b) => a.y - b.y);
@@ -2151,7 +2206,7 @@ function openVillage(opts){
       });
       return;
     }
-    if (g && g.type === 'door'){ enter(g.id); return; }
+    if (g && g.type === 'door'){ const sb = V_BUILDINGS.find(b => b.id === g.id); if (sb && sb.shop){ openShopB(sb); return; } enter(g.id); return; }
     if (g && g.type === 'sign'){ enter(g.to); return; }
     if (g && g.type === 'machine'){ opts.onGame && opts.onGame(g.g); return; }
     if (g && g.type === 'hana'){ openHanaPanel(); return; }
@@ -2194,12 +2249,12 @@ function openVillage(opts){
     const a = b.dataset.act, c = me(); if (!c) return;
     if (a === 'stand'){ c.sit = null; showActs(null); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 40); if (scene === 'hall'){ c.ty = c.y + 60; toGroup = false; updateTo(); } sendMove(Object.assign({}, c, { y: c.ty })); return; }
     if (a === 'chair'){ openChairPanel(); return; }
-    if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).catch(() => {}); takePhoto(); return; }
+    if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {}); takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
     if (a === 'cafe'){ opts.onCafe && opts.onCafe(); return; }
     if (['camp', 'fish', 'churu', 'again'].includes(a) && opts.call && !opts.viewOnly){
       if (actsEl.dataset.busy) return; actsEl.dataset.busy = '1';
-      if (a !== 'again') opts.call('vnews', { a }).catch(() => {});
+      if (a !== 'again') opts.call('vnews', { a }).then(j => { if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {});
       opts.call('act', { a }).then(j => {
         delete actsEl.dataset.busy;
         if (j && j.error === 'actlimit'){ say('🐾 오늘 마을 놀이 20번을 다 했어요! 내일 또 놀아요', 3500); return; }
@@ -2207,7 +2262,7 @@ function openVillage(opts){
       }).catch(() => { delete actsEl.dataset.busy; doAct(a, c, null); });
       return;
     }
-    if (['drink', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide'].includes(a) && opts.call && !opts.viewOnly) opts.call('vnews', { a }).catch(() => {});
+    if (['drink', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide'].includes(a) && opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {});
     doAct(a, c, null);
   });
   function doAct(a, c, left){
@@ -2308,7 +2363,7 @@ function openVillage(opts){
     if (sg){ if (opts.viewOnly || !c) return enter(sg.to); walkTo(sg.x + (sg.x < 100 ? 30 : sg.x > 1500 ? -30 : 0), sg.y + (sg.y < 400 ? 20 : -10), { type: 'sign', to: sg.to }); return; }
     if (isMap(scene) && scene !== 'out'){
       const b = V_BUILDINGS.find(b => b.map === scene && p.x > b.x && p.x < b.x + b.w && p.y > b.y - 20 && p.y < b.y + b.h + 30);
-      if (b){ if (opts.viewOnly || !c){ enter(b.id); return; } walkTo(b.door[0], b.door[1] + 10, { type: 'door', id: b.id }); return; }
+      if (b){ if (b.shop && (opts.viewOnly || !c)){ openShopB(b); return; } if (opts.viewOnly || !c){ enter(b.id); return; } walkTo(b.door[0], b.door[1] + 10, { type: 'door', id: b.id }); return; }
       if (scene === 'south'){
         const pl = PLOTS.find(q => Math.abs(q.x - p.x) < 120 && p.y > q.y - 110 && p.y < q.y + 20);
         if (pl){ plotTap(pl); return; }
@@ -2591,7 +2646,8 @@ function openVillage(opts){
         ${isGod() ? `<div style="text-align:center;margin:4px 0;"><button type="button" class="vg-cardgo" data-godme="1" style="background:#E3D9FF;font-size:.95rem;padding:4px 12px;">👑 친밀도·집 마법 (아무 친구나: 친구 카드에서)</button></div>` : ''}
         <div>💛 친밀도 <b>${H.aff || 0}</b> · <b>${hanaLvName(lv)}</b>${nx ? ` <span class="hint">(다음 단계까지 ${nx - (H.aff || 0)})</span>` : ' 🏆'}</div><div class="bar"><i style="width:${pct}%"></i></div>
         <div class="grid">${(HANA.acts || []).map(a => { const TT = /(쌤|샘|선생님)$/.test(meName || ''), used = (H.counts || {})[a.id] || 0, lock = lv < (a.need || 0) && !TT, done = (used >= (a.day || 1) || dayFull) && !TT;
-          return `<button type="button" data-hact="${a.id}" class="${lock || done ? 'lock' : ''}">${lock ? '🔒 ' : ''}${escV(a.name)}<br><small>${lock ? `${hanaLvName(a.need)}부터` : `+${a.aff}💛 · 오늘 ${used}/${a.day || 1}`}</small></button>`; }).join('')}</div>
+          const neg = a.aff < 0, flip = neg && a.flip != null && lv >= a.flip, gain = flip ? `+${-a.aff + 1}💛 좋아해요` : neg ? `${a.aff}💔` : `+${a.aff}💛`;
+          return `<button type="button" data-hact="${a.id}" class="${lock || done ? 'lock' : ''} ${neg && !flip ? 'neg' : ''}">${lock ? '🔒 ' : ''}${escV(a.name)}<br><small>${lock ? `${hanaLvName(a.need)}부터` : `${gain} · 오늘 ${used}/${a.day || 1}`}</small>${neg && !flip && a.flip != null ? `<small class="flip">${hanaLvName(a.flip)}부터는 💛</small>` : ''}</button>`; }).join('')}</div>
         <div class="hint">📊 하나 집사 랭킹: ${rank}</div>`;
     } else {
       const look = hana.look || {}, by = look.by ? `마지막으로 ${escV(look.by)}이(가) 꾸몄어요` : '';
@@ -2612,6 +2668,7 @@ function openVillage(opts){
       if (!isOpen()){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
       const a = (HANA.acts || []).find(x => x.id === ac.dataset.hact);
       if (a.cost && !confirm(`${a.name} — ${a.cost}🐾를 쓸까요?`)) return;
+      if (a.aff < 0 && !(a.flip != null && ((hanaInfo || {}).lv || 0) >= a.flip) && !confirm(`😾 하나가 싫어할 것 같아요… 친밀도가 ${-a.aff} 내려가요. 그래도 할까요?`)) return;
       ac.disabled = true;
       try {
         const j = await opts.call('hana', { act: a.id });
@@ -2619,8 +2676,8 @@ function openVillage(opts){
           if (j.error){ say({ locked:'아직 잠겨 있어요', limit:'오늘은 충분히 했어요! 내일 또 와요', daylimit:'오늘은 하나랑 5번 다 놀았어요! 내일 또 와요 💛', poor:'냥코인이 모자라요 🐾' }[j.error] || '다시 해 주세요'); }
           else {
             const before = (hanaInfo || {}).lv || 0; hanaInfo = j;
-            const lines = HANA_REPLY[a.id] || ['냥!']; const line = lines[Math.floor(Math.random() * lines.length)];
-            hana.bubble = { text: line, until: Date.now() + 4500 }; say(`하나: ${line}  +${j.gained}💛`, 3200);
+            const lines = (j.gained > 0 && a.aff < 0 ? HANA_REPLY[a.id + '_f'] : HANA_REPLY[a.id]) || ['냥!']; const line = lines[Math.floor(Math.random() * lines.length)];
+            hana.bubble = { text: line, until: Date.now() + 4500 }; say(`하나: ${line}  ${j.gained > 0 ? '+' + j.gained + '💛' : j.gained + '💔'}`, 3200);
             if (j.lv > before) setTimeout(() => say(`🎉 하나와 '${hanaLvName(j.lv)}' 사이가 됐어요!`, 4000), 1200);
             if (a.id === 'selfie') setTimeout(() => takePhoto(true), 300);
           }
@@ -2939,13 +2996,15 @@ function actRun(){
   try { sessionStorage.removeItem('nyangAct'); } catch(e){}
   const nm = a.name;
   const vil = async fn => { if (!document.querySelector('.vg') || !openVillage.last){ showTab('village'); await enterVillage(); } setTimeout(() => { try { fn(openVillage.last); } catch(e){} }, 400); };
-  if (a.act === 'ask') showTab('ask');
+  if (a.act === 'tab') showTab(nm);
+  else if (a.act === 'ask') showTab('ask');
   else if (a.act === 'closet') showTab('me');
   else if (a.act === 'mailbox') openMail();
   else if (a.act === 'diary') openDiary(nm);
   else if (a.act === 'card') vil(v => v.openCard(nm));
   else if (a.act === 'house') vil(v => v.enter('house:' + nm));
   else if (a.act === 'myhouse') vil(v => v.enter('house:' + me.name));
+  else if (a.act === 'mall') vil(v => v.enter('mall'));
 }
 addEventListener('message', e => { if (e.origin === location.origin && (e.data || {}).nyang === 'act') setTimeout(actRun, 50); });
 setTimeout(actRun, 1500);
@@ -3130,6 +3189,36 @@ setInterval(sleepTick, 5000);
 
 /* 🟢 지금 접속 중 (마스터 관리자 · 선생님만) */
 const PRES_WHERE = { notice:'알림', village:'마을', me:'내 고양이', coin:'냥코인', admin:'관리', login:'학생 화면', chatPull:'대화', chatSend:'대화', move:'마을', act:'마을', emote:'마을', askList:'학생 화면', askSend:'질문·건의', coins:'냥코인', status:'내 고양이', look:'꾸미기', profile:'내 고양이', hana:'마을' };
+/* 🔑 내 로그인 비밀번호 바꾸기 */
+function openPinChange(){
+  bOpen('msOv', `<h2>🔑 로그인 비밀번호 바꾸기</h2>
+    <p class="hint">숫자나 영어로 4~12자예요. 바꾸면 다른 기기에서는 다시 로그인해야 해요.</p>
+    <input type="password" id="pcOld" class="pc-in" placeholder="지금 비밀번호" maxlength="12" autocomplete="off">
+    <input type="password" id="pcNew" class="pc-in" placeholder="새 비밀번호" maxlength="12" autocomplete="off">
+    <input type="password" id="pcNew2" class="pc-in" placeholder="새 비밀번호 한 번 더" maxlength="12" autocomplete="off">
+    <div id="pcErr" style="color:#D6456E;min-height:1.2em;margin:4px 0;"></div>
+    <button type="button" class="btn btn-y" id="pcSave" style="width:100%;">🔑 바꾸기</button>`);
+}
+async function pinChangeSave(){
+  const o = $('pcOld').value, n = $('pcNew').value, err = $('pcErr');
+  if (o !== me.pin){ err.textContent = '지금 비밀번호가 달라요'; return; }
+  if (!/^[0-9A-Za-z]{4,12}$/.test(n)){ err.textContent = '숫자나 영어로 4~12자로 만들어요'; return; }
+  if (n !== $('pcNew2').value){ err.textContent = '새 비밀번호 두 개가 달라요'; return; }
+  if (n === o){ err.textContent = '지금과 다른 비밀번호로 만들어요'; return; }
+  $('pcSave').disabled = true;
+  const j = await studentCall('pinChange', { newPin: n }); $('pcSave').disabled = false;
+  if (!j || !j.changed){ err.textContent = j && j.error === 'form' ? '숫자나 영어로 4~12자로 만들어요' : '바꾸지 못했어요. 다시 해 봐요'; return; }
+  me.pin = n;
+  try { const k = localStorage.getItem(CRED_KEY) ? localStorage : sessionStorage, c = JSON.parse(k.getItem(CRED_KEY) || 'null'); if (c){ c.pin = n; k.setItem(CRED_KEY, JSON.stringify(c)); } } catch(e){}
+  bClose('msOv'); toast('🔑 비밀번호를 바꿨어요! 잊지 마요');
+}
+function seenHTML(seen, names){
+  seen = seen || {}; const now = Date.now();
+  const ago = t => { if (!t) return '—'; const m = Math.floor((now - t) / 60000); if (m < 1) return '방금'; if (m < 60) return m + '분 전'; const h = Math.floor(m / 60); if (h < 24) return h + '시간 전'; const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const rows = names.map(n => [n, seen[n] || {}]).sort((a, b) => (b[1].t || 0) - (a[1].t || 0));
+  return `<div class="pr-h" style="margin-top:14px;">📋 모든 학생 · 마지막 접속 · 마지막 활동</div><table class="seen-t"><tr><th>이름</th><th>마지막 접속</th><th>마지막 활동</th></tr>${rows.map(([n, o]) => `<tr class="${!o.t || now - o.t > 3 * 86400000 ? 'old' : ''}"><td>${esc(n)}</td><td>${ago(o.t)}</td><td>${o.a ? esc(o.a) + ' <small>' + ago(o.at) + '</small>' : '—'}</td></tr>`).join('')}</table>
+    <div class="pr-note">접속은 5분 단위로 기록돼요. 3일 넘게 안 들어온 학생은 흐리게 보여요.</div>`;
+}
 function presenceHTML(p, names){
   p = p || {}; const list = p.list || {}, now = Date.now();
   const ago = t => { const m = Math.floor((now - t) / 60000); return m < 1 ? '방금' : `${m}분 전`; };
@@ -3140,7 +3229,7 @@ function presenceHTML(p, names){
     <div class="pr-sec"><div class="pr-h">🟡 10분 안 <b>${soon.length}</b></div>${soon.map(chip).join('') || '<span class="pr-none">없어요</span>'}</div>
     <div class="pr-sec"><div class="pr-h">⚪ 지금은 안 들어옴 <b>${off.length}</b></div>${off.map(n => `<span class="pr-chip off">${esc(n)}</span>`).join('') || '<span class="pr-none">없어요</span>'}</div>
     <div class="pr-anon">👀 로그인 없이 학생용 출석부를 보는 중: <b>${p.anon || 0}</b>대</div>
-    <div class="pr-note">로그인한 학생 기준이에요. 창을 닫아도 1~2분 정도는 활동 중으로 보일 수 있어요.</div>`;
+    <div class="pr-note">로그인한 학생 기준이에요. 창을 닫아도 1~2분 정도는 활동 중으로 보일 수 있어요.</div>${seenHTML(p.seen, names)}`;
 }
 /* 🔐 📢 알림·종례 탭(앱)도 입장 코드: 출석부와 같은 기록을 써서, 한쪽에서 넣으면 다른 쪽은 안 물어요 */
 const N_ONLY = document.documentElement.classList.contains('only-notice');
@@ -3237,7 +3326,7 @@ async function doLogin(){
     store.setItem(CRED_KEY, JSON.stringify({ name, pin }));
     $('loginOv').style.display = 'none';
     toast(`${givenName(name)}, 어서 와! 🐾`);
-    chatReset(); coin = null; myProfile = null; render(); showTab(document.documentElement.classList.contains('only-ask') ? 'ask' : 'me'); chatPull(); askList(); coinCall('coins');
+    chatReset(); coin = null; myProfile = null; render(); showTab(homeTab()); chatPull(); askList(); coinCall('coins');
     if (/(쌤|샘|선생님|교감|교장)$/.test(name)){ tAuthByLogin = true; tOn(); tPoll(); toast('👑 선생님 계정이라 관리 탭이 열렸어요'); }
     else tOff(true);
   } catch(e){ $('loginErr').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
@@ -3564,6 +3653,7 @@ async function enterVillage(){
     onCoins: j => { if (j && j.ok){ coin = j; render(); } },
     onHanaLook: look => { hanaLookNow = look; drawHeaderHana(); },
     onGame: g => openGame(g),
+    onShop: (tab, nm) => openShopSheet(tab, nm),
     onMail: owner => openMail(owner), onDiary: owner => openDiary(owner), onCafe: () => openCafe(), onStory: () => openStory(true), onReport: name => openReport(name), storyOn: () => { let seen = ''; try { seen = localStorage.getItem('nyangStorySeen') || ''; } catch(e){} return !!(st.story && String(st.story.id) !== seen); },
     onClose: () => clearInterval(villageChatTimer) });
   let vTick = 0;
@@ -3582,7 +3672,15 @@ function hanaTalk(){
   b.textContent = line; b.classList.add('show'); clearTimeout(hanaTalk.tm); hanaTalk.tm = setTimeout(() => b.classList.remove('show'), 3200);
   const m = $('mascot'); m.classList.remove('hop'); void m.offsetWidth; m.classList.add('hop');
 }
+const COMM_TABS = ['village', 'ask'];
+function crossTab(t){   // 📱 앱 안: 🏠 아지트 ↔ 🎪 커뮤니티 칸 넘나들기
+  const H = document.documentElement.classList; if (!IN_APP || !H.contains('agit') || !['me', 'coin', 'pad', 'village', 'ask'].includes(t)) return false;
+  if (COMM_TABS.includes(t) === H.contains('only-comm')) return false;
+  try { window.parent.postMessage({ nyang:'act', act:'tab', name: t }, location.origin); } catch(e){} return true;
+}
+const homeTab = () => document.documentElement.classList.contains('only-comm') ? 'village' : document.documentElement.classList.contains('only-ask') ? 'ask' : 'me';
 function showTab(t){
+  if (crossTab(t)) return;
   if (t === 'coin' && me) coinCall('coins');
   if (t === 'admin') tLoad();
   if (t === 'ask' && me) ideaCall('ideaList');
@@ -3778,7 +3876,8 @@ async function catAct(act, btn){
     return;
   }
   if (act === 'ask'){ close(); showTab('ask'); return; }
-  if (act === 'closet'){ close(); showTab('me'); return; }
+  if (act === 'closet'){ close(); if (!crossTab('me')) showTab('me'); return; }
+  if (IN_APP && act === 'mailbox' && document.documentElement.classList.contains('only-comm')){ close(); try { window.parent.postMessage({ nyang:'act', act, name: nm }, location.origin); } catch(e){} return; }
   if (act === 'mailbox'){ close(); openMail(); return; }
   if (act === 'diary'){ close(); openDiary(nm); return; }
   if (act === 'card'){ catCard(nm); return; }   // 🪪 마을에 안 가고 이 자리에서 카드
@@ -4226,10 +4325,11 @@ function renderCoin(){
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
     <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink" style="display:flex;align-items:center;">📋 미션<button type="button" class="ms-rule" data-mrule style="margin-left:auto;">📜 규칙</button></div>${LKm ? lockNote : ''}${msHtml}</div>
-    <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
+    <div class="box shop-go"><div class="box-head mint">🛍️ 상점</div><div style="text-align:center;line-height:1.7;">🛍️ 상점은 <b>마을 → 🛍️ 냥냥 상점가</b>로 옮겼어요!<br><small class="hint">꾸미기 · 확성기 · 부동산 · 쿠폰 · 문구점 가게에 직접 들어가서 사요</small><br><button type="button" class="btn btn-mint" id="goMall" style="margin-top:8px;">🛍️ 상점가로 가기</button></div></div>
+    <div class="box ${LKs ? 'lockbox' : ''}" id="shopBoxC"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs">${[['mega', '📢 확성기'], ['cat', '🐱 고양이'], ['village', '🏘️ 마을'], ['coupon', '🎟 쿠폰'], ['goods', '🎁 아이템']].filter(([k]) => k !== 'mega' || tickerCfg.mega).map(([k, l]) => `<button type="button" data-stab="${k}" class="${shopTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
-      ${shopTab === 'village' ? `<div class="shop-tabs sub">${[['house', '🏠 집'], ['furn', '🛋 가구'], ['skin', '🧱 벽지·바닥'], ['decor', `🌷 정원 (${(inv.decor || []).length}/4)`], ['special', '✨ 칭호·집사']].map(([k, l]) => `<button type="button" data-ssub="${k}" class="${shopSub === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : ''}
-      ${shopTab === 'village' && shopSub === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}
+      ${shopTab === 'village' ? `<div class="shop-tabs sub">${[['house', '🏠 집'], ['furn', '🛋 가구'], ['skin', '🧱 벽지·바닥'], ['decor', `🌷 정원 (${(inv.decor || []).length}/4)`], ['special', '✨ 칭호']].map(([k, l]) => `<button type="button" data-ssub="${k}" class="${shopSub === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : ''}
+      ${shopTab === 'village' && shopSub === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''}</div>` : ''}
       ${shopTab === 'mega' ? '<div class="hint" style="margin-bottom:6px;">📢 확성기를 사면 내가 쓴 한 줄이 마을·교실 화면 맨 위에 산 시간만큼 떠요! (나쁜 말은 🙈 애교 말로 바뀌고, 선생님이 내릴 수 있어요) · 🎊 축하 배너는 오늘 하루 교실 화면 맨 위에!</div>' : ''}
       ${shopTab === 'cat' ? '<div class="hint" style="margin-bottom:6px;">🐱 사면 <b>내 고양이 → 🎨 꾸미기</b>에서 레벨 상관없이 입을 수 있어요 (한 번 사면 계속!)</div>' : ''}
       ${shopTab === 'goods' ? '<div class="hint" style="margin-bottom:6px;">🎁 실물로 바꿔 주는 아이템이에요. 사면 선생님께 신청되고, 받으면 &quot;지급 완료&quot;로 바뀌어요.</div>' : ''}
@@ -4243,7 +4343,24 @@ function renderCoin(){
   box.querySelectorAll('[data-catspr]').forEach(el => { const [cid, cci] = el.dataset.catspr.split(':'), it = ITEMS.find(x => x.id === cid), c = document.createElement('canvas'); c.width = 16; c.height = 16; c.className = 'pix'; c.style.cssText = 'width:56px;height:56px;';
     const base = Object.assign({}, defaultLook(1)); if (it) base[it.slot] = it.id + ':' + (+cci || 0); drawColors(c, lookColorsRaw(Object.assign(base, { _free: true }), 1)); el.replaceWith(c); });
   lockerPoll();
+  if (shopSheetOn){ const sb = $('shopBoxC'); if (sb) $('shopSheetBody').replaceChildren(sb); $('shopSheetBal').textContent = `${coinText()} 🐾`; }
 }
+/* 🛍️ 마을 상점가 가게 → 그 가게 상점만 아래에서 올라와요 */
+let shopSheetOn = false;
+function openShopSheet(tab, nm){
+  if (!me){ toast('로그인하면 살 수 있어요'); return; }
+  shopTab = tab; if (tab === 'village') shopSub = 'house'; shopSheetOn = true;
+  $('shopSheetName').textContent = nm || '🛒 상점'; $('shopSheet').classList.add('on');
+  if (coin) renderCoin(); else { $('shopSheetBody').innerHTML = '<div class="empty">불러오는 중…</div>'; }
+  coinCall('coins');
+}
+async function mallGo(){
+  const H = document.documentElement.classList;
+  if (IN_APP && H.contains('agit') && !H.contains('only-comm')){ try { window.parent.postMessage({ nyang:'act', act:'mall', name:'' }, location.origin); } catch(e){} return; }
+  showTab('village'); if (!document.querySelector('.vg') || !openVillage.last) await enterVillage();
+  setTimeout(() => { try { openVillage.last.enter('mall'); } catch(e){} }, 400);
+}
+function closeShopSheet(){ shopSheetOn = false; $('shopSheet').classList.remove('on'); renderCoin(); }
 /* 🎮 게임 */
 let gameOne = '';
 const GAMES = {
@@ -4320,7 +4437,7 @@ function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsS
 /* 👑 관리 탭: 📮 소통 · 🎮 학생 앱 · 🛟 안전 (출석부·EXP·냥코인·비번·백업은 관리자 출석부 🖥) */
 const T_GROUPS = [['msg', '📮 소통', [['ask', '🚨 신고·연락'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
   ['app', '🎮 학생 앱', [['stucfg', '⚙️ 화면 설정'], ['show', '📢 마을 게시물'], ['free', '⏰ 쉬는 시간'], ['eng', '📚 영어 문제']]],
-  ['safe', '🛟 안전', [['online', '🟢 접속 중'], ['safe', '🚫 잠금 · 비속어 · 초기화']]]];
+  ['safe', '🛟 안전', [['online', '🟢 접속 · 활동'], ['safe', '🚫 잠금 · 비속어 · 초기화'], ['npad', '📔 수첩']]]];
 const T_TABS = T_GROUPS.flatMap(g => g[2]);
 const tGroupOf = k => (T_GROUPS.find(g => g[2].some(x => x[0] === k)) || T_GROUPS[0]);
 function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
@@ -4365,6 +4482,7 @@ function tRender(){
 `;
     return;
   }
+  if (tTab === 'npad'){ box.innerHTML = window.NP ? NP.masterHTML() : ''; return; }
   if (tTab === 'online'){ box.innerHTML = `<div class="box">${tData.pres && tData.pres.ok ? presenceHTML(tData.pres, tKids()) : '<div class="empty">서버 코드를 최신(v29)으로 배포하면 보여요</div>'}<div style="text-align:right;"><button type="button" class="btn btn-y" data-ttab="online">🔄 새로고침</button></div></div>`; return; }
   if (tTab === 'ask'){
     const open = a => !a.reply && !a.done;
@@ -4573,6 +4691,8 @@ document.addEventListener('click', e => {
   { const x = t.closest('[data-ilike]'); if (x){ ideaCall('ideaLike', { id: +x.dataset.ilike }); return; } }
   { const x = t.closest('[data-idel]'); if (x){ if (confirm('이 글을 지울까요?')) ideaCall('ideaDel', { id: +x.dataset.idel }); return; } }
   { const x = t.closest('[data-reveal]'); if (x){ ideaReveal[x.dataset.reveal] = !ideaReveal[x.dataset.reveal]; renderIdeas(); renderPlaza(false); return; } }
+  if (t.closest('#pinChgBtn')){ openPinChange(); return; }
+  if (t.closest('#pcSave')){ pinChangeSave(); return; }
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
   { const ca = t.closest('[data-cmact]'); if (ca){ catAct(ca.dataset.cmact, ca); return; } }
@@ -4589,6 +4709,8 @@ document.addEventListener('click', e => {
   if (t.closest('#chatSend')){ chatSend(); return; }
   if (t.closest('#enterVillage') || t.closest('#coinVillage')){ enterVillage(); return; }
   if (t.closest('#coinGame')){ openGame(); return; }
+  if (t.closest('#shopSheetX') || t.id === 'shopSheet'){ closeShopSheet(); return; }
+  if (t.closest('#goMall')){ mallGo(); return; }
   const st2 = t.closest('[data-stab]'); if (st2){ shopTab = st2.dataset.stab; renderCoin(); return; }
   const ss2 = t.closest('[data-ssub]'); if (ss2){ shopSub = ss2.dataset.ssub; renderCoin(); return; }
   const bf = t.closest('[data-buyfurn]'); if (bf){ const e = coin.economy, id = bf.dataset.buyfurn, f = [...(e.furn || []), ...(e.walls || []), ...(e.floors || [])].find(x => x.id === id); if (!f) return;
@@ -4684,7 +4806,7 @@ function bootDone(ok){
   bootDone(st.pub ? true : false);
   localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); tKey = '';
   if (!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))) tOff(true);
-  if (document.documentElement.classList.contains('agit')) showTab('me');   // 🧸 아지트는 내 고양이부터
+  if (document.documentElement.classList.contains('agit')) showTab(homeTab());   // 🧸 아지트는 내 고양이부터 · 🎪 커뮤니티는 마을부터
   if (C_ONLY){ showTab('chat'); chatTell(); }
   showSub('ask', 'free'); if (!subNow.notice) showSub('notice', 'all');
   if (document.documentElement.classList.contains('only-ask')) showTab('ask');
@@ -4699,6 +4821,6 @@ function bootDone(ok){
   setInterval(() => { if (me && !document.hidden && current === 'coin') coinCall('coins'); }, 30000);
 })();
 </script>
-<script src="pad.js?v=1"></script>
+<script src="pad.js?v=2"></script>
 </body>
 </html>

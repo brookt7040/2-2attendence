@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 51;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 52;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -101,6 +101,7 @@ function doPost(e) {
     if (body.action === 'student') return out_(handleStudent_(body));
     if (body.action === 'sos') return out_(sos_(body));
     if (body.action === 'tpass') return out_(tpass_(body));
+    if (body.action === 'padMaster') return out_(padMaster_(body));
     if (body.action === 'mealSet') return out_(mealSet_(body));   // 🍱 급식 관리자 (오늘 급식만)
     if (body.action === 'nbEdit') return out_(nbEdit_(body));     // 📢 학생 앱 공지사항 ✏️ 고치기 (관리자 · 부관리자 · 지각 관리자 비밀번호)
     if (body.action === 'menuTrList' || body.action === 'menuTrOk') { if (!mealAuth_(body.mpin)) return out_({ ok: false, error: 'wrong' }); if (body.action === 'menuTrOk') menuTrSet_(body.id, !!body.ok); return out_({ ok: true, list: menuTrList_() }); }    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
@@ -124,6 +125,7 @@ function doPost(e) {
     if (body.action === 'engUpload') return out_(engUpload_(body));
     if (body.action === 'engResults') return out_(engResults_());
     if (body.action === 'backup') return out_(backupAll_());
+    if (body.action === 'coinPurge') return out_(coinPurge_(String(body.before || ''), !!body.dry));
     if (body.action === 'today') {           // 📱 선생님 모드(학생 페이지): 오늘 출석 현황
       const map = readRows_().map, ds = todayStr_();
       return out_({ ok: true, ds: ds, records: ((map['day:' + ds] || {}).records) || {}, remote: remoteList_().map(function (x) { return x.n; }),
@@ -300,6 +302,23 @@ function apinAuth_(pin) {
   if (pin && list.indexOf(hash_('P:' + String(pin))) >= 0) return { ok: true, needKey: false };
   try { c.put('apinfail', String(f + 1), 600); } catch (e) {}
   return { ok: false };
+}
+/* 📔 수첩 마스터 열쇠 (마스터 관리자 비밀번호) */
+function padMaster_(body) {
+  const c = cache_(), f = Number(c.get('pmfail') || 0);
+  if (f >= 5) Utilities.sleep(Math.min(8000, 1500 * (f - 4)));
+  const cf = readRows_().map.config || {}, pin = String(body.mpin || '');
+  if (!cf.adminPin || !pin || pin !== String(cf.adminPin)) { try { c.put('pmfail', String(f + 1), 1800); } catch (e) {} return { ok: false, error: 'wrong' }; }
+  const P = props_(), sh = sheet_(PAD_SHEET, PAD_HEADER);
+  if (body.op === 'set') {
+    if (P.getProperty('padMasterPub') && !body.force) return { ok: false, error: 'exists' };
+    if (!/^[A-Za-z0-9+/=]{200,1000}$/.test(String(body.pub || '')) || !/^[A-Za-z0-9+/=.]{200,6000}$/.test(String(body.wpriv || ''))) return { ok: false, error: 'bad' };
+    P.setProperty('padMasterPub', String(body.pub)); P.setProperty('padMasterPriv', String(body.wpriv)); return { ok: true };
+  }
+  if (body.op === 'rewrap') { if (!/^[A-Za-z0-9+/=.]{200,6000}$/.test(String(body.wpriv || ''))) return { ok: false, error: 'bad' }; P.setProperty('padMasterPriv', String(body.wpriv)); return { ok: true }; }
+  if (body.op === 'get') { const r = padRead_(sh, padFind_(sh, String(body.name || ''))); return { ok: true, blob: r.blob, t: r.t }; }
+  const n = sh.getLastRow(), list = n < 2 ? [] : sh.getRange(2, 1, n - 1, 4).getValues().filter(function (r) { return Number(r[3]) > 0; }).map(function (r) { return { name: String(r[0]), t: String(r[1]) }; });
+  return { ok: true, pub: P.getProperty('padMasterPub') || '', wpriv: P.getProperty('padMasterPriv') || '', list: list };
 }
 /* 👑 선생님 통과: 마스터 관리자 비밀번호면 이 기기는 잠자는 시간·입장 코드를 건너뛰어요 */
 function tpass_(body) {
@@ -682,11 +701,31 @@ function touchAnon_(cid) {
 function presence_() {
   const c = cache_(), now = Date.now();
   let list = {}, anon = {}; try { list = JSON.parse(c.get('pres') || '{}'); anon = JSON.parse(c.get('presAnon') || '{}'); } catch (e) {}
-  return { ok: true, now: now, list: list, anon: Object.keys(anon).filter(function (k) { return now - anon[k] < 120000; }).length };
+  return { ok: true, now: now, list: list, seen: seenAll_(), anon: Object.keys(anon).filter(function (k) { return now - anon[k] < 120000; }).length };
+}
+/* 🛟 마지막 접속 · 마지막 활동 (오래 남겨요 · 너무 자주 쓰지 않게 5분마다만) */
+const ACT_LABEL_ = { chatSend: '💬 대화 보냄', chatUnsend: '💬 대화 지움', ideaSend: '🎪 광장 글', ideaLike: '🎪 광장 공감', ideaDel: '🎪 광장 글 지움', ideaReport: '🚨 광장 신고', msgReport: '🚨 대화 신고', wReport: '🚨 귓속말 신고',
+  buy: '🛒 상점 구매', look: '🎨 꾸미기', pick: '🎯 미션 고르기', done: '🎯 미션 완료', mailSend: '💌 편지', diaryWrite: '📓 일기', padSet: '📔 수첩 저장', move: '🏘️ 마을', emote: '🏘️ 마을', act: '🏘️ 마을',
+  cmHi: '👋 인사', menuTr: '🍱 급식 영어', storyAns: '📖 스토리', pinChange: '🔑 비밀번호 바꿈', furnBuy: '🛋 가구', houseSave: '🏠 집 꾸미기' };
+function touchSeen_(name, op) {
+  try {
+    const c = cache_(), now = Date.now(), act = ACT_LABEL_[op] || '';
+    let m = null; try { m = JSON.parse(c.get('seenAll') || 'null'); } catch (e) {}
+    if (!m) { try { m = JSON.parse(props_().getProperty('seen') || '{}'); } catch (e) { m = {}; } }
+    const o = m[name] || {}, flushAt = Number(c.get('seenFlush') || 0);
+    o.t = now; if (act) { o.a = act; o.at = now; }
+    m[name] = o; c.put('seenAll', JSON.stringify(m), 21600);
+    if (act || now - flushAt > 300000) { props_().setProperty('seen', JSON.stringify(m)); c.put('seenFlush', String(now), 21600); }
+  } catch (e) {}
+}
+function seenAll_() {
+  let m = null; try { m = JSON.parse(cache_().get('seenAll') || 'null'); } catch (e) {}
+  if (!m) { try { m = JSON.parse(props_().getProperty('seen') || '{}'); } catch (e) { m = {}; } }
+  return m;
 }
 function handleStudent_(body) {
   const r = handleStudentCore_(body);
-  if (r && r.ok !== false && body.name) touchPres_(String(body.name), body.where || body.op);
+  if (r && r.ok !== false && body.name) { touchPres_(String(body.name), body.where || body.op); touchSeen_(String(body.name), String(body.op || '')); }
   if (body.__strike && r && typeof r === 'object') r.strike = body.__strike;
   return r;
 }
@@ -718,6 +757,7 @@ function handleStudentCore_(body) {
       try { cache_().put(hk, '1', 21600); } catch (e) {}
       const lock = lightLock_(15000);
       try { appendChat_('👋 냥 인사', to, '👋 냥냥! ' + name + '의 인사가 도착했어요 💛'); } finally { lock.releaseLock(); }
+      villageExp_(name);
       return { ok: true, sent: true, hi: true };
     }
     return { ok: true, hi: hi, diary: isTeacherName_(name) || diaryReaders_(to).indexOf(name) >= 0 };
@@ -732,10 +772,16 @@ function handleStudentCore_(body) {
   if (body.op === 'askSend' || body.op === 'askList') return studentAsk_(name, body);
   if (/^idea/.test(String(body.op || ''))) return studentIdea_(name, body);
   if (/^pad/.test(String(body.op || ''))) return studentPad_(name, body);
+  if (body.op === 'pinChange') {                 // 🔑 학생이 자기 로그인 비밀번호 바꾸기 (지금 비밀번호로 로그인한 상태에서)
+    const np = String(body.newPin || '');
+    if (!/^[0-9A-Za-z]{4,12}$/.test(np)) return { ok: true, error: 'form' };
+    props_().setProperty('pin:' + name, hash_('S:' + name + ':' + np));
+    return { ok: true, changed: true };
+  }
   if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
-  if (body.op === 'vnews') { addNews_(name, String(body.a || '')); return { ok: true }; }
+  if (body.op === 'vnews') { addNews_(name, String(body.a || '')); let vx = 0; if (NEWS_KINDS_.slice(0, 16).indexOf(String(body.a || '')) >= 0) { const lock = lightLock_(8000); try { vx = villageExp_(name); } finally { lock.releaseLock(); } } return { ok: true, vexp: vx }; }
   if (body.op === 'hana' || body.op === 'hanaDress') return studentHana_(name, body);
   if (['coins', 'buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) return studentCoins_(name, body);
   if (body.op === 'profile') return studentProfile_(name, body);
@@ -1201,7 +1247,20 @@ function padRead_(sh, row) {
 }
 function studentPad_(name, body) {
   const sh = sheet_(PAD_SHEET, PAD_HEADER);
-  if (body.op === 'padGet') { const r = padRead_(sh, padFind_(sh, name)); return { ok: true, blob: r.blob, ver: r.ver }; }
+  if (body.op === 'padGet') { const r = padRead_(sh, padFind_(sh, name)); return { ok: true, blob: r.blob, ver: r.ver, mpub: props_().getProperty('padMasterPub') || '' }; }
+  if (body.op === 'padAlert') {                 // 🆘 수첩에 위험한 말: 1번은 학생에게 경고, 2번째부터(또는 스스로 요청하면) 선생님께 바로 알려요
+    const k = 'crisis:' + name, n = (Number(props_().getProperty(k)) || 0) + (body.self ? 0 : 1); props_().setProperty(k, String(n));
+    const report = !!body.self || n >= 2;
+    if (report) {
+      const lock = lightLock_(15000);
+      try {
+        const ash = sheet_(ASK_SHEET, ASK_HEADER), aid = Number(props_().getProperty('askSeq') || 0) + 1; props_().setProperty('askSeq', String(aid));
+        ash.appendRow([aid, "'" + nowStr_(), name, '🆘 위기', (body.self ? '🙋 학생이 선생님과 이야기하고 싶대요 · ' : '🆘 수첩에 위험한 말 (' + n + '번째) · ') + String(body.snip || '').slice(0, 200), '', '', '', '']);
+        bump_();
+      } finally { lock.releaseLock(); }
+    }
+    return { ok: true, n: n, warn: !report, reported: report };
+  }
   const lock = lightLock_(15000);
   try {
     let row = padFind_(sh, name); const cur = padRead_(sh, row);
@@ -1212,7 +1271,7 @@ function studentPad_(name, body) {
     if (body.op !== 'padSet') return { ok: false, error: 'op' };
     const blob = String(body.blob || '');
     if (blob.length > PAD_MAX_) return { ok: false, error: 'big' };
-    if (!/^v1\.[zn]\.[A-Za-z0-9+/=.]+$/.test(blob)) return { ok: false, error: 'bad' };
+    if (!/^v[12]\.[zn]\.[A-Za-z0-9+/=.\-]+$/.test(blob)) return { ok: false, error: 'bad' };
     if (Number(body.base || 0) !== cur.ver) return { ok: true, error: 'conflict', blob: cur.blob, ver: cur.ver };
     const parts = []; for (let i = 0; i < blob.length; i += PAD_CHUNK_) parts.push(blob.slice(i, i + PAD_CHUNK_));
     const oldK = row ? Number(sh.getRange(row, 4).getValues()[0][0]) || 0 : 0, width = Math.max(parts.length, oldK, 1);
@@ -1277,6 +1336,14 @@ function villageState_() {
     now: Date.now()
   };
 }
+/* 🏘️ 마을 활동 EXP (소소하게): 놀이 · 하나랑 놀기 · 인사 3번마다 +2 EXP, 하루 최대 +10 */
+const VEXP_EVERY_ = 3, VEXP_GAIN_ = 2, VEXP_MAX_ = 10;
+function villageExp_(name) {
+  if (isTeacherName_(name)) return 0;
+  const k = 'vx:' + name + ':' + todayStr_(), n = Number(props_().getProperty(k) || 0) + 1; props_().setProperty(k, String(n));
+  if (n % VEXP_EVERY_ === 0 && (n / VEXP_EVERY_) * VEXP_GAIN_ <= VEXP_MAX_) { expQueue_(name, VEXP_GAIN_, '🏘️ 마을 활동'); return VEXP_GAIN_; }
+  return 0;
+}
 function studentVillage_(name, body) {
   const cfg = chatCfg_(), T = isTeacherName_(name);
   if (!T && !chatOpen_(cfg)) return { ok: true, error: 'closed' };
@@ -1292,7 +1359,7 @@ function studentVillage_(name, body) {
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
       let sc = String(body.sc || 'out');
-      if (!/^(out|west|east|south|hall|arcade|hana|eng|cafe|house:.{1,20})$/.test(sc)) sc = 'out';
+      if (!/^(out|west|east|south|mall|hall|arcade|hana|eng|cafe|house:.{1,20})$/.test(sc)) sc = 'out';
       const pos = cacheGet_('v:pos', {}), now = Date.now();
       const p = { x: x, y: y, sc: sc, ts: now };
       const sit = String(body.s || ''), seat = Math.floor(Number(body.t));
@@ -1477,9 +1544,12 @@ function studentHana_(name, body) {
           else addCoin_(name, -a.cost, '하나: ' + a.name, '하나', '', rows);
         }
         if (!error) {
-          st.c[a.id] = (st.c[a.id] || 0) + 1; gained = a.aff || 1; st.p += gained; addNews_(name, 'hana');
+          st.c[a.id] = (st.c[a.id] || 0) + 1; gained = a.aff || 1;
+          if (gained < 0 && a.flip != null && hanaLvOf_(st.p) >= Number(a.flip)) gained = -gained + 1;   // 😽 친해지면 오히려 좋아해요
+          st.p = Math.max(0, st.p + gained); if (gained > 0) addNews_(name, 'hana');
+          villageExp_(name);
           props_().setProperty('hana:' + name, JSON.stringify(st));
-          cachePush_('v:emo', { n: '하나', e: '💛', ts: Date.now() }, 40);
+          cachePush_('v:emo', { n: '하나', e: gained > 0 ? '💛' : '💢', ts: Date.now() }, 40);
         }
       }
     } else if (body.op === 'hanaDress') {
@@ -1748,6 +1818,22 @@ function addCoin_(name, amt, why, kind, key, rows) {
   sh.appendRow([id, "'" + nowStr_(), name, amt, why, kind, key]);
   rows.push({ id: id, t: nowStr_(), name: name, amt: amt, why: why, kind: kind, key: key });
   return true;
+}
+/* 🧹 시험 기록 정리: 이 시각 전의 냥코인 기록을 지워요 (dry면 미리 세기만) */
+function coinPurge_(before, dry) {
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(before)) return { ok: false, error: 'form' };
+  const lock = lightLock_(20000);
+  try {
+    const sh = sheet_(COIN_SHEET, COIN_HEADER), n = sh.getLastRow(); if (n < 2) return { ok: true, n: 0, sum: {} };
+    const vals = sh.getRange(2, 1, n - 1, 7).getValues(), keep = [], sum = {}; let cnt = 0;
+    vals.forEach(function (r) { const t = String(r[1]).replace(/^'/, ''); if (t && t.slice(0, 16) < before) { cnt++; sum[r[2]] = (sum[r[2]] || 0) + (Number(r[3]) || 0); } else keep.push(r); });
+    if (dry || !cnt) return { ok: true, n: cnt, sum: sum };
+    sh.getRange(2, 1, n - 1, 7).clearContent();
+    if (keep.length) sh.getRange(2, 1, keep.length, 7).setValues(keep);
+    if (n - 1 > keep.length) { try { sh.deleteRows(keep.length + 2, n - 1 - keep.length); } catch (e) {} }
+    bump_();
+    return { ok: true, n: cnt, sum: sum, done: true };
+  } finally { lock.releaseLock(); }
 }
 function readReqs_(keep) {
   const sh = sheet_(REQ_SHEET, REQ_HEADER), n = sh.getLastRow();
