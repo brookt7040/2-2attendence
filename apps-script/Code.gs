@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 46;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 47;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -97,6 +97,7 @@ function doPost(e) {
     if (body.action === 'sos') return out_(sos_(body));
     if (body.action === 'tpass') return out_(tpass_(body));
     if (body.action === 'mealSet') return out_(mealSet_(body));   // 🍱 급식 관리자 (오늘 급식만)
+    if (body.action === 'nbEdit') return out_(nbEdit_(body));     // 📢 학생 앱 공지사항 ✏️ 고치기 (관리자 · 부관리자 · 지각 관리자 비밀번호)
     if (body.action === 'menuTrList' || body.action === 'menuTrOk') { if (!mealAuth_(body.mpin)) return out_({ ok: false, error: 'wrong' }); if (body.action === 'menuTrOk') menuTrSet_(body.id, !!body.ok); return out_({ ok: true, list: menuTrList_() }); }    // 👑 선생님 통과 (마스터 관리자 비밀번호)          // 🚨 로그인 없이 선생님께 긴급 메시지
     let auth;
     if (body.tmode && body.name && isTeacherName_(body.name)) {   // 👑 학생 페이지에 'OO쌤'으로 로그인하면 관리자
@@ -360,6 +361,19 @@ function mealData_() { try { return JSON.parse(props_().getProperty('meal') || '
 function hwData_() { try { return JSON.parse(props_().getProperty('hw') || '[]') || []; } catch (e) { return []; } }
 function mealPub_() { const m = mealData_(), t = todayStr_(), out = {}; if (m[t]) out[t] = m[t]; return out; }   // 🍱 오늘 것만 (급식 알리미가 따로 있어요)
 function hwPub_() { const t = todayStr_(); return hwData_().filter(function (h) { return !h.due || h.due >= t; }); }
+/* 📢 공지사항 카드 ✏️: 알림·종례·숙제 = 관리자·부관리자 / 청소 = 관리자·부관리자·지각 관리자 (급식은 mealSet) */
+function nbEdit_(body) {
+  const c = cache_(), f = Number(c.get('nbfail') || 0);
+  if (f >= 5) Utilities.sleep(Math.min(8000, 1500 * (f - 4)));
+  const cf = readRows_().map.config || {}, pin = String(body.pin || ''), kind = String(body.kind || '');
+  const roles = { notices: ['adminPin', 'subPin'], closing: ['adminPin', 'subPin'], hw: ['adminPin', 'subPin'], clean: ['adminPin', 'subPin', 'latePin'] }[kind];
+  if (!roles) return { ok: false, error: 'bad' };
+  if (!pin || !roles.some(function (k) { return cf[k] && String(cf[k]) === pin; })) { try { c.put('nbfail', String(f + 1), 600); } catch (e) {} return { ok: false, error: 'wrong' }; }
+  try { c.remove('nbfail'); } catch (e) {}
+  const ops = kind === 'clean' ? (body.ops || []).slice(0, 40).map(function (o) { return { op: 'clean', ds: todayStr_(), name: String(o.name || '').slice(0, 30), v: !!o.v }; })
+    : [{ op: kind, list: Array.isArray(body.list) ? body.list.slice(0, 40) : [] }];
+  return handlePost_({ ops: ops }, { ok: true });
+}
 function mealSet_(body) {
   const c = cache_(), f = Number(c.get('mpfail') || 0);
   if (f >= 5) Utilities.sleep(Math.min(8000, 1500 * (f - 4)));

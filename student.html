@@ -81,6 +81,17 @@ html.agit .tab{min-width:0;}
 .dx-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;}
 .dx-cat{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:6px 4px;text-align:center;font-size:.85rem;} .dx-cat img{width:52px;height:52px;display:block;margin:0 auto 2px;}
 .dx-cat small{color:var(--ink-soft);} .dx-cat.locked{background:#F3EEE6;border-color:#CDBBA8;color:var(--ink-soft);}
+#catOv .idc{margin-top:4px;border:4px solid #5B4636;border-radius:18px;background:linear-gradient(160deg,#FFF6DA,#FFE3EE);overflow:hidden;}
+#catOv .idc-top{display:flex;justify-content:space-between;background:#FFD84D;border-bottom:3px solid #5B4636;padding:6px 12px;font-size:.95rem;}
+#catOv .idc-body{display:flex;gap:12px;padding:12px;}
+#catOv .idc-pic{text-align:center;background:#fff;border:3px solid #5B4636;border-radius:14px;padding:6px;align-self:flex-start;}
+#catOv .idc-lv{font-size:.85rem;margin-top:4px;}
+#catOv .idc-info{flex:1;font-size:.95rem;line-height:1.6;} #catOv .idc-info b{color:#8A6A4E;font-weight:normal;}
+#catOv .idc-name{font-size:1.4rem;margin-bottom:4px;} #catOv .idc-name small{font-size:.85rem;color:#7A5FE0;}
+#catOv .idc-status{display:inline-block;background:#fff;border:2px solid #5B4636;border-radius:12px;padding:2px 10px;margin:2px 0 6px;font-size:.95rem;}
+#catOv .idc-motto{border-top:2px dashed #5B4636;padding:8px 12px;font-size:1rem;}
+.nb-pub{position:relative;} .nb-edit{position:absolute;top:8px;right:10px;border:none;background:none;font-size:1.05rem;opacity:.35;cursor:pointer;padding:4px;} .nb-edit:hover{opacity:1;}
+html.agit .nb-edit{display:none;} .nbe-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;} .nbe-chips button{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:3px 10px;cursor:pointer;} .nbe-chips button.on{background:var(--lav);}
 .mg-coin{text-align:center;font-size:1.05rem;margin:-4px 0 10px;color:var(--ink-soft);}
 .mg-how{background:#FFFDF6;border:2px dashed #E6D9CA;border-radius:14px;padding:10px 12px;line-height:1.6;}
 .mg-pay{margin-top:10px;border-radius:14px;padding:10px 12px;line-height:1.55;}
@@ -482,11 +493,11 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="subs" data-for="notice"><button type="button" data-sub="all"><i class="se">🗂️ </i>전체</button><button type="button" data-sub="closing"><i class="se">📋 </i>종례</button><button type="button" data-sub="notice"><i class="se">📢 </i>알림</button><button type="button" data-sub="clean"><i class="se">🧹 </i>청소</button><button type="button" data-sub="meal"><i class="se">🍱 </i>급식</button><button type="button" data-sub="hw"><i class="se">📚 </i>숙제</button></div>
     <div id="checkinBox"></div>
     <div class="nb-grid" id="nbGrid">
-    <div class="box nb-pub ns nb-notice" data-sec="notice"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
-    <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
-    <div class="box nb-pub ns" data-sec="clean"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
-    <div class="box nb-pub ns" data-sec="meal"><div class="box-head mint">🍱 급식</div><div id="mealList"></div></div>
-    <div class="box nb-pub ns" data-sec="hw"><div class="box-head">📚 숙제</div><div id="hwList"></div></div>
+    <div class="box nb-pub ns nb-notice" data-sec="notice"><div class="box-head">📢 알림</div><button type="button" class="nb-edit" data-nbedit="notices" title="고치기">✏️</button><div id="noticeList"></div></div>
+    <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><button type="button" class="nb-edit" data-nbedit="closing" title="고치기">✏️</button><div id="closingList"></div></div>
+    <div class="box nb-pub ns" data-sec="clean"><div class="box-head lav">🧹 오늘의 청소 당번</div><button type="button" class="nb-edit" data-nbedit="clean" title="고치기">✏️</button><div id="cleanList"></div></div>
+    <div class="box nb-pub ns" data-sec="meal"><div class="box-head mint">🍱 급식</div><button type="button" class="nb-edit" data-nbedit="meal" title="고치기">✏️</button><div id="mealList"></div></div>
+    <div class="box nb-pub ns" data-sec="hw"><div class="box-head">📚 숙제</div><button type="button" class="nb-edit" data-nbedit="hw" title="고치기">✏️</button><div id="hwList"></div></div>
     </div>
   </section>
 
@@ -2908,6 +2919,52 @@ function actRun(){
 }
 addEventListener('message', e => { if (e.origin === location.origin && (e.data || {}).nyang === 'act') setTimeout(actRun, 50); });
 setTimeout(actRun, 1500);
+/* ✏️ 공지사항 카드 고치기: 선생님(로그인)은 바로 · 아니면 관리자 비밀번호 (알림·종례·숙제 = 관리자·부관리자 / 청소 = +지각 관리자 / 급식 = 관리자·급식 관리자) */
+const NBE = { notices:['📢 알림', '관리자 · 부관리자'], closing:['📋 종례', '관리자 · 부관리자'], hw:['📚 숙제', '관리자 · 부관리자'], clean:['🧹 오늘의 청소 당번', '관리자 · 부관리자 · 지각 관리자'], meal:['🍱 오늘 급식', '관리자 · 급식 관리자'] };
+let nbeClean = null;
+function nbeTeacher(){ return !!(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name) && (tKey || tAuthByLogin)); }
+function hwToLine(h){ const d = h.due ? `${+h.due.slice(5, 7)}/${+h.due.slice(8, 10)}` : ''; return [h.subj || '', h.text, d].join(' | ').replace(/^ \| /, ' | '); }
+function lineToHw(L, old){
+  const p = L.split('|').map(x => x.trim()); let subj = '', text = '', due = '';
+  if (p.length >= 3){ [subj, text, due] = p; } else if (p.length === 2){ [subj, text] = p; } else text = p[0];
+  if (due){ const m = due.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/) || due.match(/^(\d{1,2})[\/.\-](\d{1,2})$/);
+    if (m){ const now = new Date(); let y = m.length === 4 ? +m[1] : now.getFullYear(), mo = m.length === 4 ? +m[2] : +m[1], d = m.length === 4 ? +m[3] : +m[2];
+      if (m.length === 3 && mo < now.getMonth() + 1 - 6) y++; due = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`; } else due = ''; }
+  const o = (old || []).find(h => h.text === text && (h.subj || '') === subj);
+  return { id: o ? o.id : Date.now() + Math.floor(Math.random() * 1000), subj, text, due };
+}
+function openNbEdit(kind){
+  const [title, who] = NBE[kind], T = nbeTeacher(), pub = st.pub || {}, kids = (pub.students || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n));
+  let body = '';
+  if (kind === 'notices' || kind === 'closing') body = `<div class="hint">한 줄에 하나씩 적어요 · 지우면 사라져요</div><textarea id="nbeText" rows="7" style="width:100%;">${esc((kind === 'notices' ? st.notices : st.closing).join('\n'))}</textarea>`;
+  else if (kind === 'hw') body = `<div class="hint">한 줄에 하나: <b>과목 | 내용 | 마감</b> (예: 과학 | 수행평가 | 12/1) · 마감은 비워도 돼요</div><textarea id="nbeText" rows="8" style="width:100%;">${esc((st.hw || []).map(hwToLine).join('\n'))}</textarea>`;
+  else if (kind === 'meal') body = `<div class="hint">오늘 급식만 · 한 줄에 메뉴 하나</div><textarea id="nbeText" rows="8" style="width:100%;">${esc((st.meal || {})[todayStr()] || '')}</textarea>`;
+  else { nbeClean = new Set(pub.clean || []); body = `<div class="hint">눌러서 넣고 빼요 · 뺀 친구는 ✔ 청소 끝으로 처리돼요</div><div class="nbe-chips" id="nbeChips">${kids.map(n => `<button type="button" data-nbec="${esc(n)}" class="${nbeClean.has(n) ? 'on' : ''}">${esc(n)}</button>`).join('')}</div>`; }
+  bOpen('msOv', `<h2>✏️ ${title}</h2>${body}
+    ${T ? '' : `<div class="hint" style="margin-top:8px;">🔒 ${who} 비밀번호</div><input type="password" id="nbePin" inputmode="numeric" autocomplete="off" style="width:100%;">`}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;"><button type="button" class="btn" data-close="msOv">취소</button><button type="button" class="btn btn-y" data-nbesave="${kind}">💾 저장</button></div>`);
+}
+async function nbeSave(kind){
+  const T = nbeTeacher(), pin = T ? '' : (($('nbePin') || {}).value || '').trim(), pub = st.pub || {};
+  if (!T && !pin){ toast('비밀번호를 넣어 주세요'); return; }
+  const txt = ($('nbeText') || {}).value || '', lines = txt.split('\n').map(x => x.trim()).filter(Boolean);
+  let j;
+  try {
+    if (kind === 'meal'){ j = T ? await tCall({ ops:[{ op:'meal', ds: todayStr(), text: lines.join('\n') }] }) : await api(API, { method:'POST', body: JSON.stringify({ action:'mealSet', mpin: pin, text: lines.join('\n') }) }); }
+    else if (kind === 'clean'){
+      const before = new Set(pub.clean || []), ops = [];
+      nbeClean.forEach(n => { if (!before.has(n)) ops.push({ name: '+' + n, v: true }); });
+      before.forEach(n => { if (!nbeClean.has(n)) ops.push({ name: n, v: true }); });
+      if (!ops.length){ bClose('msOv'); return; }
+      j = T ? await tCall({ ops: ops.map(o => Object.assign({ op:'clean', ds: todayStr() }, o)) }) : await api(API, { method:'POST', body: JSON.stringify({ action:'nbEdit', kind, pin, ops }) });
+    } else {
+      const list = kind === 'hw' ? lines.map(L => lineToHw(L, st.hw)) : lines;
+      j = T ? await tCall({ ops:[{ op: kind, list }] }) : await api(API, { method:'POST', body: JSON.stringify({ action:'nbEdit', kind, pin, list }) });
+    }
+  } catch(e){ toast('연결이 안 돼요'); return; }
+  if (!j || j.ok === false){ toast(j && j.error === 'wrong' ? '❌ 비밀번호가 달라요' : '저장하지 못했어요'); return; }
+  bClose('msOv'); toast(kind === 'clean' ? '🧹 저장했어요 · 교실 출석부가 반영하면 바뀌어요' : '💾 저장했어요'); setTimeout(() => pull(true), 600);
+}
 function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, location.origin); } catch(e){} }
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
@@ -3173,7 +3230,7 @@ function openSign(m){
     <canvas id="sigPad"></canvas>
     <div class="sig-row"><span class="hint">👆 선생님이 손가락으로 서명해 주세요</span><button type="button" class="btn btn-gray" id="sigClear">지우기</button></div>
     <label class="sig-sure"><input type="checkbox" id="sigSure"> 저는 ${esc(subj)} 교과 선생님임을 확인합니다</label>
-    <button type="button" class="btn btn-y" id="sigDone" style="width:100%;">✅ 완료 (시내쌤께 보내기)</button>`);
+    <button type="button" class="btn btn-y" id="sigDone" style="width:100%;">✅ 완료</button>`);
   $('msOv').dataset.mid = m.id;
   const cv = $('sigPad'), r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
@@ -3589,15 +3646,30 @@ async function openCat(s){
   $('catOv').style.display = 'flex';
   if (me && !mine && !T){   // 📔 일기를 읽을 수 있으면 버튼 추가 · 👋 오늘 인사했으면 흐리게
     try { const j = await studentCall('cmInfo', { to: s.name }); const g = $('cmG'); if (!g || catNow !== s || !j.ok || j.error) return;
-      if (j.diary) g.insertAdjacentHTML('beforeend', B('diary', '📔', '일기 보기'));
       if (j.hi){ const h = g.querySelector('[data-cmact=hi]'); if (h){ h.classList.add('done'); h.querySelector('small').textContent = '인사 완료'; } }
     } catch(e){}
   }
+}
+async function catCard(nm){
+  const box = $('catBtns'); box.innerHTML = '<div class="hint" style="text-align:center;">🪪 카드 불러오는 중…</div>';
+  let cd = null; try { cd = await api(`${API}?card=${encodeURIComponent(nm)}&t=${Date.now()}`); } catch(e){}
+  if (!catNow || catNow.name !== nm) return;
+  if (!cd || !cd.ok){ box.innerHTML = '<div class="hint">카드를 불러오지 못했어요</div><div style="text-align:center;"><button type="button" class="btn" data-cmback="1">← 메뉴</button></div>'; return; }
+  const pf = cd.profile || {}, F = [['nick', '🏷️ 닉네임'], ['bday', '🎂 생일'], ['mbti', '🧠 MBTI'], ['food', '🍙 최애 음식'], ['hobby', '🎮 취미·특기'], ['subject', '📚 좋아하는 과목'], ['dream', '🌟 장래희망'], ['song', '🎧 요즘 노래']];
+  const HN = ((coin && coin.economy && coin.economy.hana) || {}).lvNames || [], hl = [0, 20, 60, 120, 200, 320].reduce((a, t, i) => ((cd.hana || 0) >= t ? i : a), 0), H = HOUSE_INFO[cd.house] || HOUSE_INFO.h_box;
+  const no = ((st.pub && st.pub.students) || []).findIndex(x => x.name === nm) + 1;
+  box.innerHTML = `<div class="idc"><div class="idc-top"><span>🐾 2학년 2반 냥이 ID</span><span>No.${String(no || 0).padStart(2, '0')}</span></div>
+      <div class="idc-body"><div class="idc-info">${cd.title ? `<div class="idc-name"><small>«${esc(cd.title)}»</small></div>` : ''}
+        ${F.filter(([k]) => pf[k]).map(([k, l]) => `<div><b>${l}</b> ${esc(pf[k])}</div>`).join('') || '<div class="hint">아직 카드를 안 채웠어요</div>'}
+        <div><b>🐱 하나와</b> ${esc(HN[hl] || '')} (${cd.hana || 0}💛)</div><div><b>🏠 집</b> ${H.icon} ${H.name}</div></div></div>
+      ${pf.motto ? `<div class="idc-motto">💬 ${esc(pf.motto)}</div>` : ''}</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;"><button type="button" class="btn" data-cmback="1">← 메뉴</button>${me && me.name !== nm && !/(쌤|샘|선생님|교감|교장)$/.test(nm) ? `<button type="button" class="btn btn-gray" data-cmact="report">🚨 신고</button>` : ''}</div>`;
 }
 async function catAct(act, btn){
   const s = catNow; if (!s) return; const nm = s.name, close = () => { $('catOv').style.display = 'none'; };
   const vil = async fn => { close(); if (!document.querySelector('.vg') || !openVillage.last){ showTab('village'); await enterVillage(); } setTimeout(() => { try { fn(openVillage.last); } catch(e){} }, 400); };
   if (act === 'login'){ close(); openLogin(); return; }
+  if (act === 'report'){ close(); openReport(nm); return; }
   if (act === 'mail'){ toast('💌 지금은 미션 기간이라, 친구 집에 직접 가서 📮 편지함에 써 주세요 🏠'); return; }
   if (act === 'hi'){
     if (btn.classList.contains('done')){ toast('오늘은 벌써 인사했어요 💛'); return; }
@@ -3615,7 +3687,7 @@ async function catAct(act, btn){
   if (act === 'closet'){ close(); showTab('me'); return; }
   if (act === 'mailbox'){ close(); openMail(); return; }
   if (act === 'diary'){ close(); openDiary(nm); return; }
-  if (act === 'card') return vil(v => v.openCard(nm));
+  if (act === 'card'){ catCard(nm); return; }   // 🪪 마을에 안 가고 이 자리에서 카드
   if (act === 'house') return vil(v => v.enter('house:' + nm));
   if (act === 'myhouse') return vil(v => v.enter('house:' + me.name));
 }
@@ -4278,6 +4350,9 @@ function tPeriod(limit){ return limit === 'day' ? todayStr() : limit === 'week' 
 document.addEventListener('click', async e => {
   const t = e.target;
   if (t.closest('#asStuBack')){ setAsStudent(false); return; }
+  { const e1 = t.closest('[data-nbedit]'); if (e1){ openNbEdit(e1.dataset.nbedit); return; } }
+  { const e2 = t.closest('[data-nbesave]'); if (e2){ nbeSave(e2.dataset.nbesave); return; } }
+  { const e3 = t.closest('[data-nbec]'); if (e3){ const n = e3.dataset.nbec; if (nbeClean.has(n)) nbeClean.delete(n); else nbeClean.add(n); e3.classList.toggle('on'); return; } }
   if ((!tKey && !tAuthByLogin) || !t.closest('#p-admin')) return;
   if (t.closest('#tAsStuBtn')){ setAsStudent(true); return; }
   if (t.closest('#tOffBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
@@ -4379,6 +4454,7 @@ document.addEventListener('click', e => {
   if (t.closest('#logoutBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
   const cl = t.closest('[data-close]'); if (cl){ $(cl.dataset.close).style.display = 'none'; return; }
   { const ca = t.closest('[data-cmact]'); if (ca){ catAct(ca.dataset.cmact, ca); return; } }
+  { const cb = t.closest('[data-cmback]'); if (cb && catNow){ openCat(catNow); return; } }
   const cat = t.closest('[data-cat]'); if (cat){ const cs = st.pub.students[+cat.dataset.cat]; markSeen(cs); const nb = cat.querySelector('.new'); if (nb) nb.remove(); openCat(cs); return; }
   const ack = t.closest('[data-ack]');
   if (ack && me && !ack.classList.contains('done')){
