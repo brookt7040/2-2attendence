@@ -2535,7 +2535,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 54;
+const NEED_API = 55;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -5675,18 +5675,26 @@ const DECOR_INFO = {
   d_mailbox:{ name:'우체통', icon:'📮' }, d_lamp:{ name:'가로등', icon:'🏮' }, d_tree:{ name:'나무', icon:'🌳' }, d_fountain:{ name:'작은 분수', icon:'⛲' }
 };
 /* 🗺️ 마을 지도 (가장자리 표지판으로 옆 지도에 가요) */
-const V_MAPS = { out:'🏘️ 냥이 마을', west:'🌊 냥냥 해변', east:'🌲 숲속 마을', south:'🏡 새 주택단지', mall:'🛍️ 냥냥 상점가' };
+const V_MAPS = { out:'🏙️ 냥냥 시티', west:'🌊 냥냥 해변', east:'🌲 숲속 마을', south:'☁️ 구름 위 하늘 정원', mall:'🛍️ 냥냥 상점가', alley:'🐾 길냥이집' };
 const isMap = sc => !!V_MAPS[sc];
-const MAP_WALK = { out: WALK, west: { x0:400, x1:1570, y0:90, y1:975 }, east: { x0:30, x1:1570, y0:90, y1:975 }, south: { x0:30, x1:1570, y0:330, y1:975 }, mall: { x0:30, x1:1570, y0:600, y1:975 } };
+const MAP_WALK = { out: WALK, west: { x0:400, x1:1570, y0:90, y1:975 }, east: { x0:30, x1:1570, y0:90, y1:975 }, south: { x0:30, x1:1570, y0:330, y1:975 }, mall: { x0:30, x1:1570, y0:600, y1:840 }, alley: { x0:30, x1:1570, y0:120, y1:975 } };
 const V_SIGNS = {
-  out:   [{ to:'west', x:40, y:618, label:'⬅ 해변' }, { to:'east', x:1560, y:618, label:'숲 ➡' }, { to:'south', x:800, y:982, label:'⬇ 주택단지' }, { to:'mall', x:330, y:982, label:'⬇ 🛍️ 상점가' }],
-  mall:  [{ to:'out', x:800, y:982, label:'⬇ 마을로' }],
+  out:   [{ to:'west', x:40, y:618, label:'⬅ 해변' }, { to:'east', x:1560, y:618, label:'숲 ➡' }, { to:'south', x:800, y:982, label:'⬇ ☁️ 하늘 정원' }, { to:'mall', x:330, y:982, label:'⬇ 🛍️ 상점가' }, { to:'alley', x:1270, y:982, label:'⬇ 🐾 길냥이집' }],
+  mall:  [{ to:'out', x:40, y:720, label:'⬅ 마을로' }],
+  alley: [{ to:'out', x:800, y:982, label:'⬇ 시티로' }],
   west:  [{ to:'out', x:1555, y:520, label:'마을 ➡' }],
   east:  [{ to:'out', x:45, y:520, label:'⬅ 마을' }],
   south: [{ to:'out', x:800, y:345, label:'⬆ 마을' }]
 };
-/* 🏗️ 새 주택단지 부지 (Lv.7부터 이사할 수 있어요) */
-const PLOTS = Array.from({ length: 12 }, (_, i) => ({ id: 'P' + (i + 1), x: 250 + (i % 4) * 370, y: 520 + Math.floor(i / 4) * 160 }));
+/* 🏗️ 집 부지: 처음엔 모두 🐾 길냥이집, 레벨이 오르면 시티 · 해변 · 숲 · 상점가 · ☁️ 하늘 정원으로 이사 (다음 날 완공) */
+const PLOTS = Array.from({ length: 12 }, (_, i) => ({ id: 'P' + (i + 1), map: 'south', lv: 7, x: 250 + (i % 4) * 370, y: 520 + Math.floor(i / 4) * 160 }));
+const VPLOTS = PLOTS.concat(
+  [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'C' + (i + 1), map: 'out', lv: 3, x, y: 280 })),
+  [[900, 250], [1240, 250], [1180, 700], [640, 690]].map(([x, y], i) => ({ id: 'B' + (i + 1), map: 'west', lv: 4, x, y })),
+  [[310, 640], [1460, 280], [1150, 720], [220, 950]].map(([x, y], i) => ({ id: 'F' + (i + 1), map: 'east', lv: 4, x, y })),
+  [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'M' + (i + 1), map: 'mall', lv: 5, x, y: 995, back: true })));
+const PLOT_MAPNAME = { out:'🏙️ 시티', west:'🌊 해변', east:'🌲 숲', mall:'🛍️ 상점가', south:'☁️ 하늘 정원' };
+const alleyPos = (list, name) => { const i = Math.max(0, list.indexOf(name)), col = i % 10, row = Math.floor(i / 10); return { x: 100 + col * 155, y: 300 + row * 260, w: 150 }; };
 /* 🏢 건물 (문 앞에 가면 들어갈 수 있어요) */
 const V_BUILDINGS = [
   { id:'hall',   map:'out',  name:'🏛️ 냥이 시청 · 학급회의', x:60,   y:400, w:300, h:190, door:[210, 615] },
@@ -5738,8 +5746,8 @@ const V_OBJS = [
   { id:'mush',  map:'east', kind:'mushrooms',x:300,  y:450, r:70, act:'sit',     label:'🍄 버섯 의자',    emo:'🍄', seats:[[-50, 0], [0, 14], [50, 0]] },
   { id:'swing2',map:'east', kind:'treeswing',x:1420, y:760, r:50, act:'swing',   label:'🌳 나무 그네',    emo:'🎉', seats:[[0, 0]] },
   { id:'stump', map:'east', kind:'stump',    x:1150, y:900, r:35, act:'sit',     label:'🪵 그루터기',     emo:'😺', seats:[[0, -8]] },
-  // 🏡 주택단지
-  { id:'park',  map:'south', kind:'longbench', x:1400, y:372, r:80, act:'sit',   label:'🪑 공원 벤치',    emo:'😺', seats:[[-54, 0], [0, 0], [54, 0]] },
+  // ☁️ 하늘 정원
+  { id:'park',  map:'south', kind:'longbench', x:1400, y:372, r:80, act:'sit',   label:'☁️ 구름 벤치',    emo:'😺', seats:[[-54, 0], [0, 0], [54, 0]] },
   { id:'sandbox',map:'south', kind:'sandbox', x:1060, y:365, r:60, act:'build',   label:'🏖️ 모래놀이',     emo:'🏰', seats:[[-30, 0], [30, 0]] }
 ];
 const objsOf = sc => V_OBJS.filter(o => (o.map || 'out') === sc);
@@ -6393,23 +6401,24 @@ function openVillage(opts){
   }
   function drawBuilding(b, t){
     const { x, y, w, h } = b;
-    if (b.id === 'hall'){
-      box(x, y + 40, w, h - 40, '#F3EDE3'); ctx.fillStyle = '#5B4636'; ctx.beginPath(); ctx.moveTo(x - 12, y + 44); ctx.lineTo(x + w / 2, y - 6); ctx.lineTo(x + w + 12, y + 44); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#D9CCFF'; ctx.beginPath(); ctx.moveTo(x, y + 38); ctx.lineTo(x + w / 2, y + 4); ctx.lineTo(x + w, y + 38); ctx.closePath(); ctx.fill();
-      for (let i = 0; i < 5; i++) box(x + 24 + i * 58, y + 66, 18, h - 96, '#FFFFFF', 4);
-      box(x + w / 2 - 26, y + h - 64, 52, 64, '#8C74F0', 6); emoji('🏛️', x + w / 2, y + 22, 22);
+    if (b.id === 'hall'){   // 🏛️ 시청: 유리 타워
+      box(x + 20, y - 30, w - 40, h + 30, '#A9CBEA', 6);
+      for (let yy = y - 18; yy < y + h - 70; yy += 24) for (let xx = x + 34; xx < x + w - 40; xx += 30){ ctx.fillStyle = ((xx + yy + Math.floor(t / 1700)) % 7) ? '#E4F2FF' : '#FFF3B0'; ctx.fillRect(xx, yy, 22, 16); }
+      box(x, y + h - 70, w, 70, '#F3F1EC', 4); box(x + w / 2 - 34, y + h - 58, 68, 58, '#8EC5E8', 4); ctx.fillStyle = '#5B4636'; ctx.fillRect(x + w / 2 - 1, y + h - 58, 2, 58);
+      box(x + w / 2 - 70, y - 50, 140, 28, '#5B4636', 6); ctx.font = '15px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#FFE8C2'; ctx.fillText('NYANG CITY HALL', x + w / 2, y - 36);
     } else if (b.id === 'arcade'){
       box(x, y + 20, w, h - 20, '#3E2E5C'); box(x + 10, y, w - 20, 40, '#FF6F9C');
       ctx.font = '20px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = (Math.floor(t / 400) % 2) ? '#FFE066' : '#FFFFFF'; ctx.fillText('ARCADE 냥', x + w / 2, y + 21);
       ['#FFD84D', '#8CC8FF', '#7ED99B', '#FF8FB8'].forEach((c, i) => { box(x + 18 + i * 66, y + 60, 50, 64, c, 6); ctx.fillStyle = '#20183F'; ctx.fillRect(x + 26 + i * 66, y + 68, 34, 24); ctx.fillStyle = (Math.floor(t / 300 + i) % 2) ? '#FF6F9C' : '#FFE066'; ctx.fillRect(x + 32 + i * 66, y + 100, 8, 8); });
       box(x + w / 2 - 28, y + h - 56, 56, 56, '#20183F', 6);
       for (let i = 0; i < 12; i++){ ctx.fillStyle = ((i + Math.floor(t / 200)) % 3) ? '#FFE066' : '#FF6F9C'; ctx.beginPath(); ctx.arc(x + 12 + i * (w - 24) / 11, y + 46, 4, 0, Math.PI * 2); ctx.fill(); }
-    } else if (b.id === 'hana'){
-      box(x + 20, y + 50, w - 40, h - 50, '#FFE3EE', 12);
-      [[x, y + 30], [x + w - 46, y + 30]].forEach(([tx, ty]) => { box(tx, ty, 46, h - 30, '#FFC2D8', 8); ctx.fillStyle = '#FF8FB8'; ctx.beginPath(); ctx.moveTo(tx - 6, ty + 4); ctx.lineTo(tx + 23, ty - 34); ctx.lineTo(tx + 52, ty + 4); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.stroke(); });
-      ctx.fillStyle = '#FFD84D'; ctx.beginPath(); ctx.moveTo(x + 50, y + 54); ctx.lineTo(x + w / 2, y - 4); ctx.lineTo(x + w - 50, y + 54); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 3; ctx.stroke();
-      emoji('🐾', x + w / 2, y + 30, 22); emoji('🚩', x + 23, y - 40, 18); emoji('🐟', x + w - 23, y - 40 + Math.sin(t / 500) * 3, 18);
-      ctx.fillStyle = '#FFF'; ctx.beginPath(); ctx.arc(x + w / 2, y + h - 30, 26, Math.PI, 0); ctx.fill(); box(x + w / 2 - 26, y + h - 30, 52, 30, '#FFFFFF', 2); emoji('💛', x + w / 2, y + h - 30, 16);
+    } else if (b.id === 'hana'){   // 🐱 하나네 집: 모던 펜트하우스
+      box(x, y + 40, w, h - 40, '#FFF6F0', 8); box(x + 30, y, w - 60, 52, '#FFE3EE', 8);
+      ctx.fillStyle = '#5B4636'; ctx.fillRect(x - 8, y + 34, w + 16, 8); ctx.fillRect(x + 22, y - 6, w - 44, 7);
+      [[x + 18, y + 62], [x + w - 78, y + 62]].forEach(([wx, wy]) => { box(wx, wy, 60, 44, '#BFE3FF', 4); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(wx + 8, wy + 6, 10, 30); });
+      box(x + 52, y + 10, w - 104, 30, '#BFE3FF', 4);
+      box(x + w / 2 - 26, y + h - 58, 52, 58, '#FF8FB8', 6); emoji('💛', x + w / 2, y + h - 30, 16); emoji('🐾', x + w / 2, y + 25, 18);
+      emoji('🪴', x + 14, y + h - 14, 22); emoji('🪴', x + w - 14, y + h - 14, 22); emoji('🐟', x + w - 40, y - 18 + Math.sin(t / 500) * 3, 16);
     }
     const inside = Object.values(cats).filter(c => c.sc === b.id).length;
     label(b.name + (inside ? ` 👥${inside}` : ''), x + w / 2, y + h + 18, 14, '#FFFFFF');
@@ -6425,26 +6434,72 @@ function openVillage(opts){
     if (on && Math.floor(t / 500) % 2) emoji('✨', SB.x + 52, SB.y - 82, 18);
   }
   function drawOut(t){
-    ctx.fillStyle = '#CFEFC4'; ctx.fillRect(0, 0, VW, VH);
-    ctx.fillStyle = '#C2E8B5'; for (let i = 0; i < 110; i++){ const x = (i * 197) % VW, y = 340 + (i * 113) % (VH - 340); ctx.fillRect(x, y, 6, 6); }
-    // 길
-    ctx.fillStyle = '#F6E3B4'; ctx.fillRect(0, 300, VW, 40); ctx.fillRect(770, 340, 60, VH - 340);
-    ctx.fillRect(180, 600, 620, 36); ctx.fillRect(800, 600, 620, 36);
-    [[90, 380], [1580, 900], [40, 960], [520, 400], [1100, 400], [1570, 400], [360, 960]].forEach(([x, y]) => drawDecor(ctx, 'd_tree', x - 16, y - 32));
-    ctx.fillStyle = '#F6E3B4'; ctx.fillRect(0, 600, 200, 36); ctx.fillRect(1400, 600, 200, 36);
+    // 🏙️ 냥냥 시티: 바닥 타일 · 차도 · 가로등 (세련된 도시)
+    ctx.fillStyle = '#E9E5DE'; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = '#DED8CE'; for (let gx = 0; gx < VW; gx += 80) for (let gy = 340; gy < VH; gy += 80) if ((gx / 80 + gy / 80) % 2 === 0) ctx.fillRect(gx, gy, 80, 80);
+    ctx.fillStyle = '#6E6E7C'; ctx.fillRect(0, 300, VW, 44); ctx.fillStyle = '#F4F1E8'; for (let i = 0; i < VW; i += 70) ctx.fillRect(i, 320, 36, 4);
+    ctx.fillStyle = '#FFFFFF'; for (let i = 0; i < 6; i++) ctx.fillRect(740 + i * 22, 300, 12, 44);
+    ctx.fillStyle = '#CFC8BC'; ctx.fillRect(770, 344, 60, VH - 344); ctx.fillRect(180, 600, 1240, 36); ctx.fillRect(0, 600, 200, 36); ctx.fillRect(1400, 600, 200, 36);
+    [[90, 380], [1580, 900], [40, 960], [520, 400], [1100, 400], [1570, 400], [360, 960]].forEach(([x, y]) => { box(x - 22, y - 6, 44, 16, '#B9B2A6', 4); drawDecor(ctx, 'd_tree', x - 16, y - 34); });
+    [[720, 360], [880, 360], [170, 650], [1430, 650]].forEach(([x, y]) => { ctx.fillStyle = '#4A4A58'; ctx.fillRect(x - 2, y - 60, 4, 60); ctx.fillStyle = (Math.floor(t / 1000) % 2) ? '#FFF3B0' : '#FFE680'; ctx.beginPath(); ctx.arc(x, y - 62, 7, 0, Math.PI * 2); ctx.fill(); });
+    // 위쪽: 하늘 · 빌딩 숲 · 그 사이 부지
+    const sky = ctx.createLinearGradient(0, 0, 0, 300); sky.addColorStop(0, '#BFE3FF'); sky.addColorStop(1, '#EAF6FF'); ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, 300);
+    [[0, 140, 90], [320, 110, 70], [640, 160, 60], [960, 120, 70], [1280, 150, 80], [1560, 100, 50]].forEach(([x, h, w], i) => { ctx.fillStyle = '#C9D6E6'; ctx.fillRect(x, 300 - h - 40, w, h + 40); });
+    [320, 640, 960, 1280].forEach((x, i) => {
+      const h = 210 + (i % 2) * 40, w = 70; box(x - w / 2, 290 - h, w, h, i % 2 ? '#9FC3E6' : '#B8D8F0', 4);
+      for (let yy = 300 - h; yy < 270; yy += 22) for (let xx = x - 24; xx < x + 24; xx += 16){ ctx.fillStyle = ((xx + yy + Math.floor(t / 1500)) % 5) ? '#E6F3FF' : '#FFF3B0'; ctx.fillRect(xx, yy, 10, 12); }
+    });
+    drawPlots('out', t);
     V_BUILDINGS.filter(b => b.map === 'out').forEach(b => drawBuilding(b, t));
     drawStoryBoard(t);
     objsOf('out').forEach(o => drawObj(o, t)); drawSigns('out');
-    // 집 줄
-    ctx.fillStyle = '#E3F5DA'; ctx.fillRect(0, 0, VW, 300);
+  }
+  /* 🏗️ 부지 그리기 (맵마다) */
+  function drawHouseBack(id, x, y){
+    drawHouse(ctx, id, x, y);
+    const wall = { h_tent:'#FFC6D6', h_cabin:'#B57B4E', h_cottage:'#F3E6CB', h_castle:'#D6CBF5' }[id] || '#D9AA72', u = 4;
+    ctx.fillStyle = wall; ctx.fillRect(x + 3 * u, y + 8 * u, 10 * u, 6 * u);
+    ctx.fillStyle = '#BFE3FF'; ctx.fillRect(x + 7 * u, y + 9 * u, 2 * u, 2 * u);
+  }
+  function drawPlots(map, t){
+    VPLOTS.filter(pl => pl.map === map).forEach(pl => {
+      const ow = plotOwner(pl.id), inv = ow && state.inv[ow.name], sky = map === 'south';
+      if (sky){ ctx.fillStyle = '#9BD98A'; ctx.beginPath(); ctx.ellipse(pl.x, pl.y - 6, 150, 26, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#B58B65'; ctx.beginPath(); ctx.moveTo(pl.x - 130, pl.y); ctx.lineTo(pl.x, pl.y + 70 + Math.sin(t / 900 + pl.x) * 4); ctx.lineTo(pl.x + 130, pl.y); ctx.closePath(); ctx.fill(); }
+      else if (!pl.back){ ctx.fillStyle = map === 'out' ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.4)'; ctx.fillRect(pl.x - 120, pl.y - 110, 240, 120); }
+      if (ow && plotReady(inv.plot)){
+        ctx.save(); ctx.translate(pl.x - 48, pl.y - 100); ctx.scale(1.5, 1.5); if (pl.back) drawHouseBack(inv.house || 'h_box', 0, 0); else drawHouse(ctx, inv.house || 'h_box', 0, 0); ctx.restore();
+        if (!pl.back) (inv.decor || []).slice(0, 4).forEach((d, i) => drawDecor(ctx, d, pl.x - 110 + (i % 2) * 180, pl.y - 40 - (i > 1 ? 40 : 0)));
+        const guests = Object.values(cats).filter(c => c.sc === 'house:' + ow.name).length;
+        label(ow.name + (guests ? ` 👥${guests}` : ''), pl.x, pl.back ? pl.y - 116 : pl.y + 14, 13, ow.name === meName ? '#FFE58A' : '#FFFDF6');
+      } else if (ow){
+        ctx.fillStyle = '#FFE066'; ctx.fillRect(pl.x - 60, pl.y - 70, 120, 8); ctx.fillStyle = '#5B4636'; for (let i = 0; i < 6; i++) ctx.fillRect(pl.x - 60 + i * 24, pl.y - 70, 12, 8);
+        emoji('🚧', pl.x - 50, pl.y - 30, 30); emoji('🏗️', pl.x + 20, pl.y - 44, 40);
+        label(`공사중 · ${ow.name}`, pl.x, pl.back ? pl.y - 116 : pl.y + 14, 12, '#FFF2BF');
+      } else {
+        if (!sky && !pl.back){ ctx.strokeStyle = '#C9A06A'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(pl.x - 120, pl.y - 110, 240, 120); ctx.setLineDash([]); }
+        emoji('🪧', pl.x, pl.y - 50, 30); label(`분양 중 · Lv.${pl.lv}부터`, pl.x, pl.back ? pl.y - 116 : pl.y + 14, 12, '#FFFFFF');
+      }
+    });
+  }
+  /* 🐾 길냥이집: 처음 집(박스집)들이 모여 있는 골목 */
+  function drawAlley(t){
+    ctx.fillStyle = '#D9C7B2'; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = '#CDB79E'; for (let gy = 0; gy < VH; gy += 40) for (let gx = (gy / 40) % 2 ? 0 : 40; gx < VW; gx += 80) ctx.fillRect(gx, gy, 76, 36);
+    ctx.fillStyle = '#B5876A'; ctx.fillRect(0, 0, VW, 90); ctx.fillStyle = '#9E7158'; for (let i = 0; i < VW; i += 60) ctx.fillRect(i, 0, 4, 90);
+    ctx.strokeStyle = '#6B5546'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 110); for (let x = 0; x <= VW; x += 100) ctx.quadraticCurveTo(x + 50, 140, x + 100, 110); ctx.stroke();
+    for (let x = 50; x < VW; x += 100){ ctx.fillStyle = ['#FFE066', '#FF8FB8', '#8CC8FF'][(x / 100 | 0) % 3]; ctx.globalAlpha = (Math.sin(t / 500 + x) + 1.6) / 2.6; ctx.beginPath(); ctx.arc(x, 128, 6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    [[40, 960, '🗑️'], [1560, 960, '📦'], [1560, 200, '🐟'], [40, 220, '🥫']].forEach(([x, y, e]) => emoji(e, x, y, 30));
+    const names = kidList().map(s => s.name);
     kidList().forEach(s => {
-      const p = plotOf(s.name), inv = (state.inv || {})[s.name] || {};
-      if (movedAway(s.name)){ emoji('🪧', p.x, p.y - 30, 26); label(`${s.name} → 주택단지`, p.x, p.y + 14, 10, '#FFFFFF'); return; }
-      drawHouse(ctx, inv.house || 'h_box', p.x - 32, p.y - 64);
-      (inv.decor || []).slice(0, 4).forEach((d, i) => drawDecor(ctx, d, p.x - 50 + (i % 2) * 70 + (i > 1 ? 14 : 0), p.y - 22 + (i > 1 ? -40 : 0)));
+      const p = alleyPos(names, s.name), inv = (state.inv || {})[s.name] || {};
+      if (movedAway(s.name)){ const q = plotOfName(s.name); emoji('🪧', p.x, p.y - 30, 26); label(`${s.name} → ${PLOT_MAPNAME[q && q.map] || '이사'}`, p.x, p.y + 14, 10, '#FFFFFF'); return; }
+      ctx.save(); ctx.translate(p.x - 48, p.y - 96); ctx.scale(1.5, 1.5); drawHouse(ctx, inv.house || 'h_box', 0, 0); ctx.restore();
+      (inv.decor || []).slice(0, 4).forEach((d, i) => drawDecor(ctx, d, p.x - 56 + (i % 2) * 80 + (i > 1 ? 14 : 0), p.y - 22 + (i > 1 ? -40 : 0)));
       const guests = Object.values(cats).filter(c => c.sc === 'house:' + s.name).length;
       label(s.name + (guests ? ` 👥${guests}` : ''), p.x, p.y + 14, 12, s.name === meName ? '#FFE58A' : '#FFFDF6');
     });
+    drawSigns('alley');
+    label('🐾 길냥이집 · 레벨이 오르면 시티 · 해변 · 숲 · 상점가 · 하늘 정원으로 이사해요', 800, 170, 15, '#FFF2BF');
   }
   function drawSigns(sc){
     (V_SIGNS[sc] || []).forEach(g => {
@@ -6463,7 +6518,7 @@ function openVillage(opts){
     if (Math.floor(t / 600) % 2){ ctx.fillStyle = 'rgba(255,240,120,.35)'; ctx.beginPath(); ctx.moveTo(90, 106); ctx.lineTo(320, 40); ctx.lineTo(320, 170); ctx.closePath(); ctx.fill(); }
     [[520, 250], [1500, 300], [760, 980], [1480, 960]].forEach(([x, y]) => { ctx.fillStyle = '#A86E4A'; ctx.fillRect(x - 6, y - 140, 12, 140); ctx.fillStyle = '#4FB06D'; for (let i = 0; i < 5; i++){ ctx.beginPath(); ctx.ellipse(x + Math.cos(i * 1.3) * 34, y - 140 + Math.sin(i * 1.3) * 10, 46, 14, i * 1.3, 0, Math.PI * 2); ctx.fill(); } });
     emoji('🦀', 700 + Math.sin(t / 500) * 40, 660, 26); emoji('🐚', 1100, 700, 22); emoji('⭐', 1450, 620, 22); emoji('🐚', 560, 960, 20);
-    objsOf('west').forEach(o => drawObj(o, t)); drawSigns('west');
+    objsOf('west').forEach(o => drawObj(o, t)); drawPlots('west', t); drawSigns('west');
     label('🌊 냥냥 해변', 900, 40, 18, '#FFFFFF');
   }
   function drawEast(t){
@@ -6477,7 +6532,7 @@ function openVillage(opts){
     });
     emoji('🦉', 260, 70, 24); emoji('🐿️', 940, 210, 22); emoji('🌼', 660, 640, 18); emoji('🌸', 1300, 960, 18);
     V_BUILDINGS.filter(b => b.map === 'east').forEach(b => b.id === 'cafe' ? drawCafeBuilding(b, t) : drawEngBuilding(b, t));
-    objsOf('east').forEach(o => drawObj(o, t)); drawSigns('east');
+    objsOf('east').forEach(o => drawObj(o, t)); drawPlots('east', t); drawSigns('east');
     const h = new Date().getHours(); if (h >= 18 || h < 6) for (let i = 0; i < 14; i++){ ctx.fillStyle = 'rgba(255,240,120,.9)'; ctx.beginPath(); ctx.arc((i * 233 + t / 20) % VW, 200 + ((i * 97 + Math.sin(t / 500 + i) * 30) % 700), 3, 0, Math.PI * 2); ctx.fill(); }
     label('🌲 숲속 마을', 800, 40, 18, '#FFFFFF');
   }
@@ -6495,26 +6550,21 @@ function openVillage(opts){
   const todayLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const plotReady = pl => pl && todayLocal() >= pl.ready;
   const movedAway = name => { const pl = state && state.inv && state.inv[name] && state.inv[name].plot; return plotReady(pl); };
+  const plotOfName = name => { const pl = state && state.inv && state.inv[name] && state.inv[name].plot; return pl && plotReady(pl) ? VPLOTS.find(q => q.id === pl.id) : null; };
+  const houseMapOf = name => { const q = plotOfName(name); return q ? q.map : 'alley'; };
+  const alleyOf = name => alleyPos(kidList().map(s => s.name), name);
   function drawSouth(t){
-    ctx.fillStyle = '#CFEFC4'; ctx.fillRect(0, 0, VW, VH);
-    ctx.fillStyle = '#F6E3B4'; ctx.fillRect(770, 300, 60, VH - 300); ctx.fillRect(0, 440 + 0, VW, 26); ctx.fillRect(0, 600, VW, 26); ctx.fillRect(0, 760, VW, 26);
-    PLOTS.forEach(pl => {
-      const ow = plotOwner(pl.id), inv = ow && state.inv[ow.name];
-      ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(pl.x - 120, pl.y - 110, 240, 120);
-      ctx.strokeStyle = '#C9A06A'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(pl.x - 120, pl.y - 110, 240, 120); ctx.setLineDash([]);
-      if (ow && plotReady(inv.plot)){
-        ctx.save(); ctx.translate(pl.x - 48, pl.y - 100); ctx.scale(1.5, 1.5); drawHouse(ctx, inv.house || 'h_box', 0, 0); ctx.restore();
-        (inv.decor || []).slice(0, 4).forEach((d, i) => drawDecor(ctx, d, pl.x - 110 + (i % 2) * 180, pl.y - 40 - (i > 1 ? 40 : 0)));
-        const guests = Object.values(cats).filter(c => c.sc === 'house:' + ow.name).length;
-        label(ow.name + (guests ? ` 👥${guests}` : ''), pl.x, pl.y + 14, 13, ow.name === meName ? '#FFE58A' : '#FFFDF6');
-      } else if (ow){
-        ctx.fillStyle = '#FFE066'; ctx.fillRect(pl.x - 60, pl.y - 70, 120, 8); ctx.fillStyle = '#5B4636'; for (let i = 0; i < 6; i++) ctx.fillRect(pl.x - 60 + i * 24, pl.y - 70, 12, 8);
-        emoji('🚧', pl.x - 50, pl.y - 30, 30); emoji('🏗️', pl.x + 20, pl.y - 44, 40);
-        label(`공사중 · ${ow.name} (내일 완공)`, pl.x, pl.y + 14, 12, '#FFF2BF');
-      } else { emoji('🪧', pl.x, pl.y - 50, 30); label(`분양 중 · ${pl.id.slice(1)}번 부지`, pl.x, pl.y + 14, 12, '#FFFFFF'); }
-    });
+    // ☁️ 구름 위 하늘 정원: 떠 있는 섬 · 무지개다리 · 소원 별
+    const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#9CCBFF'); g.addColorStop(.6, '#CFE6FF'); g.addColorStop(1, '#F6E8FF'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; [[120, 120, 90], [520, 70, 70], [1000, 110, 100], [1420, 80, 80], [300, 980, 160], [1300, 990, 180], [800, 1000, 140]].forEach(([x, y, r]) => { const dx = Math.sin(t / 4000 + x) * 20; ctx.beginPath(); ctx.ellipse(x + dx, y, r, r * .32, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(x + dx + r * .4, y - r * .15, r * .55, r * .3, 0, 0, Math.PI * 2); ctx.fill(); });
+    const sx = 800, sy = 200 + Math.sin(t / 700) * 6; ctx.fillStyle = '#FFE066'; ctx.beginPath(); for (let i = 0; i < 10; i++){ const a2 = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? 14 : 34; ctx.lineTo(sx + Math.cos(a2) * rr, sy + Math.sin(a2) * rr); } ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#E0A800'; ctx.lineWidth = 3; ctx.stroke();
+    label('✨ 소원 별', sx, sy + 48, 12, '#FFF8D6');
+    const RB = ['#FF8FB8', '#FFB86B', '#FFE066', '#9BE39B', '#8CC8FF', '#C9A6FF'];
+    PLOTS.forEach((pl, i) => { if (i % 4 === 3) return; const q = PLOTS[i + 1]; RB.forEach((c, k) => { ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(pl.x + 130, pl.y - 6 + k * 3); ctx.quadraticCurveTo((pl.x + q.x) / 2, pl.y - 50 + k * 3, q.x - 130, q.y - 6 + k * 3); ctx.stroke(); }); });
+    drawPlots('south', t);
+    for (let i = 0; i < 14; i++){ const x = (i * 271 + t / 30) % VW, y = 200 + (i * 137) % 700; ctx.fillStyle = '#FFFFFF'; ctx.globalAlpha = .5 + .5 * Math.sin(t / 300 + i); ctx.fillRect(x, y, 3, 3); ctx.globalAlpha = 1; }
     objsOf('south').forEach(o => drawObj(o, t)); drawSigns('south');
-    label('🏡 새 주택단지 · Lv.7부터 이사할 수 있어요', 800, 300, 16, '#FFFFFF');
+    label('☁️ 구름 위 하늘 정원 · Lv.7부터 이사할 수 있어요', 800, 130, 16, '#FFFFFF');
   }
   /* ---------- 🛍️ 상점가 ---------- */
   function drawShopFront(b, t){
@@ -6533,6 +6583,7 @@ function openVillage(opts){
     ctx.fillStyle = '#CFEFC4'; ctx.fillRect(0, 0, VW, 300);
     for (let i = 0; i < 9; i++) emoji(i % 3 ? '🌳' : '🎈', 90 + i * 180, 270 + (i % 2) * 10, 34);
     V_BUILDINGS.filter(b => b.map === 'mall').forEach(b => drawShopFront(b, t));
+    ctx.fillStyle = '#C9B79C'; ctx.fillRect(0, 860, VW, 140); drawPlots('mall', t);
     drawSigns('mall');
     label('🛍️ 냥냥 상점가 · 가게 문을 누르면 들어가요', 800, 300, 16, '#FFFFFF');
   }
@@ -6766,7 +6817,7 @@ function openVillage(opts){
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = scene === 'arcade' ? '#20183F' : '#BFE8B4'; ctx.fillRect(0, 0, cv.width, cv.height);
     camera(false);
     ctx.setTransform(scale, 0, 0, scale, ox, oy);
-    if (scene === 'out') drawOut(t); else if (scene === 'west') drawWest(t); else if (scene === 'east') drawEast(t); else if (scene === 'south') drawSouth(t); else if (scene === 'mall') drawMall(t);
+    if (scene === 'out') drawOut(t); else if (scene === 'west') drawWest(t); else if (scene === 'east') drawEast(t); else if (scene === 'south') drawSouth(t); else if (scene === 'mall') drawMall(t); else if (scene === 'alley') drawAlley(t);
     else if (scene === 'hall') drawHall(t); else if (scene === 'arcade') drawArcade(t); else if (scene === 'hana') drawHanaHome(t); else if (scene === 'eng') drawEng(t); else if (scene === 'cafe') drawCafe(t); else drawRoom(t);
     const here = Object.values(cats).filter(c => c.sc === scene || (scene === 'out' && !c.sc));
     const list = here.slice().sort((a, b) => a.y - b.y);
@@ -6799,7 +6850,8 @@ function openVillage(opts){
       objsOf(scene).forEach(o => add(o.x + o.r * .55, o.y - o.r - 14, o.x, o.y));
       (V_SIGNS[scene] || []).forEach(g => add(Math.max(40, Math.min(VW - 40, g.x + 44)), g.y - 84, g.x, g.y - 40));
       if (scene === 'out'){ add(hana.x + 30, hana.y - 78, hana.x, hana.y - 25); add(SB.x + 56, SB.y - 94, SB.x, SB.y - 30); }
-      if (scene === 'south') PLOTS.forEach(pl => add(pl.x + 100, pl.y - 98, pl.x, pl.y - 50));
+      VPLOTS.filter(pl => pl.map === scene).forEach(pl => add(pl.x + 100, pl.y - 98, pl.x, pl.y - 50));
+      if (scene === 'alley'){ const names = kidList().map(s2 => s2.name); kidList().forEach(s2 => { if (movedAway(s2.name)) return; const q = alleyPos(names, s2.name); add(q.x + 40, q.y - 80, q.x, q.y - 30); }); }
     } else if (scene === 'hall'){
       HALL_PODIUMS.forEach(pd => add(pd.x + 58, 262, pd.x, 285));
       HALL_TABLES.forEach(tb => add(tb.x + 78, tb.y - 44, tb.x, tb.y));
@@ -6918,7 +6970,7 @@ function openVillage(opts){
   const SCENE_NAME = { out: '', hall: '🏛️ 냥이 시청 · 학급회의실', arcade: '🎮 냥냥 오락실', hana: '🏰 하나네 집' };
   function updateTop(){
     const t = $q('.vg-title');
-    if (scene === 'out') t.textContent = `🏘️ ${opts.viewOnly ? '우리 반 냥이 마을' : '냥이 마을 · 땅이나 건물을 눌러 보세요'}`;
+    if (scene === 'out') t.textContent = `🏙️ ${opts.viewOnly ? '우리 반 냥냥 시티' : '냥냥 시티 · 땅이나 건물을 눌러 보세요'}`;
     else if (isMap(scene)) t.textContent = V_MAPS[scene];
     else if (scene === 'eng') t.textContent = '📚 냥글리시 아카데미';
     else if (scene === 'cafe') t.textContent = '☕ 냥냥 스터디카페';
@@ -6948,8 +7000,8 @@ function openVillage(opts){
         if (b){ c.x = b.door[0]; c.y = b.door[1] + 20; }
         else if (back){ const s2 = freeSpot(back.x + (back.x < 100 ? 60 : back.x > 1500 ? -60 : 0), back.y + (back.y < 400 ? 40 : -40), scene); c.x = s2.x; c.y = s2.y; }
         else if (prev.startsWith('house:')){
-          const own = prev.slice(6), pl = PLOTS.find(q => { const o = plotOwner(q.id); return o && o.name === own; });
-          if (scene === 'south' && pl){ c.x = pl.x; c.y = pl.y + 40; } else { const p = plotOf(own); c.x = Math.max(WALK.x0, Math.min(WALK.x1, p.x)); c.y = WALK.y0 + 10; }
+          const own = prev.slice(6), pl = plotOfName(own), W = MAP_WALK[scene] || WALK;
+          if (pl && pl.map === scene){ c.x = pl.x; c.y = Math.max(W.y0, Math.min(W.y1, pl.y + 40)); } else if (scene === 'alley'){ const q = alleyOf(own); c.x = q.x; c.y = q.y + 40; } else { c.x = (W.x0 + W.x1) / 2; c.y = W.y0 + 10; }
         } else { const W = MAP_WALK[scene]; c.x = (W.x0 + W.x1) / 2; c.y = (W.y0 + W.y1) / 2; }
       }
       else if (scene.startsWith('house:')){ const g = roomGeom(); c.x = VW / 2; c.y = g.y0 + g.h - 20; }
@@ -6957,7 +7009,7 @@ function openVillage(opts){
       sendMove(c);
     }
     if (scene === 'eng') loadEngSet();
-    if (scene === 'south' && opts.me && (opts.me.lv || 1) >= 7) say('🏗️ 빈 부지를 누르면 그곳으로 이사할 수 있어요 (다음 날 완공)', 4000);
+    { const lots = VPLOTS.filter(q => q.map === scene); if (lots.length && opts.me && (opts.me.lv || 1) >= lots[0].lv) say(`🏗️ 빈 부지를 누르면 이사할 수 있어요 (Lv.${lots[0].lv}부터 · 다음 날 완공)`, 4000); }
     toGroup = false; updateTo();
     groupEl.style.display = 'none';
     if (scene.startsWith('house:')) houseActs();
@@ -6981,7 +7033,7 @@ function openVillage(opts){
   $q('.vg-out').addEventListener('click', () => {
     const b = V_BUILDINGS.find(b => b.id === scene);
     if (b) return enter(b.map);
-    if (scene.startsWith('house:')){ const own = scene.slice(6); return enter(movedAway(own) ? 'south' : 'out'); }
+    if (scene.startsWith('house:')){ const own = scene.slice(6); return enter(houseMapOf(own)); }
     enter('out');
   });
 
@@ -7002,10 +7054,8 @@ function openVillage(opts){
     if (isMap(scene) && scene !== 'out'){
       const b = V_BUILDINGS.find(b => b.map === scene && p.x > b.x && p.x < b.x + b.w && p.y > b.y - 20 && p.y < b.y + b.h + 30);
       if (b){ if (b.shop && (opts.viewOnly || !c)){ openShopB(b); return; } if (opts.viewOnly || !c){ enter(b.id); return; } walkTo(b.door[0], b.door[1] + 10, { type: 'door', id: b.id }); return; }
-      if (scene === 'south'){
-        const pl = PLOTS.find(q => Math.abs(q.x - p.x) < 120 && p.y > q.y - 110 && p.y < q.y + 20);
-        if (pl){ plotTap(pl); return; }
-      }
+      { const pl = VPLOTS.find(q => q.map === scene && Math.abs(q.x - p.x) < 120 && p.y > q.y - 110 && p.y < q.y + 20); if (pl){ plotTap(pl); return; } }
+      if (scene === 'alley'){ const names = kidList().map(s2 => s2.name), hs = kidList().find(s2 => { const q = alleyPos(names, s2.name); return !movedAway(s2.name) && Math.abs(q.x - p.x) < 60 && p.y > q.y - 80 && p.y < q.y + 20; }); if (hs){ enter('house:' + hs.name); return; } }
       if (opts.viewOnly || !c) return;
       if (!isOpen()){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
       const o = objsOf(scene).find(o => Math.hypot(p.x - o.x, p.y - o.y) < o.r + 20);
@@ -7036,8 +7086,7 @@ function openVillage(opts){
     // 보기 전용(교실 TV)도 건물·집 구경은 할 수 있어요
     if (scene === 'out'){
       if (Math.abs(p.x - SB.x) < 70 && p.y > SB.y - 100 && p.y < SB.y + 60){ opts.onStory && opts.onStory(); return; }
-      const house = p.y < 300 && kidList().find(s => { const q = plotOf(s.name); return !movedAway(s.name) && Math.abs(q.x - p.x) < q.w / 2 && Math.abs(q.y - 30 - p.y) < 80; });
-      if (house){ enter('house:' + house.name); return; }
+      { const pl = VPLOTS.find(q => q.map === 'out' && Math.abs(q.x - p.x) < 120 && p.y > q.y - 110 && p.y < q.y + 20); if (pl){ plotTap(pl); return; } }
       const b = V_BUILDINGS.find(b => b.map === 'out' && p.x > b.x && p.x < b.x + b.w && p.y > b.y - 20 && p.y < b.y + b.h + 30);
       if (b){ if (opts.viewOnly || !c){ enter(b.id); return; } walkTo(b.door[0], b.door[1] + 10, { type: 'door', id: b.id }); return; }
       if (Math.hypot(p.x - hana.x, p.y + 25 - hana.y) < 45){ if (opts.viewOnly || !c){ openHanaPanel(); return; } walkTo(hana.x + 50, hana.y + 5, { type: 'hana' }); return; }
@@ -7096,11 +7145,11 @@ function openVillage(opts){
     if (ow){ say(ow.name === meName ? '🚧 우리 집 공사 중이에요! 내일 완공돼요' : `🚧 ${ow.name}네 집 공사 중이에요`, 3000); return; }
     if (opts.viewOnly || !opts.me){ say('빈 부지예요'); return; }
     const T = /(쌤|샘|선생님)$/.test(meName || '');
-    if ((opts.me.lv || 1) < 7 && !T){ say(`🔒 Lv.7부터 이사할 수 있어요 (지금 Lv.${opts.me.lv || 1})`, 3000); return; }
-    if (!confirm(`🏗️ ${pl.id.slice(1)}번 부지로 집을 옮길까요?\n오늘은 공사 중이고, 내일 완공돼요!\n(꾸민 집 안은 그대로 이사해요)`)) return;
+    if ((opts.me.lv || 1) < pl.lv && !T){ say(`🔒 ${PLOT_MAPNAME[pl.map]} 부지는 Lv.${pl.lv}부터 이사할 수 있어요 (지금 Lv.${opts.me.lv || 1})`, 3000); return; }
+    if (!confirm(`🏗️ ${PLOT_MAPNAME[pl.map]} ${pl.id.slice(1)}번 부지로 집을 옮길까요?\n오늘은 공사 중이고, 내일 완공돼요!\n(꾸민 집 안은 그대로 이사해요)`)) return;
     try {
       const j = await opts.call('relocate', { plot: pl.id });
-      if (j && j.error) say({ lv:'Lv.7부터 이사할 수 있어요', taken:'이미 누가 찜한 부지예요' }[j.error] || '이사하지 못했어요');
+      if (j && j.error) say({ lv:`Lv.${pl.lv}부터 이사할 수 있어요`, taken:'이미 누가 찜한 부지예요', bad:'서버 코드를 새로 배포해야 해요' }[j.error] || '이사하지 못했어요');
       else { say('🚧 공사 시작! 내일이면 새 집이 완성돼요', 3500); emote('🎉'); pull(); }
     } catch(e){ say('연결이 안 돼요'); }
   }
@@ -7178,7 +7227,7 @@ function openVillage(opts){
         <div class="grid" style="grid-template-columns:1fr;"><button type="button" data-ghr="1">🔄 오늘 하나랑 논 횟수 다시 0번으로</button></div></div>
       <div class="god-sec"><b>🏷️ 칭호</b><div style="display:flex;gap:6px;margin:6px 0;"><input id="godTitle" maxlength="8" value="${escV(g.title || '')}" placeholder="8글자까지" style="flex:1;min-width:0;font-family:inherit;font-size:1rem;padding:6px;border:2px solid #5B4636;border-radius:10px;"><button type="button" class="vg-cardgo" data-gt="1" style="font-size:.95rem;padding:4px 12px;">저장</button></div></div>
       <div class="god-sec"><b>🪴 집 앞 꾸밈</b> <small>${(inv.decor || []).map(d => (DECOR_INFO[d] || {}).icon || '').join(' ') || '없음'}</small><div class="grid" style="grid-template-columns:repeat(4,1fr);">${Object.keys(DECOR_INFO).map(d => `<button type="button" data-gd="${d}">+ ${DECOR_INFO[d].icon}</button>`).join('')}<button type="button" data-gdc="1">🧹 모두 치우기</button></div></div>
-      <div class="god-sec"><b>🚚 집 위치</b> <small>${inv.plot ? '새 주택단지 ' + escV(inv.plot.id) : '원래 자리'}</small><div class="grid" style="grid-template-columns:1fr;"><button type="button" data-gp="1">🏘️ 원래 자리로 돌려놓기</button></div></div>
+      <div class="god-sec"><b>🚚 집 위치</b> <small>${inv.plot ? escV((PLOT_MAPNAME[(VPLOTS.find(q => q.id === inv.plot.id) || {}).map] || '') + ' ' + inv.plot.id) : '🐾 길냥이집'}</small><div class="grid" style="grid-template-columns:1fr;"><button type="button" data-gp="1">🐾 길냥이집으로 돌려놓기</button></div></div>
       <div class="god-sec"><b>🐾 냥코인 주기·빼기</b><div class="grid" style="grid-template-columns:repeat(5,1fr);">${[-50, -10, 10, 50, 100].map(v => `<button type="button" data-gc="${v}">${v > 0 ? '+' : ''}${v}</button>`).join('')}</div></div>`;
   }
   async function godCall(extra, msg){

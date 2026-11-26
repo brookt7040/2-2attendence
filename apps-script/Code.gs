@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 54;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 55;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -1392,7 +1392,7 @@ function studentVillage_(name, body) {
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
       let sc = String(body.sc || 'out');
-      if (!/^(out|west|east|south|mall|hall|arcade|hana|eng|cafe|house:.{1,20})$/.test(sc)) sc = 'out';
+      if (!/^(out|west|east|south|mall|alley|hall|arcade|hana|eng|cafe|house:.{1,20})$/.test(sc)) sc = 'out';
       const pos = cacheGet_('v:pos', {}), now = Date.now();
       const p = { x: x, y: y, sc: sc, ts: now };
       const sit = String(body.s || ''), seat = Math.floor(Number(body.t));
@@ -1636,7 +1636,7 @@ function studentGod_(name, body) {
     if (body.decorAdd) { const d = String(body.decorAdd); if (/^d_[a-z]+$/.test(d)) { inv.decor = (inv.decor || []).concat([d]).slice(-6); invDirty = true; } }
     if (body.plot !== undefined) {
       const plot = String(body.plot || '');
-      if (plot && !/^P([1-9]|1[0-2])$/.test(plot)) return { ok: true, error: 'bad' };
+      if (plot && !/^(P([1-9]|1[0-2])|C[1-5]|B[1-4]|F[1-4]|M[1-5])$/.test(plot)) return { ok: true, error: 'bad' };
       if (plot && Object.keys(map.inv).some(function (n) { return n !== who && map.inv[n] && map.inv[n].plot && map.inv[n].plot.id === plot; })) return { ok: true, error: 'taken' };
       inv.plot = plot ? { id: plot, ready: todayStr_() } : null; invDirty = true;
     }
@@ -2419,8 +2419,9 @@ function studentCoins_(name, body) {
       if (r.error) error = r.error; else { inv.room = r.room; writeRows_(db, ['inv']); cacheDrop_(['room:' + name]); result = 'ok'; }
     } else if (body.op === 'relocate') {         // 🏗️ Lv.7부터 집 옮기기 (다음 날 완공)
       const lv = (((map.pub || {}).priv || {})[name] || {}).lv || 1, plot = String(body.plot || '');
-      if (lv < 7 && !T) error = 'lv';
-      else if (plot && !/^P([1-9]|1[0-2])$/.test(plot)) error = 'bad';
+      const PLV = { C: 3, B: 4, F: 4, M: 5, P: 7 }, okId = /^(P([1-9]|1[0-2])|C[1-5]|B[1-4]|F[1-4]|M[1-5])$/.test(plot);   // 🏙️ 시티 · 🌊 해변 · 🌲 숲 · 🛍️ 상점가 · ☁️ 하늘 정원
+      if (plot && !okId) error = 'bad';
+      else if (plot && lv < PLV[plot.charAt(0)] && !T) error = 'lv';
       else if (plot && Object.keys(map.inv).some(function (n) { return n !== name && map.inv[n] && map.inv[n].plot && map.inv[n].plot.id === plot; })) error = 'taken';
       else {
         const tmr = Utilities.formatDate(new Date(Date.now() + 86400000), 'Asia/Seoul', 'yyyy-MM-dd');
