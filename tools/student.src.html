@@ -304,6 +304,7 @@ select,input[type=password],input[type=text]{width:100%;padding:10px;font-size:1
 @keyframes hop{40%{transform:translateY(-12px) rotate(-6deg)}}
 .ticker.mega{background:#FFF2BF;}
 .btn-urgent{background:#FF5C7A;color:#fff;}
+.t-tabs .t-grp,.t-tabs .t-sub{display:flex;gap:6px;flex-wrap:wrap;width:100%;} .t-tabs .t-grp button{font-size:1.05rem;padding:8px 16px;} .t-tabs .t-sub{padding:6px 0 0;border-top:2px dashed #EFE3D3;margin-top:6px;} .t-tabs .t-tools{border-top:none;justify-content:flex-end;}
 .t-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .t-tabs button{font-family:inherit;font-size:.95rem;border:2px solid var(--ink);border-radius:999px;background:#fff;padding:5px 10px;cursor:pointer;box-shadow:0 2px 0 var(--ink);}
 .t-tabs button.on{background:var(--y);} .t-tabs .off{margin-left:auto;background:#EEE6DA;}
@@ -1963,14 +1964,22 @@ function setAsStudent(on){
   toast(on ? '👀 학생 화면으로 보는 중이에요' : '👑 선생님 화면으로 돌아왔어요');
 }
 function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsStudent'); $('asStuBar').style.display = 'none'; tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
-const T_TABS = [['online', '🟢 접속 중'], ['stucfg', '⚙️ 학생 화면 설정'], ['ask', '🚨 상담·질문'], ['coin', '🐾 코인'], ['att', '📱 출석'], ['eng', '📚 영어'], ['free', '⏰ 쉬는 시간'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례'], ['show', '📢 내리기'], ['safe', '🛟 안전']];
+/* 👑 관리 탭: 📮 소통 · 🎮 학생 앱 · 🛟 안전 (출석부·EXP·냥코인·비번·백업은 관리자 출석부 🖥) */
+const T_GROUPS = [['msg', '📮 소통', [['ask', '🚨 상담·질문'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
+  ['app', '🎮 학생 앱', [['stucfg', '⚙️ 화면 설정'], ['show', '📢 마을 게시물'], ['free', '⏰ 쉬는 시간'], ['eng', '📚 영어 문제']]],
+  ['safe', '🛟 안전', [['online', '🟢 접속 중'], ['safe', '🚫 잠금 · 비속어 · 초기화']]]];
+const T_TABS = T_GROUPS.flatMap(g => g[2]);
+const tGroupOf = k => (T_GROUPS.find(g => g[2].some(x => x[0] === k)) || T_GROUPS[0]);
 function tKids(){ return ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => !/(쌤|샘|선생님|교감|교장)$/.test(n)); }
 async function tLoad(){
-  $('tTabs').innerHTML = T_TABS.map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '<button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button>';
+  if (!T_TABS.some(x => x[0] === tTab)) tTab = 'ask';
+  const grp = tGroupOf(tTab);
+  $('tTabs').innerHTML = `<div class="t-grp">${T_GROUPS.map(g => `<button type="button" data-tgrp="${g[0]}" class="${g === grp ? 'on' : ''}">${g[1]}${g[0] === 'msg' && tUrgent ? ' 🔴' : ''}</button>`).join('')}</div><div class="t-sub">`
+    + grp[2].map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '</div><div class="t-sub t-tools"><button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button></div><div class="hint" style="margin:4px 0 0;">🖥 출석 · EXP · 냥코인 · 학생 비밀번호 · 백업은 <b>관리자 출석부</b>에서 해요</div>';
   $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
   try {
     if (tTab === 'online') tData.pres = await tCall({ action:'presence' });
-    if (tTab === 'stucfg') tData.sc = await tCall({ action:'stuCfg' });
+    if (tTab === 'stucfg' || tTab === 'safe') tData.sc = await tCall({ action:'stuCfg' });
     if (tTab === 'ask') tData.asks = (await tCall({ action:'asks' })).asks || [];
     if (tTab === 'coin') tData.coins = await tCall({ action:'coins' });
     if (tTab === 'att' || tTab === 'show') tData.today = await tCall({ action:'today' });
@@ -2000,8 +2009,7 @@ function tRender(){
       <div class="box sc-box"><div class="box-head">📖 안내 사이트</div>
         <div class="hint">📝 버전과 업데이트 내역은 <b>큰 기능이 생길 때 자동으로</b> 바뀌어요 (작은 버그 수정·위치 이동은 안 적어요)</div></div>
       <div class="t-row" style="justify-content:flex-end;"><button type="button" class="btn btn-y" id="scSave">💾 저장하기</button></div>
-      <div class="box sc-box"><div class="box-head pink">🚫 비속어 자동 제한</div><div class="hint">1회 경고 → 2회 1분 → 3회 10분(공개) → 4회 1시간(공개) → 5회 10일 → 6회 영구(공개) · 교실 출석부 📓 수첩에서도 볼 수 있어요</div>
-        ${sn.length ? sn.map(n => { const x = st[n], on = x.perm || Number(x.until) > Date.now(); return `<div class="sc-stk"><b>${esc(n)}</b><span>${x.n}회 · ${x.perm ? '⛔ 영구 정지' : on ? `🔇 ${new Date(+x.until).toTimeString().slice(0, 5)}까지` : '✅ 제한 없음'}</span>${on ? `<button type="button" class="btn btn-gray" data-stk="${esc(n)}">🔓 풀기</button>` : ''}<button type="button" class="btn btn-gray" data-stkr="${esc(n)}">🔄 0회로</button></div>`; }).join('') : '<div class="empty">아직 없어요 ✨</div>'}</div>`;
+`;
     return;
   }
   if (tTab === 'online'){ box.innerHTML = `<div class="box">${tData.pres && tData.pres.ok ? presenceHTML(tData.pres, tKids()) : '<div class="empty">서버 코드를 최신(v29)으로 배포하면 보여요</div>'}<div style="text-align:right;"><button type="button" class="btn btn-y" data-ttab="online">🔄 새로고침</button></div></div>`; return; }
@@ -2058,24 +2066,30 @@ function tRender(){
   }
   if (tTab === 'board'){
     box.innerHTML = `<div class="box"><div class="box-head">📢 알림 (한 줄에 하나)</div><textarea id="tNotices" rows="5">${esc(st.notices.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="notices">저장</button></div></div>
-      <div class="box"><div class="box-head pink">📋 종례 (한 줄에 하나)</div><textarea id="tClosing" rows="5">${esc(st.closing.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="closing">저장</button></div></div>`;
+      <div class="box"><div class="box-head pink">📋 종례 (한 줄에 하나)</div><textarea id="tClosing" rows="5">${esc(st.closing.join('\n'))}</textarea><div class="t-row"><button type="button" class="btn btn-y" data-tboard="closing">저장</button></div></div>
+      <div class="box"><div class="box-head lav">📸 시내T 스토리</div><div class="hint">마을 광장 게시판과 학생 화면에 <b>24시간</b> 떠요. 학생은 한 줄 답 · 투표 · 이모지로 답해요</div>
+        <input type="text" id="tStQ" maxlength="120" placeholder="질문 (예: 오늘 급식 뭐가 제일 맛있었어?)" style="width:100%;">
+        <div class="t-row"><select id="tStType"><option value="text">✏️ 한 줄 답</option><option value="vote">🗳️ 투표</option><option value="emoji">😍 이모지</option></select><input type="text" id="tStOpts" placeholder="투표 선택지 (쉼표로 · 최대 5개)" style="flex:1;"><label><input type="checkbox" id="tStPub"> 👀 답 공개</label></div>
+        <div class="t-row"><button type="button" class="btn btn-y" data-tstory="post">📸 올리기</button><button type="button" class="btn btn-gray" data-tstory="load">💬 답 보기</button><button type="button" class="btn btn-gray" data-tstory="del">내리기</button></div>
+        <div id="tStAns"></div></div>
+      <div class="hint">📢 Notice · 📌 Must Read · 💬 하나 말풍선은 관리자 출석부 화면에서 눌러서 바로 써요</div>`;
     return;
   }
   if (tTab === 'safe'){
-    const lock = !!(tData.pull || {}).lockdown;
-    box.innerHTML = `<div class="box"><div class="box-head">💾 전체 백업</div><div class="hint">출석·EXP·코인·대화·상담·설정을 한 파일(JSON)로 내려받아요. 초기화하기 전에 꼭 받아 두세요.</div><div class="t-row"><button type="button" class="btn btn-y" id="tBackup">💾 백업 파일 받기</button></div></div>
+    const lock = !!(tData.pull || {}).lockdown, st = ((tData.sc || {}).strikes) || {}, sn = Object.keys(st).filter(n => (st[n] || {}).n);
+    box.innerHTML = `
       <div class="box ${lock ? 't-card urg' : ''}"><div class="box-head pink">🚫 긴급 잠금</div><div class="hint">문제가 생겼을 때 대화·마을 말하기·게임을 <b>모두 바로 닫아요</b>. (보기는 돼요)</div>
         <div class="t-row"><button type="button" class="btn ${lock ? 'btn-mint' : 'btn-urgent'}" data-tlock="${lock ? 0 : 1}">${lock ? '🔓 잠금 풀기' : '🚫 지금 잠그기'}</button><b>${lock ? '지금 잠겨 있어요' : ''}</b></div></div>
       <div class="box"><div class="box-head lav">🧹 초기화 (보관 후 비우기)</div><div class="hint">지우기 전에 시트에 '…_보관_날짜' 탭으로 그대로 복사해 둬요. 학생 화면에서만 사라져요.</div>
         <div class="t-row"><button type="button" class="btn btn-gray" data-treset="chatReset">💬 대화 초기화</button><button type="button" class="btn btn-gray" data-treset="askReset">📮 질문·건의·상담 초기화</button></div></div>
-      <div class="box"><div class="box-head mint">🔑 학생 비밀번호 새로 만들기</div><div class="t-row"><select id="tPinWho">${((st.pub && st.pub.students) || []).map(x => `<option>${esc(x.name)}</option>`).join('')}</select><button type="button" class="btn btn-y" id="tPinNew">새로 만들기</button></div><div id="tPinOut" class="hint"></div></div>`;
+      <div class="box sc-box"><div class="box-head pink">🚫 비속어 자동 제한</div><div class="hint">1회 경고 → 2회 1분 → 3회 10분(공개) → 4회 1시간(공개) → 5회 10일 → 6회 영구(공개) · 교실 출석부 📓 수첩에서도 볼 수 있어요</div>
+        ${sn.length ? sn.map(n => { const x = st[n], on = x.perm || Number(x.until) > Date.now(); return `<div class="sc-stk"><b>${esc(n)}</b><span>${x.n}회 · ${x.perm ? '⛔ 영구 정지' : on ? `🔇 ${new Date(+x.until).toTimeString().slice(0, 5)}까지` : '✅ 제한 없음'}</span>${on ? `<button type="button" class="btn btn-gray" data-stk="${esc(n)}">🔓 풀기</button>` : ''}<button type="button" class="btn btn-gray" data-stkr="${esc(n)}">🔄 0회로</button></div>`; }).join('') : '<div class="empty">아직 없어요 ✨</div>'}</div>`;
     return;
   }
   if (tTab === 'eng'){ box.innerHTML = '<div id="tEngBox"></div>'; mountEngAdmin($('tEngBox'), tCall, toast); return; }
   if (tTab === 'show'){
     const d = tData.today || {}, inv = (tData.coins || {}).inv || {};
-    box.innerHTML = `<div class="box"><div class="box-head">🏘️ 마을 소식 줄</div><div class="hint">마을 탭 위에 흐르는 줄 (새로 꾸몄어요 · 물 마시기 · 시험 통과 …) · 지금 <b>${newsOn ? '켜짐' : '꺼짐'}</b></div><div class="t-row"><button type="button" class="btn btn-y" data-newson="${newsOn ? 0 : 1}">${newsOn ? '🔕 끄기' : '🔔 켜기'}</button></div></div>
-      <div class="box"><div class="box-head">🧹 냥이 마을 공지 지우기</div><div class="hint">마을 위쪽에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><div class="t-row"><button type="button" class="btn btn-y" data-tdel="tickerClear">🧹 마을 공지 모두 지우기</button></div></div>
+    box.innerHTML = `<div class="box"><div class="box-head">🧹 냥이 마을 공지 지우기</div><div class="hint">마을 위쪽에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><div class="t-row"><button type="button" class="btn btn-y" data-tdel="tickerClear">🧹 마을 공지 모두 지우기</button></div></div>
       <div class="box"><div class="box-head">📢 확성기</div>${(d.mega || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="megaDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head pink">🎊 축하 배너</div>${(d.banners || []).map(m => `<div class="t-line"><span><b>${esc(m.n)}</b> ${esc(m.text)}</span><button type="button" class="btn btn-gray" data-tdel="bannerDel" data-ts="${m.ts}">내리기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
       <div class="box"><div class="box-head mint">🏷️ 칭호</div>${Object.entries(inv).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="t-line"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="btn btn-gray" data-ttitle="${esc(n)}">지우기</button></div>`).join('') || '<div class="empty">없어요</div>'}</div>
@@ -2103,6 +2117,19 @@ document.addEventListener('click', async e => {
   if ((!tKey && !tAuthByLogin) || !t.closest('#p-admin')) return;
   if (t.closest('#tAsStuBtn')){ setAsStudent(true); return; }
   if (t.closest('#tOffBtn')){ if (confirm('로그아웃할까요?')) logout(); return; }
+  { const sb = t.closest('[data-tstory]'); if (sb){   // 📸 시내T 스토리 (관리자 출석부 설정에 있던 걸 여기로)
+    const k = sb.dataset.tstory;
+    try {
+      if (k === 'post'){ const q = ($('tStQ').value || '').trim(); if (!q){ toast('질문을 적어 주세요'); return; }
+        await tCall({ ops:[{ op:'storySet', q, type: $('tStType').value, opts: $('tStOpts').value.split(',').map(x => x.trim()).filter(Boolean), pub: $('tStPub').checked }] }); toast('📸 스토리를 올렸어요!'); $('tStQ').value = ''; }
+      else if (k === 'del'){ if (!confirm('지금 스토리를 내릴까요?')) return; await tCall({ ops:[{ op:'storyDel' }] }); toast('스토리를 내렸어요'); }
+      const j = await tCall({ action:'story' }), sx = j.story;
+      $('tStAns').innerHTML = !sx ? '<div class="empty">지금 올라간 스토리가 없어요</div>' : `<div class="hint"><b>📸 ${esc(sx.q)}</b> · ${{ text:'한 줄 답', vote:'투표', emoji:'이모지' }[sx.type] || ''} · ${sx.pub ? '👀 공개' : '🔒 선생님만'}</div>`
+        + (j.votes ? `<div class="hint">${Object.entries(j.votes).map(([a, v]) => `${esc(a)} <b>${v}</b>`).join(' · ')}</div>` : '')
+        + ((j.answers || []).map(a => `<div class="t-line"><span><b>${esc(a.name)}</b> ${esc(a.ans)}</span><small>${esc(String(a.t).slice(11, 16))}</small></div>`).join('') || '<div class="empty">아직 답이 없어요</div>');
+    } catch(e){ toast('스토리를 처리하지 못했어요'); }
+    return; } }
+  const tg = t.closest('[data-tgrp]'); if (tg){ const g = T_GROUPS.find(x => x[0] === tg.dataset.tgrp); if (g){ tTab = g[2][0][0]; tLoad(); } return; }
   const tb = t.closest('[data-ttab]'); if (tb){ tTab = tb.dataset.ttab; tLoad(); return; }
   // 상담·질문
   const rp = t.closest('[data-tarep]'); if (rp){ const v = (document.querySelector(`[data-tain="${rp.dataset.tarep}"]`).value || '').trim(); if (!v){ toast('답변을 적어 주세요'); return; } if (await tOps([{ op:'askReply', id:+rp.dataset.tarep, text:v }], '📮 답변했어요')) tLoad(); return; }
@@ -2168,8 +2195,8 @@ document.addEventListener('click', e => {
       askOpen: $('scAskOpen').checked, closingAt: $('scClosingAt').value || '' };
     tOps([{ op:'stuCfgSet', data }], '💾 학생 화면 설정을 저장했어요').then(ok => { if (ok){ pull(true); tLoad(); } }); return;
   }
-  { const x = t.closest('[data-stk]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stk}의 지금 제한을 풀까요? (횟수는 그대로)`)) tOps([{ op:'strikeSet', name: x.dataset.stk, reset:false }], '🔓 제한을 풀었어요').then(() => tLoad()); return; } }
-  { const x = t.closest('[data-stkr]'); if (x && tTab === 'stucfg'){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
+  { const x = t.closest('[data-stk]'); if (x && (tTab === 'stucfg' || tTab === 'safe')){ if (confirm(`${x.dataset.stk}의 지금 제한을 풀까요? (횟수는 그대로)`)) tOps([{ op:'strikeSet', name: x.dataset.stk, reset:false }], '🔓 제한을 풀었어요').then(() => tLoad()); return; } }
+  { const x = t.closest('[data-stkr]'); if (x && (tTab === 'stucfg' || tTab === 'safe')){ if (confirm(`${x.dataset.stkr}의 비속어 횟수를 0으로 되돌릴까요?`)) tOps([{ op:'strikeSet', name: x.dataset.stkr, reset:true }], '🔄 횟수를 초기화했어요').then(() => tLoad()); return; } }
   { const nb = t.closest('[data-newson]'); if (nb){ const on = nb.dataset.newson === '1'; tOps([{ op:'newsSet', on }], on ? '🔔 마을 소식 줄을 켰어요' : '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = on; render(); tRender(); } }); return; } }
   if (t.closest('#tickerOff')){ if (!confirm('마을 소식 줄을 끌까요? (👑 관리 → ⚙️ 학생 화면 설정에서 다시 켤 수 있어요)')) return; tOps([{ op:'newsSet', on:false }], '🔕 마을 소식 줄을 껐어요').then(ok => { if (ok){ newsOn = false; render(); } }); return; }
   { const u = t.closest('[data-unsend]'); if (u){ chatUnsend(Number(u.dataset.unsend)); return; } }

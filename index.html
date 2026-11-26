@@ -996,6 +996,7 @@ body.view-mode .mh-side.empty{display:none !important;}
       <div class="chip" id="statExp" style="display:none;"></div>
       <button type="button" class="btn btn-mint" id="openVillageBtn">🏘️ 마을</button>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
+      <button type="button" class="btn btn-y" id="gmCoinBtn" style="background:#FFE9A8;">🐾 냥코인 <b id="gmReqCount"></b></button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
     </div>
   </div>
@@ -1216,12 +1217,7 @@ body.view-mode .mh-side.empty{display:none !important;}
     <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 EXP·레벨·출석·꾸미기를 바꿔요</small></h2>
     <div class="gm-body">
       <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
-        <button type="button" class="mini-btn" style="background:var(--sky);margin-bottom:6px;" id="gmChatBtn">💬 대화 관리</button>
-        <button type="button" class="mini-btn" style="background:var(--mint);margin-bottom:6px;" id="gmAskBtn">📮 질문·건의·상담 <b id="gmAskCount"></b></button>
-        <button type="button" class="mini-btn" style="background:#BFE3FF;margin-bottom:6px;" id="gmEngBtn">📚 영어 문제</button>
-        <button type="button" class="mini-btn" style="background:#C9B8FF;margin-bottom:6px;" id="gmFreeBtn">⏰ 쉬는 시간 해제 <b id="gmFreeOn"></b></button>
-        <button type="button" class="mini-btn" style="background:#FF9DAE;margin-bottom:10px;" id="gmResetBtn">🧨 전체 초기화</button>
-        <button type="button" class="mini-btn" style="background:var(--y);margin-bottom:10px;" id="gmCoinBtn">🐾 냥코인 관리 <b id="gmReqCount"></b></button><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
+        <div class="form-hint" id="gmAskHint" style="margin:0 0 8px;">📮 상담·대화·영어·쉬는 시간은 <b>아지트 → 👑 관리</b>에서 해요 <b id="gmAskCount"></b><b id="gmFreeOn" style="display:none;"></b></div><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
     </div>
     <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
@@ -1558,15 +1554,21 @@ body.view-mode .mh-side.empty{display:none !important;}
       <div class="form-hint">연결하면 출석·EXP·청소·설정·알림이 모든 컴퓨터에 공유돼요. 알림은 구글 시트 '알림' 탭(A2칸부터)에서 바로 써도 돼요.<br>알람 음원 파일은 용량이 커서 컴퓨터마다 따로 저장돼요. 연결 방법은 <a href="https://github.com/brookt7040/2-2attendence#readme" target="_blank" rel="noopener">설정 안내</a>를 보세요.</div>
     </div>
 
+    <div class="section">
+      <div class="section-title">💾 백업 · 초기화</div>
+      <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="mini-btn" style="background:var(--sky);" id="backupBtn">⬇ 출석부 백업 저장</button>
+        <button type="button" class="mini-btn" style="background:var(--sky);" id="importBtn">⬆ 출석부 백업 불러오기</button>
+        <button type="button" class="mini-btn" style="background:var(--mint);" id="serverBackupBtn">⬇ 서버 전체 백업 (코인·대화·상담 포함)</button>
+        <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none"></div>
+      <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button type="button" class="mini-btn" style="background:#FF9DAE;" id="gmResetBtn">🧨 출석·EXP 초기화 (명단·설정은 그대로)</button>
+        <button type="button" class="mini-btn" style="background:#FFC9D3;" id="resetBtn">🧹 새 학년 초기화 (전부 지우기)</button></div>
+      <div class="form-hint">초기화 전에 꼭 백업부터! 학생 앱의 대화·상담 초기화와 🚫 긴급 잠금은 <b>아지트 → 👑 관리 → 🛟 안전</b>에 있어요.</div>
+    </div>
     <div class="modal-btns">
       <button type="button" class="btn btn-gray" data-close="adminOverlay">취소</button>
       <button type="button" class="btn btn-y" id="saveAdminBtn">💾 저장하기</button>
-    </div>
-    <div class="modal-btns">
-      <button type="button" class="btn btn-sky" id="backupBtn">⬇ 백업 저장</button>
-      <button type="button" class="btn btn-sky" id="importBtn">⬆ 백업 불러오기</button>
-      <input type="file" id="backupFileInput" accept="application/json,.json" style="display:none">
-      <button type="button" class="btn btn-danger" id="resetBtn">🧹 새 학년 초기화</button>
     </div>
   </div>
 </div>
@@ -2396,46 +2398,15 @@ function presenceHTML(p, names){
 let serverPresence = null;
 function openPres(){ $('presBody').innerHTML = serverPresence ? presenceHTML(serverPresence, kids()) : '<div class="hint">서버 코드를 최신(v29)으로 배포하면 보여요</div>'; $('presOv').style.display = 'flex'; pullSync(true); }
 /* ⚙️ 설정 탭: 기본 · 📢 알림 · 🔒 보안·접속 · 🔔 알람·소리 · ☁️ 동기화 */
-const ST_TABS = [['basic', '⚙️ 기본'], ['notice', '📢 알림'], ['secure', '🔒 보안·접속'], ['alarm', '🔔 알람·소리'], ['sync', '☁️ 동기화']];
-let stTab = 'basic';
+const ST_TABS = [['class', '🏫 우리 반'], ['exp', '⭐ 출석·EXP'], ['alarm', '🔔 알람·소리'], ['secure', '🔒 보안·접속'], ['sync', '☁️ 서버·백업']];   // 🖥 출석부 · 반 운영 (학생 앱 운영은 아지트 👑 관리)
+let stTab = 'class';
 function setupSettingsTabs(){
   const ov = $('adminOverlay'); if (!ov || ov.dataset.tabs) return; ov.dataset.tabs = '1';
   const secs = [...ov.querySelectorAll('.modal > .section')];
   secs.forEach(sec => { const t = (sec.querySelector('.section-title') || {}).textContent || '';
-    sec.dataset.sg = /비밀번호/.test(t) ? 'secure' : /알람|효과음/.test(t) ? 'alarm' : /동기화|이사|백업|초기화/.test(t) ? 'sync' : 'basic'; });
-  const n = document.createElement('div'); n.className = 'section'; n.dataset.sg = 'notice';
-  n.innerHTML = `<div class="section-title">📢 알림 · 공지</div>
-    <div class="form-hint">✍️ 바로 쓰기 · 누르면 쓰는 창이 열려요 (출석부 화면에서 눌러 쓰는 것과 똑같아요)</div>
-    <div class="st-write"><button type="button" data-stw="notices">📢 Notice<small>오늘의 알림</small></button><button type="button" data-stw="urgent">📌 Must Read<small>중요 공지</small></button><button type="button" data-stw="closing">📋 종례<small>종례 화면 · 학생 화면</small></button><button type="button" data-stw="bubble">💬 하나 말풍선<small>긴급 호출도 여기서</small></button></div>
-    <div class="st-move"></div>
-    <div class="form-hint" style="margin-top:10px;background:#E8ECFF;border-radius:12px;padding:10px 12px;">🏘️ 마을 소식 줄 · 📢 확성기 · 📋 종례가 학생 화면 맨 위로 오는 시각 · 📖 안내 사이트 버전은<br><b>학생 화면 → 시내쌤 로그인 → 👑 관리 → ⚙️ 학생 화면 설정</b>에서 바꿔요.</div>
-    <div class="row" style="display:none;"><span>🏘️ <b>마을 소식 줄</b> · 학생 화면 마을 탭 위 (물 마시기 · 시험 통과 · 새로 꾸몄어요 …)</span><span><button type="button" class="btn" data-news="1" style="font-size:.85rem;padding:4px 10px;background:#E4F7EA;">켜기</button> <button type="button" class="btn" data-news="0" style="font-size:.85rem;padding:4px 10px;background:#FFE1EA;">끄기</button></span></div>`;
-  secs[0].parentNode.insertBefore(n, secs[0]);
-  const sbx = document.createElement('div'); sbx.id = 'storyBox';
-  sbx.innerHTML = `<div class="form-hint" style="margin-top:14px;background:#FFE1EA;border-radius:12px;padding:10px 12px;">📸 <b>시내T 스토리</b> · 마을 광장 게시판과 학생 화면에 <b>24시간</b> 떠요. 학생은 한 줄 답 · 투표 · 이모지로 답해요 (🎯 스토리 미션 자동 지급)</div>
-    <div class="form-group"><input type="text" id="stQ" maxlength="120" placeholder="질문 (예: 오늘 급식 뭐가 제일 맛있었어?)"></div>
-    <div class="row" style="justify-content:flex-start;gap:10px;flex-wrap:wrap;"><select id="stType"><option value="text">✏️ 한 줄 답</option><option value="vote">🗳️ 투표</option><option value="emoji">😍 이모지</option></select>
-      <input type="text" id="stOpts" placeholder="투표 선택지 (쉼표로 · 최대 5개)" style="flex:1;min-width:180px;"><label><input type="checkbox" id="stPub"> 👀 친구들 답도 공개</label></div>
-    <div class="row" style="justify-content:flex-start;gap:8px;"><button type="button" class="btn btn-y" data-story="post">📸 올리기</button><button type="button" class="btn" data-story="load" style="background:#fff;">💬 답 보기</button><button type="button" class="btn" data-story="del" style="background:#FFD6E0;">내리기</button></div>
-    <div id="stAns"></div>`;
-  n.appendChild(sbx);
-  sbx.addEventListener('click', async e => {
-    const b = e.target.closest('[data-story]'); if (!b) return;
-    if (!sync.url || sync.api < 37){ alert('서버 코드를 v37 이상으로 업데이트해야 쓸 수 있어요.'); return; }
-    try {
-      if (b.dataset.story === 'post'){ const q = $('stQ').value.trim(); if (!q){ showToast('질문을 적어 주세요'); return; }
-        await teacherCall({ ops:[{ op:'storySet', q, type: $('stType').value, opts: $('stOpts').value.split(',').map(x => x.trim()).filter(Boolean), pub: $('stPub').checked }] }); showToast('📸 스토리를 올렸어요!'); $('stQ').value = ''; }
-      else if (b.dataset.story === 'del'){ if (!confirm('지금 스토리를 내릴까요?')) return; await teacherCall({ ops:[{ op:'storyDel' }] }); showToast('스토리를 내렸어요'); }
-      const j = await teacherCall({ action:'story' }), st = j.story;
-      $('stAns').innerHTML = !st ? '<div class="clean-empty">지금 올라간 스토리가 없어요</div>' : `<div class="form-hint" style="margin-top:8px;"><b>📸 ${esc(st.q)}</b> · ${{ text:'한 줄 답', vote:'투표', emoji:'이모지' }[st.type]} · ${st.pub ? '👀 공개' : '🔒 선생님만'} · 답 ${j.count || 0}개</div>` +
-        (j.votes ? `<div class="form-hint">${Object.entries(j.votes).map(([k, v]) => `${esc(k)} <b>${v}</b>`).join(' · ')}</div>` : '') +
-        ((j.answers || []).map(a => `<div class="bonus-entry"><span><b>${esc(a.name)}</b> ${esc(a.ans)}</span><small>${esc(String(a.t).slice(11, 16))}</small></div>`).join('') || '<div class="clean-empty">아직 답이 없어요</div>');
-    } catch(err){ alert('스토리를 처리하지 못했어요: ' + err.message); }
-  });
-  const mv = n.querySelector('.st-move');
+    sec.dataset.sg = /비밀번호/.test(t) ? 'secure' : /알람|효과음/.test(t) ? 'alarm' : /동기화|이사|백업|초기화/.test(t) ? 'sync' : /시간표|기본 정보/.test(t) ? 'class' : /EXP|레벨/.test(t) ? 'exp' : 'class'; });
   $('stTabs').innerHTML = ST_TABS.map(([k, l]) => `<button type="button" data-st="${k}">${l}</button>`).join('');
   $('stTabs').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b) showStTab(b.dataset.st); });
-  n.addEventListener('click', e => { const nb = e.target.closest('[data-news]'); if (nb){ syncOp({ op:'newsSet', on: nb.dataset.news === '1' }); showToast(nb.dataset.news === '1' ? '🏘️ 마을 소식 줄을 켰어요' : '🏘️ 마을 소식 줄을 껐어요'); return; } const b = e.target.closest('[data-stw]'); if (!b) return; const k = b.dataset.stw; if (k === 'bubble') openBubbleEdit(); else editText(k); });
   ov.addEventListener('focusin', e => { const sec = e.target.closest('.section[data-sg]'); if (sec && sec.classList.contains('st-hide')) showStTab(sec.dataset.sg); });   // 숨은 탭의 칸으로 가면 그 탭을 열어요
   showStTab(stTab);
 }
@@ -3912,12 +3883,6 @@ function onGmClick(e){
   }
   if (t.closest('#gmPinDelBtn')){ if (confirm(`${gmName}의 비밀번호를 지울까요? 학생 페이지에 로그인할 수 없게 돼요.`)) setStudentPins({ [gmName]: '' }); return; }
   if (t.closest('#gmPinAllBtn')){ makeAllPins(); return; }
-  if (t.closest('#gmFreeBtn')){ openFree(); return; }
-  if (t.closest('#gmEngBtn')){ if (!sync.url || sync.api < 9){ alert('영어 문제는 구글 시트 코드를 최신 버전(v9)으로 업데이트해야 쓸 수 있어요.'); return; } $('engAdmOverlay').style.display = 'flex'; mountEngAdmin($('engAdmBody'), body => teacherCall(body), showToast); return; }
-  if (t.closest('#gmResetBtn')){ $('resetOverlay').style.display = 'flex'; return; }
-  if (t.closest('#gmChatBtn')){ openChatAdmin(); return; }
-  if (t.closest('#gmAskBtn')){ openAskAdmin(); return; }
-  if (t.closest('#gmCoinBtn')){ openCoinAdmin(); return; }
   const u = t.closest('[data-gmundo]'); if (u){ gmUndo(u.dataset.gmundo); }
 }
 
@@ -4947,7 +4912,7 @@ function showAcks(text){
 function updateGmDot(){
   $('gmDot').style.display = (serverAsksOpen + serverReqOpen) > 0 ? 'block' : 'none';
   $('openGmBtn').classList.toggle('urgent', serverUrgent > 0);
-  $('openGmBtn').title = serverUrgent > 0 ? `⭐ 중요 상담 ${serverUrgent}건! 관리자 모드 → 질문·건의·상담` : '관리자 모드';
+  $('openGmBtn').title = serverUrgent > 0 ? `⭐ 중요 상담 ${serverUrgent}건! 아지트 → 👑 관리 → 상담·질문` : '관리자 모드';
   const rc = $('gmReqCount'); if (rc) rc.textContent = serverReqOpen > 0 ? `(${serverReqOpen})` : '';
   const c = $('gmAskCount'); if (c) c.textContent = serverAsksOpen > 0 ? `(${serverAsksOpen})` : '';
   const ab = $('gmAskBtn'); if (ab) ab.classList.toggle('urgent', serverUrgent > 0);
@@ -5146,10 +5111,6 @@ function renderCoinAdmin(){
         <button type="button" class="act-btn cancel" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="clean-empty">확인할 게 없어요 ✨</div>'}</div>
       <div class="section"><div class="section-title">🎯 미션 성공 보고 <small style="color:var(--ink-soft);">(잘못 준 건 ↩ 취소 · 코인과 EXP가 빠져요)</small></div>${(d.results || []).length ? d.results.slice(0, 30).map(x => `<div class="bonus-entry"><span>${x.undone ? '<s>' : ''}<b>${esc(x.name)}</b> · ${esc(String(x.why).replace(/^미션:\s*/, ''))} · +${x.amt}🐾 <small>${esc(x.kind)} ${esc(x.t.slice(5))}</small>${x.undone ? '</s> ↩ 취소됨' : ''}</span>${x.undone ? '' : `<button type="button" class="act-btn cancel" data-mundo="${x.id}">↩ 취소</button>`}</div>`).join('') : '<div class="clean-empty">아직 없어요</div>'}</div>
       <div class="section"><div class="section-title">💌 칭찬편지 결과 <small style="color:var(--ink-soft);">(내용은 안 보여요)</small></div>${(d.praise || []).length ? d.praise.slice(0, 20).map(x => `<div class="bonus-entry"><span><b>${esc(x.from)}</b> → ${esc(x.to)} ${x.mission ? '🎯' : ''}</span><span>${x.ok ? '✅ 받은 친구가 확인' : '⏳ 아직 확인 전'} <small>${esc(x.t.slice(5))}</small></span></div>`).join('') : '<div class="clean-empty">아직 없어요</div>'}</div>
-      <div class="section"><div class="section-title">🧹 냥이 마을 공지 지우기</div><div class="form-hint">마을에 흐르는 📢 확성기와 ✨ "새로 꾸몄어요" 알림을 한 번에 모두 지워요.</div><button type="button" class="act-btn cancel" data-tickerclear="1">🧹 마을 공지 모두 지우기</button></div>
-      <div class="section"><div class="section-title">📢 지금 떠 있는 확성기 (1시간)</div>${megaNow.length ? megaNow.map(m => `<div class="bonus-entry"><span><b>${esc(m.n)}</b>: ${esc(m.text)} <small>${new Date(m.ts).toTimeString().slice(0, 5)}</small></span><button type="button" class="act-btn cancel" data-megadel="${m.ts}">내리기</button></div>`).join('') : '<div class="clean-empty">없어요</div>'}
-        <div class="row" style="justify-content:flex-end;"><button type="button" class="mini-btn" id="hanaResetBtn">🐱 하나 꾸미기 초기화</button>${butlerNow ? `<button type="button" class="mini-btn" id="butlerDelBtn">🐱 오늘 집사(${esc(butlerNow)}) 취소</button>` : ''}</div></div>
-      <div class="section"><div class="section-title">🏷️ 학생 칭호</div>${Object.entries(d.inv || {}).filter(([n, v]) => v && v.title).map(([n, v]) => `<div class="bonus-entry"><span><b>${esc(n)}</b> «${esc(v.title)}»</span><button type="button" class="act-btn cancel" data-titledel="${esc(n)}">지우기</button></div>`).join('') || '<div class="clean-empty">아직 없어요</div>'}</div>
       <div class="section"><div class="section-title">📜 최근 처리</div>${done.map(r => `<div class="bonus-entry"><span>${esc(r.type)} · ${esc(r.name)} · ${esc(r.item)} · ${esc(r.status)}</span><small>${esc(r.done)}</small></div>`).join('') || '<div class="clean-empty">-</div>'}</div>`;
   } else if (coTab === 'give'){
     box.innerHTML = `<div class="section"><div class="section-title">👥 1. 받을 친구 고르기</div>
@@ -7400,6 +7361,12 @@ function bindEvents(){
   $('openStatsBtn').addEventListener('click', () => requirePin(openStatsUI));
   $('openAdminBtn').addEventListener('click', () => requirePin(openAdminUI));
   $('openGmBtn').addEventListener('click', () => requirePin(openGm));
+  $('gmCoinBtn').addEventListener('click', () => requirePin(openCoinAdmin));   // 🐾 냥코인 관리 (화면 버튼)
+  $('gmResetBtn').addEventListener('click', () => { $('resetOverlay').style.display = 'flex'; });   // 🧨 출석·EXP 초기화 (설정 → ☁️ 서버·백업)
+  $('serverBackupBtn').addEventListener('click', async () => {   // ⬇ 서버 전체 백업 (아지트에 있던 걸 여기로)
+    if (!sync.url){ alert('구글 시트에 연결해야 받을 수 있어요.'); return; }
+    try { const j = await teacherCall({ action:'backup' }); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 1)], { type:'application/json' })); a.download = `냥냥_서버백업_${getTodayStr()}.json`; a.click(); showToast('💾 서버 전체 백업을 받았어요'); }
+    catch(e){ alert('백업하지 못했어요: ' + e.message); } });
   $('pinOkBtn').addEventListener('click', checkPin);
   $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
   $('pinCancelBtn').addEventListener('click', () => { $('pinOverlay').style.display = 'none'; pinNext = null; const k = kidPin; kidPin = null; if (k && k.onCancel) k.onCancel(); });
