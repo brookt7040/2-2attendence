@@ -482,6 +482,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 html.off-village #p-village > .off-box,html.off-pad #p-pad > .off-box,html.off-coin #p-coin > .off-box,html.off-chat #p-chat > .off-box{display:block;}
 html.off-village #p-village > :not(.off-box),html.off-pad #p-pad > :not(.off-box),html.off-coin #p-coin > :not(.off-box){display:none !important;}
 html.off-chat .ch-in,html.off-chat .ch-quick{display:none !important;}
+
+.ms-rule-top{position:absolute;top:-13px;right:16px;background:#fff;box-shadow:0 2px 0 var(--ink);}
 </style>
 </head>
 <body>
@@ -1168,7 +1170,7 @@ function openMissionGuide(m){
   const auto = ['appon', 'eng', 'praise', 'story', 'menu', 'diary', 'cafe'].includes(m.flow) || !!m.auto, how = m.how || MISSION_HOW[m.id] || MISSION_HOW[m.flow] || '미션을 다 하면 냥코인 탭에서 \'완료했어요!\'를 눌러 알려 줘요.';
   bOpen('msOv', `<h2>🎯 ${esc(m.name)}</h2>
     <div class="mg-coin">+${m.coins}🐾 · +${m.exp || 0}✨</div>
-    ${m.cap ? `<div class="hint" style="text-align:center;">🏁 선착 성공 미션 · 지금 ${Math.min((coin.capUsed || {})[m.id] || 0, m.cap)}/${m.cap}명 성공 <button type="button" class="ms-rule" data-mrule>📜 규칙</button></div>` : ''}
+    ${m.cap ? `<div class="hint" style="text-align:center;">🏁 선착 성공 미션 · 지금 ${Math.min((coin.capUsed || {})[m.id] || 0, m.cap)}/${m.cap}명 성공 <button type="button" class="ms-rule" data-mrule>규칙</button></div>` : ''}
     <div class="mg-how">📖 ${esc(how)}</div>
     ${auto ? '<div class="mg-pay auto">⚡ <b>자동 지급</b> · 조건을 채우면 냥코인이 저절로 들어와요</div>'
       : `<div class="mg-pay manual">✋ <b>수동 지급이에요!</b><br>${m.flow === 'sign' ? '서명을 받으면' : '다 하고 \'완료했어요!\'를 누르면'} <b>시내T가 확인한 뒤</b> 냥코인을 직접 줘요. 바로 안 들어와도 기다려 줘요 🙏</div>`}
@@ -2119,7 +2121,7 @@ function renderCoin(){
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink" style="display:flex;align-items:center;">📋 미션<button type="button" class="ms-rule" data-mrule style="margin-left:auto;">📜 규칙</button></div>${LKm ? lockNote : ''}${msHtml}</div>
+    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div><button type="button" class="ms-rule ms-rule-top" data-mrule>규칙</button>${LKm ? lockNote : ''}${msHtml}</div>
     <div class="box shop-go"><div class="box-head mint">🛍️ 상점</div><div style="text-align:center;line-height:1.7;">🛍️ 상점은 <b>마을 → 🛍️ 냥냥 상점가</b>로 옮겼어요!<br><small class="hint">꾸미기 · 확성기 · 부동산 · 쿠폰 · 문구점 가게에 직접 들어가서 사요</small><br><button type="button" class="btn btn-mint" id="goMall" style="margin-top:8px;">🛍️ 상점가로 가기</button></div></div>
     <div class="box ${LKs ? 'lockbox' : ''}" id="shopBoxC"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs">${[['mega', '📢 확성기'], ['cat', '🐱 고양이'], ['village', '🏘️ 마을'], ['coupon', '🎟 쿠폰'], ['goods', '🎁 아이템']].filter(([k]) => k !== 'mega' || tickerCfg.mega).map(([k, l]) => `<button type="button" data-stab="${k}" class="${shopTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
