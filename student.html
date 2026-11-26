@@ -3135,7 +3135,8 @@ function openMissionGuide(m){
   if (!m) return;
   const auto = ['appon', 'eng', 'praise', 'story', 'menu', 'diary', 'cafe'].includes(m.flow) || !!m.auto, how = m.how || MISSION_HOW[m.id] || MISSION_HOW[m.flow] || '미션을 다 하면 냥코인 탭에서 \'완료했어요!\'를 눌러 알려 줘요.';
   bOpen('msOv', `<h2>🎯 ${esc(m.name)}</h2>
-    <div class="mg-coin">+${m.coins}🐾 · +${m.exp || 0}✨${m.cap ? ` · 하루 ${m.cap}명 선착순` : ''}</div>
+    <div class="mg-coin">+${m.coins}🐾 · +${m.exp || 0}✨</div>
+    ${m.cap ? `<div class="mg-pay" style="background:#FFF8E1;border:2px solid #E8C66A;">🏁 <b>먼저 성공한 ${m.cap}명</b>만 냥코인을 받아요 (지금 ${Math.min((coin.capUsed || {})[m.id] || 0, m.cap)}명 성공)<br>늦게 성공해도 <b>✨5 EXP</b>를 받고, 미션 고르기가 풀려서 다른 미션을 골라도 돼요</div>` : ''}
     <div class="mg-how">📖 ${esc(how)}</div>
     ${auto ? '<div class="mg-pay auto">⚡ <b>자동 지급</b> · 조건을 채우면 냥코인이 저절로 들어와요</div>'
       : `<div class="mg-pay manual">✋ <b>수동 지급이에요!</b><br>${m.flow === 'sign' ? '서명을 받으면' : '다 하고 \'완료했어요!\'를 누르면'} <b>시내T가 확인한 뒤</b> 냥코인을 직접 줘요. 바로 안 들어와도 기다려 줘요 🙏</div>`}
@@ -3147,7 +3148,7 @@ function openSubjPick(m){
   bOpen('msOv', `<h2>✍️ 어떤 과목에서 할 거예요?</h2><div class="hint" style="text-align:center;">오늘 시간표에서 골라요. 그 과목 선생님께 서명을 받아요!</div>
     ${list.length ? `<div class="subj-grid">${list.map(o => `<button type="button" data-subj="${esc(o.s)}"><small>${esc(o.p)}</small>${esc(o.s)}</button>`).join('')}</div>` : '<div class="empty">오늘 시간표가 없어요. 과목을 직접 적어 주세요</div>'}
     <div class="sig-row"><input type="text" id="subjFree" maxlength="20" placeholder="직접 적기 (예: 수학)" style="flex:1;"><button type="button" class="btn btn-y" data-subjfree="1">고르기</button></div>
-    <div class="hint" style="margin-top:8px;">⚠️ 한 번 고르면 바꿀 수 없어요 · 하루 ${m.cap || 5}명 선착순</div>`);
+    <div class="hint" style="margin-top:8px;">⚠️ 한 번 고르면 바꿀 수 없어요 · 먼저 성공한 ${m.cap || 5}명만 냥코인</div>`);
   $('msOv').dataset.mid = m.id;
 }
 async function pickSubj(subj){
@@ -3981,8 +3982,8 @@ function renderCoin(){
     const row = m => {
       if (m.flow === 'locker') return lockerRow(m);
       const per = periodS(m.limit), got = per && claimed.has(`m:${m.id}:${me.name}:${per}`), picked = mine.includes(m.id);
-      const used = (coin.capUsed || {})[m.id] || 0, capFull = !coin.unlimited && m.cap && used >= m.cap && !picked;
-      const capTxt = m.cap ? `<span class="cap">👥 ${used}/${m.cap}명</span>` : '';
+      const used = (coin.capUsed || {})[m.id] || 0, capFull = false;   // 🏁 누구나 골라요 · 먼저 성공한 N명만 냥코인
+      const capTxt = m.cap ? `<span class="cap">🏁 ${Math.min(used, m.cap)}/${m.cap}명 성공</span>` : '';
       const meta = ((picks[sl].meta || {})[m.id]) || {};
       const AUTO_TXT = { appon:'출석 1등이면 자동', eng:'냥카데미 80점 넘으면 자동' };
       const CLASS_TXT = { allon:'🏫 반 전체 제시간이면 모두', allon3:'🏫 주 3일 달성하면 모두', good:'🏫 금요일 오후 자동 확인' };
@@ -4025,7 +4026,7 @@ function renderCoin(){
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 미션은 먼저 골라요 (한 번 고르면 바꿀 수 없어요! 👥 표시는 선착순 인원 · 🏫 반 전체 미션은 안 골라도 돼요). 자동 미션은 조건을 채우면 저절로, 나머지는 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
+    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 미션은 먼저 골라요 (한 번 고르면 바꿀 수 없어요! 🏁 표시는 먼저 성공한 인원 (늦으면 ✨5 EXP · 다른 미션 고르기) · 🏫 반 전체 미션은 안 골라도 돼요). 자동 미션은 조건을 채우면 저절로, 나머지는 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
     <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs"><button type="button" data-stab="coupon" class="${shopTab === 'coupon' ? 'on' : ''}">🎟 쿠폰</button><button type="button" data-stab="house" class="${shopTab === 'house' ? 'on' : ''}">🏠 내 집</button><button type="button" data-stab="decor" class="${shopTab === 'decor' ? 'on' : ''}">🌷 정원 (${(inv.decor || []).length}/4)</button>${tickerCfg.mega ? `<button type="button" data-stab="mega" class="${shopTab === 'mega' ? 'on' : ''}">📢 확성기</button>` : ''}<button type="button" data-stab="special" class="${shopTab === 'special' ? 'on' : ''}">✨ 특별</button></div>
       ${shopTab === 'special' ? `<div class="hint" style="margin-bottom:6px;">🎵 신청곡은 교실 화면에서 선생님이 유튜브 뮤직으로 틀어 줘요 · 🎊 배너는 오늘 하루 교실 화면 맨 위에! · 🏷️ 칭호는 마을 이름표 옆에 붙어요${inv.title ? ` (지금: «${esc(inv.title)}»)` : ''} · 🐱 집사권은 하루에 딱 1명, 그날 하나 꾸미기는 집사만!${special.butler ? `<br>오늘의 하나 집사: <b>${esc(special.butler)}</b>` : ''}</div>` : ''}

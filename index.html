@@ -2466,7 +2466,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 45;
+const NEED_API = 46;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -5154,7 +5154,7 @@ function renderCoinAdmin(){
           <span>🎖 부회장 <select id="coVice"><option value="">(없음)</option>${kids().map(n => `<option ${(eco.meeting || {}).vice === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></span></div>
         <div class="form-group"><label>📝 오늘의 안건 (회의실 칠판에 떠요)</label><input type="text" id="coAgenda" maxlength="60" value="${esc((eco.meeting || {}).agenda || '')}" placeholder="예: 체육대회 반티 정하기"></div>
         <div class="form-hint">회장·부회장은 회의실 앞자리에 늘 앉아 있어요. 나머지는 1~6모둠 테이블(4·4·4 / 4·4·5)에 앉고, 같은 테이블끼리만 모둠 대화를 할 수 있어요.</div></div>
-      <div class="section"><div class="section-title">📋 미션 (한 줄에 하나: 분류(매일/매주/특별), 이름, 코인, 학생 신청 O/X, 선착순 인원 'N명')</div>
+      <div class="section"><div class="section-title">📋 미션 (한 줄에 하나: 분류(매일/매주/특별), 이름, 코인, 학생 신청 O/X, 선착 성공 인원 'N명' (늦게 성공하면 ✨5 EXP))</div>
         <textarea id="coMissions" style="height:220px;">${esc(ml)}</textarea>
         <div class="form-hint">🎯 학생이 먼저 골라야 해요 (반 전체 등교 · 바른 한 주 · 이번 주 좋았다 · 사물함은 안 골라도 돼요). '자동'이 붙은 미션은 조건을 채우면 저절로 지급돼요. 이름·코인·인원만 바꿔 주세요 (줄 순서는 그대로!).</div></div>
       <div class="section"><div class="section-title">📖 미션 안내 (학생이 🎯 고르기를 누르면 보여요)</div>

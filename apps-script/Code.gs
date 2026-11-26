@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 45;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 46;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -1712,7 +1712,9 @@ function settleReq_(id, ok, map) {
   const name = String(row[2]), type = String(row[3]), coins = Number(row[5]) || 0, itemId = String(row[8] || '');
   if (type === '미션' && ok) {
     const m = (economy_(map).missions || []).filter(function (x) { return x.id === itemId; })[0];
-    if (addCoin_(name, coins, '미션: ' + String(row[4]), '미션', 'm:' + itemId + ':' + name + ':' + periodKey_(m ? m.limit : 'none')))
+    const mk = 'm:' + itemId + ':' + name + ':' + periodKey_(m ? m.limit : 'none');
+    if (m && m.cap) missionPay_(name, m, '', '미션', mk);   // 🏁 선착 성공
+    else if (addCoin_(name, coins, '미션: ' + String(row[4]), '미션', mk))
       expQueue_(name, m && m.exp != null ? Number(m.exp) : Math.round(coins / 2), '미션: ' + String(row[4]));
   }
   if (type === '쿠폰' && !ok) addCoin_(name, coins, '쿠폰 취소 환불: ' + String(row[4]), '환불', 'refund:' + id);
@@ -1736,12 +1738,29 @@ function pickCount_(mid, slot, k, except) {
   Object.keys(all).forEach(function (key) { if (key.indexOf('pick:') !== 0 || key.slice(5) === except) return; try { const p = JSON.parse(all[key]); if (p[slot] && p[slot].k === k && (p[slot].ids || []).indexOf(mid) >= 0) n++; } catch (e) {} });
   return n;
 }
+/* 🏁 선착 성공: 인원(cap)이 있는 미션은 누구나 고를 수 있고, 먼저 성공한 N명만 냥코인 · 늦게 성공하면 ✨5 EXP + 미션 고르기가 풀려요 */
+const LATE_EXP_ = 5;
+function missionPay_(name, m, why, kind, key, rows) {
+  const per = periodKey_(m.limit), ck = 'msucc:' + m.id + ':' + per;
+  if (!m.cap || isTeacherName_(name) || Number(props_().getProperty(ck) || 0) < Number(m.cap)) {
+    if (!addCoin_(name, m.coins, '미션: ' + m.name + (why ? ' ' + why : ''), kind, key, rows)) return false;
+    if (m.cap && !isTeacherName_(name)) props_().setProperty(ck, String(Number(props_().getProperty(ck) || 0) + 1));
+    expQueue_(name, m.exp != null ? Number(m.exp) : Math.round(m.coins / 2), '미션: ' + m.name);
+    return 'coin';
+  }
+  const lk = 'mlate:' + key; if (props_().getProperty(lk)) return false;
+  props_().setProperty(lk, '1');
+  expQueue_(name, LATE_EXP_, '미션(늦은 성공): ' + m.name);
+  try {   // 🎯 고르기 풀어 주기 → 다른 미션을 골라도 돼요
+    const pk = picksOf_(name), sl = m.cat === 'weekly' ? 'w' : 'd', i = pk[sl].ids.indexOf(m.id);
+    if (i >= 0) { pk[sl].ids.splice(i, 1); if (pk[sl].at) delete pk[sl].at[m.id]; props_().setProperty('pick:' + name, JSON.stringify(pk)); }
+    appendChat_('🎯 미션', name, '🏁 "' + m.name + '" 성공! 아쉽게 선착 ' + m.cap + '명이 먼저 채워져서 냥코인 대신 ✨' + LATE_EXP_ + ' EXP를 받았어요. 미션 고르기가 풀렸으니 다른 미션을 골라도 돼요!');
+  } catch (e) {}
+  return 'late';
+}
 function capUsed_(eco) {
   const out = {}, d = missionDay_(), w = missionWeek_(), all = props_().getProperties();
-  const caps = (eco.missions || []).filter(function (m) { return m.cap; });
-  if (!caps.length) return out;
-  Object.keys(all).forEach(function (key) { if (key.indexOf('pick:') !== 0) return; let p = {}; try { p = JSON.parse(all[key]); } catch (e) { return; }
-    caps.forEach(function (m) { const sl = m.cat === 'daily' ? 'd' : 'w', k = sl === 'd' ? d : w; if (p[sl] && p[sl].k === k && (p[sl].ids || []).indexOf(m.id) >= 0) out[m.id] = (out[m.id] || 0) + 1; }); });
+  (eco.missions || []).forEach(function (m) { if (m.cap) out[m.id] = Number(all['msucc:' + m.id + ':' + periodKey_(m.limit)] || 0); });   // 🏁 지금까지 성공한 인원
   return out;
 }
 function kstHM_(ts) { return Utilities.formatDate(new Date(ts || Date.now()), 'Asia/Seoul', 'HH:mm'); }
@@ -1759,7 +1778,7 @@ function autoSettle_(name, eco, rows, map) {
   const pay = function (m, why) {
     const key = 'm:' + m.id + ':' + name + ':' + periodKey_(m.limit), c = cache_();
     if (c.get('pk:' + key)) return; try { c.put('pk:' + key, '1', 900); } catch (e) {}      // 동시에 두 번 정산되지 않게
-    if (addCoin_(name, m.coins, '미션: ' + m.name + (why ? ' ' + why : ''), '자동', key, rows)) { expQueue_(name, m.exp != null ? Number(m.exp) : Math.round(m.coins / 2), '미션: ' + m.name); paid.push({ name: m.name, coins: m.coins }); }
+    const r = missionPay_(name, m, why, '자동', key, rows); if (r === 'coin') paid.push({ name: m.name, coins: m.coins }); else if (r === 'late') paid.push({ name: m.name + ' (늦은 성공 ✨' + LATE_EXP_ + ')', coins: 0 });
   };
   [['d', pk.d], ['w', pk.w]].forEach(function (pair) {
     const sl = pair[1]; (sl.ids || []).forEach(function (id) {
@@ -1963,7 +1982,7 @@ function studentMail_(name, body) {
       const sh = sheet_(MAIL_SHEET, MAIL_HEADER); sh.getRange(it.row, 7, 1, 2).setValues([['y', 'y']]);
       if (it.mission) {
         const parts = it.mission.split(':'), eco = economy_(map), m = (eco.missions || []).filter(function (x) { return x.id === parts[1]; })[0];
-        if (m && addCoin_(it.from, m.coins, '미션: ' + m.name + ' → ' + name, '자동', 'm:' + m.id + ':' + it.from + ':' + parts[0])) expQueue_(it.from, m.exp != null ? Number(m.exp) : Math.round(m.coins / 2), '미션: ' + m.name);
+        if (m) missionPay_(it.from, m, '→ ' + name, '자동', 'm:' + m.id + ':' + it.from + ':' + parts[0]);   // 🏁 선착 성공
       }
     }
   } else if (body.op === 'mailRead') {
@@ -2191,7 +2210,6 @@ function studentCoins_(name, body) {
       if (!pickable) error = 'noitem';
       else if (pk[slot].ids.indexOf(m.id) >= 0) error = 'owned';
       else if (!T && pk[slot].ids.length >= (slot === 'd' ? lim.daily : lim.weekly)) error = 'pickfull';
-      else if (!T && m.cap && pickCount_(m.id, slot, pk[slot].k, name) >= m.cap) error = 'capfull';   // 선착순 인원
       else if (m.flow === 'sign' && !String(body.subj || '').trim()) error = 'subj';
       else {
         pk[slot].ids.push(m.id); pk[slot].at = pk[slot].at || {}; pk[slot].at[m.id] = Date.now();
