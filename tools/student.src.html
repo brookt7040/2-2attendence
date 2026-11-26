@@ -206,7 +206,8 @@ html.agit .tab{min-width:0;}
 .cm.wh .bub{background:#F1ECFF;border:2px dashed #B9A6E8;}
 .cm.me.wh .bub{background:#E2DAFF;}
 .cm.grp .bub{background:#E4F7EA;border-color:#8CCBA2;}
-.cm.t .bub{border-color:#9B7BE0;box-shadow:0 0 0 2px #EDE4FF;}
+.cm.t .bub,.cm.me.t .bub{background:#EEE8FF !important;border-color:#9B7BE0 !important;box-shadow:0 0 0 2px #EDE4FF;}
+.ch-lock{text-align:center;color:#7A5BC4;background:#F5F0FF;border:2px dashed #C9B8F5;border-radius:12px;padding:8px;margin-top:8px;}
 .ch-quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
 .ch-quick button{flex:none;font-family:inherit;font-size:.9rem;border:2px solid #E6D9CA;border-radius:999px;background:#fff;padding:3px 10px;cursor:pointer;}
 .ch-in{display:flex;gap:6px;align-items:center;}
@@ -365,7 +366,7 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,html.only-notice #cleanMe,html.only-notice #specialBox ~ .box:not(.nb-pub),html.only-notice #p-notice .guest-only,html.only-notice #penBar{display:none !important;}
 html.only-notice body.guest #p-notice > .nb-pub.on{display:block !important;} html.only-notice body.guest #p-notice > .subs{display:flex !important;}
 html.only-ask .tabs,html.only-ask #penBar{display:none !important;} html.only-ask .panel:not(#p-ask){display:none !important;} html.only-ask #p-ask{display:block !important;}
-html.agit .tab[data-tab="notice"],html.agit .tab[data-tab="ask"]{display:none !important;}
+html.agit .tab[data-tab="notice"]{display:none !important;}
 html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
 /* 💬 대화 팝업 (앱 위쪽 💬 칩) */
 html.only-chat .top,html.only-chat .tabs,html.only-chat #penBar{display:none !important;}
@@ -1416,22 +1417,27 @@ function applyChat(j){
 /* 🔴 안 읽은 수: 이 기기에 '어디까지 읽었는지' 저장 → 새로고침해도 읽은 건 다시 안 떠요 */
 function chatReadKey(){ return 'nyangChatRead:' + (me && me.name || ''); }
 function chatReadSync(){
-  if (!me) return; let r = 0; try { r = Number(localStorage.getItem(chatReadKey())); } catch(e){}
+  if (!me) return; let r = 0, r0 = null; try { r0 = localStorage.getItem(chatReadKey()); r = Number(r0) || 0; } catch(e){}
   const seeing = !document.hidden && (C_ONLY ? chatPopOpen : current === 'chat');
-  if (seeing || !r){ r = Math.max(r || 0, chat.last); try { localStorage.setItem(chatReadKey(), String(r)); } catch(e){} }   // 처음 쓰는 기기는 지금까지 대화를 읽은 걸로
-  chatUnread = chat.msgs.filter(m => m.id > r && m.from !== me.name).length;
+  if (seeing || r0 === null){ r = Math.max(r || 0, chat.last); try { localStorage.setItem(chatReadKey(), String(r)); } catch(e){} }   // 처음 쓰는 기기는 지금까지 대화를 읽은 걸로
+  chatUnread = chat.msgs.filter(m => m.id > r && m.from !== me.name && !isTch(m.from)).length;
+  /* 👑 선생님 메시지는 따로: 📢 전체나 👑 방을 보고 있을 때 읽은 걸로 */
+  let tr = 0, t0 = null; try { t0 = localStorage.getItem(chatReadKey() + ':t'); tr = Number(t0) || 0; } catch(e){}
+  if ((seeing && (chat.to === '' || chat.to === '👑')) || t0 === null){ tr = Math.max(tr || 0, chat.last); try { localStorage.setItem(chatReadKey() + ':t', String(tr)); } catch(e){} }
+  chatTUnread = chat.msgs.filter(m => m.id > tr && m.from !== me.name && isTch(m.from)).length;
 }
+function isTch(n){ return /(쌤|샘|선생님)$/.test(String(n || '')); }
 /* 💬 앱 위쪽 칩에 안 읽은 수 · 최근 친구 얼굴 알려 주기 */
 const C_ONLY = document.documentElement.classList.contains('only-chat');
-let chatUnread = 0, chatPopOpen = false;
+let chatUnread = 0, chatTUnread = 0, chatPopOpen = false;
 function chatTell(){
   if (!C_ONLY) return;
   const seen = [], faces = [];
   for (let i = chat.msgs.length - 1; i >= 0 && seen.length < 3; i--){ const n = chat.msgs[i].from; if (me && n !== me.name && !seen.includes(n)) seen.push(n); }
   seen.forEach(n => { const s = studentOf(n); if (!s) return; try { const c = document.createElement('canvas'); c.width = 16; c.height = 16; drawColors(c, lookColorsRaw(lookFor(s), s.lv)); faces.push(c.toDataURL()); } catch(e){} });
-  try { window.parent.postMessage({ nyang:'chat', unread: chatUnread, faces, login: !!me }, location.origin); } catch(e){}
+  try { window.parent.postMessage({ nyang:'chat', unread: chatUnread, tUnread: chatTUnread, faces, login: !!me }, location.origin); } catch(e){}
 }
-addEventListener('message', e => { if (e.origin !== location.origin || !C_ONLY) return; const d = e.data || {}; if (d.nyang === 'chatOpen'){ chatPopOpen = !!d.open; if (chatPopOpen){ chatReadSync(); chatTell(); if (me) chatPull(); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 50); } } });
+addEventListener('message', e => { if (e.origin !== location.origin || !C_ONLY) return; const d = e.data || {}; if (d.nyang === 'chatOpen'){ chatPopOpen = !!d.open; if (d.open && d.room){ chat.to = d.room; renderChat(); } if (chatPopOpen){ chatReadSync(); chatTell(); if (me) chatPull(); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 50); } } });
 /* 💬 대화 탭: 방(📢 전체 · 🤫 친구와 귓속말 · 👥 우리 모둠)을 골라 보고 보내요 */
 const QUICK = ['👋 안녕!', '😂', '👍', '🙏 고마워', '🎉 축하해!', '😺 냥!'];
 function chatRoomOf(m){ if (!m.to) return ''; if (m.to.charAt(0) === '#') return m.to; return m.from === me.name ? m.to : (m.to === me.name ? m.from : '~' + m.from + '>' + m.to); }
@@ -1460,9 +1466,9 @@ function renderChat(){
   const room = chat.to || '';
   // 방마다 안 읽은 표시 · 최근 귓속말 친구
   const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && m.from !== '📮 우체부' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
-  const rooms = [['', '📢 전체']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
+  const rooms = [['', '📢 전체'], ['👑', '👑 시내T']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
   if (room && !rooms.some(r => r[0] === room)) rooms.push([room, room.charAt(0) === '#' ? `👥 ${room.slice(2)}모둠` : `🤫 ${room}`]);
-  const shown = chat.msgs.filter(m => room === '' ? true : chatRoomOf(m) === room);
+  const shown = chat.msgs.filter(m => room === '' ? true : room === '👑' ? isTch(m.from) : chatRoomOf(m) === room);
   let prev = null;
   const logHtml = shown.length ? shown.map(m => {
     const mine = m.from === me.name, wh = !!m.to && m.to.charAt(0) !== '#', grp = !!m.to && m.to.charAt(0) === '#', tch = /(쌤|샘|선생님)$/.test(m.from);
@@ -1471,7 +1477,7 @@ function renderChat(){
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && m.from !== '📮 우체부' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && !tch && m.from !== '📮 우체부' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
@@ -1490,9 +1496,10 @@ function renderChat(){
     <div class="ch-log" id="chatLog">${logHtml}</div>
     ${!c.open ? `<div class="chat-off">🌙 지금은 대화 쉬는 시간이에요 (${esc(c.start)}~${esc(c.end)})</div>`
       : chat.muted ? '<div class="chat-off">🔇 선생님이 잠시 대화 쓰기를 막아 두었어요</div>'
+      : room === '👑' && !T ? '<div class="ch-lock">🔒 시내T의 메시지만 모아 보는 방이에요</div>'
       : `<div class="ch-quick">${QUICK.map(x => `<button type="button" data-quick="${esc(x)}">${esc(x)}</button>`).join('')}</div>
-        <div class="ch-in"><span class="ch-to">${room ? (room.charAt(0) === '#' ? '👥 모둠에게' : `🤫 ${esc(room)}에게`) : '📢 모두에게'}</span>
-          <input type="text" id="chatText" maxlength="100" placeholder="${room ? '귓속말 보내기…' : '메시지 보내기…'}" value="${esc(typing)}" autocomplete="off">
+        <div class="ch-in"><span class="ch-to">${room && room !== '👑' ? (room.charAt(0) === '#' ? '👥 모둠에게' : `🤫 ${esc(room)}에게`) : '📢 모두에게'}</span>
+          <input type="text" id="chatText" maxlength="100" placeholder="${room && room !== '👑' ? '귓속말 보내기…' : '메시지 보내기…'}" value="${esc(typing)}" autocomplete="off">
           <button type="button" class="btn btn-y" id="chatSend">보내기</button></div>`}
   </div>`;
   const log = $('chatLog'); drawAvatars(log); if (log) log.scrollTop = log.scrollHeight;
@@ -1507,7 +1514,7 @@ async function chatSend(){
   const text = input.value.trim(); if (!text) return;
   const btn = $('chatSend'); btn.disabled = true;
   try {
-    const j = await studentCall('chatSend', { to: chat.to, text, after: chat.last });
+    const j = await studentCall('chatSend', { to: chat.to === '👑' ? '' : chat.to, text, after: chat.last });   // 👑 방에서 선생님이 쓰면 모두에게
     if (j.ok){
       if (j.error){ toast({ closed:'지금은 대화 쉬는 시간이에요', muted:'대화 쓰기가 막혀 있어요', slow:'조금 천천히 보내 주세요 🐢', whisper:'귓속말을 보낼 수 없어요', empty:'내용을 적어 주세요' }[j.error] || '보내지 못했어요'); }
       else input.value = '';
