@@ -5176,7 +5176,7 @@ function renderCoinAdmin(){
       <div class="section"><div class="section-title">📜 최근 기록 (시트 '냥코인' 탭에 전부 남아요)</div>${d.ledger.slice(0, 60).map(r => `<div class="bonus-entry"><span>${esc(r.t.slice(5))} · <b>${esc(r.name)}</b> · ${esc(r.why)}</span><span class="pts ${r.amt >= 0 ? 'plus' : 'minus'}">${r.amt >= 0 ? '+' : ''}${r.amt}</span></div>`).join('') || '<div class="clean-empty">-</div>'}</div>`;
   } else {
     const g = eco.game || {}, days = ['', '월', '화', '수', '목', '금'];
-    const FL = { story:'스토리 자동', menu:'번역 승인 자동', sign:'서명', praise:'칭찬편지 자동', appon:'출석 1등 자동', eng:'영어 자동', allon:'자동', allon3:'자동', good:'자동', diary:'일기장 자동', cafe:'스터디카페 자동', locker:'가위바위보', teacher:'선생님이 줌' };
+    const FL = { story:'스토리 자동', menu:'번역 승인 자동', sign:'서명', praise:'칭찬편지 자동', appon:'첫 터치 출석 자동', eng:'영어 자동', allon:'자동', allon3:'자동', good:'자동', diary:'일기장 자동', cafe:'스터디카페 자동', locker:'가위바위보', teacher:'선생님이 줌' };
     const ml = eco.missions.map(m => `${{ daily:'매일', weekly:'매주', all:'특별' }[m.cat] || '매일'}, ${m.name}, ${m.coins}, ${m.req ? 'O' : 'X'}${m.cap ? `, ${m.cap}명` : ''}${FL[m.flow] ? ', ' + FL[m.flow] : m.auto ? ', 자동' : ''}`).join('\n');
     const cl = eco.shop.filter(x => x.cat === 'coupon').map(x => `${x.name}, ${x.price}, ${x.stock || ''}${x.real ? ', 실물' : ''}`.replace(/, $/, '')).join('\n');
     box.innerHTML = `
@@ -5212,7 +5212,7 @@ function renderCoinAdmin(){
 const MISSION_HOW_DEF = {
   sign: '수업 시간에 학습태도가 100% 만족스러우면, 그 과목 선생님께 앱에서 ✍️ 서명을 받아요. 과목은 고를 때 정해요.',
   praise: '덜 친한 친구 집에 가서 📮 편지함에 💛 칭찬편지를 써요. 친구가 편지를 열어 \'확인\'을 누르면 받아요.',
-  appon: '학교에 와서 우리 반 앱(출석부 화면)을 켜 두면 저절로 체크돼요.',
+  appon: '학교에 와서 교실 출석부 화면에서 그날 가장 먼저 터치로 출석하면 저절로 성공해요. 📱 원격 출석은 안 돼요.',
   eng: '📚 냥글리시 아카데미 영어 단어 쪽지시험에서 80점 이상을 받아요.',
   story: '시내T 스토리가 올라오면 마을 광장 📸 스토리 게시판에서 답장을 남겨요.',
   menu: '급식 관리자가 오늘 메뉴를 올리면, 출석부 🍱 급식 칸의 번역 버튼으로 영어 번역을 내요. 하루에 한 명만 채택되고, 한 주에 2일 채택되면 받아요. 채택이 안 되면 미션 고르기가 풀려서 다른 미션을 골라도 돼요.',

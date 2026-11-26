@@ -1652,7 +1652,7 @@ function economy_(map) {
   (e.missions || []).forEach(function (m) { const f = MISSION_FLOW_[m.id]; if (f) { if (m.flow === undefined) m.flow = f.flow; if (m.cap === undefined && f.cap) m.cap = f.cap; } if (m.flow === 'menu') delete m.cap; });   // 🇺🇸 급식 번역은 인원 제한 없이
   return e;
 }
-/* 🎯 미션 종류: 고른 뒤 어떻게 끝나는지 (sign 서명 · praise 칭찬편지 · appon 출석 1등 · eng 영어 80점 · allon 반 전체 제시간 · allon3 주 3일 · good 바른 한 주 · diary 일기장 5일 · cafe 스터디카페 3일 · locker 사물함 가위바위보 · teacher 선생님이 줌) */
+/* 🎯 미션 종류: 고른 뒤 어떻게 끝나는지 (sign 서명 · praise 칭찬편지 · appon 그날 첫 터치 출석 · eng 영어 80점 · allon 반 전체 제시간 · allon3 주 3일 · good 바른 한 주 · diary 일기장 5일 · cafe 스터디카페 3일 · locker 사물함 가위바위보 · teacher 선생님이 줌) */
 const MISSION_FLOW_ = {
   d_attitude: { flow: 'sign', cap: 5 }, d_praise: { flow: 'praise', cap: 10 }, d_board: { flow: 'appon', cap: 2 }, d_word: { flow: 'eng' }, d_story: { flow: 'story' }, w_menu: { flow: 'menu' },
   a_allon: { flow: 'allon' }, w_allon3: { flow: 'allon3' }, w_good: { flow: 'good' }, w_daily: { flow: 'diary' }, w_study: { flow: 'cafe' },
@@ -1792,6 +1792,16 @@ function dayAllOnTime_(map, ds, kids) {
   return pres.length > 0 && pres.every(function (n) { return recs[n].status === 'present'; });
 }
 /* 🎯 고른 자동 미션을 확인해서 냥코인 주기 (같은 보상은 한 번만) */
+/* 📱 등교 후 우리 반 켜 놓기: 그날 교실 화면에서 '터치'로 가장 먼저 출석한 친구 (📱 원격 · ✏️ 고친 출석은 빼요) */
+function firstTouch_(map, ds) {
+  const recs = ((map['day:' + ds] || {}).records) || {}; let best = null;
+  Object.keys(recs).forEach(function (n) {
+    const r = recs[n] || {}; if (isTeacherName_(n) || r.remote || r.edited || (r.status !== 'present' && r.status !== 'late')) return;
+    const k = r.sec != null ? Number(r.sec) : (function (t) { const p = String(t || '99:99').split(':'); return (+p[0]) * 3600 + (+p[1]) * 60; })(r.time);
+    if (!best || k < best.k || (k === best.k && (Number(r.rank) || 99) < best.rank)) best = { name: n, k: k, rank: Number(r.rank) || 99, time: r.time };
+  });
+  return best;
+}
 function autoSettle_(name, eco, rows, map) {
   const pk = picksOf_(name), paid = [], today = todayStr_(), kids = kidNames_(map);
   const pay = function (m, why) {
@@ -1804,7 +1814,7 @@ function autoSettle_(name, eco, rows, map) {
       const m = (eco.missions || []).filter(function (x) { return x.id === id; })[0]; if (!m || !AUTO_FLOWS_[m.flow] || m.flow === 'praise' || NOPICK_FLOWS_[m.flow]) return;
       const at = (sl.at || {})[id] || 0, atDs = at ? kstDs_(at) : '0000';
       try {
-        if (m.flow === 'appon') { const r = (((map['day:' + today] || {}).records) || {})[name]; if (r && Number(r.rank) === 1 && (!at || kstHM_(at) <= String(r.time || '99:99'))) pay(m); }
+        if (m.flow === 'appon') { const r = firstTouch_(map, today); if (r && r.name === name && (!at || kstHM_(at) <= String(r.time || '99:99'))) pay(m); }
         else if (m.flow === 'eng') { const r = JSON.parse(props_().getProperty(engResultKey_(name)) || 'null'); if (r && r.pass && (!at || !r.at || r.at >= at - 60000)) pay(m); }
         else if (m.flow === 'story') { const st = storyNow_(); if (st && storyAnsOf_(st.id, name) && (!at || st.at >= at - 86400000)) pay(m); }
         else if (m.flow === 'menu') { const days = weekDates_(sl.k), n = menuDays_(name).filter(function (d) { return days.indexOf(d) >= 0 && d >= atDs; }).length; if (n >= 2) pay(m, '(' + n + '일)'); }

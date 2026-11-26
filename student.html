@@ -456,6 +456,9 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 .wrep{font-family:inherit;font-size:.72rem;border:1px solid #E0577A;color:#C0365C;background:#FFF0F4;border-radius:999px;padding:0 6px;margin-left:4px;cursor:pointer;vertical-align:1px;}
 
 .nb-edit{display:none !important;} body.nb-t .nb-edit{display:inline-flex !important;}
+
+.ms-rule{font-family:inherit;border:2px solid var(--ink);border-radius:999px;background:#FFF3C4;padding:2px 10px;font-size:.85rem;cursor:pointer;color:var(--ink);}
+.mr-sec{background:#FFFDF6;border:2px dashed #E8C35A;border-radius:14px;padding:8px 12px;margin:8px 0;line-height:1.6;word-break:keep-all;} .mr-sec ul{margin:4px 0 0;padding-left:1.2rem;}
 </style>
 </head>
 <body>
@@ -3203,7 +3206,7 @@ function todaySubjects(){
 const MISSION_HOW = {
   sign: '수업 시간에 학습태도가 100% 만족스러우면, 그 과목 선생님께 앱에서 ✍️ 서명을 받아요. 과목은 고를 때 정해요.',
   praise: '덜 친한 친구 집에 가서 📮 편지함에 💛 칭찬편지를 써요. 친구가 편지를 열어 \'확인\'을 누르면 받아요.',
-  appon: '학교에 와서 우리 반 앱(출석부 화면)을 켜 두면 저절로 체크돼요.',
+  appon: '학교에 와서 교실 출석부 화면에서 그날 가장 먼저 터치로 출석하면 저절로 성공해요. 📱 원격 출석은 안 돼요.',
   eng: '📚 냥글리시 아카데미 영어 단어 쪽지시험에서 80점 이상을 받아요.',
   story: '시내T 스토리가 올라오면 마을 광장 📸 스토리 게시판에서 답장을 남겨요.',
   menu: '급식 관리자가 오늘 메뉴를 올리면, 출석부 🍱 급식 칸의 🇺🇸 번역 버튼으로 영어 번역을 내요. 하루에 한 명만 채택되고, 한 주에 2일 채택되면 받아요. 채택이 안 되면 미션 고르기가 풀려서 다른 미션을 골라도 돼요.',
@@ -3212,12 +3215,21 @@ const MISSION_HOW = {
   d_read: '독서기록장을 써서 시내T에게 내고, 냥코인 탭에서 \'완료했어요!\'를 눌러요.',
   w_photo: '친구 5명 이상과 교실 밖에서 사진을 찍어 시내T에게 보여 주고, 냥코인 탭에서 \'완료했어요!\'를 눌러요.'
 };
+function openMissionRules(){
+  const lim = (coin && coin.economy && coin.economy.pickLimit) || { daily: 2, weekly: 3 };
+  bOpen('msOv', `<h2>📜 미션 규칙</h2>
+    <div class="mr-sec"><b>🎯 고르기</b><ul><li>☀️ 오늘의 미션은 하루 <b>${lim.daily}개</b>, 📅 이번 주 미션은 한 주에 <b>${lim.weekly}개</b>까지 골라요.</li><li>한 번 고르면 <b>바꿀 수 없어요.</b> 미션 이름을 누르면 하는 법이 나와요.</li><li>🏫 반 전체 미션은 안 골라도 돼요. 반이 함께 달성하면 모두 받아요.</li></ul></div>
+    <div class="mr-sec"><b>🏁 선착 성공</b><ul><li>몇몇 미션은 <b>선착 성공 지급</b>이에요. 🏁 표시가 있는 미션이에요.</li><li>누구나 골라서 도전할 수 있지만, <b>먼저 성공한 N명만</b> 🐾 냥코인을 받아요.</li><li>늦게 성공해도 <b>✨5 EXP</b>를 받고, 미션 고르기가 풀려서 다른 미션을 골라도 돼요.</li><li>선착 성공은 하루에 2개까지 받을 수 있어요.</li></ul></div>
+    <div class="mr-sec"><b>⚡ 자동 지급 · ✋ 수동 지급</b><ul><li><b>⚡ 자동</b>: 조건을 채우면 냥코인과 EXP가 <b>저절로</b> 들어와요. (그날 첫 터치 출석, 냥카데미 80점, 급식 영어 등)</li><li><b>✋ 수동</b>: 다 하고 <b>'완료했어요!'</b>를 누르거나 서명을 받으면, <b>시내T가 확인한 뒤</b> 줘요. 바로 안 들어와도 기다려 줘요 🙏</li><li>⏳ 확인 중 → ✔ 받았어요 순서로 바뀌어요.</li></ul></div>
+    <div class="mr-sec"><b>🐾 보상</b><ul><li>미션을 성공하면 🐾 냥코인과 ✨ EXP를 <b>같이</b> 받아요.</li><li>확인해 보니 안 맞으면 <b>↩ 취소</b>될 수 있어요. 정직하게! 😺</li></ul></div>
+    <div style="text-align:center;margin-top:10px;"><button type="button" class="btn btn-y" data-close="msOv">알겠어요</button></div>`);
+}
 function openMissionGuide(m){
   if (!m) return;
   const auto = ['appon', 'eng', 'praise', 'story', 'menu', 'diary', 'cafe'].includes(m.flow) || !!m.auto, how = m.how || MISSION_HOW[m.id] || MISSION_HOW[m.flow] || '미션을 다 하면 냥코인 탭에서 \'완료했어요!\'를 눌러 알려 줘요.';
   bOpen('msOv', `<h2>🎯 ${esc(m.name)}</h2>
     <div class="mg-coin">+${m.coins}🐾 · +${m.exp || 0}✨</div>
-    ${m.cap ? `<div class="mg-pay" style="background:#FFF8E1;border:2px solid #E8C66A;">🏁 <b>먼저 성공한 ${m.cap}명</b>만 냥코인을 받아요 (지금 ${Math.min((coin.capUsed || {})[m.id] || 0, m.cap)}명 성공)<br>늦게 성공해도 <b>✨5 EXP</b>를 받고, 미션 고르기가 풀려서 다른 미션을 골라도 돼요</div>` : ''}
+    ${m.cap ? `<div class="hint" style="text-align:center;">🏁 선착 성공 미션 · 지금 ${Math.min((coin.capUsed || {})[m.id] || 0, m.cap)}/${m.cap}명 성공 <button type="button" class="ms-rule" data-mrule>📜 규칙</button></div>` : ''}
     <div class="mg-how">📖 ${esc(how)}</div>
     ${auto ? '<div class="mg-pay auto">⚡ <b>자동 지급</b> · 조건을 채우면 냥코인이 저절로 들어와요</div>'
       : `<div class="mg-pay manual">✋ <b>수동 지급이에요!</b><br>${m.flow === 'sign' ? '서명을 받으면' : '다 하고 \'완료했어요!\'를 누르면'} <b>시내T가 확인한 뒤</b> 냥코인을 직접 줘요. 바로 안 들어와도 기다려 줘요 🙏</div>`}
@@ -4102,7 +4114,7 @@ function renderCoin(){
       const used = (coin.capUsed || {})[m.id] || 0, capFull = false;   // 🏁 누구나 골라요 · 먼저 성공한 N명만 냥코인
       const capTxt = m.cap ? `<span class="cap">🏁 ${Math.min(used, m.cap)}/${m.cap}명 성공</span>` : '';
       const meta = ((picks[sl].meta || {})[m.id]) || {};
-      const AUTO_TXT = { appon:'출석 1등이면 자동', eng:'냥카데미 80점 넘으면 자동' };
+      const AUTO_TXT = { appon:'첫 터치 출석이면 자동', eng:'냥카데미 80점 넘으면 자동' };
       const CLASS_TXT = { allon:'🏫 반 전체 제시간이면 모두', allon3:'🏫 주 3일 달성하면 모두', good:'🏫 금요일 오후 자동 확인' };
       const undone = (coin.undone || []).includes(`m:${m.id}:${me.name}:${per}`);
       const right = undone ? '<span class="st">↩ 취소됨</span>'
@@ -4150,7 +4162,7 @@ function renderCoin(){
       <div class="coin-big">${coinText()} 🐾</div>${coin.unlimited ? '<div class="hint">👑 선생님은 냥코인 무제한!</div>' : ''}
       <div class="coin-actions"><button type="button" class="btn btn-mint" id="coinVillage">🏘️ 마을로</button><button type="button" class="btn btn-y" id="coinGame">🎮 게임 광장</button></div>
       <div class="hint" style="text-align:center;margin-top:6px;">게임 시간: ${hoursText(g)} · 하루 ${g.daily}판</div></div>
-    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink">📋 미션</div>${LKm ? lockNote : ''}${msHtml}<div class="hint" style="margin-top:6px;">🎯 미션은 먼저 골라요 (한 번 고르면 바꿀 수 없어요! 🏁 표시는 먼저 성공한 인원 (늦으면 ✨5 EXP · 다른 미션 고르기) · 🏫 반 전체 미션은 안 골라도 돼요). 자동 미션은 조건을 채우면 저절로, 나머지는 선생님이 확인하면 🐾 냥코인과 ✨ EXP를 같이 받아요.</div></div>
+    <div class="box ${LKm ? 'lockbox' : ''}"><div class="box-head pink" style="display:flex;align-items:center;">📋 미션<button type="button" class="ms-rule" data-mrule style="margin-left:auto;">📜 규칙</button></div>${LKm ? lockNote : ''}${msHtml}</div>
     <div class="box ${LKs ? 'lockbox' : ''}"><div class="box-head mint">🛒 상점</div>${LKs ? lockNote : ''}
       <div class="shop-tabs">${[['mega', '📢 확성기'], ['cat', '🐱 고양이'], ['village', '🏘️ 마을'], ['coupon', '🎟 쿠폰'], ['goods', '🎁 아이템']].filter(([k]) => k !== 'mega' || tickerCfg.mega).map(([k, l]) => `<button type="button" data-stab="${k}" class="${shopTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       ${shopTab === 'village' ? `<div class="shop-tabs sub">${[['house', '🏠 집'], ['furn', '🛋 가구'], ['skin', '🧱 벽지·바닥'], ['decor', `🌷 정원 (${(inv.decor || []).length}/4)`], ['special', '✨ 칭호·집사']].map(([k, l]) => `<button type="button" data-ssub="${k}" class="${shopSub === k ? 'on' : ''}">${l}</button>`).join('')}</div>` : ''}
@@ -4518,6 +4530,7 @@ document.addEventListener('click', e => {
   const bf = t.closest('[data-buyfurn]'); if (bf){ const e = coin.economy, id = bf.dataset.buyfurn, f = [...(e.furn || []), ...(e.walls || []), ...(e.floors || [])].find(x => x.id === id); if (!f) return;
     if (!confirm(`${f.icon || ''} ${f.name}을(를) ${f.price}🐾에 살까요?`)) return; coinCall('buyFurn', { item: id }).then(j => j && toast(j.error ? (ERR[j.error] || '사지 못했어요') : `${f.name} 샀어요! 🏠 우리 집 꾸미기에서 놓아요`)); return; }
   const mp = t.closest('[data-mpick]'); if (mp){ openMissionGuide(coin.economy.missions.find(x => x.id === mp.dataset.mpick)); return; }
+  if (t.closest('[data-mrule]')){ openMissionRules(); return; }
   const mg = t.closest('[data-mpickgo]'); if (mg){ const m = coin.economy.missions.find(x => x.id === mg.dataset.mpickgo); if (!m) return; if (m.flow === 'sign'){ openSubjPick(m); return; } bClose('msOv'); coinCall('missionPick', { mid: m.id }).then(j => j && toast(j.error ? ({ pickfull:'이미 다 골랐어요', owned:'이미 골랐어요' }[j.error] || '고르지 못했어요') : '🎯 미션을 골랐어요! 화이팅')); return; }
   { const x = t.closest('[data-msign]'); if (x){ openSign(coin.economy.missions.find(m => m.id === x.dataset.msign)); return; } }
   if (t.closest('[data-mpraise]')){ openPraisePick(); return; }
