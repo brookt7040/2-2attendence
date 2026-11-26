@@ -3743,6 +3743,8 @@ async function checkKidPin(){
   } catch(e){ $('pinHint').textContent = '연결이 안 돼요. 잠시 후 다시 해 주세요'; }
 }
 /* 🔒 roles: 이 일을 할 수 있는 다른 비밀번호 ('sub' 부관리자 · 'late' 지각 관리자). 관리자(마스터키)는 언제나 돼요 */
+/* 🔐 마스터 잠금: 1시간 기억 없이 매번 관리자(마스터) 비밀번호만 받아요 */
+function requireMaster(fn){ if (!db.adminPin){ fn(); return; } pinUntil = 0; requirePin(fn); }
 function requirePin(fn, roles){
   roles = (roles || []).filter(r => db[r + 'Pin']);
   if (!db.adminPin || Date.now() < pinUntil || roles.some(r => Date.now() < pinRoleUntil[r])){ fn(); return; }
@@ -7360,8 +7362,8 @@ function bindEvents(){
   $('mascotWrap').addEventListener('click', petMascot);
   $('openStatsBtn').addEventListener('click', () => requirePin(openStatsUI));
   $('openAdminBtn').addEventListener('click', () => requirePin(openAdminUI));
-  $('openGmBtn').addEventListener('click', () => requirePin(openGm));
-  $('gmCoinBtn').addEventListener('click', () => requirePin(openCoinAdmin));   // 🐾 냥코인 관리 (화면 버튼)
+  $('openGmBtn').addEventListener('click', () => requireMaster(openGm));   // 👑 관리자 모드: 마스터 비밀번호를 매번 물어요
+  $('gmCoinBtn').addEventListener('click', () => requireMaster(openCoinAdmin));   // 🐾 냥코인 관리 (화면 버튼)
   $('gmResetBtn').addEventListener('click', () => { $('resetOverlay').style.display = 'flex'; });   // 🧨 출석·EXP 초기화 (설정 → ☁️ 서버·백업)
   $('serverBackupBtn').addEventListener('click', async () => {   // ⬇ 서버 전체 백업 (아지트에 있던 걸 여기로)
     if (!sync.url){ alert('구글 시트에 연결해야 받을 수 있어요.'); return; }
