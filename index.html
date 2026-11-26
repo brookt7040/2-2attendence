@@ -3148,7 +3148,7 @@ function renderMenuBoard(){
   html += `<div><div class="menu-col-title">💦 깎여요</div>${minus.map(item).join('') || '<div class="clean-empty">항목 없음</div>'}</div>`;
   html += '</div><div class="menu-auto">🎯 미션 +10~40 · 📚 영어 학원 +25 · 📖 도감 완성 +30~100 · 🥇 1~5등 +5 <small>· EXP를 받으면 냥코인도 함께!</small></div>';
   const ds = getTodayStr(), day = todayData(), done = db.cleanDone[ds] || {};
-  const cleaners = kids().filter(isCleaner);
+  const cleaners = kids().filter(n => isCleaner(n) && !(/[?&]view=1/.test(location.search) && done[n]));   // 📺 학생용 출석부: ✔ 끝낸 친구는 빠져요
   html += `<div class="clean-row"><span>🧹 Cleaning Duty</span>${cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
     : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
