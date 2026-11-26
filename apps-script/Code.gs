@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 52;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 53;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -372,7 +372,7 @@ function publicGet_(p) {
   }
   res.hanaLook = hanaLook_(); res.mega = megaList_(); res.butler = butlerToday_(); res.banners = todayList_('banners');
   res.tickerClear = Number(props_().getProperty('tickerClear') || 0);
-  { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; res.askOpen = !!sc.askOpen; }
+  { const sc = stuCfg_(); res.sleep = sleepCfg_(); res.closingAt = sc.closingAt || ''; res.ticker = tickerCfg_(); res.news = newsList_(); res.newsOn = sc.news.on; res.newsKinds = sc.news.kinds; res.askOpen = !featOff_('plaza'); res.feat = feat_(); }
   res.meal = mealPub_(); res.hw = hwPub_(); res.reload = reloadInfo_(); res.mealEn = menuEnToday_(); res.story = storyPub_();
   return res;
 }
@@ -466,6 +466,7 @@ function handlePost_(body, auth) {
           map.config = o.data || {};
           try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
           if (o.data && o.data.sleep !== undefined) try { props_().setProperty('sleepCfg', JSON.stringify(o.data.sleep || null)); } catch (e) {}
+          if (o.data && o.data.features) try { props_().setProperty('feat', JSON.stringify(o.data.features || {})); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
         }
@@ -729,11 +730,27 @@ function handleStudent_(body) {
   if (body.__strike && r && typeof r === 'object') r.strike = body.__strike;
   return r;
 }
+/* 🎛️ 기능 스위치 (출석부 👑 관리자 모드): 꺼진 기능은 학생 요청을 막아요 · 선생님은 그대로 */
+function feat_() { try { return JSON.parse(props_().getProperty('feat') || '{}') || {}; } catch (e) { return {}; } }
+function featOff_(k, f) { f = f || feat_(); return !!f.pause || f[k] === false; }
+const FEAT_OPS_ = { buy: ['coin', 'shop'], buyFurn: ['coin', 'shop'], equipHouse: ['coin', 'shop'], game: ['coin', 'game'], missionPick: ['coin', 'missions'], missionReq: ['coin', 'missions'],
+  move: ['village'], emote: ['village'], act: ['village'], vnews: ['village'], roomSave: ['village'], relocate: ['village'], hallMute: ['village'], cmHi: ['village'],
+  hana: ['village', 'hana'], hanaDress: ['village', 'hana'], chatSend: ['chat'], ideaSend: ['plaza'], ideaLike: ['plaza'], ideaReport: ['plaza'],
+  padGet: ['pad'], padSet: ['pad'], padReset: ['pad'], storyAns: ['story'], menuTr: ['menuTr'], engSubmit: ['eng'], engPass: ['eng'] };
+function featGate_(name, op) {
+  if (isTeacherName_(name)) return '';
+  const f = feat_(); let keys = FEAT_OPS_[op] || [];
+  if (/^cafe/.test(op)) keys = ['village', 'cafe']; else if (/^mail/.test(op)) keys = ['mail']; else if (/^diary/.test(op)) keys = ['village', 'diary'];
+  for (let i = 0; i < keys.length; i++) if (featOff_(keys[i], f)) return keys[i];
+  return '';
+}
 function handleStudentCore_(body) {
   const name = String(body.name || '');
   const chk = checkStudent_(name, body.pin);
   if (!chk.ok) return chk;
   if (!isTeacherName_(name) && sleepNow_()) return { ok: false, error: 'sleep', sleep: sleepCfg_() };   // 💤 하나가 자는 시간
+  { const off = featGate_(name, String(body.op || ''));
+    if (off) { if (['buy', 'equipHouse', 'missionReq', 'missionPick', 'game', 'buyFurn', 'roomSave', 'relocate'].indexOf(body.op) >= 0) { const r0 = studentCoins_(name, { op: 'coins' }) || {}; r0.error = 'off'; r0.off = off; return r0; } return { ok: true, error: 'off', off: off }; } }
   { const g = textGuard_(name, body); if (g) return g; }
   // 대화·건의함은 출석부 데이터를 읽지 않아서 가볍게 처리해요
   if (body.op === 'chatPull' || body.op === 'chatUnsend') return studentChat_(name, body, null);
@@ -2323,7 +2340,7 @@ function studentCoins_(name, body) {
       else if (!T && it.stock > 0 && soldCount_(it.id) >= it.stock) error = 'soldout';
       else if (it.cat === 'house' && (inv.houses || []).indexOf(it.id) >= 0) error = 'owned';
       else if (it.cat === 'house' && !T && !houseReady_(inv, it.id)) error = 'order';
-      else if (it.cat === 'mega' && !stuCfg_().mega.on) error = 'off';
+      else if (it.cat === 'mega' && (!stuCfg_().mega.on || featOff_('mega'))) error = 'off';
       else if (['mega', 'song', 'banner', 'title'].indexOf(it.cat) >= 0 && !cleanText_(body.text, chatCfg_())) error = 'empty';
       else if (it.cat === 'butler' && butlerToday_() && !T) error = 'soldout';
       else if (it.cat === 'decor' && !T && (inv.decor || []).length >= 4) error = 'full';

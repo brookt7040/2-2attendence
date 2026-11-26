@@ -477,6 +477,11 @@ body{word-break:keep-all;overflow-wrap:break-word;}
 #shopSheet.on{display:flex;} #shopSheet .ss-in{width:min(760px,100%);max-height:82vh;overflow:auto;background:var(--cream);border:3px solid var(--ink);border-bottom:none;border-radius:22px 22px 0 0;padding:12px 12px 24px;box-sizing:border-box;}
 #shopSheet .ss-h{display:flex;align-items:center;gap:8px;font-size:1.2rem;margin-bottom:4px;} #shopSheet .ss-h b{flex:1;} #shopSheet .ss-h .btn{padding:4px 10px;}
 #shopSheet #shopBoxC{margin-top:22px;} #shopSheet .shop-tabs:not(.sub){display:none;}
+
+.off-box{display:none;text-align:center;background:#F3EEE6;border:3px dashed #B9AC9E;border-radius:18px;padding:18px;margin:16px 0;line-height:1.7;font-size:1.1rem;color:var(--ink-soft);}
+html.off-village #p-village > .off-box,html.off-pad #p-pad > .off-box,html.off-coin #p-coin > .off-box,html.off-chat #p-chat > .off-box{display:block;}
+html.off-village #p-village > :not(.off-box),html.off-pad #p-pad > :not(.off-box),html.off-coin #p-coin > :not(.off-box){display:none !important;}
+html.off-chat .ch-in,html.off-chat .ch-quick{display:none !important;}
 </style>
 </head>
 <body>
@@ -528,7 +533,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     </div>
   </section>
 
-  <section class="panel" id="p-pad"><div id="padBox"></div></section>
+  <section class="panel" id="p-pad"><div class="off-box">🔒 <b>지금은 쉬는 중이에요</b><br><small>선생님이 잠시 꺼 뒀어요. 다시 열리면 쓸 수 있어요!</small></div><div id="padBox"></div></section>
 
   <section class="panel" id="p-ask">
     <div class="guest-only box guest-box"><div class="ask-guest-msg"><p>🔑 로그인하면 우리 반 광장에서 글을 보고 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
@@ -540,6 +545,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-village">
+    <div class="off-box">🔒 <b>지금은 쉬는 중이에요</b><br><small>선생님이 잠시 꺼 뒀어요. 다시 열리면 쓸 수 있어요!</small></div>
     <div class="guest-only box guest-box"><p>🔑 마을은 로그인하면 들어갈 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button>
       <div class="hint" style="margin-top:10px;">로그인이 안 되면 <b>💬 우리 반 광장</b> 탭에서 연락해요</div></div>
     <div style="text-align:center;margin:6px 0 16px;"><button type="button" class="btn btn-y" id="enterVillage" style="font-size:1.3rem;padding:12px 26px;">🏘️ 마을 입장</button> <button type="button" class="btn btn-mint" id="ideaOpen" style="font-size:1.1rem;padding:10px 20px;">💡 마을 개선 의견</button>
@@ -550,6 +556,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-chat">
+    <div class="off-box">🔒 <b>지금은 쉬는 중이에요</b><br><small>선생님이 잠시 꺼 뒀어요. 다시 열리면 쓸 수 있어요!</small></div>
     <div class="guest-only box guest-box"><p>🔑 로그인하면 반 친구들과 대화할 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div id="chatBox"></div>
   </section>
@@ -564,6 +571,7 @@ body{word-break:keep-all;overflow-wrap:break-word;}
   </section>
 
   <section class="panel" id="p-coin">
+    <div class="off-box">🔒 <b>지금은 쉬는 중이에요</b><br><small>선생님이 잠시 꺼 뒀어요. 다시 열리면 쓸 수 있어요!</small></div>
     <div class="guest-only box guest-box"><p>🔑 로그인하면 볼 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>
     <div id="coinBox"></div>
   </section>
@@ -2672,7 +2680,7 @@ function openVillage(opts){
       try {
         const j = await opts.call('hana', { act: a.id });
         if (j && j.ok){
-          if (j.error){ say({ locked:'아직 잠겨 있어요', limit:'오늘은 충분히 했어요! 내일 또 와요', daylimit:'오늘은 하나랑 5번 다 놀았어요! 내일 또 와요 💛', poor:'냥코인이 모자라요 🐾' }[j.error] || '다시 해 주세요'); }
+          if (j.error){ say({ off:'🔒 지금은 쉬는 중이에요', locked:'아직 잠겨 있어요', limit:'오늘은 충분히 했어요! 내일 또 와요', daylimit:'오늘은 하나랑 5번 다 놀았어요! 내일 또 와요 💛', poor:'냥코인이 모자라요 🐾' }[j.error] || '다시 해 주세요'); }
           else {
             const before = (hanaInfo || {}).lv || 0; hanaInfo = j;
             const lines = (j.gained > 0 && a.aff < 0 ? HANA_REPLY[a.id + '_f'] : HANA_REPLY[a.id]) || ['냥!']; const line = lines[Math.floor(Math.random() * lines.length)];
@@ -2794,7 +2802,7 @@ function openVillage(opts){
   async function buyFurn(id){
     try {
       const j = await opts.call('buyFurn', { item: id });
-      if (j && j.error) say({ locked:'🔒 상점은 아직 사용할 수 없어요', poor:'냥코인이 모자라요 🐾', owned:'이미 있어요', noitem:'살 수 없어요' }[j.error] || '사지 못했어요');
+      if (j && j.error) say({ off:'🔒 지금은 쉬는 중이에요', locked:'🔒 상점은 아직 사용할 수 없어요', poor:'냥코인이 모자라요 🐾', owned:'이미 있어요', noitem:'살 수 없어요' }[j.error] || '사지 못했어요');
       if (j && opts.onCoins) opts.onCoins(j);
       return j;
     } catch(e){ say('연결이 안 돼요'); return null; }
@@ -2953,6 +2961,7 @@ async function pull(force){
     if (!j.ok) throw new Error(j.error || 'error');
     const prevNotice = JSON.stringify([st.notices, st.closing]);
     st.notices = j.notices || []; st.closing = j.closing || []; st.meal = j.meal || {}; st.hw = Array.isArray(j.hw) ? j.hw : []; st.mealEn = j.mealEn || null; st.story = j.story || null; st.askOpen = !!j.askOpen; document.body.classList.toggle('ask-off', !st.askOpen && !(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name))); renderMailBan();
+    if (j.feat) applyFeat(j.feat);
     if (j.hanaLook && JSON.stringify(j.hanaLook) !== JSON.stringify(hanaLookNow)){ hanaLookNow = j.hanaLook; drawHeaderHana(); }
     megaNow = j.mega || []; tickerClear = Number(j.tickerClear || 0); if (j.ticker) tickerCfg = j.ticker; if (Array.isArray(j.news)) newsNow = j.news; if (typeof j.newsOn === 'boolean') newsOn = j.newsOn; if (j.newsKinds) newsKinds = j.newsKinds;
     sleepCfgNow = j.sleep || null; sleepTick(); if (window.NyLock) NyLock.reload(j.reload); closingAtNow = typeof j.closingAt === 'string' ? j.closingAt : '';
@@ -3633,6 +3642,7 @@ addEventListener('pagehide', () => { if (cafe && cafe.on) cafeStop(true); });
 addEventListener('message', e => { if (e.origin === location.origin && (e.data || {}).nyang === 'hidden' && cafe && cafe.on) cafeStop(true, '다른 탭으로 가서 실패했어요'); });
 
 async function enterVillage(){
+  if (featOff('village')){ toast(ERR.off); return; }
   if (me && !coin) await coinCall('coins');
   const eco = (coin && coin.economy) || {};
   const lv = me ? ((me.info && me.info.lv) || (studentOf(me.name) || {}).lv || 1) : 1;
@@ -4224,7 +4234,12 @@ async function coinCall(op, extra){
   if (!me) return null;
   try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); if ((j.paid || []).length) setTimeout(() => toast(`🎉 미션 달성! ${j.paid.map(x => x.name.replace(/^\S+\s/, '') + ' +' + x.coins + '🐾').join(' · ')}`), 300); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
-const ERR = { capfull:'선착순 인원이 다 찼어요 😿', subj:'과목을 골라 주세요', sig:'서명과 체크를 확인해 주세요', auto:'이 미션은 조건을 채우면 저절로 받아요', off:'지금은 확성기를 팔지 않아요 📢', locked:'🔒 아직 사용할 수 없어요', nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
+/* 🎛️ 기능 스위치: 선생님이 끈 기능은 '쉬는 중' (선생님 계정은 그대로) */
+let FEAT = {};
+const FEAT_KEYS = ['coin', 'missions', 'shop', 'game', 'mega', 'village', 'hana', 'cafe', 'eng', 'mail', 'diary', 'chat', 'plaza', 'story', 'menuTr', 'pad'];
+const featOff = k => !(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name)) && (!!FEAT.pause || FEAT[k] === false);
+function applyFeat(f){ FEAT = f || {}; const H = document.documentElement.classList; FEAT_KEYS.forEach(k => H.toggle('off-' + k, featOff(k))); H.toggle('off-pause', featOff('pause') || !!(FEAT.pause && !(me && /(쌤|샘|선생님|교감|교장)$/.test(me.name)))); }
+const ERR = { off:'🔒 지금은 쉬는 중이에요 (선생님이 잠시 꺼 뒀어요)', capfull:'선착순 인원이 다 찼어요 😿', subj:'과목을 골라 주세요', sig:'서명과 체크를 확인해 주세요', auto:'이 미션은 조건을 채우면 저절로 받아요', off:'지금은 확성기를 팔지 않아요 📢', locked:'🔒 아직 사용할 수 없어요', nopick:'먼저 🎯 미션을 골라야 해요', order:'이전 단계 집을 먼저 사야 해요', empty:'내용을 적어 주세요', poor:'코인이 모자라요 🐾', soldout:'다 팔렸어요', owned:'이미 있어요', full:'정원 자리가 꽉 찼어요 (4개)', noitem:'지금은 살 수 없어요', pending:'이미 신청했어요. 선생님이 확인 중이에요', done:'이번에는 이미 받았어요',
   closed:'지금은 게임 시간이 아니에요', limit:'오늘은 게임을 다 했어요. 내일 또 만나요!', bet:'걸 수 있는 코인을 확인해 주세요', bad:'다시 해 주세요' };
 function weekStartS(d = new Date()){ const x = new Date(d); const wd = x.getDay() === 0 ? 7 : x.getDay(); x.setDate(x.getDate() - wd + 1); return todayStr(x); }
 function periodS(limit){ const P = (coin && coin.periods) || {}; return limit === 'day' ? (P.day || todayStr()) : limit === 'week' ? (P.week || weekStartS()) : limit === 'once' ? 'all' : null; }
@@ -4348,6 +4363,7 @@ function renderCoin(){
 let shopSheetOn = false;
 function openShopSheet(tab, nm){
   if (!me){ toast('로그인하면 살 수 있어요'); return; }
+  if (featOff('coin') || featOff('shop') || (tab === 'mega' && featOff('mega'))){ toast(ERR.off); return; }
   shopTab = tab; if (tab === 'village') shopSub = 'house'; shopSheetOn = true;
   $('shopSheetName').textContent = nm || '🛒 상점'; $('shopSheet').classList.add('on');
   if (coin) renderCoin(); else { $('shopSheetBody').innerHTML = '<div class="empty">불러오는 중…</div>'; }
@@ -4471,8 +4487,7 @@ function tRender(){
         <div class="sc-kinds">${K.map(([k, l]) => `<label><input type="checkbox" data-sck="${k}" ${c.news.kinds[k] !== false ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <div class="box sc-box"><div class="box-head">📢 확성기</div><div class="hint">학생이 냥코인으로 사서 마을 · 교실 화면 맨 위에 띄워요</div>
         <label class="sc-row"><input type="checkbox" id="scMegaOn" ${c.mega.on ? 'checked' : ''}> 팔기 · <input type="number" id="scMegaMin" min="1" max="1440" value="${c.mega.min}"> 분 동안 보이기</label></div>
-      <div class="box sc-box"><div class="box-head">💬 우리 반 광장</div><div class="hint">끄면 학생 화면에서 광장(자유 게시판 · 의견함)이 쉬어요 (로그인 안 될 때 연락은 그대로 · 신고는 대화 · 냥이 카드에서)</div>
-        <label class="sc-row"><input type="checkbox" id="scAskOpen" ${c.askOpen ? 'checked' : ''}> 학생에게 열기</label></div>
+      <div class="box sc-box"><div class="box-head">🎛️ 기능 켜고 끄기</div><div class="hint">광장 · 마을 · 상점 · 미션 · 수첩 같은 기능은 <b>출석부(TV) 👑 관리자 모드 → 🎛️ 기능 스위치</b>에서 한 번에 켜고 꺼요.</div></div>
       <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
         <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
       <div class="box sc-box"><div class="box-head">📖 안내 사이트</div>
@@ -4663,7 +4678,7 @@ document.addEventListener('click', e => {
   if (t.closest('#scSave')){
     const kinds = {}; document.querySelectorAll('[data-sck]').forEach(x => { kinds[x.dataset.sck] = x.checked; });
     const data = { news: { on: $('scNewsOn').checked, min: +$('scNewsMin').value || 60, kinds }, mega: { on: $('scMegaOn').checked, min: +$('scMegaMin').value || 60 },
-      askOpen: $('scAskOpen').checked, closingAt: $('scClosingAt').value || '' };
+      closingAt: $('scClosingAt').value || '' };
     tOps([{ op:'stuCfgSet', data }], '💾 학생 화면 설정을 저장했어요').then(ok => { if (ok){ pull(true); tLoad(); } }); return;
   }
   { const x = t.closest('[data-stk]'); if (x && (tTab === 'stucfg' || tTab === 'safe')){ if (confirm(`${x.dataset.stk}의 지금 제한을 풀까요? (횟수는 그대로)`)) tOps([{ op:'strikeSet', name: x.dataset.stk, reset:false }], '🔓 제한을 풀었어요').then(() => tLoad()); return; } }
@@ -4707,7 +4722,7 @@ document.addEventListener('click', e => {
   const off = t.closest('[data-off]'); if (off && me){ changeLook(off.dataset.off, ''); return; }
   if (t.closest('#chatSend')){ chatSend(); return; }
   if (t.closest('#enterVillage') || t.closest('#coinVillage')){ enterVillage(); return; }
-  if (t.closest('#coinGame')){ openGame(); return; }
+  if (t.closest('#coinGame')){ if (featOff('game') || featOff('coin')){ toast(ERR.off); return; } openGame(); return; }
   if (t.closest('#shopSheetX') || t.id === 'shopSheet'){ closeShopSheet(); return; }
   if (t.closest('#goMall')){ mallGo(); return; }
   const st2 = t.closest('[data-stab]'); if (st2){ shopTab = st2.dataset.stab; renderCoin(); return; }
