@@ -2868,7 +2868,7 @@ async function statusSave(text){
   } catch(e){ toast('연결이 안 돼서 저장하지 못했어요'); }
 }
 const IN_APP = (() => { try { return window.parent !== window && window.parent.location.origin === location.origin; } catch(e){ return false; } })();   // 📱 2-2😻 앱 안
-addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown' && !document.documentElement.classList.contains('only-notice') && !(document.documentElement.classList.contains('only-ask') && !st.askOpen) && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
+addEventListener('message', e => { if (e.origin !== location.origin) return; if ((e.data || {}).nyang === 'shown') credSync(); if ((e.data || {}).nyang === 'shown' && !loadCred() && !document.documentElement.classList.contains('only-notice') && !(document.documentElement.classList.contains('only-ask') && !st.askOpen) && !me && st.pub && $('loginOv').style.display !== 'flex') openLogin(); });
 /* 🐱 출석부 고양이 메뉴에서 온 일 (앱이 sessionStorage 'nyangAct'에 적어 둬요 · 로그인 전이면 로그인 뒤에) */
 let actWait = 0;
 function actRun(){
@@ -3038,6 +3038,18 @@ async function refreshMe(silent){
 function loadCred(){
   try { return JSON.parse(localStorage.getItem(CRED_KEY) || sessionStorage.getItem(CRED_KEY) || 'null'); } catch(e){ return null; }
 }
+/* 🔗 앱 안 다른 탭(아지트 · 대화 팝업 · 공지)에서 로그인·로그아웃하면 여기도 따라가요 */
+async function credSync(){
+  const c = loadCred();
+  if (!me && c && c.name && c.pin){
+    me = { name: c.name, pin: c.pin, info: null, look: null, acked: [] };
+    $('loginOv').style.display = 'none';
+    await refreshMe(true); render(); chatPull(); askList(); coinCall('coins');
+    if (me && /(쌤|샘|선생님|교감|교장)$/.test(me.name)){ tAuthByLogin = true; tOn(); }
+  } else if (me && !c){ me = null; chatReset(); asks = []; coin = null; render(); if (C_ONLY) chatTell(); }
+  else if (me && c && c.name !== me.name){ me = null; chatReset(); credSync(); }
+}
+if (IN_APP) setInterval(() => { if (!document.hidden || C_ONLY) credSync(); }, 4000);
 function openLogin(){
   const names = (st.pub && st.pub.students || []).map(s => s.name);
   $('loginName').innerHTML = '<option value="">내 이름을 골라요</option>' + names.map(n => `<option>${esc(n)}</option>`).join('');
