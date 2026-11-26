@@ -22,7 +22,8 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 @media (max-width:410px){ .bar > button[data-t] .em{display:none;} .bar > button[data-t]{font-size:.82rem !important;} }
 .frames{position:fixed;left:0;right:0;top:50px;bottom:0;}
 .frames iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;visibility:hidden;}
-.frames iframe.on{visibility:visible;}
+.frames iframe.on{visibility:visible;z-index:1;pointer-events:auto;}
+.frames iframe:not(.on){pointer-events:none;}
 .cchip{position:relative;flex:0 0 auto !important;max-width:none !important;display:flex;align-items:center;gap:4px;font-size:1.05rem !important;border:2px solid #8CCBA2 !important;background:#E4F7EA !important;border-radius:14px !important;padding:4px 10px !important;margin-left:8px;}
 .tchip[hidden]{display:none !important;} .tchip{border-color:#A996FF !important;background:#EEE8FF !important;} .tchip .tl{font-size:.85rem;} .tchip .cdot{background:#8B6CF0;}
 .cchip.on{background:#C9F0D8 !important;border-color:#5B4636 !important;box-shadow:0 3px 0 #5B4636;}
@@ -31,6 +32,7 @@ html,body{height:100%;background:#FFF8E7;overflow:hidden;font-family:'NeoDunggeu
 .cdot[hidden]{display:none;}
 #chatPop{position:fixed;right:12px;top:58px;width:min(440px,calc(100vw - 24px));height:min(640px,calc(100vh - 72px));background:#FFFDF6;border:3px solid #5B4636;border-radius:20px;box-shadow:0 8px 0 rgba(91,70,54,.35);z-index:15;display:flex;flex-direction:column;overflow:hidden;transform:translateY(-10px) scale(.98);opacity:0;pointer-events:none;transition:all .18s;}
 #chatPop.on{transform:none;opacity:1;pointer-events:auto;}
+#chatPop:not(.on){visibility:hidden;transition:all .18s,visibility 0s .18s;} #chatPop:not(.on) .cp-body{display:none;}
 .cp-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#E4F7EA;border-bottom:2px solid #8CCBA2;font-size:1rem;}
 .cp-head b{font-weight:normal;} .cp-head button{font-family:inherit;border:2px solid #5B4636;border-radius:10px;background:#FFC9D3;width:30px;height:30px;cursor:pointer;}
 .cp-body{flex:1;position:relative;} .cp-body iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#FFF8E7;}
