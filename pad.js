@@ -274,7 +274,7 @@ async function onClick(e){
   const t = e.target.closest('[data-np]'); if (!t) return;
   const a = t.dataset.np, wid = t.dataset.w, k = t.dataset.k, x = NP.data;
   if (/^m[A-Z]/.test(a)){ mClick(a, k, t); return; }
-  if (a === 'careSelf'){ try { await studentCall('padAlert', { self: true, snip: '' }); } catch(e2){} bClose('msOv'); crisisCare(); return; }
+  if (a === 'careSelf'){ try { await studentCall('padAlert', { self: true, snip: '' }); } catch(e2){} bClose('msOv'); crisisCare(true); return; }
   if (!box() || !(box().contains(t) || $('msOv').contains(t))) return;
   if (a === 'retry'){ NP.st = 'idle'; NP.open(); return; }
   if (a === 'create' || a === 'unlock'){
@@ -380,21 +380,21 @@ async function crisisScan(){
   crisisBusy = true; hits.forEach(t => seen.push(hashStr(t)));
   try {
     const j = await studentCall('padAlert', { snip: hits[0].slice(0, 200) });
-    if (j && j.warn) crisisWarn(); else if (j && j.reported) crisisCare();
+    if (j && j.warn) crisisWarn(); else if (j && j.reported) crisisCare(false);
   } catch(e){} finally { crisisBusy = false; }
 }
 function crisisWarn(){
   bOpen('msOv', `<div class="np-care"><div style="font-size:2.4rem;">💛</div><h2>혹시 많이 힘든가요?</h2>
     <p>수첩에 걱정되는 말이 보여서 물어봐요.</p>
-    <p>장난으로 썼다면 지워 주세요. <b>다음에 또 쓰면 선생님께 바로 알려져요.</b></p>
+    <p>장난으로 썼다면 지워 주세요.</p>
     <p>정말 힘들다면 혼자 참지 말고 꼭 이야기해요.</p>
     <div class="np-help">📞 자살예방 상담전화 <b>109</b> (24시간)<br>📞 청소년 상담 <b>1388</b> · 문자 <b>#1388</b></div>
     <button type="button" class="btn btn-pink" data-np="careSelf" style="width:100%;margin-top:10px;">🙋 선생님과 이야기하고 싶어요</button>
     <button type="button" class="btn btn-gray" data-bclose="msOv" style="width:100%;margin-top:8px;">장난이었어요. 지울게요</button></div>`);
 }
-function crisisCare(){
-  bOpen('msOv', `<div class="np-care"><div style="font-size:2.4rem;">💛</div><h2>선생님께 알렸어요</h2>
-    <p>혼자 힘들어하지 않아도 돼요. 선생님이 곧 이야기해 줄 거예요.</p>
+function crisisCare(self){
+  bOpen('msOv', `<div class="np-care"><div style="font-size:2.4rem;">💛</div><h2>${self ? '선생님께 전했어요' : '혼자 힘들어하지 않아도 돼요'}</h2>
+    <p>${self ? '선생님이 곧 이야기해 줄 거예요. ' : ''}힘들 땐 언제든 이야기해요. 혼자가 아니에요.</p>
     <div class="np-help">📞 자살예방 상담전화 <b>109</b> (24시간)<br>📞 청소년 상담 <b>1388</b> · 문자 <b>#1388</b></div>
     <button type="button" class="btn btn-y" data-bclose="msOv" style="width:100%;margin-top:10px;">알겠어요</button></div>`);
 }

@@ -2841,7 +2841,7 @@ function openVillage(opts){
     const sig = tb + msgs.length + (msgs.length ? msgs[msgs.length - 1].id : '');
     if (sig === groupSig && groupEl.style.display === 'block') return;
     groupSig = sig; groupEl.style.display = 'block';
-    groupEl.innerHTML = `<div style="text-align:center;margin-bottom:4px;">🤫 <b>${tb.slice(1)}모둠 대화</b> <span style="font-size:.8rem;color:#8A7563;">(모둠원만 보여요 · 선생님은 다 봐요)</span></div>` +
+    groupEl.innerHTML = `<div style="text-align:center;margin-bottom:4px;">🤫 <b>${tb.slice(1)}모둠 대화</b> <span style="font-size:.8rem;color:#8A7563;">(모둠원만 보여요)</span></div>` +
       (msgs.length ? msgs.map(m => `<div><b>${escV(m.from)}</b> ${escV(m.text)}</div>`).join('') : '<div style="color:#8A7563;">첫 의견을 남겨 보자!</div>');
     groupEl.scrollTop = groupEl.scrollHeight;
     msgs.slice(-3).forEach(m => { const q = cats[m.from]; if (q && !seen.has('g' + m.id)){ seen.add('g' + m.id); q.bubble = { text: m.text.length > 26 ? m.text.slice(0, 25) + '…' : m.text, until: Date.now() + 6000 }; } });
@@ -3068,7 +3068,7 @@ function appGo(tab){ try { window.parent.postMessage({ nyang:'go', tab }, locati
 function boardLink(){ return `${location.href.replace(/[^/]*([?#].*)?$/, '')}index.html?view=1&api=${encodeURIComponent(API)}`; }
 /* 💡 마을 개선 의견 */
 let ideas = [], ideaSort = 'new', ideaT = false, ideaReveal = {};
-const IDEA_HINT = { name:'친구들에게 내 이름이 보여요', anon:'친구들에게는 "익명"으로 보여요 (선생님은 누군지 알 수 있어요)', secret:'🔒 선생님만 볼 수 있어요. 친구들에게는 안 보여요' };
+const IDEA_HINT = { name:'친구들에게 내 이름이 보여요', anon:'친구들에게는 "익명"으로 보여요', secret:'🔒 선생님만 볼 수 있어요. 친구들에게는 안 보여요' };
 async function ideaCall(op, extra){
   try { const j = await studentCall(op, extra); if (j && j.ok !== false){ ideas = j.ideas || []; ideaT = !!j.teacher; renderIdeas(); renderPlaza(); } return j; }
   catch(e){ toast('연결이 안 돼요'); return null; }
@@ -3481,7 +3481,7 @@ function mailCompose(to, praise){
     <div class="mail-kind"><label><input type="radio" name="mkind" value="normal" ${praise ? '' : 'checked'}>✉️ 그냥 편지</label><label><input type="radio" name="mkind" value="praise" ${praise ? 'checked' : ''}>💛 칭찬편지 보내기</label></div>
     <textarea id="mailText" rows="5" maxlength="300" placeholder="${praise ? '친구의 좋은 점을 구체적으로 칭찬해 줘요 (20자 이상)' : '하고 싶은 말을 적어요'}"></textarea>
     <div class="cnt" id="mailCnt">0자</div>
-    <div class="hint">🕐 편지는 오후 1시에 한꺼번에 배달돼요 (1시 전에 쓰면 오늘, 1시 넘으면 내일)<br>🔒 편지 내용은 받는 친구만 볼 수 있어요 (선생님도 못 봐요). 나쁜 말은 애교 말로 바뀌어요!</div>
+    <div class="hint">🕐 편지는 오후 1시에 한꺼번에 배달돼요 (1시 전에 쓰면 오늘, 1시 넘으면 내일)<br>🔒 편지 내용은 받는 친구만 볼 수 있어요. 나쁜 말은 애교 말로 바뀌어요!</div>
     <button type="button" class="btn btn-y" data-msend="${esc(to)}" style="width:100%;margin-top:8px;">📮 보내기</button>`);
   $('mailText').oninput = () => { const n = $('mailText').value.trim().length, pr = document.querySelector('[name=mkind]:checked').value === 'praise'; $('mailCnt').textContent = `${n}자${pr ? ' / 20자 이상' : ''}`; $('mailCnt').classList.toggle('ok', !pr || n >= 20); };
   setTimeout(() => $('mailText').focus(), 60);
@@ -4451,7 +4451,8 @@ function setAsStudent(on){
 }
 function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsStudent'); $('asStuBar').style.display = 'none'; tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
 /* 👑 관리 탭: 📮 소통 · 🎮 학생 앱 · 🛟 안전 (출석부·EXP·냥코인·비번·백업은 관리자 출석부 🖥) */
-const T_GROUPS = [['msg', '📮 소통', [['ask', '🚨 신고·연락'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
+const T_GROUPS = [['rpg', '🐾 RPG', [['feat', '🎛️ 기능 스위치'], ['creq', '✅ 신청 · 미션'], ['cgive', '🎁 지급'], ['cbal', '💰 잔액 · 기록'], ['eco', '✏️ 미션 · 상점'], ['xp', '✨ 학생 EXP']]],
+  ['msg', '📮 소통', [['ask', '🚨 신고·연락'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
   ['app', '🎮 학생 앱', [['stucfg', '⚙️ 화면 설정'], ['show', '📢 마을 게시물'], ['free', '⏰ 쉬는 시간'], ['eng', '📚 영어 문제']]],
   ['safe', '🛟 안전', [['online', '🟢 접속 · 활동'], ['safe', '🚫 잠금 · 비속어 · 초기화'], ['npad', '📔 수첩']]]];
 const T_TABS = T_GROUPS.flatMap(g => g[2]);
@@ -4461,7 +4462,7 @@ async function tLoad(){
   if (!T_TABS.some(x => x[0] === tTab)) tTab = 'ask';
   const grp = tGroupOf(tTab);
   $('tTabs').innerHTML = `<div class="t-grp">${T_GROUPS.map(g => `<button type="button" data-tgrp="${g[0]}" class="${g === grp ? 'on' : ''}">${g[1]}${g[0] === 'msg' && tUrgent ? ' 🔴' : ''}</button>`).join('')}</div><div class="t-sub">`
-    + grp[2].map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '</div><div class="t-sub t-tools"><button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button></div><div class="hint" style="margin:4px 0 0;">🖥 출석 · EXP · 냥코인 · 학생 비밀번호 · 백업은 <b>관리자 출석부</b>에서 해요</div>';
+    + grp[2].map(([k, n]) => `<button type="button" data-ttab="${k}" class="${tTab === k ? 'on' : ''}">${n}${k === 'ask' && tUrgent ? ' 🔴' : ''}</button>`).join('') + '</div><div class="t-sub t-tools"><button type="button" id="tAsStuBtn">👀 학생 화면으로 보기</button><button type="button" id="tOffBtn" class="off">로그아웃</button></div><div class="hint" style="margin:4px 0 0;">🖥 출석 · 시간표 · 알람 · 학생 비밀번호 · 백업은 <b>출석부(TV) 관리</b>에서 해요</div>';
   $('tBox').innerHTML = '<div class="empty">불러오는 중…</div>';
   try {
     if (tTab === 'online') tData.pres = await tCall({ action:'presence' });
@@ -4473,10 +4474,12 @@ async function tLoad(){
     if (tTab === 'free') tData.free = await tCall({ action:'free' });
     if (tTab === 'chat') tData.chat = await tCall({ action:'chat', after: 0 });
     if (tTab === 'safe') tData.pull = await tCall({ action:'pull', since: -2 });
+    if (window.RA && RA.isTab(tTab)) await RA.load(tTab);
   } catch(e){ $('tBox').innerHTML = '<div class="empty">연결이 안 돼요</div>'; return; }
   tRender();
 }
 function tRender(){
+  if (window.RA && RA.isTab(tTab)){ $('tBox').innerHTML = RA.html(tTab); return; }
   const box = $('tBox'), K = { '건의':'💡 건의', '질문':'❓ 질문', '상담':'💬 상담', '긴급':'⭐ 중요 상담', '연락':'📨 로그인 전 연락' };
   if (tTab === 'stucfg'){
     const d = tData.sc || {}, c = d.cfg;
@@ -4486,7 +4489,6 @@ function tRender(){
     box.innerHTML = `<div class="box sc-box"><div class="box-head">🏘️ 마을 소식 줄</div><div class="hint">마을 탭 위에 흐르는 줄이에요</div>
         <label class="sc-row"><input type="checkbox" id="scNewsOn" ${c.news.on ? 'checked' : ''}> 켜기 · <input type="number" id="scNewsMin" min="1" max="1440" value="${c.news.min}"> 분 동안 보이기</label>
         <div class="sc-kinds">${K.map(([k, l]) => `<label><input type="checkbox" data-sck="${k}" ${c.news.kinds[k] !== false ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
-      <div class="box sc-box"><div class="box-head">🎛️ 기능 켜고 끄기</div><div class="hint">광장 · 마을 · 상점 · 미션 · 수첩 같은 기능은 <b>출석부(TV) 👑 관리자 모드 → 🎛️ 기능 스위치</b>에서 한 번에 켜고 꺼요.</div></div>
       <div class="box sc-box"><div class="box-head">📋 종례 맨 위로</div><div class="hint">이 시각부터 알림 탭에서 종례가 출석하기보다 위에 크게 떠요 (비우면 안 올라와요)</div>
         <label class="sc-row"><input type="time" id="scClosingAt" value="${esc(c.closingAt || '')}"></label></div>
       <div class="box sc-box"><div class="box-head">📖 안내 사이트</div>
@@ -4834,6 +4836,7 @@ function bootDone(ok){
   setInterval(() => { if (me && !document.hidden && current === 'coin') coinCall('coins'); }, 30000);
 })();
 </script>
-<script src="pad.js?v=3"></script>
+<script src="pad.js?v=4"></script>
+<script src="rpgadmin.js?v=1"></script>
 </body>
 </html>

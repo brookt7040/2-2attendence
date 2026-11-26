@@ -1007,7 +1007,7 @@ body.view-mode .mh-side.empty{display:none !important;}
       <div class="chip" id="statExp" style="display:none;"></div>
       <button type="button" class="btn btn-mint" id="openVillageBtn">🏘️ 마을</button>
       <button type="button" class="btn btn-lav" id="openStatsBtn">📒 출석 기록장</button>
-      <button type="button" class="btn btn-y" id="gmCoinBtn" style="background:#FFE9A8;">🐾 냥코인 <b id="gmReqCount"></b></button>
+      <button type="button" class="btn btn-y" id="gmCoinBtn" style="display:none;">🐾 냥코인 <b id="gmReqCount"></b></button>
       <button type="button" class="btn btn-y" id="openAdminBtn">⚙️ 설정</button>
     </div>
   </div>
@@ -1222,20 +1222,13 @@ body.view-mode .mh-side.empty{display:none !important;}
 </div>
 
 <!-- 관리자 모드 -->
-<div class="overlay" id="featOverlay">
-  <div class="modal">
-    <button type="button" class="modal-x" data-close="featOverlay" title="닫기">✕</button>
-    <h2>🎛️ 기능 스위치 <small style="font-size:1rem;color:var(--ink-soft);">끄면 학생 앱에서 "지금은 쉬는 중"이 떠요</small></h2>
-    <div id="featBody"></div>
-  </div>
-</div>
 <div class="overlay" id="gmOverlay">
   <div class="modal modal-large">
     <button type="button" class="modal-x" data-close="gmOverlay" title="닫기">✕</button>
-    <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 EXP·레벨·출석·꾸미기를 바꿔요</small></h2>
+    <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 출석 · 비밀번호를 바꿔요</small></h2>
     <div class="gm-body">
-      <div class="gm-list"><button type="button" class="mini-btn" style="background:#C9F0DC;margin-bottom:6px;" id="gmFeatBtn">🎛️ 기능 스위치</button><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
-        <div class="form-hint" id="gmAskHint" style="margin:0 0 8px;">📮 상담·대화·영어·쉬는 시간은 <b>아지트 → 👑 관리</b>에서 해요 <b id="gmAskCount"></b><b id="gmFreeOn" style="display:none;"></b></div><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
+      <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
+        <div class="form-hint" id="gmAskHint" style="margin:0 0 8px;">🐾 냥코인 · EXP · 미션 · 상점 · 기능 스위치 · 소통은 <b>아지트 → 👑 관리</b>에서 해요 <b id="gmAskCount"></b><b id="gmFreeOn" style="display:none;"></b></div><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
     </div>
     <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
@@ -2266,6 +2259,7 @@ function mergeInto(parsed){
   if (parsed.level && typeof parsed.level === 'object') db.level = Object.assign({}, DEFAULT_LEVEL, parsed.level);
   if (parsed.economy && typeof parsed.economy === 'object') db.economy = parsed.economy;
   if (parsed.features && typeof parsed.features === 'object') db.features = parsed.features;
+  if (parsed.featMoved) db.featMoved = true;
   if (parsed.bgm && typeof parsed.bgm === 'object') db.bgm = parsed.bgm;
   migrateEco();
   if (parsed.collect && typeof parsed.collect === 'object') db.collect = parsed.collect;
@@ -2541,7 +2535,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 53;
+const NEED_API = 54;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
@@ -3941,14 +3935,6 @@ function renderGm(){
       <div><div class="gm-name">${esc(name)}</div>
         <div class="gm-sub">Lv.${li.lv} ${LEVELS[li.lv-1].name} · 시즌 EXP <b>${fmtExp(li.exp)}</b>${li.next ? ` · 다음 레벨까지 ${li.need}` : ' · MAX'}<br>오늘 출석: ${todayTxt} · 오늘 EXP ${fmtExp(dayTotal(name))}</div></div>
     </div>
-    <div class="section"><div class="section-title">✨ EXP 주기 · 빼기</div>
-      <div class="gm-btns">${[-100,-50,-10].map(v => `<button type="button" class="minus" data-adj="${v}">${v}</button>`).join('')}${[10,50,100,200].map(v => `<button type="button" class="plus" data-adj="${v}">+${v}</button>`).join('')}</div>
-      <div class="row" style="justify-content:flex-start;"><input type="number" id="gmExp" placeholder="직접 입력 (예: -30)" style="width:160px;"><input type="text" id="gmReason" placeholder="이유 (선택)" style="flex:1;min-width:140px;"><button type="button" class="mini-btn" id="gmExpBtn">적용</button></div>
-    </div>
-    <div class="section"><div class="section-title">🏆 레벨 바로 지정</div>
-      <div class="gm-btns">${LEVELS.map((L, i) => `<button type="button" class="lvb ${li.lv === i+1 ? 'on' : ''}" data-lv="${i+1}">Lv.${i+1}</button>`).join('')}</div>
-      <label class="form-hint"><input type="checkbox" id="gmCelebrate" checked> 레벨이 오르면 축하 화면 보여주기</label>
-    </div>
     <div class="section"><div class="section-title">📅 오늘 출석 바꾸기</div>
       <div class="gm-btns">${TIER_ORDER.map(k => `<button type="button" data-today="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon} ${TIER_META[k].short} ${fmtExp(getTierExp(k))}</button>`).join('')}
         <button type="button" data-today="absent" style="background:${TIER_META.absent.color}">🏠 결석</button><button type="button" data-today="cancel" style="background:#FFC9D3">↩ 기록 취소</button></div>
@@ -3960,12 +3946,7 @@ function renderGm(){
         ${serverPinSet.includes(name) ? '<button type="button" class="mini-btn" style="background:#FFC9D3;" id="gmPinDelBtn">지우기</button>' : ''}</div>
       <div class="form-hint">학생 페이지(student.html)에서 이 비밀번호로 로그인해 자기 고양이를 꾸밀 수 있어요.</div>
     </div>
-    <div class="section"><div class="section-title">🎨 꾸미기</div>
-      <div class="row" style="justify-content:flex-start;"><button type="button" class="mini-btn" style="background:var(--y);" id="gmClosetBtn">🎨 꾸미기 방 열기 (관리자)</button><span class="form-hint">레벨과 상관없이 모든 아이템을 열어 줄 수도 있어요</span></div>
-    </div>
-    <div class="section"><div class="section-title">📜 이번 시즌 조정 내역</div>
-      <div class="gm-log">${adj.length ? adj.map(b => `<div class="bonus-entry"><span>${b.ds.slice(5).replace('-', '/')} ${esc(b.t)} · ${esc(b.item)} <span class="pts ${b.exp >= 0 ? 'plus' : 'minus'}">${fmtExp(b.exp)}</span></span><button type="button" class="act-btn cancel" data-gmundo="${esc(b.id)}">↩</button></div>`).join('') : '<div class="clean-empty">아직 없어요</div>'}</div>
-    </div>`;
+    <div class="section"><div class="form-hint">✨ EXP · 레벨 · 냥코인은 <b>아지트 → 👑 관리 → 🐾 RPG</b>, 🎨 꾸미기는 마을 → 친구 카드 → 👑 마법에서 바꿔요.</div>    </div>`;
   drawColors($('gmCanvas'), lookColors(name, li.lv));
 }
 function onGmClick(e){
@@ -3986,7 +3967,6 @@ function onGmClick(e){
     setStudentPins({ [gmName]: pin }); showToast(`🔑 ${gmName} 비밀번호를 저장했어요`); return;
   }
   if (t.closest('#gmPinDelBtn')){ if (confirm(`${gmName}의 비밀번호를 지울까요? 학생 페이지에 로그인할 수 없게 돼요.`)) setStudentPins({ [gmName]: '' }); return; }
-  if (t.closest('#gmFeatBtn')){ requirePin(openFeat, ['admin']); return; }
   if (t.closest('#gmPinAllBtn')){ makeAllPins(); return; }
   const u = t.closest('[data-gmundo]'); if (u){ gmUndo(u.dataset.gmundo); }
 }
@@ -4746,7 +4726,7 @@ function authOf(){ return sync.apin ? { apin: sync.apin } : sync.key ? { key: sy
 function configOf(){
   const ac = Object.assign({}, db.alarmConfig);
   delete ac.alarm1Audio; delete ac.alarm2Audio; delete ac.alarm1AudioName; delete ac.alarm2AudioName;
-  return { features:Object.assign({}, db.features || {}), mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
+  return { mainTitle:db.mainTitle, students:db.students.slice(), lateTimeSetting:db.lateTimeSetting,
            expTiers:Object.assign({}, db.expTiers), sfx:db.sfx, menu:db.menu.map(m => ({ ...m })), alarmConfig:ac, level:Object.assign({}, db.level), looks:JSON.parse(JSON.stringify(db.looks || {})), closing:(db.closing || []).slice(), bubbleCfg: db.bubbleCfg || null, timetable: db.timetable || null, adminPin: db.adminPin || '', subPin: db.subPin || '', latePin: db.latePin || '', mealPin: db.mealPin || '', accessCode: db.accessCode || '', accessHours: db.accessHours || 3, accessEpoch: db.accessEpoch || 0, guideVer: db.guideVer || '', guideNotes: db.guideNotes || '', sleep: db.sleep || null, ticker: db.ticker || null, closingAt: db.closingAt === undefined ? '15:00' : (db.closingAt || ''), economy: JSON.parse(JSON.stringify(db.economy)), collect: JSON.parse(JSON.stringify(db.collect || {})), urgent: db.urgent || '' };
 }
 function serverStateOf(){
@@ -4786,7 +4766,6 @@ function applyConfig(c){
   if (Array.isArray(c.menu)) db.menu = c.menu;
   if (c.alarmConfig) db.alarmConfig = Object.assign({}, DEFAULT_ALARM, c.alarmConfig, keepAudio);
   if (c.level) db.level = Object.assign({}, DEFAULT_LEVEL, c.level);
-  if (c.features && typeof c.features === 'object') db.features = c.features;
   if (c.looks && typeof c.looks === 'object') db.looks = c.looks;
   if (Array.isArray(c.closing) && !sync.hasClosing) db.closing = c.closing;
   if (typeof c.adminPin === 'string') db.adminPin = c.adminPin;
@@ -4902,28 +4881,6 @@ async function pullSync(force){
   finally { syncBusy = false; updateSyncUI(); }
 }
 /* 학생 페이지에 보여줄 공개 정보(레벨·꾸미기·청소 당번 등)를 시트에 올려요 */
-/* 🎛️ 기능 스위치: 학생 앱 기능을 한 곳에서 켜고 꺼요 (출석 · 공지 · 로그인은 늘 켜져 있어요) */
-const FEATS = [
-  ['🐾 냥코인', [['coin', '🐾 냥코인 전체', '미션 · 상점 · 게임 모두'], ['missions', '📋 미션', '고르기 · 완료 신청'], ['shop', '🛍️ 상점', '상점가 · 가구 · 이사'], ['game', '🎮 게임', '게임 광장'], ['mega', '📢 확성기', '사기 · 띄우기']]],
-  ['🏘️ 마을', [['village', '🏘️ 마을 전체', '걷기 · 놀이 · 집'], ['hana', '🐱 하나', '놀기 · 꾸미기'], ['cafe', '☕ 스터디카페', ''], ['eng', '📚 냥글리시', '영어 학원'], ['mail', '💌 편지함', ''], ['diary', '📓 집 일기장', '']]],
-  ['💬 소통', [['chat', '💬 대화', '보내기'], ['plaza', '🎪 우리 반 광장', '자유 게시판 · 의견함'], ['story', '📸 시내T 스토리', '답하기'], ['menuTr', '🍱 급식 영어', '번역 내기']]],
-  ['🧸 나', [['pad', '📔 내 수첩', ''], ['bgm', '🎵 교실 배경음악', '교실 TV']]]
-];
-function featOn(k){ const f = db.features || {}; return f[k] !== false; }
-function openFeat(){ renderFeat(); $('featOverlay').style.display = 'flex'; if (!$('featBody').dataset.on){ $('featBody').dataset.on = '1'; $('featBody').addEventListener('change', e => { if (e.target.dataset.feat) saveFeat(); }); } }
-function renderFeat(){
-  const f = db.features || {};
-  $('featBody').innerHTML = `<label class="ft-pause"><input type="checkbox" data-feat="pause" ${f.pause ? 'checked' : ''} style="width:22px;height:22px;"> <span>⏸ <b>전체 멈춤</b><br><small>출석 · 공지만 남기고 학생 앱 기능을 한 번에 꺼요 (시험 기간 · 문제가 생겼을 때)</small></span></label>
-    ${FEATS.map(([g, list]) => `<div class="ft-g">${g}</div><div class="ft-grid">${list.map(([k, n, d]) => `<label class="ft ${f[k] === false || f.pause ? 'off' : ''}"><input type="checkbox" data-feat="${k}" ${f[k] !== false ? 'checked' : ''}><span>${n}${d ? `<small>${d}</small>` : ''}</span></label>`).join('')}</div>`).join('')}
-    <div class="form-hint" style="margin-top:12px;">선생님 계정은 꺼져 있어도 다 쓸 수 있어요. 바꾸면 학생 앱에 1분 안에 반영돼요.</div>`;
-}
-function saveFeat(){
-  const f = {}; document.querySelectorAll('#featBody [data-feat]').forEach(i => { if (i.dataset.feat === 'pause') { if (i.checked) f.pause = true; } else if (!i.checked) f[i.dataset.feat] = false; });
-  db.features = f;
-  const e = db.economy; e.locked = { missions: !featOn('missions') || !featOn('coin'), shop: !featOn('shop') || !featOn('coin') }; e.game = Object.assign({}, e.game, { on: featOn('game') && featOn('coin') });
-  saveDB(); syncOp({ op:'config', data: configOf() }); publishPub(); renderFeat(); try { bgmEnsure(); bgmShow(); } catch(err){}
-  showToast(f.pause ? '⏸ 학생 앱을 전체 멈췄어요' : '🎛️ 기능 스위치를 저장했어요');
-}
 /* 🎵 교실 배경음악 (유튜브): 작은 플레이어 · 수업 중 자동 멈춤 · 접으면 멈춤 */
 const BGM = { yt: null, ready: false, folded: false, started: false, auto: false, key: '' };
 function bgmCfg(){ return Object.assign({ on: false, url: '', vol: 30, brk: true }, db.bgm || {}); }
@@ -4940,7 +4897,7 @@ function bgmInClass(now = nowD()){
 }
 function bgmEnsure(){
   const c = bgmCfg(), src = bgmParse(c.url), box = $('bgmBox'); if (!box) return;
-  if (VIEW || !c.on || !src || !featOn('bgm') || (db.features || {}).pause){ box.style.display = 'none'; if (BGM.yt && BGM.ready) try { BGM.yt.pauseVideo(); } catch(e){} return; }
+  if (VIEW || !c.on || !src){ box.style.display = 'none'; if (BGM.yt && BGM.ready) try { BGM.yt.pauseVideo(); } catch(e){} return; }
   box.style.display = 'block';
   const key = JSON.stringify(src);
   if (!window.YT || !YT.Player){ if (!document.getElementById('ytApi')){ const sc = document.createElement('script'); sc.id = 'ytApi'; sc.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(sc); window.onYouTubeIframeAPIReady = () => bgmEnsure(); } bgmShow(); return; }
@@ -5068,7 +5025,7 @@ function buildPub(){
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
   const dn = (db.cleanDone || {})[getTodayStr()] || {}, cl = kids().filter(n => isCleaner(n) && !dn[n]);   // ✔ 청소 끝낸 친구는 학생 화면에서 빠져요
-  return { title: db.mainTitle, ds: getTodayStr(), clean: cl, cleanWhy: Object.fromEntries(cl.map(n => [n, cleanWhy(n)])), students, priv };
+  return { title: db.mainTitle, ds: getTodayStr(), clean: cl, cleanWhy: Object.fromEntries(cl.map(n => [n, cleanWhy(n)])), students, priv, lvTh: lvThresholds(), lvNames: LEVELS.map(L => L.name) };
 }
 function publishPub(){
   if (!sync.url || sync.api < 3) return;
@@ -7512,7 +7469,7 @@ function openVillage(opts){
     const sig = tb + msgs.length + (msgs.length ? msgs[msgs.length - 1].id : '');
     if (sig === groupSig && groupEl.style.display === 'block') return;
     groupSig = sig; groupEl.style.display = 'block';
-    groupEl.innerHTML = `<div style="text-align:center;margin-bottom:4px;">🤫 <b>${tb.slice(1)}모둠 대화</b> <span style="font-size:.8rem;color:#8A7563;">(모둠원만 보여요 · 선생님은 다 봐요)</span></div>` +
+    groupEl.innerHTML = `<div style="text-align:center;margin-bottom:4px;">🤫 <b>${tb.slice(1)}모둠 대화</b> <span style="font-size:.8rem;color:#8A7563;">(모둠원만 보여요)</span></div>` +
       (msgs.length ? msgs.map(m => `<div><b>${escV(m.from)}</b> ${escV(m.text)}</div>`).join('') : '<div style="color:#8A7563;">첫 의견을 남겨 보자!</div>');
     groupEl.scrollTop = groupEl.scrollHeight;
     msgs.slice(-3).forEach(m => { const q = cats[m.from]; if (q && !seen.has('g' + m.id)){ seen.add('g' + m.id); q.bubble = { text: m.text.length > 26 ? m.text.slice(0, 25) + '…' : m.text, until: Date.now() + 6000 }; } });
@@ -7851,7 +7808,7 @@ function init(){
     gateCheckTimer();
     try { const qa = new URLSearchParams(location.search).get('api'); if (qa && !sync.url && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)) setTimeout(() => { openAdminUI(); $('syncUrlInput').value = qa; $('syncTName').focus(); $('syncStatusText').innerHTML = '🖥 이 기기를 연결해요: <b>선생님 계정(OO쌤 + 비밀번호)</b>을 넣고 <b>🔗 연결하기</b>를 눌러 주세요.'; }, 600); } catch(e){}
     if (upgradeEconomy()){ saveDB(); if (sync.url) syncOp({ op:'config', data: configOf() }); }
-    if (!db.features){ const L = (db.economy && db.economy.locked) || {}, f = {}; if (L.missions) f.missions = false; if (L.shop) f.shop = false; if (db.economy && db.economy.game && db.economy.game.on === false) f.game = false; db.features = f; saveDB(); if (sync.url) syncOp({ op:'config', data: configOf() }); }   // 🎛️ 예전 잠금 → 기능 스위치로 옮기기
+    if (!db.featMoved && sync.url){ const L = (db.economy && db.economy.locked) || {}, f = Object.assign({}, db.features || {}); if (L.missions) f.missions = false; if (L.shop) f.shop = false; if (db.economy && db.economy.game && db.economy.game.on === false) f.game = false; if (Object.keys(f).length) syncOp({ op:'featSet', features: f }); db.featMoved = true; saveDB(); }   // 🎛️ 예전 잠금 → 학생 앱 관리의 기능 스위치로 (한 번만)
     try { bgmInit(); } catch(e){}
     applyTitle();
     fxInit();

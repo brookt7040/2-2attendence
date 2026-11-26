@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 53;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 54;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -125,6 +125,8 @@ function doPost(e) {
     if (body.action === 'engUpload') return out_(engUpload_(body));
     if (body.action === 'engResults') return out_(engResults_());
     if (body.action === 'backup') return out_(backupAll_());
+    if (body.action === 'ecoGet') { const mp = readRows_().map; return out_({ ok: true, economy: (mp.config && mp.config.economy) || null, feat: feat_() }); }
+    if (body.action === 'expInfo') { const mp = readRows_().map, pub = mp.pub || {}; return out_({ ok: true, priv: pub.priv || {}, th: pub.lvTh || [], names: pub.lvNames || [], bonus: expAdjList_(mp) }); }
     if (body.action === 'coinPurge') return out_(coinPurge_(String(body.before || ''), !!body.dry));
     if (body.action === 'today') {           // 📱 선생님 모드(학생 페이지): 오늘 출석 현황
       const map = readRows_().map, ds = todayStr_();
@@ -462,11 +464,12 @@ function handlePost_(body, auth) {
         case 'config': {
           if (looksDefault_(o.data) && !looksDefault_(map.config)) { guarded = true; break; }   // 🛡️ 처음 상태(친구1~5) 출석부가 진짜 명단을 덮지 못하게
           const keepLooks = map.config && map.config.looks;
+          { const oe = map.config && map.config.economy, ne = o.data && o.data.economy;   // 🧸 미션·상점 설정은 학생 앱 관리에서 고친 게 이겨요 (rev가 큰 쪽)
+            if (oe && (!ne || (Number(oe.rev) || 0) > (Number(ne.rev) || 0))) { o.data = Object.assign({}, o.data || {}, { economy: oe }); } }
           cacheDrop_(['v:pub']);
           map.config = o.data || {};
           try { const d0 = o.data || {}; props_().setProperty('apins', JSON.stringify(['adminPin', 'subPin', 'latePin'].map(function (k) { return d0[k] ? hash_('P:' + d0[k]) : ''; }).filter(String))); } catch (e) {}
           if (o.data && o.data.sleep !== undefined) try { props_().setProperty('sleepCfg', JSON.stringify(o.data.sleep || null)); } catch (e) {}
-          if (o.data && o.data.features) try { props_().setProperty('feat', JSON.stringify(o.data.features || {})); } catch (e) {}
           if (keepLooks) map.config.looks = keepLooks;   // 고양이 모습은 'look'으로만 바뀌어요
           dirty.config = true; break;
         }
@@ -609,6 +612,19 @@ function handlePost_(body, auth) {
           break;
         }
         case 'titleDel': { map.inv = map.inv || {}; if (map.inv[o.name]) { map.inv[o.name].title = ''; dirty.inv = true; } cacheDrop_(['v:inv']); break; }
+        case 'ecoSet': {          // 🧸 학생 앱 관리에서 미션 · 상점 · 게임 · 회의 설정 고치기
+          const ne = o.economy; if (!ne || typeof ne !== 'object' || !Array.isArray(ne.missions) || !Array.isArray(ne.shop)) break;
+          map.config = map.config || {}; const oe = map.config.economy || {};
+          ne.rev = Math.max(Number(oe.rev) || 0, Number(ne.rev) || 0) + 1; ne.locked = {}; map.config.economy = ne;
+          cacheDrop_(['v:pub']); dirty.config = true; result.ecoRev = ne.rev; break;
+        }
+        case 'missionGive': {     // 🎯 선생님이 미션 성공 주기 (코인 + EXP · 같은 기간 한 번)
+          const m = (economy_(map).missions || []).filter(function (x) { return x.id === o.mid; })[0];
+          if (m) (o.names || []).forEach(function (n) { missionPay_(String(n), m, '', '선생님', 'm:' + m.id + ':' + n + ':' + periodKey_(m.limit)); });
+          break;
+        }
+        case 'featSet': props_().setProperty('feat', JSON.stringify(o.features || {})); bump_(); break;   // 🎛️ 기능 스위치
+        case 'expGive': (o.names || []).forEach(function (n) { if (o.exp) expQueue_(String(n), Number(o.exp) || 0, String(o.why || '선생님 지급')); }); break;   // ✨ EXP 주기 (출석부가 받아서 더해요)
         case 'coinAdd': addCoin_(String(o.name), Number(o.amt) || 0, String(o.why || ''), String(o.kind || '선생님'), String(o.key || '')); break;
         case 'reqDone': settleReq_(Number(o.id), !!o.ok, map); break;
         case 'housePlace': {            // 선생님이 집 · 소품을 정리해 줄 때
@@ -1803,7 +1819,8 @@ function backupAll_() {
 
 /* ---------------- 🐾 냥코인 ---------------- */
 function economy_(map) {
-  const e = (map.config && map.config.economy) || { missions: [], shop: [], game: {} };
+  const e0 = (map.config && map.config.economy) || { missions: [], shop: [], game: {} }, f = feat_();
+  const e = Object.assign({}, e0, { locked: { missions: featOff_('missions', f) || featOff_('coin', f), shop: featOff_('shop', f) || featOff_('coin', f) }, game: Object.assign({}, e0.game || {}, { on: !featOff_('game', f) && !featOff_('coin', f) }) });
   (e.missions || []).forEach(function (m) { const f = MISSION_FLOW_[m.id]; if (f) { if (m.flow === undefined) m.flow = f.flow; if (m.cap === undefined && f.cap) m.cap = f.cap; } if (m.flow === 'menu') delete m.cap; });   // 🇺🇸 급식 번역은 인원 제한 없이
   return e;
 }
@@ -1835,6 +1852,13 @@ function addCoin_(name, amt, why, kind, key, rows) {
   sh.appendRow([id, "'" + nowStr_(), name, amt, why, kind, key]);
   rows.push({ id: id, t: nowStr_(), name: name, amt: amt, why: why, kind: kind, key: key });
   return true;
+}
+/* 👤 이번 시즌 EXP 보너스 내역 (미션 · 선생님 조정) */
+function expAdjList_(map) {
+  const out = [], st = String(((map.config || {}).level || {}).start || '0000');
+  Object.keys(map).forEach(function (k) { if (k.indexOf('day:') !== 0) return; const ds = k.slice(4); if (ds < st) return;
+    ((map[k] || {}).bonus || []).forEach(function (b) { out.push({ ds: ds, who: b.who, item: b.item, exp: b.exp, t: b.t || '', adm: !!b.adm, id: b.id }); }); });
+  return out.sort(function (a, b) { return (b.ds + b.t).localeCompare(a.ds + a.t); }).slice(0, 400);
 }
 /* 🧹 시험 기록 정리: 이 시각 전의 냥코인 기록을 지워요 (dry면 미리 세기만) */
 function coinPurge_(before, dry) {
