@@ -2839,6 +2839,11 @@ function myDex(name){
   ['normal', 'rare', 'unique', 'legend'].forEach(t => { const all = CHARS.filter(c => c.tier === t && !c.sleepy); out[t] = [all.filter(c => got.has(c.id)).length, all.length]; });
   return out;
 }
+function myDexIds(name){   // 📖 모은 냥이 종류별 만난 횟수 (학생 도감에서 그림으로 보여요)
+  const out = {};
+  for (const day of Object.values(db.records)){ const r = day[name]; if (r && r.charId){ const ch = CHAR_BY_ID[r.charId]; if (ch && !ch.sleepy) out[ch.id] = (out[ch.id] || 0) + 1; } }
+  return out;
+}
 function checkCollection(name){
   if (isTeacherName(name)) return;
   const dx = myDex(name), done = (db.collect = db.collect || {})[name] = db.collect[name] || {};
@@ -4143,10 +4148,18 @@ function renderNotices(){
 
 /* 🇺🇸 급식: 한글 메뉴에 마우스를 올리면 영어가 말풍선으로 (줄 수가 같으면 줄마다) */
 function enMenuHTML(menu, en){
-  const ko = String(menu || '').split('\n').map(x => x.trim()).filter(Boolean), el = en ? String(en.text || '').split(/\n|·|,/).map(x => x.trim()).filter(Boolean) : [];
+  const ko = String(menu || '').split('\n').map(x => x.trim()).filter(Boolean);
   if (!en) return ko.map(x => `<div>${esc(x)}</div>`).join('');
-  if (el.length === ko.length) return ko.map((x, i) => `<div class="en-l" data-en="${esc(el[i])}">${esc(x)}</div>`).join('');
-  return `<div class="en-l" data-en="${esc(en.text)}">${ko.map(x => `<div>${esc(x)}</div>`).join('')}</div>`;
+  let el = String(en.text || '').split('\n').map(x => x.trim()).filter(Boolean);
+  if (el.length === 1 && ko.length > 1) el = el[0].split(/\s*[·,;/|]\s*/).map(x => x.trim()).filter(Boolean);
+  el = el.map(x => x.replace(/^[-•·*\d.)\s]+/, ''));
+  /* 한글 줄마다 영어 한 줄: 줄 수가 같으면 그대로 · '-소스'처럼 딸린 줄은 앞 메뉴와 묶어서 · 그래도 다르면 순서대로 */
+  const grp = []; ko.forEach((x, i) => { if (i && /^[-+&·•(]/.test(x)) grp[grp.length - 1].push(i); else grp.push([i]); });
+  const map = new Array(ko.length).fill('');
+  if (el.length === ko.length) ko.forEach((_, i) => { map[i] = el[i]; });
+  else if (el.length === grp.length) grp.forEach((g, gi) => g.forEach(i => { map[i] = el[gi]; }));
+  else { ko.forEach((_, i) => { map[i] = el[i] || ''; }); if (el.length > ko.length) map[ko.length - 1] += ' · ' + el.slice(ko.length).join(' · '); }
+  return ko.map((x, i) => map[i] ? `<div class="en-l" data-en="${esc(map[i])}">${esc(x)}</div>` : `<div>${esc(x)}</div>`).join('');
 }
 (function(){
   let tip = null, tmr = 0;
@@ -4894,7 +4907,7 @@ function buildPub(){
     const li = levelInfo(sm[n] || 0), r = day[n], tk = r ? recTier(r) : null;
     priv[n] = { lv: li.lv, lvName: LEVELS[li.lv - 1].name, exp: li.exp, need: li.need, next: li.next, pct: Math.round(li.pct * 100),
       today: r ? { tier: tk, label: TIER_META[tk].short, icon: TIER_META[tk].icon, time: r.time || '', exp: Number(r.exp) || 0, rank: r.rank || 0, remote: !!r.remote, status: r.status, charId: r.charId || '', fur: r.fur || '', sec: r.sec, why: r.why || '' } : null,
-      total: dayTotal(n), clean: isCleaner(n), dex: myDex(n), dexDone: (db.collect || {})[n] || {} };
+      total: dayTotal(n), clean: isCleaner(n), dex: myDex(n), dexIds: myDexIds(n), dexDone: (db.collect || {})[n] || {} };
     return { name: n, lv: li.lv, lvName: LEVELS[li.lv - 1].name, look: (db.looks && db.looks[n]) || defaultLook(li.lv) };
   });
   const cl = kids().filter(isCleaner);

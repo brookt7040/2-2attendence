@@ -45,12 +45,10 @@ button,input,select{font-family:inherit;color:var(--ink);}
 .ns{display:none;} .ns.on{display:block;}
 /* 📢 공지사항: 탭 없이 카드 격자로 한눈에 (알림 맨 위 크게 · 종례 시각 지나면 종례가 맨 위) */
 .subs[data-for="notice"]{display:none !important;}
-.nb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;align-items:start;}
-.nb-grid > .ns{display:block;margin-top:24px;} .nb-grid > .nb-notice{grid-column:1 / -1;order:0;} .nb-grid > #closingBox{order:1;}
-.nb-grid > [data-sec=clean]{order:2;} .nb-grid > [data-sec=meal]{order:3;} .nb-grid > [data-sec=hw]{order:4;}
-.nb-grid > #closingBox.closing-hot{grid-column:1 / -1;order:-1;}
+.nb-grid{columns:2;column-gap:18px;}   /* 📐 카드 높이가 달라도 빈칸 없이 위로 채워요 */
+.nb-grid > .ns{display:inline-block;width:100%;box-sizing:border-box;vertical-align:top;break-inside:avoid;margin:26px 0 10px;} .nb-grid > .nb-notice,.nb-grid > #closingBox.closing-hot{display:block;column-span:all;}
 .nb-grid .nb-notice #noticeList{font-size:1.15rem;}
-@media (max-width:640px){ .nb-grid{grid-template-columns:minmax(0,1fr);} }
+@media (max-width:640px){ .nb-grid{columns:1;} }
 .ask-off-box{display:none;} body.ask-off:not(.guest) #p-ask > .ask-off-box{display:block;} body.ask-off .ask-guest-msg{display:none;} body.ask-off .ask-guest-msg + .box-head{margin-top:0 !important;} body.ask-off #p-ask > .subs, body.ask-off #p-ask > .ns{display:none !important;}
 .cm .rd{color:#E58AA8;font-weight:700;margin-right:3px;} .unsend{font-family:inherit;font-size:.7rem;border:none;background:none;cursor:pointer;opacity:.45;padding:0 2px;} .unsend:hover{opacity:1;}
 .ch-rooms .rdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:999px;background:#E8473A;color:#fff;font-size:10px;margin-left:4px;padding:0 3px;vertical-align:middle;}
@@ -78,6 +76,11 @@ html.agit .tab{min-width:0;}
 .sig-sure input{width:22px;height:22px;}
 #enTip{position:fixed;z-index:40000;display:none;max-width:min(360px,90vw);background:#2F6B8F;color:#fff;border-radius:12px;padding:6px 11px;font-size:.95rem;line-height:1.45;white-space:pre-line;pointer-events:none;box-shadow:0 3px 0 #1d4a66;}
 .en-l{cursor:help;border-radius:6px;text-decoration:underline dotted #9CC3DD;text-underline-offset:4px;} .en-l:hover{background:#E8F4FF;} .en-mark{font-size:.75rem;color:#2F6B8F;margin-left:6px;}
+.dx-more{margin-top:10px;} .dx-more summary{cursor:pointer;font-size:1.05rem;padding:6px 0;}
+.dx-t{margin:8px 2px 4px;font-size:.95rem;color:var(--ink-soft);}
+.dx-cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;}
+.dx-cat{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:6px 4px;text-align:center;font-size:.85rem;} .dx-cat img{width:52px;height:52px;display:block;margin:0 auto 2px;}
+.dx-cat small{color:var(--ink-soft);} .dx-cat.locked{background:#F3EEE6;border-color:#CDBBA8;color:var(--ink-soft);}
 .mg-coin{text-align:center;font-size:1.05rem;margin:-4px 0 10px;color:var(--ink-soft);}
 .mg-how{background:#FFFDF6;border:2px dashed #E6D9CA;border-radius:14px;padding:10px 12px;line-height:1.6;}
 .mg-pay{margin-top:10px;border-radius:14px;padding:10px 12px;line-height:1.55;}
@@ -389,7 +392,7 @@ body.guest #p-chat > :not(.guest-only),body.guest #p-notice > :not(.guest-only),
 .sc-stk .btn{font-size:.85rem;padding:3px 10px;}
 /* 📢 알림·종례 탭 (앱) */
 html.only-notice .tabs,html.only-notice .me-bar,html.only-notice #checkinBox,html.only-notice #cleanMe,html.only-notice #specialBox ~ .box:not(.nb-pub),html.only-notice #p-notice .guest-only,html.only-notice #penBar{display:none !important;}
-html.only-notice body.guest #p-notice > .nb-grid{display:grid !important;}
+html.only-notice body.guest #p-notice > .nb-grid{display:block !important;}
 html.only-ask .tabs,html.only-ask #penBar{display:none !important;} html.only-ask .panel:not(#p-ask){display:none !important;} html.only-ask #p-ask{display:block !important;}
 html.agit .tab[data-tab="notice"]{display:none !important;}
 html.only-notice .panel:not(#p-notice){display:none !important;} html.only-notice #p-notice{display:block !important;}
@@ -478,8 +481,8 @@ body{word-break:keep-all;overflow-wrap:break-word;}
     <div class="subs" data-for="notice"><button type="button" data-sub="all"><i class="se">🗂️ </i>전체</button><button type="button" data-sub="closing"><i class="se">📋 </i>종례</button><button type="button" data-sub="notice"><i class="se">📢 </i>알림</button><button type="button" data-sub="clean"><i class="se">🧹 </i>청소</button><button type="button" data-sub="meal"><i class="se">🍱 </i>급식</button><button type="button" data-sub="hw"><i class="se">📚 </i>숙제</button></div>
     <div id="checkinBox"></div>
     <div class="nb-grid" id="nbGrid">
-    <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box nb-pub ns nb-notice" data-sec="notice"><div class="box-head">📢 알림</div><div id="noticeList"></div></div>
+    <div class="box nb-pub ns" id="closingBox" data-sec="closing"><div class="box-head pink">📋 종례</div><div id="closingList"></div></div>
     <div class="box nb-pub ns" data-sec="clean"><div class="box-head lav">🧹 오늘의 청소 당번</div><div id="cleanList"></div></div>
     <div class="box nb-pub ns" data-sec="meal"><div class="box-head mint">🍱 급식</div><div id="mealList"></div></div>
     <div class="box nb-pub ns" data-sec="hw"><div class="box-head">📚 숙제</div><div id="hwList"></div></div>
@@ -813,6 +816,8 @@ function placeClosing(){
   const d = new Date(), t = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   const hot = !!closingAtNow && t >= closingAtNow && (st.closing || []).length > 0;
   box.classList.toggle('closing-hot', hot);
+  const g = $('nbGrid'), nb = g && g.querySelector('.nb-notice');   // 종례 시각이 지나면 종례 카드를 맨 위로
+  if (g && nb){ if (hot && g.firstElementChild !== box) g.insertBefore(box, g.firstElementChild); else if (!hot && nb.nextElementSibling !== box) nb.after(box); }
   if (!subPicked.notice && subNow.notice !== 'all') showSub('notice', 'all');   // 처음엔 🗂️ 전체 (종례가 맨 위)
 }
 setInterval(placeClosing, 30000);
@@ -1389,6 +1394,8 @@ function dexBox(info){
   const done = info.dexDone || {}, R = { normal:['🐱 노멀', '30✨ 40🐾'], rare:['💎 레어', '40✨ 60🐾'], unique:['🦄 유니크', '60✨ 100🐾'], legend:['👑 레전드', '80✨ 150🐾'] };
   return `<div class="box"><div class="box-head pink">📖 내 냥이 도감</div>${Object.keys(R).map(k => { const [g, t] = d[k] || [0, 0];
     return `<div class="dx-row"><span>${R[k][0]}</span><div class="bar"><i style="width:${t ? Math.round(g / t * 100) : 0}%"></i></div><span>${g}/${t}</span><span class="st">${done[k] ? '✔ 보상 받음' : `완성 +${R[k][1]}`}</span></div>`; }).join('')}
+    ${info.dexIds ? `<details class="dx-more"><summary>🔍 내가 모은 냥이 보기</summary>${[['legend', '👑 레전드'], ['unique', '🦄 유니크'], ['rare', '💎 레어'], ['normal', '🐱 노멀']].map(([k, t]) => `<div class="dx-t">${t}</div><div class="dx-cats">${CHARS.filter(c => c.tier === k && !c.sleepy).map(c => { const n = info.dexIds[c.id] || 0;
+      return `<div class="dx-cat ${n ? '' : 'locked'}"><img class="pix" alt="" src="${n ? colorsToURL(catColors(c), 'dex_' + c.id) : colorsToURL(lockedColors(), 'locked')}"><div>${n ? esc(c.name) : '???'}</div><small>${n ? `×${n}` : '아직'}</small></div>`; }).join('')}</div>`).join('')}</details>` : ''}
     <div class="hint">네 등급을 전부 모으면 보너스 +100✨ +200🐾! 일찍 올수록 높은 등급 냥이가 나와요.</div></div>`;
 }
 async function saveProfile(){
@@ -1682,10 +1689,18 @@ function renderSummary(fresh){
 
 /* 🇺🇸 급식: 한글 메뉴에 마우스를 올리면 영어가 말풍선으로 (줄 수가 같으면 줄마다) */
 function enMenuHTML(menu, en){
-  const ko = String(menu || '').split('\n').map(x => x.trim()).filter(Boolean), el = en ? String(en.text || '').split(/\n|·|,/).map(x => x.trim()).filter(Boolean) : [];
+  const ko = String(menu || '').split('\n').map(x => x.trim()).filter(Boolean);
   if (!en) return ko.map(x => `<div>${esc(x)}</div>`).join('');
-  if (el.length === ko.length) return ko.map((x, i) => `<div class="en-l" data-en="${esc(el[i])}">${esc(x)}</div>`).join('');
-  return `<div class="en-l" data-en="${esc(en.text)}">${ko.map(x => `<div>${esc(x)}</div>`).join('')}</div>`;
+  let el = String(en.text || '').split('\n').map(x => x.trim()).filter(Boolean);
+  if (el.length === 1 && ko.length > 1) el = el[0].split(/\s*[·,;/|]\s*/).map(x => x.trim()).filter(Boolean);
+  el = el.map(x => x.replace(/^[-•·*\d.)\s]+/, ''));
+  /* 한글 줄마다 영어 한 줄: 줄 수가 같으면 그대로 · '-소스'처럼 딸린 줄은 앞 메뉴와 묶어서 · 그래도 다르면 순서대로 */
+  const grp = []; ko.forEach((x, i) => { if (i && /^[-+&·•(]/.test(x)) grp[grp.length - 1].push(i); else grp.push([i]); });
+  const map = new Array(ko.length).fill('');
+  if (el.length === ko.length) ko.forEach((_, i) => { map[i] = el[i]; });
+  else if (el.length === grp.length) grp.forEach((g, gi) => g.forEach(i => { map[i] = el[gi]; }));
+  else { ko.forEach((_, i) => { map[i] = el[i] || ''; }); if (el.length > ko.length) map[ko.length - 1] += ' · ' + el.slice(ko.length).join(' · '); }
+  return ko.map((x, i) => map[i] ? `<div class="en-l" data-en="${esc(map[i])}">${esc(x)}</div>` : `<div>${esc(x)}</div>`).join('');
 }
 (function(){
   let tip = null, tmr = 0;
