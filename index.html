@@ -177,7 +177,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .pts.plus{color:#1F8A5F;} .pts.minus{color:#D6456E;}
 .clean-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:9px;border-top:3px dashed #EAD49A;font-size:1.15rem;}
 .clean-chip{border:2px solid var(--ink);border-radius:999px;padding:2px 11px;background:var(--lav);cursor:pointer;font-size:1.1rem;}
-.clean-chip.cw-swear,.clean-big .cb-names span.cw-swear{background:#D9F5B8;} .clean-chip.cw-add,.clean-big .cb-names span.cw-add{background:#CDEBFF;}
+.clean-chip.cw-swear,.clean-big .cb-names span.cw-swear{background:#D9F5B8;} .clean-chip.cw-carry,.clean-big .cb-names span.cw-carry{background:#FFE0B8;} .clean-chip.cw-add,.clean-big .cb-names span.cw-add{background:#CDEBFF;}
 .clean-chip.done{background:var(--mint);text-decoration:line-through;color:#6D8F7F;}
 .clean-empty{color:var(--ink-soft);font-size:1rem;}
 .pick-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
@@ -1124,7 +1124,7 @@ body.view-mode .mh-side.empty{display:none !important;}
 <div class="overlay" id="cleanAddOv">
   <div class="modal ca-modal"><button type="button" class="modal-x" data-close="cleanAddOv" title="닫기">✕</button>
     <h2>🧹 Cleaning Duty 추가</h2>
-    <div class="form-hint">이름을 누르면 오늘 청소 당번에 <b>넣고 · 빼요</b>. 회색은 EXP·욕설 때문에 자동으로 된 친구예요.</div>
+    <div class="form-hint">이름을 누르면 오늘 청소 당번에 <b>넣고 · 빼요</b>. 회색은 EXP·욕설 때문에 자동으로 된 친구예요.<br>↪ 표시는 전날 청소를 안 끝내서(✔ 안 됨) <b>넘어온</b> 친구예요. 눌러서 뺄 수 있어요. 청소를 마치면 Cleaning Duty에서 이름을 눌러 ✔ 해 주세요.</div>
     <div class="ca-grid" id="cleanAddGrid"></div></div>
 </div>
 <div class="overlay" id="mhOv">
@@ -2482,11 +2482,15 @@ function openRev(){
 /* 🧹 Cleaning Duty 직접 넣기 · 빼기 (관리자 · 부관리자 · 지각 관리자) */
 function openCleanAdd(){ renderCleanAdd(); $('cleanAddOv').style.display = 'flex'; }
 function renderCleanAdd(){
-  $('cleanAddGrid').innerHTML = kids().map(n => { const man = cleanManual(n), auto = !man && isCleaner(n);
-    return `<button type="button" class="${man ? 'on' : ''} ${auto ? 'auto' : ''}" data-ca="${esc(n)}" ${auto ? 'disabled' : ''}>${man ? '🧹 ' : ''}${esc(n)}</button>`; }).join('');
+  const ds = getTodayStr();
+  $('cleanAddGrid').innerHTML = kids().map(n => { const man = cleanManual(n), carry = !man && !cleanBase(n, ds) && isCleaner(n), auto = !man && !carry && isCleaner(n);
+    return `<button type="button" class="${man || carry ? 'on' : ''} ${auto ? 'auto' : ''}" data-ca="${esc(n)}" ${auto ? 'disabled' : ''} ${carry ? 'title="어제에서 넘어온 당번 · 누르면 빼요"' : ''}>${man ? '🧹 ' : carry ? '↪ ' : ''}${esc(n)}</button>`; }).join('');
 }
 function toggleCleanManual(n){
   const ds = getTodayStr(); db.cleanDone[ds] = db.cleanDone[ds] || {};
+  if (!cleanManual(n) && !cleanBase(n, ds) && cleanCarry(n, ds)){   // ↪ 넘어온 당번 빼기
+    db.cleanDone[ds]['-' + n] = true; saveDB(); syncOp({ op:'clean', ds, name: '-' + n, v: true }); renderMenuBoard(); renderCleanAdd(); publishPub();
+    showToast(`${n} 넘어온 청소 당번에서 뺐어요`); return; }
   const k = '+' + n, v = !db.cleanDone[ds][k];
   if (v) db.cleanDone[ds][k] = true; else delete db.cleanDone[ds][k];
   saveDB(); syncOp({ op:'clean', ds, name: k, v }); renderMenuBoard(); renderCleanAdd(); publishPub();
@@ -2704,9 +2708,15 @@ const SWEAR_STEP = 5;
 function swearList(n){ return Object.entries(db.notes || {}).flatMap(([ds, l]) => (l || []).filter(x => x.who === n && x.kind === 'swear').map(x => ({ ...x, ds }))).sort((a, b) => (a.ds + a.t + a.id).localeCompare(b.ds + b.t + b.id)); }
 function swearToday(n, ds){ ds = ds || getTodayStr(); return swearList(n).some((x, i) => (i + 1) % SWEAR_STEP === 0 && x.ds === ds); }
 function cleanManual(n){ return !!((db.cleanDone || {})[getTodayStr()] || {})['+' + n]; }   // ➕ 관리자가 직접 넣은 청소 당번
-function cleanWhy(n){ if (VIEW) return viewCleanWhy[n] || ''; return dayTotal(n) < 0 ? 'late' : swearToday(n) ? 'swear' : cleanManual(n) ? 'add' : ''; }   // 🎨 지각(EXP 마이너스) · 욕설 · 그 외
+function cleanWhy(n){ if (VIEW) return viewCleanWhy[n] || ''; return dayTotal(n) < 0 ? 'late' : swearToday(n) ? 'swear' : cleanManual(n) ? 'add' : cleanCarry(n, getTodayStr()) ? 'carry' : ''; }   // 🎨 지각(EXP 마이너스) · 욕설 · 그 외
 let viewCleanWhy = {};
-function isCleaner(n){ return !isTeacherName(n) && (dayTotal(n) < 0 || swearToday(n) || cleanManual(n)); }
+function isCleaner(n){ return !isTeacherName(n) && cleanOn(n, getTodayStr()); }
+/* 🧹 청소 당번이 그날 ✔(청소 완료)도 안 되고 빠지지도 않았으면 → 다음 등교일로 그대로 넘어가요 */
+function dayTotalOn(n, ds){ const r = (db.records[ds] || {})[n]; return (r ? Number(r.exp) || 0 : 0) + (db.bonus[ds] || []).filter(b => !b.adm && b.who === n).reduce((s, b) => s + b.exp, 0); }
+function cleanBase(n, ds){ return dayTotalOn(n, ds) < 0 || swearToday(n, ds) || !!((db.cleanDone || {})[ds] || {})['+' + n]; }
+function prevClassDay(ds){ const d = parseDate(ds); for (let i = 0; i < 10; i++){ d.setDate(d.getDate() - 1); const k = getTodayStr(d), wd = d.getDay(); if (wd !== 0 && wd !== 6 && db.records[k] && Object.keys(db.records[k]).length) return k; } return ''; }
+function cleanCarry(n, ds, depth){ if ((depth || 0) > 10) return false; const p = prevClassDay(ds); if (!p) return false; const dn = (db.cleanDone || {})[p] || {}; return !dn[n] && cleanOn(n, p, (depth || 0) + 1); }
+function cleanOn(n, ds, depth){ const dn = (db.cleanDone || {})[ds] || {}; if (dn['-' + n]) return false; return cleanBase(n, ds) || cleanCarry(n, ds, depth); }
 function flipCard(card){
   if (card.classList.contains('flipping')) return;
   card.classList.add('flipping');
