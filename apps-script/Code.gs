@@ -77,8 +77,8 @@ const ITEM_RULES = {
   tfur:     { lv: 1,  slot: 'fur',   n: 5, teacher: true },    // 👑 선생님 전용 털빛
   /* 🛒 상점에서 산 친구만 (inv.cats) */
   santa: { lv: 1, slot: 'top', n: 3, buy: true }, antler: { lv: 1, slot: 'top', n: 2, buy: true }, glasses: { lv: 1, slot: 'face', n: 3, buy: true },
-  sunglasses: { lv: 1, slot: 'face', n: 2, buy: true }, headphones: { lv: 1, slot: 'top', n: 1, buy: true }, halo: { lv: 1, slot: 'top', n: 2, buy: true },
-  heart: { lv: 1, slot: 'top', n: 2, buy: true }, cherry: { lv: 1, slot: 'earL', n: 1, buy: true }, strawberry: { lv: 1, slot: 'top', n: 1, buy: true }, nightcap: { lv: 1, slot: 'top', n: 2, buy: true }
+  sunglasses: { lv: 1, slot: 'face', n: 2, buy: true }, headphones: { lv: 1, slot: 'top', n: 3, buy: true }, halo: { lv: 1, slot: 'top', n: 2, buy: true },
+  heart: { lv: 1, slot: 'top', n: 2, buy: true }, cherry: { lv: 1, slot: 'earL', n: 3, buy: true }, strawberry: { lv: 1, slot: 'top', n: 3, buy: true }, nightcap: { lv: 1, slot: 'top', n: 2, buy: true }
 };
 const LOOK_SLOTS = ['eye', 'mouth', 'top', 'earR', 'earL', 'neck', 'back', 'fur', 'face'];
 

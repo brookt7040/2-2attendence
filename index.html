@@ -1665,11 +1665,11 @@ const ITEMS = [
   { id:'antler', lv:1, buy:true, icon:'🦌', name:'루돌프 뿔', slot:'top', acc:'antler', colors:[ { n:'갈색' }, { n:'금빛', pal:{b:'#F2B705'} } ] },
   { id:'glasses', lv:1, buy:true, icon:'👓', name:'동그란 안경', slot:'face', acc:'glasses', colors:[ { n:'분홍' }, { n:'까망', pal:{k:'#2E2A36'} }, { n:'하늘', pal:{k:'#5FAEF5'} } ] },
   { id:'sunglasses', lv:1, buy:true, icon:'🕶️', name:'선글라스', slot:'face', acc:'sunglasses', colors:[ { n:'까망' }, { n:'보라', pal:{k:'#7A5BC4'} } ] },
-  { id:'headphones', lv:1, buy:true, icon:'🎧', name:'헤드폰', slot:'top', acc:'headphones', colors:[ { n:'기본' } ] },
+  { id:'headphones', lv:1, buy:true, icon:'🎧', name:'헤드폰', slot:'top', acc:'headphones', colors:[ { n:'민트' }, { n:'까망', pal:{h:'#2E2A36',c:'#6B6B78'} }, { n:'보라', pal:{h:'#B79CFF',c:'#FFD84D'} } ] },
   { id:'halo', lv:1, buy:true, icon:'😇', name:'천사 고리', slot:'top', acc:'halo', colors:[ { n:'금빛' }, { n:'하양', pal:{h:'#FFFFFF'} } ] },
   { id:'heart', lv:1, buy:true, icon:'💗', name:'하트 머리띠', slot:'top', acc:'heart', colors:[ { n:'분홍' }, { n:'빨강', pal:{R:'#E84A5F'} } ] },
-  { id:'cherry', lv:1, buy:true, icon:'🍒', name:'체리 핀', slot:'earL', acc:'cherry', colors:[ { n:'빨강' } ] },
-  { id:'strawberry', lv:1, buy:true, icon:'🍓', name:'딸기 모자', slot:'top', acc:'strawberry', colors:[ { n:'빨강' } ] },
+  { id:'cherry', lv:1, buy:true, icon:'🍒', name:'체리 핀', slot:'earL', acc:'cherry', colors:[ { n:'빨강' }, { n:'분홍', pal:{R:'#FFB8D4'} }, { n:'금빛', pal:{R:'#F2B705'} } ] },
+  { id:'strawberry', lv:1, buy:true, icon:'🍓', name:'딸기 모자', slot:'top', acc:'strawberry', colors:[ { n:'빨강' }, { n:'분홍', pal:{R:'#FFB8D4'} }, { n:'초코', pal:{R:'#8B5A3C',w:'#FFE8C2'} } ] },
   { id:'nightcap', lv:1, buy:true, icon:'🌙', name:'수면 모자', slot:'top', acc:'nightcap', colors:[ { n:'하늘' }, { n:'분홍', pal:{b:'#FFB8D4'} } ] },
   { id:'tfur', lv:1, icon:'👑', name:'선생님 전용 털빛', slot:'fur', teacher:true, colors:[
     { n:'황금 선생님', grad:['#FFF3B0','#FFE066','#FFC93C','#FFE066'], diag:true, line:'#9A6A10', stars:true }, { n:'칠판 초록', fill:'#5E8F6E', line:'#2F4F3A' },
@@ -1806,7 +1806,7 @@ function shopPatch8(e){
   shopPatch9(e);
 }
 /* v9: 🐱 고양이 꾸미기는 색깔마다 따로 사요 (빨간 산타 모자 · 초록 산타 모자 … 모으는 재미) */
-const COLOR_ADJ9 = { 빨강:'빨간', 파랑:'파란', 까망:'까만', 하양:'하얀', 하늘:'하늘색', 분홍:'분홍', 초록:'초록', 보라:'보라', 갈색:'갈색', 금빛:'금빛', 기본:'' };
+const COLOR_ADJ9 = { 빨강:'빨간', 파랑:'파란', 까망:'까만', 하양:'하얀', 하늘:'하늘색', 분홍:'분홍', 초록:'초록', 보라:'보라', 갈색:'갈색', 금빛:'금빛', 기본:'', 민트:'민트', 초코:'초코' };
 function shopPatch9(e){
   e.shop = (e.shop || []).filter(x => !(x.cat === 'catitem' && !String(x.item).includes(':')));
   CAT_ITEMS8.forEach(([id, price]) => { const it = ITEMS.find(x => x.id === id); if (!it) return;
