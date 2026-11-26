@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 43;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 44;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -1000,7 +1000,7 @@ function chatReaders_(m, seen, recent) {
     else if (w === m.to && (all >= id || (Number(((s.w || {})[m.from])) || 0) >= id)) who[w] = 1;
   });
   (recent || []).forEach(function (x) {
-    if (x.id <= id || x.from === m.from || x.from === '📮 우체부' || x.from === '👋 냥 인사') return;
+    if (x.id <= id || x.from === m.from || x.from === '📮 우체부' || x.from === '👋 냥 인사' || x.from === '🎯 미션') return;
     if (!m.to ? !x.to : m.to.charAt(0) === '#' ? x.to === m.to : (x.from === m.to && x.to === m.from)) who[x.from] = 1;
   });
   return Object.keys(who).length;
@@ -1630,7 +1630,7 @@ function backupAll_() {
 /* ---------------- 🐾 냥코인 ---------------- */
 function economy_(map) {
   const e = (map.config && map.config.economy) || { missions: [], shop: [], game: {} };
-  (e.missions || []).forEach(function (m) { const f = MISSION_FLOW_[m.id]; if (f) { if (m.flow === undefined) m.flow = f.flow; if (m.cap === undefined && f.cap) m.cap = f.cap; } });
+  (e.missions || []).forEach(function (m) { const f = MISSION_FLOW_[m.id]; if (f) { if (m.flow === undefined) m.flow = f.flow; if (m.cap === undefined && f.cap) m.cap = f.cap; } if (m.flow === 'menu') delete m.cap; });   // 🇺🇸 급식 번역은 인원 제한 없이
   return e;
 }
 /* 🎯 미션 종류: 고른 뒤 어떻게 끝나는지 (sign 서명 · praise 칭찬편지 · appon 출석 1등 · eng 영어 80점 · allon 반 전체 제시간 · allon3 주 3일 · good 바른 한 주 · diary 일기장 5일 · cafe 스터디카페 3일 · locker 사물함 가위바위보 · teacher 선생님이 줌) */
@@ -1829,11 +1829,22 @@ function menuPickers_() {   // 🇺🇸 이번 주 '급식 영어 번역' 미션
 function menuDays_(name) { return readMenuTr_(function (x) { return x.name === name && x.status === '승인'; }).map(function (x) { return x.ds; }); }
 function menuEnToday_() { const t = todayStr_(), a = readMenuTr_(function (x) { return x.ds === t && x.status === '승인'; }); return a.length ? { name: a[a.length - 1].name, text: a[a.length - 1].text } : null; }
 function menuTrList_() { const t = todayStr_(); return readMenuTr_(function (x) { return x.status === '대기' || x.ds === t; }).slice(-40).reverse().map(function (x) { return { id: x.id, ds: x.ds, name: x.name, text: x.text, status: x.status }; }); }
+/* 🇺🇸 채택 안 된 친구: 이번 주 승인이 하나도 없으면 '급식 번역' 미션 고르기를 풀어서 다른 미션을 고를 수 있게 */
+function menuUnpick_(name) {
+  try {
+    const m = (economy_(readRows_().map).missions || []).filter(function (x) { return x.flow === 'menu'; })[0]; if (!m) return;
+    const pk = picksOf_(name), i = pk.w.ids.indexOf(m.id); if (i < 0) return;
+    const days = weekDates_(pk.w.k); if (menuDays_(name).some(function (d) { return days.indexOf(d) >= 0; })) return;   // 이번 주에 이미 승인받았으면 그대로 (이어서 도전)
+    pk.w.ids.splice(i, 1); if (pk.w.at) delete pk.w.at[m.id];
+    props_().setProperty('pick:' + name, JSON.stringify(pk));
+    appendChat_('🎯 미션', name, '🇺🇸 오늘 급식 번역은 다른 친구가 채택됐어요. 미션 고르기가 풀렸으니 냥코인에서 다른 주간 미션을 골라도 돼요!');
+  } catch (e) {}
+}
 function menuTrSet_(id, ok) {
   const it = readMenuTr_(function (x) { return x.id === Number(id); })[0]; if (!it) return;
   if (ok && readMenuTr_(function (x) { return x.ds === it.ds && x.status === '승인' && x.id !== it.id; }).length) return;   // 🇺🇸 하루에 하나만 승인
   const sh = sheet_(MENU_SHEET, MENU_HEADER); sh.getRange(it.row, 5).setValue(ok ? '승인' : '반려');
-  if (ok) readMenuTr_(function (x) { return x.ds === it.ds && x.status === '대기'; }).forEach(function (x) { sh.getRange(x.row, 5).setValue('마감'); });   // 나머지 대기는 마감
+  if (ok) readMenuTr_(function (x) { return x.ds === it.ds && x.status === '대기'; }).forEach(function (x) { sh.getRange(x.row, 5).setValue('마감'); menuUnpick_(x.name); });   // 나머지 대기는 마감 · 미션 고르기 풀어 주기
   if (ok) { try { const map = readRows_().map; autoSettle_(it.name, economy_(map), readCoins_(), map); } catch (e) {} }
   bump_();
 }

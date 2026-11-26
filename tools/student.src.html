@@ -1485,7 +1485,7 @@ function renderChat(){
   const kidsList = (st.pub && st.pub.students || []).map(s => s.name).filter(n => n !== me.name);
   const room = chat.to || '';
   // 방마다 안 읽은 표시 · 최근 귓속말 친구
-  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && m.from !== '📮 우체부' && m.from !== '👋 냥 인사' && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
+  const whFriends = [...new Set(chat.msgs.filter(m => m.to && m.to.charAt(0) !== '#' && !/^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from) && (m.from === me.name || m.to === me.name)).map(m => m.from === me.name ? m.to : m.from))];
   const rooms = [['', '📢 전체'], ['👑', '👑 시내T']].concat(chat.table ? [['#' + chat.table, `👥 ${chat.table.slice(1)}모둠`]] : []).concat(whFriends.map(n => [n, `🤫 ${n}`]));
   if (room && !rooms.some(r => r[0] === room)) rooms.push([room, room.charAt(0) === '#' ? `👥 ${room.slice(2)}모둠` : `🤫 ${room}`]);
   const shown = chat.msgs.filter(m => room === '' ? true : room === '👑' ? isTch(m.from) : chatRoomOf(m) === room);
@@ -1497,7 +1497,7 @@ function renderChat(){
     const head = mine ? (tag ? `<span class="who">${tag}</span>` : '') : `<span class="who">${tch ? '👑 ' : ''}${esc(m.from)}${tag ? ' · ' + tag : ''}</span>`;
     return `<div class="cm ${mine ? 'me' : ''} ${wh ? 'wh' : ''} ${grp ? 'grp' : ''} ${tch ? 't' : ''} ${same ? 'same' : ''}">
       ${mine ? '' : `<div class="av">${same ? '' : `<canvas class="pix" width="16" height="16" data-av="${esc(m.from)}"></canvas>`}</div>`}
-      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && !tch && m.from !== '📮 우체부' && m.from !== '👋 냥 인사' ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
+      <div class="cb">${same ? '' : head}<div class="bub" ${m.from === '📮 우체부' && m.to === me.name ? 'data-mailme="1" style="cursor:pointer;"' : ''}>${esc(m.text)}</div><span class="tm">${mine ? chatReadTag(m, T) : ''}${esc(String(m.t).slice(11, 16))}${!mine && !T && !tch && !/^(📮 우체부|👋 냥 인사|🎯 미션)$/.test(m.from) ? ` <button type="button" class="mrep" data-mrep="${m.id}" title="신고">🚨</button>` : ''}</span></div></div>`;
   }).join('') : `<div class="chat-off">${room ? '아직 이 방엔 대화가 없어요 🐾' : '첫 인사를 남겨 보자! 🐾'}</div>`;
   const typing = $('chatText') ? $('chatText').value : '';
   const sig = JSON.stringify([c, chat.muted, rooms, room]);
