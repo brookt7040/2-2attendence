@@ -15,15 +15,52 @@ const howDef = m => (typeof MISSION_HOW !== 'undefined' && (MISSION_HOW[m.id] ||
 const sgn = v => (v > 0 ? '+' : '') + v;
 const ops = async (list, msg) => { const j = await tCall({ ops: list }); if (!j || j.ok === false){ toast('저장하지 못했어요'); return null; } if (msg) toast(msg); return j; };
 
-RA.TABS = [['feat', '🎛️ 기능 스위치'], ['creq', '✅ 신청 · 미션'], ['cgive', '🎁 지급'], ['cbal', '💰 잔액 · 기록'], ['eco', '✏️ 미션 · 상점'], ['xp', '✨ 학생 EXP']];
+RA.TABS = [['feat', '🎛️ 기능 스위치'], ['limit', '⏱ 횟수 제한'], ['creq', '✅ 신청 · 미션'], ['cgive', '🎁 지급'], ['cbal', '💰 잔액 · 기록'], ['eco', '✏️ 미션 · 상점'], ['xp', '✨ 학생 EXP']];
 RA.load = async function(tab){
   const D = RA.data;
   if (tab === 'feat' || tab === 'eco' || tab === 'cgive'){ const j = await tCall({ action:'ecoGet' }); D.eco = j.economy || null; D.feat = j.feat || {}; D.ecoOk = j.ok !== false && 'economy' in j; }
   if (tab === 'creq' || tab === 'cgive' || tab === 'cbal') D.coins = await tCall({ action:'coins' });
   if (tab === 'xp' || tab === 'cgive') D.xp = await tCall({ action:'expInfo' });
+  if (tab === 'limit') D.lim = await tCall({ action:'limits' });
 };
+/* ⏱ 횟수 제한: 0 = 무제한 · 빈칸 = 기본값 · 학생별 막기/한도 · 오늘 하루 이벤트(전부 무제한) */
+const LIM_ROWS = [
+  ['gather', '🎣 채집 (낚시 · 열매 · 별 · 동전 · 쓰레기통)', '하루 횟수'], ['gatherExp', '✨ 채집 EXP', '하루 상한'], ['gatherGap', '⏱ 채집 간격', '초 (기본 30)'],
+  ['sell', '🏪 시장에 팔기', '하루 횟수'], ['find', '🍀 동전 줍기 · 보물상자', '하루 횟수'],
+  ['hana', '🐱 하나랑 놀기', '하루 횟수'], ['act', '🎠 마을 놀이 (츄르 · 마시멜로 등)', '하루 횟수'], ['vexp', '🏘️ 마을 활동 EXP', '하루 상한'],
+  ['game', '🎮 오락실 게임', '하루 판 수'], ['bet', '🎲 오락실 최대 베팅', '코인']
+];
+const LIM_BLOCK = [['gather', '채집'], ['sell', '팔기'], ['hana', '하나'], ['game', '게임'], ['act', '놀이'], ['find', '줍기']];
+function limHtml(){
+  const d = RA.data.lim || {}; if (!d.ok || !d.def) return '<div class="empty">서버 코드를 최신(v58)으로 배포하면 보여요</div>';
+  const L = d.limits || {}, def = d.def || {}, g = d.game || {}, ev = L.event === d.today, per = L.per || {};
+  const dv = k => k === 'game' ? (g.daily || 5) : k === 'bet' ? (g.maxBet || 30) : def[k];
+  const st = {}; (d.stats || []).forEach(x => st[x.name] = x);
+  return `<div class="box ra"><div class="box-head">🎉 오늘 하루 이벤트</div>
+      <label class="ra-pause"><input type="checkbox" id="limEvent" ${ev ? 'checked' : ''}> <span><b>오늘은 전부 무제한!</b><br><small>${esc(d.today || '')} 하루만 · 내일 아침이면 저절로 원래대로 (막아 둔 학생은 계속 막혀요)</small></span></label></div>
+    <div class="box ra"><div class="box-head">⏱ 반 전체 한도 <small>0 = 무제한 · 빈칸 = 기본값</small></div>
+      ${LIM_ROWS.map(([k, n, u]) => `<div class="ra-row"><span>${n}</span><span><input type="number" min="0" data-lim="${k}" value="${L[k] != null && L[k] !== '' ? esc(String(L[k])) : ''}" placeholder="${dv(k) === 0 ? '무제한' : dv(k)}" style="width:80px;"> <small>${u}</small> <button type="button" class="np-btn" data-limun="${k}">무제한</button></span></div>`).join('')}
+      <div style="text-align:right;margin-top:8px;"><button type="button" class="np-btn ok" id="limSave">💾 저장</button></div></div>
+    <div class="box ra"><div class="box-head">👥 학생별 <small>오늘 기록 · 막기 · 채집 한도</small></div>
+      <table class="ra-t"><tr><th>이름</th><th>오늘</th><th>막기</th><th>채집 한도</th></tr>${tKids().map(n => { const s0 = st[n] || {}, p = per[n] || {}, bl = p.block || [];
+        return `<tr><td>${esc(n)}</td><td><small>채집 ${s0.gc || 0}번 · +${s0.ge || 0}✨<br>팔기 ${s0.sc || 0} · 줍기 ${s0.fc || 0} · 도감 ${s0.dex || 0} · 은행 ${s0.bank || 0}🐾</small></td>
+          <td>${LIM_BLOCK.map(([k, nm]) => `<label style="white-space:nowrap;margin-right:6px;"><input type="checkbox" data-limblk="${esc(n)}" data-k="${k}" ${bl.includes(k) ? 'checked' : ''}>${nm}</label>`).join(' ')}</td>
+          <td><input type="number" min="0" data-limper="${esc(n)}" value="${p.gather != null ? esc(String(p.gather)) : ''}" placeholder="반 전체" style="width:70px;"></td></tr>`; }).join('')}</table>
+      <div style="text-align:right;margin-top:8px;"><button type="button" class="np-btn ok" id="limSave2">💾 저장</button></div>
+      <div class="hint">막으면 그 학생만 그 활동을 못 해요. 채집 한도에 숫자를 적으면 그 학생만 하루 그만큼(0 = 무제한).</div></div>`;
+}
+function limCollect(){
+  const d = RA.data.lim || {}, L = Object.assign({}, d.limits || {}), per = {};
+  document.querySelectorAll('.ra [data-lim]').forEach(i => { const v = i.value.trim(); if (v === '') delete L[i.dataset.lim]; else L[i.dataset.lim] = Math.max(0, Math.floor(Number(v) || 0)); });
+  document.querySelectorAll('.ra [data-limblk]').forEach(c => { if (!c.checked) return; const n = c.dataset.limblk; (per[n] = per[n] || {}).block = ((per[n] || {}).block || []).concat([c.dataset.k]); });
+  document.querySelectorAll('.ra [data-limper]').forEach(i => { const v = i.value.trim(); if (v === '') return; (per[i.dataset.limper] = per[i.dataset.limper] || {}).gather = Math.max(0, Math.floor(Number(v) || 0)); });
+  L.per = per; const ev = document.getElementById('limEvent'); L.event = ev && ev.checked ? d.today : '';
+  return L;
+}
+async function limSave(msg){ const L = limCollect(); if (await ops([{ op:'limitSet', limits: L }], msg || '⏱ 저장했어요')) rer('limit', true); }
 RA.html = function(tab){
   const D = RA.data, kids = tKids();
+  if (tab === 'limit') return limHtml();
   if (tab === 'feat'){
     if (!D.ecoOk) return old();
     const f = D.feat || {};
@@ -112,7 +149,10 @@ document.addEventListener('change', async e => {
   const f = {}; document.querySelectorAll('.ra [data-feat]').forEach(c => { if (c.dataset.feat === 'pause'){ if (c.checked) f.pause = true; } else if (!c.checked) f[c.dataset.feat] = false; });
   RA.data.feat = f; if (await ops([{ op:'featSet', features: f }], f.pause ? '⏸ 학생 앱을 전체 멈췄어요' : '🎛️ 저장했어요')) rer('feat');
 });
+document.addEventListener('change', e => { if (e.target && e.target.id === 'limEvent') limSave(e.target.checked ? '🎉 오늘은 전부 무제한!' : '이벤트를 껐어요'); });
 document.addEventListener('click', async e => {
+  if (e.target.closest('#limSave, #limSave2')){ limSave(); return; }
+  { const u = e.target.closest('[data-limun]'); if (u){ const i = document.querySelector(`.ra [data-lim="${u.dataset.limun}"]`); if (i) i.value = '0'; return; } }
   const t = e.target; if (!t.closest || !t.closest('#tBox')) return;
   const tab = typeof tTab !== 'undefined' ? tTab : '', kids = tKids();
   const rq = t.closest('[data-rq]'); if (rq){ await ops([{ op:'reqDone', id: Number(rq.dataset.rq), ok: rq.dataset.ok === '1' }], '처리했어요'); rer(tab, true); return; }

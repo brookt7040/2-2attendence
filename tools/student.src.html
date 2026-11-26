@@ -1239,7 +1239,7 @@ async function sigSend(){
 /* 💌 칭찬편지: 친구 고르기 → 편지 쓰기 */
 function openPraisePick(){
   const kids = ((st.pub && st.pub.students) || []).map(x => x.name).filter(n => n !== me.name && !/(쌤|샘|선생님|교감|교장)$/.test(n));
-  bOpen('msOv', `<h2>💌 누구에게 칭찬편지를 쓸까요?</h2><div class="hint" style="text-align:center;margin-bottom:8px;">평소에 <b>덜 친한 친구</b>를 골라 봐요! 친구가 '맞아요'를 누르면 냥코인이 들어와요</div>
+  bOpen('msOv', `<h2>💌 누구에게 칭찬편지를 쓸까요?</h2><div class="hint" style="text-align:center;margin-bottom:8px;">평소에 <b>덜 친한 친구</b>를 골라 봐요! 친구가 '맞아요'를 누르면 냥코인이 들어와요<br>💌 <b>처음 칭찬하는 친구</b>면 새 친구 보너스! 1번째 10% → 2번째 20% → … 최대 100%</div>
     <div class="chips">${kids.map(n => `<button type="button" data-praiseto="${esc(n)}">${esc(n)}</button>`).join('')}</div>`);
 }
 let mailData = null;
@@ -2255,7 +2255,7 @@ function setAsStudent(on){
 }
 function tOff(quiet){ viewAsStudent = false; sessionStorage.removeItem('nyangAsStudent'); $('asStuBar').style.display = 'none'; tKey = ''; tAuthByLogin = false; localStorage.removeItem(TKEY); sessionStorage.removeItem(TKEY); document.querySelector('.tab-t').style.display = 'none'; if (current === 'admin') showTab('notice'); if (!quiet) toast('선생님 모드를 껐어요'); }
 /* 👑 관리 탭: 📮 소통 · 🎮 학생 앱 · 🛟 안전 (출석부·EXP·냥코인·비번·백업은 관리자 출석부 🖥) */
-const T_GROUPS = [['rpg', '🐾 RPG', [['feat', '🎛️ 기능 스위치'], ['creq', '✅ 신청 · 미션'], ['cgive', '🎁 지급'], ['cbal', '💰 잔액 · 기록'], ['eco', '✏️ 미션 · 상점'], ['xp', '✨ 학생 EXP']]],
+const T_GROUPS = [['rpg', '🐾 RPG', [['feat', '🎛️ 기능 스위치'], ['limit', '⏱ 횟수 제한'], ['creq', '✅ 신청 · 미션'], ['cgive', '🎁 지급'], ['cbal', '💰 잔액 · 기록'], ['eco', '✏️ 미션 · 상점'], ['xp', '✨ 학생 EXP']]],
   ['msg', '📮 소통', [['ask', '🚨 신고·연락'], ['chat', '💬 대화'], ['board', '✏️ 알림·종례·스토리']]],
   ['app', '🎮 학생 앱', [['stucfg', '⚙️ 화면 설정'], ['show', '📢 마을 게시물'], ['free', '⏰ 쉬는 시간'], ['eng', '📚 영어 문제']]],
   ['safe', '🛟 안전', [['online', '🟢 접속 · 활동'], ['safe', '🚫 잠금 · 비속어 · 초기화'], ['npad', '📔 수첩']]]];
@@ -2644,7 +2644,7 @@ function bootDone(ok){
   setInterval(() => { if (me && !document.hidden && current === 'coin') coinCall('coins'); }, 30000);
 })();
 </script>
-<script src="pad.js?v=4"></script>
-<script src="rpgadmin.js?v=1"></script>
+<script src="pad.js?v=5"></script>
+<script src="rpgadmin.js?v=2"></script>
 </body>
 </html>

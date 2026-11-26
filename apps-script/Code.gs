@@ -37,9 +37,10 @@ const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', 
 const SEAT_CAP = {
   out: { fountain: 4, bench1: 2, bench2: 2, longbench: 4, tower: 3, scratch: 1, hammock: 1, box1: 1, box2: 1, sun: 3, pond: 2, churu: 1, swing: 2, cushions: 3, yarn: 1, photo: 6, slide: 1 },
   hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5, PRES: 1, VICE: 1 },
-  west: { umb1: 2, umb2: 2, umb3: 2, boat: 3, rock: 2, castle: 2, surf: 1 },
-  east: { camp: 5, logs: 3, mush: 3, swing2: 1, stump: 1 },
-  south: { park: 3, sandbox: 2 },
+  west: { umb1: 2, umb2: 2, umb3: 2, boat: 3, rock: 4, castle: 2, surf: 1 },
+  east: { camp: 5, logs: 3, mush: 3, swing2: 1, stump: 1, berry: 4 },
+  south: { park: 3, sandbox: 2, starnet: 4 },
+  alley: { trash: 2 },
   eng: { D1: 1, D2: 1, D3: 1, D4: 1, D5: 1, D6: 1, D7: 1, D8: 1, D9: 1, D10: 1, D11: 1, D12: 1 },
   cafe: { C1: 1, C2: 1, C3: 1, C4: 1, C5: 1, C6: 1, C7: 1, C8: 1, C9: 1, C10: 1 }
 };
@@ -126,6 +127,7 @@ function doPost(e) {
     if (body.action === 'engResults') return out_(engResults_());
     if (body.action === 'backup') return out_(backupAll_());
     if (body.action === 'ecoGet') { const mp = readRows_().map; return out_({ ok: true, economy: (mp.config && mp.config.economy) || null, feat: feat_() }); }
+    if (body.action === 'limits') { const mp = readRows_().map; return out_({ ok: true, limits: limitsRaw_(), def: LIMIT_DEF_, game: (economy_(mp).game) || {}, stats: gatherStats_(mp), today: todayStr_() }); }
     if (body.action === 'expInfo') { const mp = readRows_().map, pub = mp.pub || {}; return out_({ ok: true, priv: pub.priv || {}, th: pub.lvTh || [], names: pub.lvNames || [], bonus: expAdjList_(mp) }); }
     if (body.action === 'coinPurge') return out_(coinPurge_(String(body.before || ''), !!body.dry));
     if (body.action === 'today') {           // 📱 선생님 모드(학생 페이지): 오늘 출석 현황
@@ -624,6 +626,7 @@ function handlePost_(body, auth) {
           break;
         }
         case 'featSet': props_().setProperty('feat', JSON.stringify(o.features || {})); bump_(); break;   // 🎛️ 기능 스위치
+        case 'limitSet': props_().setProperty('limits', JSON.stringify(o.limits || {})); break;   // ⏱ 횟수 제한
         case 'expGive': (o.names || []).forEach(function (n) { if (o.exp) expQueue_(String(n), Number(o.exp) || 0, String(o.why || '선생님 지급')); }); break;   // ✨ EXP 주기 (출석부가 받아서 더해요)
         case 'coinAdd': addCoin_(String(o.name), Number(o.amt) || 0, String(o.why || ''), String(o.kind || '선생님'), String(o.key || '')); break;
         case 'reqDone': settleReq_(Number(o.id), !!o.ok, map); break;
@@ -749,7 +752,7 @@ function handleStudent_(body) {
 /* 🎛️ 기능 스위치 (출석부 👑 관리자 모드): 꺼진 기능은 학생 요청을 막아요 · 선생님은 그대로 */
 function feat_() { try { return JSON.parse(props_().getProperty('feat') || '{}') || {}; } catch (e) { return {}; } }
 function featOff_(k, f) { f = f || feat_(); return !!f.pause || f[k] === false; }
-const FEAT_OPS_ = { buy: ['coin', 'shop'], buyFurn: ['coin', 'shop'], equipHouse: ['coin', 'shop'], game: ['coin', 'game'], missionPick: ['coin', 'missions'], missionReq: ['coin', 'missions'], missionCancel: ['coin', 'missions'],
+const FEAT_OPS_ = { buy: ['coin', 'shop'], buyFurn: ['coin', 'shop'], equipHouse: ['coin', 'shop'], game: ['coin', 'game'], missionPick: ['coin', 'missions'], missionReq: ['coin', 'missions'], missionCancel: ['coin', 'missions'], gather: ['village'], sell: ['village'], sellFurn: ['village', 'shop'], bank: ['coin'], wish: ['village'], find: ['village'],
   move: ['village'], emote: ['village'], act: ['village'], vnews: ['village'], roomSave: ['village'], relocate: ['village'], hallMute: ['village'], cmHi: ['village'],
   hana: ['village', 'hana'], hanaDress: ['village', 'hana'], chatSend: ['chat'], ideaSend: ['plaza'], ideaLike: ['plaza'], ideaReport: ['plaza'],
   padGet: ['pad'], padSet: ['pad'], padReset: ['pad'], storyAns: ['story'], menuTr: ['menuTr'], engSubmit: ['eng'], engPass: ['eng'] };
@@ -812,6 +815,7 @@ function handleStudentCore_(body) {
     return { ok: true, changed: true };
   }
   if (body.op === 'move' || body.op === 'emote' || body.op === 'act') return studentVillage_(name, body);
+  if (['gather', 'sell', 'sellFurn', 'bank', 'wish', 'find', 'bag'].indexOf(body.op) >= 0) return studentGather_(name, body);
   if (body.op === 'hallMute') return hallMute_(name, body);
   if (body.op === 'god') return studentGod_(name, body);
   if (body.op === 'vnews') { addNews_(name, String(body.a || '')); let vx = 0; if (NEWS_KINDS_.slice(0, 16).indexOf(String(body.a || '')) >= 0) { const lock = lightLock_(8000); try { vx = villageExp_(name); } finally { lock.releaseLock(); } } return { ok: true, vexp: vx }; }
@@ -1366,15 +1370,179 @@ function villageState_() {
     emo: cacheGet_('v:emo', []).filter(function (x) { return x.ts > cut; }),
     chat: cacheGet_('v:chat', []).filter(function (x) { return x.ts > cut; }),
     hanaLook: hanaLook_(), mega: megaList_(), butler: butlerToday_(), banners: todayList_('banners'), hallMute: Object.keys(hallMuteList_()),
-    now: Date.now()
+    finds: findsNow_(), now: Date.now()
   };
 }
 /* 🏘️ 마을 활동 EXP (소소하게): 놀이 · 하나랑 놀기 · 인사 3번마다 +2 EXP, 하루 최대 +10 */
 const VEXP_EVERY_ = 3, VEXP_GAIN_ = 2, VEXP_MAX_ = 10;
+/* ---------------- ⏱ 횟수 제한 (학생 앱 👑 관리 → RPG → 횟수 제한) ----------------
+ * 0 = 무제한 · 학생별로 따로 정하거나(per) 막을 수 있어요(block) · event 날짜는 그날 하루 전부 무제한 */
+const LIMIT_DEF_ = { hana: HANA_DAILY, act: VILLAGE_ACT_DAILY, game: null, bet: null, vexp: VEXP_MAX_, gather: 0, gatherExp: 0, gatherGap: 30, sell: 0, find: 0 };
+function limitsRaw_() { try { return JSON.parse(props_().getProperty('limits') || '{}') || {}; } catch (e) { return {}; } }
+function limits_() {
+  const L = limitsRaw_(), out = {};
+  Object.keys(LIMIT_DEF_).forEach(function (k) { out[k] = L[k] != null && L[k] !== '' ? Number(L[k]) : LIMIT_DEF_[k]; });
+  out.event = String(L.event || ''); out.per = L.per || {};
+  return out;
+}
+/* 이 학생의 한도: -1 = 막힘 · 0 = 무제한 · 그 외 = 하루 횟수 */
+function lim_(key, name, fallback) {
+  const L = limits_(), p = (L.per || {})[name] || {};
+  if (isTeacherName_(name)) return key === 'gatherGap' ? 3 : 0;
+  if ((p.block || []).indexOf(key) >= 0) return -1;
+  if (L.event === todayStr_() && ['gatherGap', 'bet'].indexOf(key) < 0) return 0;
+  if (p[key] != null && p[key] !== '') return Number(p[key]);
+  const v = L[key]; return v == null ? (fallback == null ? 0 : fallback) : v;
+}
+function dayCount_(k, add) { const key = k + ':' + todayStr_(); let n = Number(props_().getProperty(key) || 0); if (add) { n += add; props_().setProperty(key, String(n)); } return n; }
+
+/* ---------------- 🎣 채집 (1맵 1채집) · 🏪 시장 · 🏦 은행 · 🍀 우연 ---------------- */
+// 아이템: [id, 이름, 아이콘, 희귀도(0 보통 · 1 희귀 · 2 아주 희귀 · 3 전설), 기본 값]
+const GATHER_ = {
+  fish:  { spot: 'rock', verb: '낚았어요', shop: 'fish', items: [['f_anchovy', '멸치', '🐟', 0, 3], ['f_mackerel', '고등어', '🐟', 0, 4], ['f_squid', '오징어', '🦑', 0, 5], ['f_bream', '도미', '🐠', 1, 12], ['f_puffer', '복어', '🐡', 1, 14], ['f_tuna', '참치', '🐟', 2, 40], ['f_gold', '황금 물고기', '🌟', 3, 120]] },
+  fruit: { spot: 'berry', verb: '주웠어요', shop: 'fruit', items: [['r_acorn', '도토리', '🌰', 0, 2], ['r_berry', '산딸기', '🍓', 0, 3], ['r_apple', '사과', '🍎', 0, 4], ['r_mush', '버섯', '🍄', 1, 10], ['r_grape', '머루', '🍇', 1, 12], ['r_pine', '송이버섯', '🍄', 2, 35], ['r_gold', '황금 사과', '🍏', 3, 90]] },
+  star:  { spot: 'starnet', verb: '모았어요', shop: 'star', items: [['s_dust', '별가루', '✨', 0, 3], ['s_small', '작은 별', '⭐', 0, 4], ['s_moon', '초승달 조각', '🌙', 0, 5], ['s_shine', '반짝 별', '🌟', 1, 12], ['s_meteor', '유성 조각', '☄️', 1, 15], ['s_rainbow', '무지개 별', '🌈', 2, 45], ['s_wish', '소원 별 조각', '💫', 3, 100]] },
+  trash: { spot: 'trash', verb: '찾았어요', shop: 'junk', items: [['t_can', '빈 캔', '🥫', 0, 1], ['t_bone', '생선뼈', '🦴', 0, 2], ['t_sock', '낡은 양말', '🧦', 0, 1], ['t_toy', '고양이 장난감', '🪀', 1, 8], ['t_marble', '반짝이 구슬', '🔮', 1, 10], ['t_map', '보물 지도 조각', '🗺️', 2, 50], ['t_crown', '낡은 왕관', '👑', 3, 110]] },
+  coin:  { spot: 'fountain', verb: '건졌어요', shop: '', items: [['c_1', '동전 1개', '🪙', 0, 1], ['c_3', '동전 3개', '🪙', 1, 3], ['c_10', '반짝 동전 10개', '💰', 2, 10], ['c_30', '금화 30개', '👑', 3, 30]] }
+};
+const GATHER_EXP_ = [2, 6, 20, 20];              // 보통 · 희귀 · 아주 희귀 · 전설
+const GATHER_ODDS_ = [0.80, 0.16, 0.035, 0.005];
+const SHOP_BUYS_ = { fish: ['fish'], fruit: ['fruit'], star: ['star'], junk: ['trash'] };
+function gatherItem_(id) { let f = null; Object.keys(GATHER_).forEach(function (g) { GATHER_[g].items.forEach(function (it) { if (it[0] === id) f = { g: g, id: it[0], name: it[1], ic: it[2], rar: it[3], base: it[4] }; }); }); return f; }
+function bagOf_(name) { try { const b = JSON.parse(props_().getProperty('bag:' + name) || '{}') || {}; b.items = b.items || {}; b.dex = b.dex || {}; return b; } catch (e) { return { items: {}, dex: {} }; } }
+function hashF_(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return (h % 100000) / 100000; }
+/* 💹 오늘의 시세: 날마다 0.8~1.25배 · 오늘 반 전체가 많이 판 물건은 값이 내려가요 (최대 절반까지) */
+function mktSold_() { try { return JSON.parse(props_().getProperty('mkt:' + todayStr_()) || '{}') || {}; } catch (e) { return {}; } }
+function priceOf_(id, sold) {
+  const it = gatherItem_(id); if (!it || !it.base) return 0;
+  const day = 0.8 + hashF_(todayStr_() + id) * 0.45, sup = Math.max(0.5, 1 - 0.02 * ((sold || {})[id] || 0));
+  return Math.max(1, Math.round(it.base * day * sup));
+}
+function marketView_() {
+  const sold = mktSold_(), out = {};
+  Object.keys(GATHER_).forEach(function (g) { if (!GATHER_[g].shop) return; GATHER_[g].items.forEach(function (it) { out[it[0]] = { p: priceOf_(it[0], sold), base: it[4], name: it[1], ic: it[2], rar: it[3], g: g, sold: sold[it[0]] || 0 }; }); });
+  return out;
+}
+/* 🏦 냥냥 은행: 하루 1% 이자 (100코인부터 1코인씩) · 한 번에 최대 30일치 */
+const BANK_RATE_ = 0.01;
+function bankOf_(name) {
+  let b = {}; try { b = JSON.parse(props_().getProperty('bank:' + name) || '{}') || {}; } catch (e) {}
+  b.a = Number(b.a) || 0; const today = todayStr_();
+  if (!b.d) b.d = today;
+  const days = Math.min(30, Math.max(0, Math.round((new Date(today + 'T00:00:00') - new Date(b.d + 'T00:00:00')) / 86400000)));
+  let gain = 0; for (let i = 0; i < days; i++) { const g = Math.floor(b.a * BANK_RATE_); b.a += g; gain += g; }
+  if (days) { b.d = today; props_().setProperty('bank:' + name, JSON.stringify(b)); }
+  b.gain = gain; return b;
+}
+/* 🍀 길에서 동전 줍기 (15분마다 어딘가에 반짝) · 🎁 숲속 보물상자 (일주일에 한 번) */
+const FIND_MAPS_ = { out: [[200, 900], [1500, 960], [1000, 960], [120, 640]], west: [[700, 950], [1450, 700], [560, 300]], east: [[700, 980], [1000, 420], [140, 300]], south: [[300, 650], [1300, 650], [800, 960]], mall: [[200, 820], [1400, 820], [800, 640]], alley: [[700, 960], [1200, 960], [400, 960]] };
+function findsNow_() {
+  const out = [], w = Math.floor(Date.now() / 900000), maps = Object.keys(FIND_MAPS_);
+  [w, w - 1].forEach(function (k) {
+    if (hashF_('spark' + k) > 0.75) return;
+    const mp = maps[Math.floor(hashF_('sm' + k) * maps.length)], pts = FIND_MAPS_[mp], pt = pts[Math.floor(hashF_('sp' + k) * pts.length)];
+    const id = 'sp' + k; if (props_().getProperty('found:' + id)) return;
+    out.push({ id: id, map: mp, x: pt[0], y: pt[1], kind: 'coin' });
+  });
+  const wk = missionWeek_(), cid = 'ch' + wk.replace(/-/g, '');
+  if (!props_().getProperty('found:' + cid)) { const pts = [[1500, 960], [120, 980], [980, 300], [1560, 520]], pt = pts[Math.floor(hashF_(cid) * pts.length)]; out.push({ id: cid, map: 'east', x: pt[0], y: pt[1], kind: 'chest' }); }
+  return out;
+}
+function studentGather_(name, body) {
+  const cfg = chatCfg_(), T = isTeacherName_(name), op = body.op, ds = todayStr_();
+  if (!T && !chatOpen_(cfg)) return { ok: true, error: 'closed' };
+  const lock = lightLock_(10000);
+  try {
+    let error = '', res = {};
+    if (op === 'gather') {
+      const g = Object.keys(GATHER_).filter(function (k) { return GATHER_[k].spot === String(body.o || ''); })[0], lm = lim_('gather', name), gap = lim_('gatherGap', name) || 30;
+      const last = Number(props_().getProperty('gl:' + name) || 0), cnt = dayCount_('gc:' + name);
+      const ecap = lim_('gatherExp', name), eGot = dayCount_('ge:' + name);
+      const here = (cacheGet_('v:pos', {}) || {})[name];
+      if (!g) error = 'bad';
+      else if (!T && (!here || here.s !== String(body.o))) error = 'seat';   // 그 자리에 앉아 있어야 해요
+      else if (lm < 0) error = 'blocked';
+      else if (lm > 0 && cnt >= lm) error = 'limit';
+      else if (Date.now() - last < (gap - 3) * 1000) error = 'slow';
+      else {
+        const roll = Math.random(); let rar = 0, acc = 0; for (let i = 0; i < GATHER_ODDS_.length; i++) { acc += GATHER_ODDS_[i]; if (roll < acc) { rar = i; break; } rar = i; }
+        let pool = GATHER_[g].items.filter(function (it) { return it[3] === rar; }); if (!pool.length) pool = GATHER_[g].items.filter(function (it) { return it[3] === 0; });
+        const it = pool[Math.floor(Math.random() * pool.length)];
+        let exp = GATHER_EXP_[it[3]] || 2; if (ecap > 0) exp = Math.max(0, Math.min(exp, ecap - eGot));
+        props_().setProperty('gl:' + name, String(Date.now())); dayCount_('gc:' + name, 1); if (exp) dayCount_('ge:' + name, exp);
+        if (exp && !T) expQueue_(name, exp, '채집: ' + it[1]);
+        let coins = 0;
+        if (g === 'coin') { coins = it[4]; if (!T) addCoin_(name, coins, '분수 동전: ' + it[1], '채집', '', []); }
+        else { const b = bagOf_(name); b.items[it[0]] = (b.items[it[0]] || 0) + 1; b.dex[it[0]] = 1; props_().setProperty('bag:' + name, JSON.stringify(b)); }
+        if (it[3] >= 2) addNews_(name, 'gather:' + it[1]);
+        res = { item: { id: it[0], name: it[1], ic: it[2], rar: it[3] }, g: g, verb: GATHER_[g].verb, exp: exp, coins: coins, count: cnt + 1, left: lm > 0 ? lm - cnt - 1 : -1, gap: gap };
+      }
+    } else if (op === 'sell') {                    // 🏪 시장에 팔기 (그 가게가 사는 것만)
+      const shop = String(body.shop || ''), id = String(body.item || ''), n = Math.max(1, Math.min(99, Math.floor(Number(body.n) || 1)));
+      const it = gatherItem_(id), b = bagOf_(name), lm = lim_('sell', name), cnt = dayCount_('sc:' + name);
+      if (!it || !SHOP_BUYS_[shop] || SHOP_BUYS_[shop].indexOf(it.g) < 0) error = 'bad';
+      else if (lm < 0) error = 'blocked';
+      else if (lm > 0 && cnt >= lm) error = 'limit';
+      else if ((b.items[id] || 0) < n) error = 'noitem';
+      else {
+        const sold = mktSold_(); let total = 0;
+        for (let i = 0; i < n; i++) { total += priceOf_(id, sold); sold[id] = (sold[id] || 0) + 1; }
+        props_().setProperty('mkt:' + ds, JSON.stringify(sold));
+        b.items[id] -= n; if (!b.items[id]) delete b.items[id]; props_().setProperty('bag:' + name, JSON.stringify(b));
+        dayCount_('sc:' + name, 1);
+        if (!T) addCoin_(name, total, '판매: ' + it.name + ' ×' + n, '판매', '', []);
+        res = { sold: { name: it.name, n: n, coins: total } };
+      }
+    } else if (op === 'sellFurn') {                // 🔁 중고 장터: 안 쓰는 가구를 반값에
+      const map = readRows_().map, eco = economy_(map), inv = (map.inv || {})[name] || {}, f = findFurn_(eco, String(body.item || ''));
+      const placed = (((inv.room || {}).items) || []).filter(function (x) { return x[0] === (f && f.id); }).length, have = ((inv.furn || {})[f && f.id] || 0);
+      if (!f || f.kind !== 'furn' || !(f.price > 0)) error = 'bad';
+      else if (have - placed < 1) error = 'placed';
+      else {
+        const db = readRows_(); const iv = db.map.inv[name]; iv.furn[f.id] = have - 1; if (!iv.furn[f.id]) delete iv.furn[f.id]; writeRows_(db, ['inv']); cacheDrop_(['room:' + name]);
+        const c = Math.floor(f.price / 2); if (!T) addCoin_(name, c, '중고 장터: ' + f.name, '판매', '', []);
+        res = { sold: { name: f.name, n: 1, coins: c } };
+      }
+    } else if (op === 'bank') {                    // 🏦 맡기기 · 찾기
+      const b = bankOf_(name), amt = Math.floor(Number(body.amt) || 0);
+      if (!(amt > 0)) error = 'bad';
+      else if (body.dep) { const rows = readCoins_(); if (balanceOf_(rows, name) < amt && !T) error = 'poor'; else { if (!T) addCoin_(name, -amt, '은행에 맡기기', '은행', '', rows); b.a += amt; } }
+      else { if (b.a < amt) error = 'poor'; else { b.a -= amt; if (!T) addCoin_(name, amt, '은행에서 찾기', '은행', '', []); } }
+      if (!error) { b.d = ds; props_().setProperty('bank:' + name, JSON.stringify({ a: b.a, d: b.d })); }
+    } else if (op === 'wish') {                    // 🌟 소원 별: 하루 한 번 0~10코인
+      if (props_().getProperty('wish:' + name + ':' + ds)) error = 'done';
+      else {
+        const r = Math.random(), c = r < 0.3 ? 0 : r < 0.75 ? 1 + Math.floor(Math.random() * 3) : r < 0.95 ? 4 + Math.floor(Math.random() * 4) : 8 + Math.floor(Math.random() * 3);
+        props_().setProperty('wish:' + name + ':' + ds, String(c)); if (c && !T) addCoin_(name, c, '소원 별', '우연', '', []);
+        res = { wish: c };
+      }
+    } else if (op === 'find') {                    // ✨ 반짝이는 동전 · 🎁 보물상자 (먼저 누른 친구만)
+      const id = String(body.id || ''), f = findsNow_().filter(function (x) { return x.id === id; })[0], lm = lim_('find', name), cnt = dayCount_('fc:' + name);
+      if (!f) error = 'gone';
+      else if (lm < 0) error = 'blocked';
+      else if (lm > 0 && cnt >= lm) error = 'limit';
+      else {
+        props_().setProperty('found:' + id, name); dayCount_('fc:' + name, 1);
+        const c = f.kind === 'chest' ? 20 + Math.floor(Math.random() * 31) : 1 + Math.floor(Math.random() * 3);
+        if (!T) addCoin_(name, c, f.kind === 'chest' ? '숲속 보물상자' : '길에서 주운 동전', '우연', '', []);
+        if (f.kind === 'chest') addNews_(name, 'chest');
+        res = { found: { kind: f.kind, coins: c } };
+      }
+    }
+    const b = bagOf_(name), bk = bankOf_(name);
+    return Object.assign({ ok: true, error: error, bag: b.items, dex: b.dex, market: marketView_(), bank: { a: bk.a, gain: bk.gain, rate: BANK_RATE_ }, wished: props_().getProperty('wish:' + name + ':' + ds) != null,
+      gathered: dayCount_('gc:' + name), gatherLeft: (function () { const l = lim_('gather', name); return l < 0 ? 0 : l === 0 ? -1 : Math.max(0, l - dayCount_('gc:' + name)); })(), gap: lim_('gatherGap', name) || 30, finds: findsNow_() }, res);
+  } finally { lock.releaseLock(); }
+}
+/* 👑 선생님: 오늘 채집 · 판매 현황 */
+function gatherStats_(map) {
+  return kidNames_(map).map(function (n) { const b = bagOf_(n), bk = bankOf_(n); return { name: n, gc: dayCount_('gc:' + n), ge: dayCount_('ge:' + n), sc: dayCount_('sc:' + n), fc: dayCount_('fc:' + n), items: Object.keys(b.items).reduce(function (s, k) { return s + b.items[k]; }, 0), dex: Object.keys(b.dex).length, bank: bk.a }; });
+}
 function villageExp_(name) {
   if (isTeacherName_(name)) return 0;
   const k = 'vx:' + name + ':' + todayStr_(), n = Number(props_().getProperty(k) || 0) + 1; props_().setProperty(k, String(n));
-  if (n % VEXP_EVERY_ === 0 && (n / VEXP_EVERY_) * VEXP_GAIN_ <= VEXP_MAX_) { expQueue_(name, VEXP_GAIN_, '🏘️ 마을 활동'); return VEXP_GAIN_; }
+  const cap = lim_('vexp', name, VEXP_MAX_); if (cap < 0) return 0;
+  if (n % VEXP_EVERY_ === 0 && (cap === 0 || (n / VEXP_EVERY_) * VEXP_GAIN_ <= cap)) { expQueue_(name, VEXP_GAIN_, '🏘️ 마을 활동'); return VEXP_GAIN_; }
   return 0;
 }
 function studentVillage_(name, body) {
@@ -1385,9 +1553,10 @@ function studentVillage_(name, body) {
     if (body.op === 'act') {                     // 🎣 츄르 뽑기·낚시·마시멜로 같은 마을 놀이는 하루 20번
       if (isTeacherName_(name)) return { ok: true, left: 999 };
       const k = 'act:' + name + ':' + todayStr_(), n = Number(props_().getProperty(k) || 0);
-      if (n >= VILLAGE_ACT_DAILY) return { ok: true, error: 'actlimit', left: 0 };
+      const lm = lim_('act', name, VILLAGE_ACT_DAILY);
+      if (lm < 0 || (lm > 0 && n >= lm)) return { ok: true, error: 'actlimit', left: 0 };
       props_().setProperty(k, String(n + 1));
-      return { ok: true, left: VILLAGE_ACT_DAILY - n - 1 };
+      return { ok: true, left: lm === 0 ? 999 : lm - n - 1 };
     }
     if (body.op === 'move') {
       const x = Math.max(0, Math.min(1600, Math.round(Number(body.x) || 0))), y = Math.max(0, Math.min(1000, Math.round(Number(body.y) || 0)));
@@ -1564,13 +1733,13 @@ function studentHana_(name, body) {
   try {
     const map = readRows_().map, eco = economy_(map), hana = eco.hana || {};
     const st = hanaOf_(name); st.p = st.p || 0; if (st.d !== ds) { st.d = ds; st.c = {}; }
-    let error = '', gained = 0, line = '';
+    let error = '', gained = 0, line = '', gift = 0;
     if (body.op === 'hana' && body.act) {
       const a = (hana.acts || []).filter(function (x) { return x.id === body.act; })[0];
       if (!a) error = 'bad';
       else if (hanaLvOf_(st.p) < (a.need || 0) && !T) error = 'locked';
       else if ((st.c[a.id] || 0) >= (a.day || 1) && !T) error = 'limit';
-      else if (!T && Object.keys(st.c).reduce(function (n, k) { return n + (st.c[k] || 0); }, 0) >= HANA_DAILY) error = 'daylimit';
+      else if (!T && (function () { const lm = lim_('hana', name, HANA_DAILY); return lm < 0 || (lm > 0 && Object.keys(st.c).reduce(function (n, k) { return n + (st.c[k] || 0); }, 0) >= lm); })()) error = 'daylimit';
       else {
         if (a.cost && !T) {
           const rows = readCoins_();
@@ -1584,6 +1753,10 @@ function studentHana_(name, body) {
           villageExp_(name);
           props_().setProperty('hana:' + name, JSON.stringify(st));
           cachePush_('v:emo', { n: '하나', e: gained > 0 ? '💛' : '💢', ts: Date.now() }, 40);
+          if (gained > 0 && !T) {                // 🎁 하나의 선물: 친할수록 자주 · 많이 물어 와요
+            const hl = hanaLvOf_(st.p);
+            if (Math.random() < 0.03 + 0.03 * hl) { gift = 1 + Math.floor(Math.random() * (2 + hl * 2)); addCoin_(name, gift, '하나의 선물', '우연', '', []); }
+          }
         }
       }
     } else if (body.op === 'hanaDress') {
@@ -1602,7 +1775,7 @@ function studentHana_(name, body) {
         bump_();
       }
     }
-    return { ok: true, error: error, gained: gained, aff: st.p, lv: hanaLvOf_(st.p), counts: st.c || {}, rank: hanaRank_(), look: hanaLook_() };
+    return { ok: true, error: error, gained: gained, gift: gift, aff: st.p, lv: hanaLvOf_(st.p), counts: st.c || {}, rank: hanaRank_(), look: hanaLook_(), hanaLeft: (function () { const lm = lim_('hana', name, HANA_DAILY); return lm < 0 ? 0 : lm === 0 ? -1 : Math.max(0, lm - Object.keys(st.c).reduce(function (n, k) { return n + (st.c[k] || 0); }, 0)); })() };
   } finally { lock.releaseLock(); }
 }
 
@@ -2238,6 +2411,17 @@ function studentMail_(name, body) {
         const parts = it.mission.split(':'), eco = economy_(map), m = (eco.missions || []).filter(function (x) { return x.id === parts[1]; })[0];
         if (m) missionPay_(it.from, m, '→ ' + name, '자동', 'm:' + m.id + ':' + it.from + ':' + parts[0]);   // 🏁 선착 성공
       }
+      // 💌 새 친구 보너스: 아직 칭찬한 적 없는 친구에게 쓰면 10% → 20% → … 100% (칭찬 미션 보상 기준)
+      if (!isTeacherName_(it.from)) {
+        const before = readMail_(function (x) { return x.from === it.from && x.kind === '칭찬' && x.ok && x.id !== it.id; }).map(function (x) { return x.to; });
+        if (before.indexOf(name) < 0) {
+          const k = before.filter(function (v, i, a) { return a.indexOf(v) === i; }).length + 1, pct = Math.min(100, 10 * k) / 100;
+          const pm = ((economy_(map).missions || []).filter(function (x) { return x.flow === 'praise'; })[0]) || { coins: 20, exp: 20 };
+          const c = Math.max(1, Math.round((Number(pm.coins) || 20) * pct)), e = Math.max(1, Math.round((pm.exp != null ? Number(pm.exp) : Number(pm.coins) || 20) * pct));
+          addCoin_(it.from, c, '💌 새 친구 칭찬 보너스 (' + k + '번째 · ' + Math.round(pct * 100) + '%)', '칭찬', 'pf:' + it.from + ':' + name);
+          expQueue_(it.from, e, '새 친구 칭찬 보너스');
+        }
+      }
     }
   } else if (body.op === 'mailRead') {
     const it = readMail_(function (x) { return x.id === Number(body.id) && x.to === name && x.came; })[0];
@@ -2515,8 +2699,8 @@ function studentCoins_(name, body) {
       const g = eco.game || {}, bet = Math.floor(Number(body.bet) || 0);
       const playsKey = 'plays:' + name + ':' + ds, plays = Number(props_().getProperty(playsKey) || 0);
       if (!T && !gameOpen_(g)) error = 'closed';
-      else if (!T && plays >= (g.daily || 5)) error = 'limit';
-      else if (!(bet >= 1 && bet <= (T ? 1000 : (g.maxBet || 30)))) error = 'bet';
+      else if (!T && (lim_('game', name, g.daily || 5) < 0 || (lim_('game', name, g.daily || 5) > 0 && plays >= lim_('game', name, g.daily || 5)))) error = 'limit';
+      else if (!(bet >= 1 && bet <= (T ? 1000 : (lim_('bet', name, g.maxBet || 30) || 1000)))) error = 'bet';
       else if (bal() < bet) error = 'poor';
       else {
         let net = 0, detail = {};
@@ -2562,9 +2746,9 @@ function studentCoins_(name, body) {
       ok: true, error: error, result: result, balance: T ? 0 : bal(), unlimited: T,
       ledger: rows.filter(function (r) { return r.name === name; }).slice(-30).reverse().map(function (r) { return { t: r.t, amt: r.amt, why: r.why }; }),
       inv: inv, reqs: reqs, sold: sold,
-      economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on || T, open: T || gameOpen_(g), maxBet: g.maxBet || 30, daily: g.daily || 5, hours: g.hours || {} },
+      economy: { missions: eco.missions || [], shop: (eco.shop || []).filter(function (x) { return !x.off; }), game: { on: !!g.on || T, open: T || gameOpen_(g), maxBet: T ? 1000 : (lim_('bet', name, g.maxBet || 30) || 1000), daily: lim_('game', name, g.daily || 5), hours: g.hours || {} },
         furn: eco.furn || [], walls: eco.walls || [], floors: eco.floors || [], hana: eco.hana || {}, meeting: eco.meeting || {}, locked: eco.locked || {} },
-      playsLeft: T ? 99 : Math.max(0, (g.daily || 5) - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)),
+      playsLeft: T ? 99 : (function () { const lm = lim_('game', name, g.daily || 5); return lm < 0 ? 0 : lm === 0 ? 99 : Math.max(0, lm - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)); })(),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),
       undone: (function () { const u = {}; rows.forEach(function (r) { if (r.name === name && /^undo:/.test(r.key)) u[r.key.slice(5)] = 1; }); return rows.filter(function (r) { return u[r.id]; }).map(function (r) { return r.key; }); })(),
       picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }, paid: paid, tax: tax,
