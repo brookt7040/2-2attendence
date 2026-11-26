@@ -213,6 +213,7 @@ function render(){
       <button type="button" class="np-btn" data-np="edit">${NP.edit ? '✔ 다 했어요' : '✏️ 편집'}</button><button type="button" class="np-btn" data-np="pwchg" title="수첩 비밀번호 바꾸기">🔑</button><button type="button" class="np-btn" data-np="lock" title="잠그기">🔒</button></div>
     <div class="np-grid">${html || '<div class="np-empty" style="grid-column:1/-1;text-align:center;">위젯을 추가해 봐요 👇</div>'}</div>
     <button type="button" class="btn btn-y np-plus" data-np="addw">➕ 위젯 추가</button>
+    ${NP.edit ? '<div style="text-align:center;margin-top:14px;"><button type="button" class="np-link" data-np="wipe">🗑 내 수첩 초기화 (모두 지우고 새로 시작)</button></div>' : ''}
     <div class="np-saved" id="npSaved">${NP.saveTm ? '저장 중…' : ''}</div>`;
 }
 function openAddSheet(){
@@ -297,6 +298,16 @@ async function onClick(e){
   }
   if (NP.st !== 'open') return;
   if (a === 'edit'){ NP.edit = !NP.edit; render(); return; }
+  if (a === 'wipe'){
+    if (!confirm('내 수첩을 초기화할까요?\n위젯과 쓴 내용이 모두 지워지고 되돌릴 수 없어요.')) return;
+    if ((prompt('정말 지우려면 "초기화"라고 적어요') || '').trim() !== '초기화') return;
+    clearTimeout(NP.saveTm); NP.saveTm = 0;
+    const j = await studentCall('padReset');
+    if (!j || !j.ok){ toast('초기화하지 못했어요. 다시 해 봐요'); return; }
+    try { localStorage.removeItem(pwKey()); } catch(e2){}
+    Object.assign(NP, { st: 'setup', data: null, key: null, dek: null, dekRaw: null, blob: '', ver: j.ver, edit: false, show: {} });
+    render(); toast('🗑 수첩을 초기화했어요. 새 수첩을 만들어요'); return;
+  }
   if (a === 'lock'){ lockNow(); return; }
   if (a === 'pwchg'){ bOpen('msOv', `<h2>🔑 수첩 비밀번호 바꾸기</h2><p class="hint">내용은 그대로예요. 새 비밀번호로만 열려요.</p>
       <input type="password" id="npOld" class="pc-in" maxlength="30" placeholder="지금 수첩 비밀번호" autocomplete="off"><input type="password" id="npN1" class="pc-in" maxlength="30" placeholder="새 수첩 비밀번호 (4자 이상)" autocomplete="off"><input type="password" id="npN2" class="pc-in" maxlength="30" placeholder="한 번 더" autocomplete="off">
