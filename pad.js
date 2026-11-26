@@ -78,7 +78,7 @@ const W = {
   todo: { i: '✅', n: '오늘 할 일', sz: 'b', d: '체크하면 줄 긋기 · 못 한 건 내일로',
     prep(x){ const t = D(), o = x.todo || (x.todo = { d: t, items: [] }); if (o.d !== t){ o.items = o.items.filter(it => !it.on).map(it => Object.assign(it, { c: 1 })); o.d = t; return true; } },
     r(x){ const it = x.todo.items, done = it.filter(o => o.on).length;
-      return `<div class="np-sub">${it.length ? (done === it.length ? '🎉 다 했어요! 고양이가 칭찬해요' : `${it.length}개 중 ${done}개 완료`) : ''}</div>`
+      return `<div class="np-sub">${it.length ? (done === it.length ? '다 했어요! 고양이가 칭찬해요': `${it.length}개 중 ${done}개 완료`) : ''}</div>`
         + (it.length ? it.map((o, k) => `<div class="np-row"><button type="button" class="np-ck ${o.on ? 'on' : ''}" data-np="tog" data-w="todo" data-k="${k}">${o.on ? '✔' : ''}</button><span class="np-grow ${o.on ? 'np-done' : ''}">${o.c ? '↪ ' : ''}${esc(o.t)}</span>${del('todo', k)}</div>`).join('') : nothing('오늘 할 일을 적어요'))
         + add('todo', inp('t', '할 일', 'text', 'maxlength="40"')); },
     add(x, f){ if (!f.t) return '할 일을 적어요'; x.todo.items.push({ t: f.t, on: false }); },
@@ -115,7 +115,7 @@ const W = {
     add(x, f){ const tg = Math.round(+f.tg); if (!f.n || !(tg > 0)) return '목표와 숫자를 넣어요'; x.goal.push({ n: f.n, tg, cur: 0 }); } },
   timer: { i: '⏱️', n: '집중 타이머', sz: 's', d: '고양이랑 같이 공부해요',
     r(x){ const T = NP.timer, tot = ((x.timer = x.timer || { log: {} }).log[D()] || 0);
-      return T ? `<div class="np-big" id="npTime">${fmtT(T)}</div><div style="text-align:center;"><button type="button" class="np-btn" data-np="tstop" data-w="timer">⏹ 그만</button></div><div class="np-sub" style="text-align:center;">🐱 같이 집중 중…</div>`
+      return T ? `<div class="np-big" id="npTime">${fmtT(T)}</div><div style="text-align:center;"><button type="button" class="np-btn" data-np="tstop" data-w="timer">⏹ 그만</button></div><div class="np-sub" style="text-align:center;">같이 집중 중…</div>`
         : `<div class="np-big">⏱️</div><div class="np-tbtn">${[10, 25, 50].map(m => `<button type="button" class="np-btn" data-np="tgo" data-w="timer" data-k="${m}">${m}분</button>`).join('')}</div><div class="np-sub" style="text-align:center;">오늘 ${tot}분 집중</div>`; } },
   thanks: { i: '🙏', n: '감사 3줄', sz: 'b', d: '오늘 고마운 일 세 가지',
     r(x){ const G = x.thanks = x.thanks || {}, a = G[D()] || ['', '', ''], past = Object.keys(G).filter(d => d < D() && G[d].some(Boolean));
@@ -126,7 +126,7 @@ const W = {
   prep: { i: '🎒', n: '내일 준비물', sz: 'b', d: '내일 시간표 보고 챙기기',
     prep(x){ const tm = addDays(D(), 1), o = x.prep || (x.prep = { d: tm, items: [] }); if (o.d !== tm){ o.d = tm; o.items = []; return true; } },
     r(x){ const s = tomorrowSubjects();
-      return `<div class="np-sub">${s.length ? '내일: ' + s.map(esc).join(' · ') : '내일 시간표가 아직 없어요'}</div>`
+      return `<div class="np-sub">${s.length ? '내일: '+ s.map(esc).join('· ') : '내일 시간표가 아직 없어요'}</div>`
         + (x.prep.items.length ? x.prep.items.map((o, k) => `<div class="np-row"><button type="button" class="np-ck ${o.on ? 'on' : ''}" data-np="tog" data-w="prep" data-k="${k}">${o.on ? '✔' : ''}</button><span class="np-grow ${o.on ? 'np-done' : ''}">${esc(o.t)}</span>${del('prep', k)}</div>`).join('') : nothing('체육복 · 리코더 · 수행평가 자료…'))
         + add('prep', inp('t', '챙길 것', 'text', 'maxlength="30"')); },
     add(x, f){ if (!f.t) return '챙길 것을 적어요'; x.prep.items.push({ t: f.t, on: false }); },
@@ -137,7 +137,7 @@ const W = {
       return (L.length ? L.map((o, k) => o.open > t ? `<div class="np-row np-cap"><span class="np-grow">🔒 ${o.open.replace(/-/g, '.')}에 열려요 <small>(D-${diffDays(t, o.open)} · ${md(o.made)}에 씀)</small></span></div>`
           : `<div class="np-quote">💌 ${md(o.made)}의 내가 보낸 편지<br>${esc(o.t)}${del('future', k)}</div>`).join('') : nothing('몇 달 뒤의 나에게 편지를 써요'))
         + add('future', `<textarea data-f="t" rows="2" maxlength="400" placeholder="미래의 나에게…"></textarea>` + inp('d', '', 'date'), '📮'); },
-    add(x, f){ if (!f.t || !f.d) return '편지와 열 날짜를 넣어요'; if (f.d <= D()) return '열 날짜는 내일 이후로'; x.future.push({ t: f.t, open: f.d, made: D() }); toast('📮 타임캡슐에 넣었어요. 그날까지 못 열어요!'); } },
+    add(x, f){ if (!f.t || !f.d) return '편지와 열 날짜를 넣어요'; if (f.d <= D()) return '열 날짜는 내일 이후로'; x.future.push({ t: f.t, open: f.d, made: D() }); toast('타임캡슐에 넣었어요. 그날까지 못 열어요!'); } },
   books: { i: '📚', n: '내 책장', sz: 'b', d: '읽은 책 · 별점 · 한 줄',
     r(x){ const L = x.books = x.books || [];
       return (L.length ? `<div class="np-shelf">${L.slice(0, 24).map((o, k) => `<span style="background:${COLORS[k % COLORS.length]};height:${24 + (o.n.length * 3) % 18}px" title="${esc(o.n)}"></span>`).join('')}</div>` + L.slice(0, 5).map((o, k) => `<div class="np-row"><span class="np-grow">${esc(o.n)} <small>${'★'.repeat(o.s)}${o.m ? ' · ' + esc(o.m) : ''}</small></span>${del('books', k)}</div>`).join('') + `<div class="np-sub">모두 ${L.length}권</div>` : nothing('다 읽은 책을 꽂아요'))
@@ -161,7 +161,7 @@ const W = {
       const days = [...Array(7)].map((_, i) => addDays(t, i - 6)), hs = days.map(d => hrs(G[d])), got = hs.filter(Boolean), avg = got.length ? Math.round(got.reduce((s, v) => s + v, 0) / got.length * 10) / 10 : 0;
       return `<div class="np-row">어젯밤 잔 시각 <input type="time" data-npc="sleepb" value="${o.b || ''}"> 일어난 시각 <input type="time" data-npc="sleepw" value="${o.w || ''}"></div>
         <div class="np-sleep">${days.map((d, i) => `<div><span style="height:${Math.min(100, hs[i] / 11 * 100)}%;background:${hs[i] >= 8 ? '#7ED6A0' : hs[i] >= 7 ? '#FFE08A' : '#F5A3A3'}"></span><small>${hs[i] || ''}</small><small>${md(d)}</small></div>`).join('')}</div>
-        <div class="np-sub">${got.length ? `일주일 평균 ${avg}시간 ${avg >= 8 ? '😴 아주 좋아요' : avg >= 7 ? '🙂 괜찮아요' : '🥱 조금 더 자요'}` : '중학생은 8~10시간이 좋아요'}</div>`; } },
+        <div class="np-sub">${got.length ? `일주일 평균 ${avg}시간 ${avg >= 8 ? '아주 좋아요': avg >= 7 ? '괜찮아요': '조금 더 자요'}`: '중학생은 8~10시간이 좋아요'}</div>`; } },
   music: { i: '🎵', n: '내 플레이리스트', sz: 'b', d: '좋아하는 노래 메모',
     r(x){ const L = x.music = x.music || [];
       return (L.length ? L.map((o, k) => `<div class="np-row"><span class="np-grow">🎵 ${esc(o.n)}${o.a ? ` <small>· ${esc(o.a)}</small>` : ''}</span>${del('music', k)}</div>`).join('') : nothing('좋아하는 노래를 모아요'))
@@ -169,7 +169,7 @@ const W = {
     add(x, f){ if (!f.n) return '노래 제목을 적어요'; if (x.music.length >= 100) return '100곡까지'; x.music.unshift({ n: f.n, a: f.a || '' }); } },
   wrong: { i: '❌', n: '틀린 문제 노트', sz: 'b', d: '틀린 문제 · 정답 · 다시 풀었나?',
     r(x){ const L = x.wrong = x.wrong || [], left = L.filter(o => !o.on).length;
-      return `<div class="np-sub">${L.length ? `다시 풀 문제 ${left}개 · 해결 ${L.length - left}개` : ''}</div>`
+      return `<div class="np-sub">${L.length ? `다시 풀 문제 ${left}개 · 해결 ${L.length - left}개`: ''}</div>`
         + (L.length ? L.slice(0, 8).map((o, k) => `<div class="np-wq ${o.on ? 'np-done' : ''}"><div class="np-row"><span class="np-tag">${esc(o.s || '기타')}</span><span class="np-grow">${esc(o.q)}</span>${del('wrong', k)}</div>
           <div class="np-row"><button type="button" class="np-btn" data-np="ans" data-w="wrong" data-k="${k}">${NP.show['w' + k] ? '🙈 정답 가리기' : '👀 정답 보기'}</button><button type="button" class="np-btn" data-np="tog" data-w="wrong" data-k="${k}">${o.on ? '↩ 다시' : '✔ 다시 풀었어요'}</button></div>${NP.show['w' + k] ? `<div class="np-quote">💡 ${esc(o.a || '(정답 없음)')}</div>` : ''}</div>`).join('') : nothing('틀린 문제를 적어 두고 다시 풀어요'))
         + add('wrong', inp('s', '과목', 'text', 'maxlength="6" style="width:64px;"') + inp('q', '문제', 'text', 'maxlength="80"') + inp('a', '정답 · 풀이', 'text', 'maxlength="120"')); },
@@ -179,7 +179,7 @@ const W = {
     r(x){ const L = x.proud = x.proud || [], p = NP.show.proud;
       return `<div class="np-big">🏆 <small>${L.length}개</small></div>${L.length ? '<div style="text-align:center;"><button type="button" class="np-btn" data-np="prd" data-w="proud">🎁 하나 꺼내기</button></div>' : ''}
         ${p != null && L[p] ? `<div class="np-quote">${md(L[p].d)} · ${esc(L[p].t)}</div>` : ''}` + add('proud', inp('t', '오늘 잘한 일', 'text', 'maxlength="50"')); },
-    add(x, f){ if (!f.t) return '잘한 일을 적어요'; x.proud.push({ d: D(), t: f.t }); NP.show.proud = x.proud.length - 1; toast('🏆 잘했어! 통에 넣었어요'); } }
+    add(x, f){ if (!f.t) return '잘한 일을 적어요'; x.proud.push({ d: D(), t: f.t }); NP.show.proud = x.proud.length - 1; toast('잘했어! 통에 넣었어요'); } }
 };
 const ORDER = ['dday', 'todo', 'memo', 'cal', 'mood', 'habit', 'goal', 'timer', 'thanks', 'prep', 'future', 'books', 'diary', 'money', 'sleep', 'music', 'wrong', 'proud'];
 function fmtT(T){ const s = Math.max(0, Math.ceil((T.end - Date.now()) / 1000)); return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }
@@ -190,7 +190,7 @@ function render(){
   const b = box(); if (!b) return;
   if (!me){ b.innerHTML = '<div class="box" style="text-align:center;"><div class="box-head">📔 내 수첩</div><p>🔑 로그인하면 내 수첩을 쓸 수 있어요</p><button type="button" class="btn btn-y" data-guest-login>🔑 로그인</button></div>'; return; }
   if (!window.crypto || !crypto.subtle){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">이 브라우저에서는 수첩을 잠글 수 없어요. 다른 브라우저(크롬 · 사파리)로 열어 주세요.</div></div>'; return; }
-  if (NP.st === 'loading' || NP.st === 'idle'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">🔐 여는 중…</div></div>'; return; }
+  if (NP.st === 'loading' || NP.st === 'idle'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">여는 중…</div></div>'; return; }
   if (NP.st === 'error'){ b.innerHTML = '<div class="box"><div class="box-head">📔 내 수첩</div><div class="empty">연결이 안 돼요. 잠시 뒤 다시 눌러 주세요.</div><button type="button" class="btn btn-y" data-np="retry">🔄 다시</button></div>'; return; }
   if (NP.st === 'setup' || NP.st === 'locked'){
     const S = NP.st === 'setup';
@@ -202,7 +202,7 @@ function render(){
       <label class="np-rem"><input type="checkbox" id="npRem" checked> 이 기기에서 기억하기 <small>(학교 TV · 친구 폰에서는 끄기)</small></label>
       <div class="np-err" id="npErr"></div>
       <button type="button" class="btn btn-y" data-np="${S ? 'create' : 'unlock'}" style="width:100%;">${S ? '📔 수첩 만들기' : '🔓 열기'}</button>
-      <div class="hint" style="margin-top:10px;">⚠️ 수첩 비밀번호를 잊어버리면 수첩을 처음부터 다시 써야 해요. 로그인 비밀번호와 다르게 만들어요.</div>
+      <div class="hint" style="margin-top:10px;">수첩 비밀번호를 잊어버리면 수첩을 처음부터 다시 써야 해요. 로그인 비밀번호와 다르게 만들어요.</div>
       ${S ? '' : '<div style="text-align:center;margin-top:8px;"><button type="button" class="np-link" data-np="forgot">비밀번호를 잊었어요 (수첩 새로 시작)</button></div>'}</div>`;
     return;
   }
@@ -211,14 +211,14 @@ function render(){
     return `<div class="np-w ${w.sz === 's' ? 's' : ''}" data-wid="${id}"><div class="np-wh"><span>${w.i} ${w.n}</span>${NP.edit ? `<span class="np-ed"><button type="button" data-np="up" data-k="${k}" title="위로">▲</button><button type="button" data-np="down" data-k="${k}" title="아래로">▼</button><button type="button" data-np="rm" data-k="${k}" title="빼기">🗑</button></span>` : ''}</div><div class="np-wb">${NP.edit ? `<div class="np-sub">${w.d}</div>` : w.r(x)}</div></div>`; }).join('');
   b.innerHTML = `<div class="np-top"><b>📔 내 수첩</b><span class="np-sec">🔐 잠금</span><span style="flex:1"></span>
       <button type="button" class="np-btn" data-np="edit">${NP.edit ? '✔ 다 했어요' : '✏️ 편집'}</button><button type="button" class="np-btn" data-np="pwchg" title="수첩 비밀번호 바꾸기">🔑</button><button type="button" class="np-btn" data-np="lock" title="잠그기">🔒</button></div>
-    <div class="np-grid">${html || '<div class="np-empty" style="grid-column:1/-1;text-align:center;">위젯을 추가해 봐요 👇</div>'}</div>
+    <div class="np-grid">${html || '<div class="np-empty" style="grid-column:1/-1;text-align:center;">위젯을 추가해 봐요 </div>'}</div>
     <button type="button" class="btn btn-y np-plus" data-np="addw">➕ 위젯 추가</button>
     ${NP.edit ? '<div style="text-align:center;margin-top:14px;"><button type="button" class="np-link" data-np="wipe">🗑 내 수첩 초기화 (모두 지우고 새로 시작)</button></div>' : ''}
     <div class="np-saved" id="npSaved">${NP.saveTm ? '저장 중…' : ''}</div>`;
 }
 function openAddSheet(){
   const x = NP.data, rest = ORDER.filter(id => !x.w.includes(id));
-  bOpen('msOv', `<h2>➕ 위젯 추가</h2>${rest.length ? `<div class="np-pick">${rest.map(id => `<button type="button" data-np="addone" data-k="${id}"><span>${W[id].i}</span><b>${W[id].n}</b><small>${W[id].d}</small></button>`).join('')}</div>` : '<div class="empty" style="text-align:center;">위젯을 다 넣었어요! 🎉</div>'}`);
+  bOpen('msOv', `<h2>➕ 위젯 추가</h2>${rest.length ? `<div class="np-pick">${rest.map(id => `<button type="button" data-np="addone" data-k="${id}"><span>${W[id].i}</span><b>${W[id].n}</b><small>${W[id].d}</small></button>`).join('')}</div>` : '<div class="empty" style="text-align:center;">위젯을 다 넣었어요! </div>'}`);
 }
 
 /* 💾 저장 · 불러오기 */
@@ -230,15 +230,15 @@ async function save(){
   NP.busy = true;
   try {
     const blob = await lockData(NP.data);
-    if (blob.length > 440000){ toast('📔 수첩이 꽉 찼어요. 오래된 기록을 조금 지워 주세요'); return; }
+    if (blob.length > 440000){ toast('수첩이 꽉 찼어요. 오래된 기록을 조금 지워 주세요'); return; }
     const j = await studentCall('padSet', { blob, base: NP.ver });
     if (j && j.error === 'conflict'){
-      try { const r = await unlockBlobKey(j.blob); NP.data = norm(r); NP.ver = j.ver; toast('📔 다른 기기에서 바뀐 수첩을 불러왔어요. 방금 고친 건 다시 해 주세요'); render(); } catch(e){ NP.st = 'locked'; NP.key = null; render(); }
+      try { const r = await unlockBlobKey(j.blob); NP.data = norm(r); NP.ver = j.ver; toast('다른 기기에서 바뀐 수첩을 불러왔어요. 방금 고친 건 다시 해 주세요'); render(); } catch(e){ NP.st = 'locked'; NP.key = null; render(); }
       return;
     }
-    if (!j || j.ok === false){ toast('📔 저장이 안 됐어요. 잠시 뒤 다시 저장할게요'); NP.saveTm = setTimeout(save, 5000); return; }
+    if (!j || j.ok === false){ toast('저장이 안 됐어요. 잠시 뒤 다시 저장할게요'); NP.saveTm = setTimeout(save, 5000); return; }
     NP.ver = j.ver; const s = $('npSaved'); if (s) s.textContent = '✔ 저장했어요';
-  } catch(e){ toast('📔 저장이 안 됐어요'); }
+  } catch(e){ toast('저장이 안 됐어요'); }
   finally { NP.busy = false; }
 }
 async function unlockBlobKey(blob){
@@ -266,7 +266,7 @@ async function unlockWith(pw, remember){
   if (NP.migrate || (NP.mpub && !NP.mw)){ NP.migrate = false; changed(); }   // 새 방식으로 다시 저장
   render();
 }
-function lockNow(){ save(); try { localStorage.removeItem(pwKey()); } catch(e){} NP.key = null; NP.dek = null; NP.dekRaw = null; NP.data = null; NP.st = 'idle'; if (NP.timer){ clearInterval(NP.timer.iv); NP.timer = null; } NP.open(); toast('🔒 수첩을 잠갔어요'); }
+function lockNow(){ save(); try { localStorage.removeItem(pwKey()); } catch(e){} NP.key = null; NP.dek = null; NP.dekRaw = null; NP.data = null; NP.st = 'idle'; if (NP.timer){ clearInterval(NP.timer.iv); NP.timer = null; } NP.open(); toast('수첩을 잠갔어요'); }
 
 /* 👆 누르기 */
 function formOf(el){ const f = {}; el.querySelectorAll('[data-f]').forEach(i => { f[i.dataset.f] = i.value.trim(); }); return f; }
@@ -284,7 +284,7 @@ async function onClick(e){
       if (pw !== $('npPw2').value){ err.textContent = '두 번 넣은 비밀번호가 달라요'; return; }
       t.disabled = true; await newDek(); await wrapPw(pw);
       NP.data = norm({ w: ['dday', 'todo', 'memo', 'mood'] }); NP.st = 'open'; if (rem){ try { localStorage.setItem(pwKey(), pw); } catch(e2){} }
-      render(); await save(); toast('📔 내 수첩을 만들었어요!'); return;
+      render(); await save(); toast('내 수첩을 만들었어요!'); return;
     }
     t.disabled = true; err.textContent = '🔐 여는 중…';
     try { await unlockWith(pw, rem); } catch(e2){ err.textContent = '❌ 비밀번호가 달라요'; t.disabled = false; }
@@ -293,7 +293,7 @@ async function onClick(e){
   if (a === 'forgot'){
     if (!confirm('수첩을 새로 시작할까요?\n지금까지 쓴 수첩은 모두 지워지고 되돌릴 수 없어요.')) return;
     if (prompt('정말 지우려면 "새로 시작"이라고 적어요') !== '새로 시작') return;
-    const j = await studentCall('padReset'); if (j && j.ok){ NP.blob = ''; NP.ver = j.ver; NP.st = 'setup'; render(); toast('📔 새 수첩을 만들어요'); }
+    const j = await studentCall('padReset'); if (j && j.ok){ NP.blob = ''; NP.ver = j.ver; NP.st = 'setup'; render(); toast('새 수첩을 만들어요'); }
     return;
   }
   if (NP.st !== 'open') return;
@@ -306,7 +306,7 @@ async function onClick(e){
     if (!j || !j.ok){ toast('초기화하지 못했어요. 다시 해 봐요'); return; }
     try { localStorage.removeItem(pwKey()); } catch(e2){}
     Object.assign(NP, { st: 'setup', data: null, key: null, dek: null, dekRaw: null, blob: '', ver: j.ver, edit: false, show: {} });
-    render(); toast('🗑 수첩을 초기화했어요. 새 수첩을 만들어요'); return;
+    render(); toast('수첩을 초기화했어요. 새 수첩을 만들어요'); return;
   }
   if (a === 'lock'){ lockNow(); return; }
   if (a === 'pwchg'){ bOpen('msOv', `<h2>🔑 수첩 비밀번호 바꾸기</h2><p class="hint">내용은 그대로예요. 새 비밀번호로만 열려요.</p>
@@ -318,7 +318,7 @@ async function onClick(e){
     if (n1.length < 4){ err.textContent = '4자 이상으로 만들어요'; return; }
     if (n1 !== $('npN2').value){ err.textContent = '새 비밀번호 두 개가 달라요'; return; }
     await wrapPw(n1); try { if (localStorage.getItem(pwKey())) localStorage.setItem(pwKey(), n1); } catch(e2){}
-    await save(); bClose('msOv'); toast('🔑 수첩 비밀번호를 바꿨어요'); return;
+    await save(); bClose('msOv'); toast('수첩 비밀번호를 바꿨어요'); return;
   }
   if (a === 'addw'){ openAddSheet(); return; }
   if (a === 'addone'){ if (!x.w.includes(k)){ x.w.push(k); norm(x); changed(); } bClose('msOv'); render(); setTimeout(() => { const el = document.querySelector(`[data-wid="${k}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50); return; }
@@ -332,7 +332,7 @@ async function onClick(e){
   if (a === 'calday'){ const v = prompt(`${md(k)} 일정 (비우면 지워져요)`, x.cal[k] || ''); if (v === null) return; if (v.trim()) x.cal[k] = v.trim().slice(0, 40); else delete x.cal[k]; changed(); render(); return; }
   if (a === 'mood'){ const t0 = D(); x.mood[t0] = Object.assign(x.mood[t0] || {}, { m: +k }); changed(); render(); return; }
   if (a === 'habit'){ const L = x.habit.log[t.dataset.d] = x.habit.log[t.dataset.d] || [], i = L.indexOf(+k); if (i >= 0) L.splice(i, 1); else L.push(+k); changed(); render(); return; }
-  if (a === 'gp' || a === 'gm'){ const o = x.goal[+k]; o.cur = Math.max(0, o.cur + (a === 'gp' ? 1 : -1)); if (a === 'gp' && o.cur === o.tg) toast('🏅 목표 달성! 대단해요'); changed(); render(); return; }
+  if (a === 'gp' || a === 'gm'){ const o = x.goal[+k]; o.cur = Math.max(0, o.cur + (a === 'gp' ? 1 : -1)); if (a === 'gp' && o.cur === o.tg) toast('목표 달성! 대단해요'); changed(); render(); return; }
   if (a === 'tgo'){ const m = +k; NP.timer = { min: m, start: Date.now(), end: Date.now() + m * 60000 }; NP.timer.iv = setInterval(tick, 1000); render(); return; }
   if (a === 'tstop'){ stopTimer(false); return; }
   if (a === 'thx'){ const G = x.thanks, past = Object.keys(G).filter(d => d < D() && G[d].some(Boolean)); NP.show.thanks = past[Math.floor(Math.random() * past.length)]; render(); return; }
@@ -445,7 +445,7 @@ async function mClick(a, k, t){
         const kp = await crypto.subtle.generateKey({ name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' }, true, ['encrypt', 'decrypt']);
         const pub = b64(new Uint8Array(await crypto.subtle.exportKey('spki', kp.publicKey))), rawPriv = new Uint8Array(await crypto.subtle.exportKey('pkcs8', kp.privateKey));
         const r = await mCall({ op: 'set', pub, wpriv: await mWrapPriv(rawPriv, M.pin) }); if (!r.ok) throw new Error('set');
-        j = await mCall({ op: 'info' }); toast('🔑 수첩 열쇠를 만들었어요. 이제부터 저장되는 수첩을 볼 수 있어요');
+        j = await mCall({ op: 'info' }); toast('수첩 열쇠를 만들었어요. 이제부터 저장되는 수첩을 볼 수 있어요');
       }
       try { M.priv = await mUnwrapPriv(j.wpriv, M.pin); }
       catch(e){   // 마스터 비밀번호가 바뀐 경우: 예전 비밀번호로 풀어서 새 비밀번호로 다시 잠가요

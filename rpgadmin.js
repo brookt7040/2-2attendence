@@ -30,13 +30,13 @@ RA.html = function(tab){
     return `<div class="box ra"><div class="box-head">🎛️ 기능 스위치</div>
       <label class="ra-pause"><input type="checkbox" data-feat="pause" ${f.pause ? 'checked' : ''}> <span>⏸ <b>전체 멈춤</b><br><small>출석 · 공지 · 로그인만 남기고 학생 앱 기능을 한 번에 꺼요</small></span></label>
       ${FEATS.map(([g, list]) => `<div class="ra-g">${g}</div><div class="ra-grid">${list.map(([k, n, d]) => `<label class="ra-ft ${f[k] === false || f.pause ? 'off' : ''}"><input type="checkbox" data-feat="${k}" ${f[k] !== false ? 'checked' : ''}><span>${n}${d ? `<small>${d}</small>` : ''}</span></label>`).join('')}</div>`).join('')}
-      <div class="hint" style="margin-top:10px;">끄면 학생 화면에 "🔒 지금은 쉬는 중이에요"가 떠요. 선생님 계정은 다 쓸 수 있어요. 바꾸면 바로 저장돼요.</div></div>`;
+      <div class="hint" style="margin-top:10px;">끄면 학생 화면에 "지금은 쉬는 중이에요"가 떠요. 선생님 계정은 다 쓸 수 있어요. 바꾸면 바로 저장돼요.</div></div>`;
   }
   if (tab === 'creq'){
     const d = D.coins || {}; if (!d.reqs) return old();
     const pend = d.reqs.filter(r => r.status === '대기'), done = d.reqs.filter(r => r.status !== '대기').slice(0, 30);
     return `<div class="box ra"><div class="box-head">⏳ 확인 대기 (${pend.length})</div>${pend.length ? pend.map(r => `<div class="ra-row"><span>${r.type === '미션' ? '✅ 미션' : '🎟 쿠폰'} · <b>${esc(r.name)}</b> · ${esc(r.item)} · ${r.type === '미션' ? '+' : ''}${r.coins}🐾 <small>${esc(r.t)}</small></span>
-        <span>${(d.sigs || []).includes(r.id) ? `<button type="button" class="np-btn" data-rsig="${r.id}">✍️ 서명</button>` : ''}<button type="button" class="np-btn ok" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button><button type="button" class="np-btn no" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="empty">확인할 게 없어요 ✨</div>'}</div>
+        <span>${(d.sigs || []).includes(r.id) ? `<button type="button" class="np-btn" data-rsig="${r.id}">✍️ 서명</button>` : ''}<button type="button" class="np-btn ok" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button><button type="button" class="np-btn no" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="empty">확인할 게 없어요 </div>'}</div>
       <div class="box ra"><div class="box-head">🎯 미션 성공 보고 <small>(잘못 준 건 ↩ 취소 · 코인과 EXP가 빠져요)</small></div>${(d.results || []).length ? d.results.slice(0, 30).map(x => `<div class="ra-row"><span>${x.undone ? '<s>' : ''}<b>${esc(x.name)}</b> · ${esc(String(x.why || '').replace(/^미션:\s*/, ''))} · +${x.amt}🐾 <small>${esc(x.kind || '')} ${esc(String(x.t || '').slice(5))}</small>${x.undone ? '</s>' : ''}</span>${x.undone ? '<small>취소됨</small>' : `<button type="button" class="np-btn no" data-mundo="${x.id}">↩ 취소</button>`}</div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
       <div class="box ra"><div class="box-head">💌 칭찬편지 결과 <small>(내용은 안 보여요)</small></div>${(d.praise || []).length ? d.praise.slice(0, 20).map(x => `<div class="ra-row"><span><b>${esc(x.from)}</b> → ${esc(x.to)} ${x.mission ? '🎯' : ''}</span><small>${x.ok ? '✔ 확인' : '⏳'}</small></div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
       <div class="box ra"><div class="box-head">📜 최근 처리</div>${done.map(r => `<div class="ra-row"><span>${esc(r.type)} · ${esc(r.name)} · ${esc(r.item)} · ${esc(r.status)}</span><small>${esc(r.done || '')}</small></div>`).join('') || '<div class="empty">-</div>'}</div>`;
@@ -65,19 +65,20 @@ RA.html = function(tab){
     const ml = (eco.missions || []).map(m => `${CAT_T[m.cat] || '매일'}, ${m.name}, ${m.coins}, ${m.exp != null ? m.exp : Math.round(m.coins / 2)}, ${m.req ? 'O' : 'X'}${m.cap ? `, ${m.cap}명` : ''}`).join('\n');
     const cl = (eco.shop || []).filter(x => x.cat === 'coupon').map(x => `${x.name}, ${x.price}, ${x.stock || ''}${x.real ? ', 실물' : ''}`.replace(/, $/, '').replace(/, ,/, ',,')).join('\n');
     return `<div class="box ra"><div class="box-head">📋 미션</div>
-        <div class="hint">한 줄에 하나: <b>분류(매일/매주/특별), 이름, 코인, EXP, 학생 신청 O/X, 선착 'N명'</b> · 줄 순서는 그대로 두고 이름 · 숫자만 바꿔요</div>
+        <div class="hint">한 줄에 하나: <b>분류(매일/매주/특별), 이름, 코인, EXP, 학생 신청 O/X, 선착 'N명'</b>· 줄 순서는 그대로 두고 이름 · 숫자만 바꿔요</div>
         <textarea id="raMissions" class="ra-ta" rows="12">${esc(ml)}</textarea>
-        <div class="hint">🎯 학생이 먼저 골라요 (반 전체 등교 · 바른 한 주 · 좋았다 · 사물함은 안 골라도 돼요). 선착 인원을 넘겨서 늦게 성공하면 ✨5 EXP를 받아요.</div></div>
+        <div class="hint">학생이 먼저 골라요 (반 전체 등교 · 바른 한 주 · 좋았다 · 사물함은 안 골라도 돼요). 선착 인원을 넘겨서 늦게 성공하면 5 EXP를 받아요.</div></div>
       <div class="box ra"><div class="box-head">📖 미션 안내 <small>(학생이 🎯 고르기를 누르면 보여요 · 비우면 기본 글)</small></div>
         ${(eco.missions || []).map(m => `<div class="ra-mh"><b>${esc(m.name)}</b> <small>${m.flow === 'teacher' ? '👑 선생님이 줘요' : m.req || m.flow === 'sign' ? '✋ 수동 지급' : FL[m.flow] ? '⚡ ' + FL[m.flow] : ''}</small><textarea data-rmhow="${esc(m.id)}" rows="2" class="ra-ta" placeholder="${esc(howDef(m))}">${esc(m.how || '')}</textarea></div>`).join('')}</div>
+      <div class="box ra"><div class="box-head">🎯 고를 수 있는 개수</div><div class="ra-line"><span>오늘의 미션 하루 <input type="number" id="raPickD" min="1" max="10" value="${(eco.pickLimit || {}).daily || 3}" style="width:70px;"> 개</span><span>이번 주 미션 한 주 <input type="number" id="raPickW" min="1" max="10" value="${(eco.pickLimit || {}).weekly || 3}" style="width:70px;"> 개</span></div></div>
       <div class="box ra"><div class="box-head">🎟 쿠폰 · 🎁 실물</div>
-        <div class="hint">한 줄에 하나: <b>이름, 가격, 수량, 실물</b> · 수량을 비우면 무제한 · 끝에 '실물'을 쓰면 🎁 문구점에 나와요</div>
+        <div class="hint">한 줄에 하나: <b>이름, 가격, 수량, 실물</b>· 수량을 비우면 무제한 · 끝에 '실물'을 쓰면 문구점에 나와요</div>
         <textarea id="raCoupons" class="ra-ta" rows="10">${esc(cl)}</textarea></div>
       <div class="box ra"><div class="box-head">🛍️ 상점가 물건 가격</div><div class="ra-items">${(eco.shop || []).filter(x => x.cat !== 'coupon').map(x => `<label class="ra-it"><span>${esc(x.name)}</span><input type="number" min="0" data-rprice="${esc(x.id)}" value="${x.price}"><small><input type="checkbox" data-roff="${esc(x.id)}" ${x.off ? '' : 'checked'}> 판매</small></label>`).join('')}</div></div>
       <div class="box ra"><div class="box-head">🎮 게임 광장</div>
         <div class="ra-line"><span>한 번에 최대 <input type="number" id="raMaxBet" value="${g.maxBet || 30}" style="width:70px;"> 🐾</span><span>하루 <input type="number" id="raDaily" value="${g.daily || 5}" style="width:60px;"> 판</span></div>
         <div class="ra-line" style="flex-wrap:wrap;">${[1, 2, 3, 4, 5].map(i => `<span>${days[i]} <input type="time" data-rgh0="${i}" value="${((g.hours || {})[i] || [])[0] || ''}"> ~ <input type="time" data-rgh1="${i}" value="${((g.hours || {})[i] || [])[1] || ''}"></span>`).join('')}</div>
-        <div class="hint">주말에는 닫혀요. 시간을 비우면 그 요일은 닫혀요. 켜고 끄기는 🎛️ 기능 스위치에서 해요.</div></div>
+        <div class="hint">주말에는 닫혀요. 시간을 비우면 그 요일은 닫혀요. 켜고 끄기는 기능 스위치에서 해요.</div></div>
       <div class="box ra"><div class="box-head">🏛️ 학급회의 (마을 시청)</div>
         <div class="ra-line"><span>👑 회장 <select id="raPres"><option value="">(없음)</option>${kids.map(n => `<option ${mt.pres === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></span><span>🎖 부회장 <select id="raVice"><option value="">(없음)</option>${kids.map(n => `<option ${mt.vice === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></span></div>
         <div class="ra-line"><input type="text" id="raAgenda" maxlength="60" value="${esc(mt.agenda || '')}" placeholder="📝 오늘의 안건 (회의실 칠판에 떠요)"></div></div>
@@ -97,7 +98,7 @@ RA.html = function(tab){
       <div class="ra-g">🏆 레벨 바로 맞추기</div><div class="ra-btns">${th.map((t, i) => `<button type="button" class="np-btn ${me.lv === i + 1 ? 'ok' : ''}" data-rxlv="${i + 1}">Lv.${i + 1}</button>`).join('')}</div>
       <div class="hint">EXP는 출석부(TV)가 받아서 더해요 (TV가 켜져 있으면 1분 안). 레벨을 맞추면 그 레벨 시작 EXP가 되도록 더하거나 빼요.</div>
       <div class="ra-g">📜 이번 시즌 보너스 내역</div>${adj.length ? adj.map(b => `<div class="ra-row"><span>${esc(b.ds.slice(5).replace('-', '/'))} ${esc(b.t)} · ${esc(b.item || '')}</span><b style="color:${b.exp >= 0 ? '#1F8A5F' : '#D6456E'}">${sgn(Number(b.exp) || 0)}</b></div>`).join('') : '<div class="empty">아직 없어요</div>'}
-      <div class="hint">🎨 꾸미기 · 집 · 하나 친밀도는 마을에서 친구 카드 → 👑 마법으로 바꿔요.</div></div>` : ''}`;
+      <div class="hint">꾸미기 · 집 · 하나 친밀도는 마을에서 친구 카드 → 마법으로 바꿔요.</div></div>` : ''}`;
   }
   return '';
 };
@@ -148,7 +149,7 @@ document.addEventListener('click', async e => {
   }
   if (t.closest('#raReset')){
     const bal = (RA.data.coins || {}).balances || {}, list = kids.filter(n => Number(bal[n]) || 0);
-    if (!list.length){ toast('이미 모두 0🐾이에요'); return; }
+    if (!list.length){ toast('이미 모두 0이에요'); return; }
     if ((prompt(`⚠️ 학생 ${list.length}명의 냥코인을 모두 0으로 만들어요. (되돌릴 수 없어요)\n시트 기록은 남고 '전체 초기화' 줄이 더해져요.\n\n계속하려면 '초기화'라고 적어 주세요.`) || '').trim() !== '초기화') return;
     const tag = Date.now().toString(36);
     await ops(list.map(n => ({ op:'coinAdd', name: n, amt: -Number(bal[n]), why:'🧹 냥코인 전체 초기화', kind:'초기화', key:`reset:${tag}:${n}` })), `🧹 ${list.length}명을 0으로`); rer(tab, true); return;
@@ -164,7 +165,7 @@ document.addEventListener('click', async e => {
     if ((prompt(`🧪 ${before} 전의 기록을 지워요. (되돌릴 수 없어요)\n\n🐾 냥코인 기록 ${dry.n}줄: ${ct}\n✨ 보너스 EXP ${ex.length}개: ${et}\n\n계속하려면 '지우기'라고 적어 주세요.`) || '').trim() !== '지우기') return;
     const r = await tCall({ action:'coinPurge', before });
     if (ex.length) await ops(ex.map(b => ({ op:'bonusDel', ds: b.ds, id: b.id })));
-    toast(`🧪 냥코인 ${r && r.ok ? r.n : 0}줄 · EXP ${ex.length}개를 지웠어요`); rer(tab, true); return;
+    toast(`냥코인 ${r && r.ok ? r.n : 0}줄 · EXP ${ex.length}개를 지웠어요`); rer(tab, true); return;
   }
   if (t.closest('#raEcoSave')){ ecoSave(); return; }
   const xn = t.closest('[data-rxp]'); if (xn){ RA.xpName = xn.dataset.rxp; rer(tab); return; }
@@ -218,6 +219,7 @@ async function ecoSave(){
   if (!missions.length){ toast('미션이 하나도 없어요. 적은 걸 확인해 주세요'); return; }
   if (bad && !confirm(`형식이 맞지 않는 줄 ${bad}개는 빠져요. 저장할까요?`)) return;
   const eco = Object.assign({}, old, { missions, shop: coupons.concat(village),
+    pickLimit: { daily: Math.max(1, parseInt($('raPickD').value, 10) || 3), weekly: Math.max(1, parseInt($('raPickW').value, 10) || 3) },
     meeting: { pres: $('raPres').value, vice: $('raVice').value, agenda: $('raAgenda').value.trim() },
     game: Object.assign({}, old.game || {}, { maxBet: Math.max(1, parseInt($('raMaxBet').value, 10) || 30), daily: Math.max(1, parseInt($('raDaily').value, 10) || 5), hours }) });
   const j = await ops([{ op:'ecoSet', economy: eco }], '💾 미션 · 상점을 저장했어요');

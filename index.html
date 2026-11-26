@@ -260,7 +260,7 @@ button,input,textarea{font-family:inherit;color:var(--ink);}
 .rp-tier{font-size:1rem;padding:3px 10px;border-radius:999px;border:2px solid var(--ink);background:#fff;}
 .rp-sub{font-size:1.1rem;color:var(--ink-soft);margin-top:2px;}
 .rp-ladder{display:flex;gap:4px;margin-top:10px;}
-.rp-step{flex:1;min-width:0;border:2px solid var(--ink);border-radius:10px;padding:4px 0 3px;font-size:.62rem;line-height:1.3;background:#FBF7EE;opacity:.5;transition:all .25s;}
+.rp-step{flex:1;min-width:0;overflow:hidden;letter-spacing:-.02em;border:2px solid var(--ink);border-radius:10px;padding:4px 0 3px;font-size:.62rem;line-height:1.3;background:#FBF7EE;opacity:.5;transition:all .25s;}
 .rp-step b{display:block;font-size:.86rem;font-weight:normal;}
 .rp-step.on{opacity:1;transform:translateY(-4px);box-shadow:0 4px 0 var(--ink);}
 /* 📚 출석이 끝나면 EXP 표 대신 시간표 */
@@ -368,6 +368,7 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 .qmark{position:absolute;top:52px;left:50%;transform:translateX(-50%);font-size:2.1rem;color:#fff;text-shadow:2px 0 var(--y-deep),-2px 0 var(--y-deep),0 2px var(--y-deep),0 -2px var(--y-deep);pointer-events:none;}
 .student-name{font-size:1.7rem;margin-top:4px;line-height:1.2;}
 .touch-text{font-size:1rem;margin-top:6px;color:var(--ink-soft);animation:blink 1.4s infinite;}
+.touch-text span{display:inline-block;white-space:nowrap;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .card-tag{position:absolute;top:10px;left:22px;font-size:.82rem;padding:2px 8px;border:2px solid var(--ink);border-radius:999px;background:#fff;}
 .card:has(.card-rank) .card-tag{left:36px;}
@@ -1129,14 +1130,14 @@ body.view-mode .mh-side.empty{display:none !important;}
 <div class="overlay" id="rOathOv" style="z-index:20060;">
   <div class="modal" style="max-width:420px;text-align:center;"><button type="button" class="modal-x" data-close="rOathOv" title="닫기">✕</button>
     <h2>🚨 잠깐! 원격 출석이에요</h2>
-    <div class="form-hint" style="font-size:1rem;line-height:1.7;">교실 TV 출석부를 <b>직접 누르는 게 아니에요.</b><br>진짜 <b>교실 안</b>에 도착했나요? <span style="color:#C0365C;">집 · 버스 · 편의점 · 복도는 안 돼요 🙅</span><br>📺 교실 화면에 <b>"원격 출석"</b>이라고 크게 떠요.</div>
+    <div class="form-hint" style="font-size:1rem;line-height:1.7;">교실 TV 출석부를 <b>직접 누르는 게 아니에요.</b><br>진짜 <b>교실 안</b>에 도착했나요? <span style="color:#C0365C;">집 · 버스 · 편의점 · 복도는 안 돼요 </span><br>📺 교실 화면에 <b>"원격 출석"</b>이라고 크게 떠요.</div>
     <label style="display:flex;gap:8px;align-items:center;justify-content:center;margin:12px 0;font-size:1.05rem;"><input type="checkbox" id="rOathChk" style="width:22px;height:22px;"> ✋ 저는 지금 <b>교실 안</b>에 있어요. 맹세해요!</label>
     <button type="button" class="btn btn-y" id="rOathGo" disabled style="width:100%;">📱 맹세하고 출석하기</button></div>
 </div>
 <div class="overlay" id="cleanAddOv">
   <div class="modal ca-modal"><button type="button" class="modal-x" data-close="cleanAddOv" title="닫기">✕</button>
     <h2>🧹 Cleaning Duty 추가</h2>
-    <div class="form-hint">이름을 누르면 오늘 청소 당번에 <b>넣고 · 빼요</b>. 회색은 EXP·욕설 때문에 자동으로 된 친구예요.<br>↪ 표시는 전날 청소를 안 끝내서(✔ 안 됨) <b>넘어온</b> 친구예요. 눌러서 뺄 수 있어요. 청소를 마치면 Cleaning Duty에서 이름을 눌러 ✔ 해 주세요.</div>
+    <div class="form-hint">이름을 누르면 오늘 청소 당번에 <b>넣고 · 빼요</b>. 회색은 EXP·욕설 때문에 자동으로 된 친구예요.<br>↪ 표시는 전날 청소를 안 끝내서(✔ 안 됨) <b>넘어온</b>친구예요. 눌러서 뺄 수 있어요. 청소를 마치면 Cleaning Duty에서 이름을 눌러 ✔ 해 주세요.</div>
     <div class="ca-grid" id="cleanAddGrid"></div></div>
 </div>
 <div class="overlay" id="mhOv">
@@ -1228,7 +1229,7 @@ body.view-mode .mh-side.empty{display:none !important;}
     <h2>👑 관리자 모드 <small style="font-size:1rem;color:var(--ink-soft);">학생을 골라 출석 · 비밀번호를 바꿔요</small></h2>
     <div class="gm-body">
       <div class="gm-list"><button type="button" class="mini-btn" style="background:var(--y);margin-bottom:6px;" id="gmPinAllBtn">🔑 비밀번호 한꺼번에 만들기</button>
-        <div class="form-hint" id="gmAskHint" style="margin:0 0 8px;">🐾 냥코인 · EXP · 미션 · 상점 · 기능 스위치 · 소통은 <b>아지트 → 👑 관리</b>에서 해요 <b id="gmAskCount"></b><b id="gmFreeOn" style="display:none;"></b></div><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
+        <div class="form-hint" id="gmAskHint" style="margin:0 0 8px;">냥코인 · EXP · 미션 · 상점 · 기능 스위치 · 소통은 <b>아지트 → 관리</b>에서 해요 <b id="gmAskCount"></b><b id="gmFreeOn"style="display:none;"></b></div><div id="gmList" style="display:flex;flex-direction:column;gap:6px;"></div></div>
       <div class="gm-main" id="gmMain"></div>
     </div>
     <div class="modal-btns"><div class="form-hint">조정 EXP는 시즌 레벨과 누적 통계에 들어가고, 오늘의 청소 당번 계산에는 들어가지 않아요.</div><button type="button" class="btn btn-gray" data-close="gmOverlay">닫기</button></div>
@@ -1244,7 +1245,7 @@ body.view-mode .mh-side.empty{display:none !important;}
       <label><input type="checkbox" id="rsRecords" checked> 출석 기록 · EXP 리스트 · 관리자 조정 EXP 전부 지우기 <small>(모든 학생 레벨이 Lv.1로)</small></label>
       <label><input type="checkbox" id="rsLooks"> 고양이 꾸미기도 처음 상태로</label>
       <label><input type="checkbox" id="rsSeason" checked> 시즌 시작일을 오늘로</label>
-      <div class="form-hint">명단 · 설정 · EXP 규칙 · 알림 · 종례 · 학생 비밀번호 · 교사 열쇠는 그대로 남아요. 알림 '확인' 기록은 지워져요.<br>지우기 전에 혹시 몰라 <b>백업 파일</b>을 자동으로 내려받아요.</div>
+      <div class="form-hint">명단 · 설정 · EXP 규칙 · 알림 · 종례 · 학생 비밀번호 · 교사 열쇠는 그대로 남아요. 알림 '확인'기록은 지워져요.<br>지우기 전에 혹시 몰라 <b>백업 파일</b>을 자동으로 내려받아요.</div>
     </div>
     <div class="modal-btns"><button type="button" class="btn btn-gray" data-close="resetOverlay">취소</button><button type="button" class="btn btn-danger" id="rsGoBtn">🧨 초기화하기</button></div>
   </div>
@@ -1277,7 +1278,7 @@ body.view-mode .mh-side.empty{display:none !important;}
         <span>대화 시간 <input type="time" id="caStart"> ~ <input type="time" id="caEnd"></span>
       </div>
       <div class="form-group"><label>🚫 금지어 더 넣기 (쉼표로 구분 · 기본 욕설은 이미 막혀 있어요)</label><input type="text" id="caBan" placeholder="예: 바보, 멍청이"></div>
-      <div><div class="form-hint" style="margin-bottom:4px;">🔇 누르면 그 학생은 대화를 쓸 수 없어요 (읽기는 가능)</div><div class="row" style="justify-content:flex-start;gap:6px;" id="caMute"></div></div>
+      <div><div class="form-hint" style="margin-bottom:4px;">누르면 그 학생은 대화를 쓸 수 없어요 (읽기는 가능)</div><div class="row" style="justify-content:flex-start;gap:6px;" id="caMute"></div></div>
       <div class="row" style="justify-content:flex-end;"><button type="button" class="btn btn-y" id="caSaveBtn">설정 저장</button></div>
     </div>
     <div class="section">
@@ -1298,7 +1299,7 @@ body.view-mode .mh-side.empty{display:none !important;}
     <button type="button" class="modal-x" id="aaXBtn" title="닫기">✕</button>
     <h2>📮 질문 · 건의 · 상담</h2>
     <div class="tabs"><button type="button" class="tab active" data-af="open">답변 기다림</button><button type="button" class="tab" data-af="counsel">💬 상담만</button><button type="button" class="tab" data-af="all">전체</button></div>
-    <div class="form-hint" style="margin-bottom:8px;">💬 상담·⭐ 중요 상담은 이름이 꼭 보이고, 보낸 학생만 볼 수 있어요. 중요 상담은 맨 위에 빨갛게 떠요.</div>
+    <div class="form-hint" style="margin-bottom:8px;">상담· 중요 상담은 이름이 꼭 보이고, 보낸 학생만 볼 수 있어요. 중요 상담은 맨 위에 빨갛게 떠요.</div>
     <div id="askList" style="display:flex;flex-direction:column;gap:10px;"></div>
   </div>
 </div>
@@ -1440,7 +1441,7 @@ body.view-mode .mh-side.empty{display:none !important;}
         <label>타이틀</label>
         <input type="text" id="mainTitleInput" placeholder="예: 2-2 냥냥 출석 아일랜드">
       </div>
-      <div class="form-hint" style="margin-bottom:10px;">📢 오늘의 알림·📋 종례는 화면의 ✏️ 버튼으로 고쳐요.</div>
+      <div class="form-hint" style="margin-bottom:10px;">오늘의 알림· 종례는 화면의 버튼으로 고쳐요.</div>
       <div class="form-group">
         <label>👥 친구들 명단 (한 줄에 한 명)</label>
         <textarea id="studentNamesInput" style="height:84px;"></textarea>
@@ -1453,7 +1454,7 @@ body.view-mode .mh-side.empty{display:none !important;}
 
     <div class="section">
       <div class="section-title">📚 시간표 (출석이 끝나면 오른쪽 EXP 표 자리에 떠요)</div>
-      <div class="form-hint">전원 출석하거나 출석 마감 10분 뒤부터 EXP 표 대신 <b>지금 교시 · 다음 교시</b>가 보여요. 과목을 비워 두면 'N교시'로만 나와요.<br>오늘만 바뀐 수업은 출석부 시간표의 그 <b>칸을 눌러서</b> 바꾸면 <b style="color:#C0365C;">분홍색</b>으로 표시돼요 (다음 날 저절로 원래대로).</div>
+      <div class="form-hint">전원 출석하거나 출석 마감 10분 뒤부터 EXP 표 대신 <b>지금 교시 · 다음 교시</b>가 보여요. 과목을 비워 두면 'N교시'로만 나와요.<br>오늘만 바뀐 수업은 출석부 시간표의 그 <b>칸을 눌러서</b>바꾸면 <b style="color:#C0365C;">분홍색</b>으로 표시돼요 (다음 날 저절로 원래대로).</div>
       <div class="form-group"><label>⏰ 교시 시간 (한 줄에 하나 · 예: <code>1교시 09:00-09:45</code>, <code>점심 12:30-13:20</code>)</label>
         <textarea id="ttTimesInput" style="height:150px;"></textarea></div>
       <div class="form-group"><label>📖 요일별 과목 (교시 순서대로, 쉼표나 띄어쓰기로 · 점심은 빼고)</label>
@@ -1481,7 +1482,7 @@ body.view-mode .mh-side.empty{display:none !important;}
     <div class="section">
       <div class="section-title">📋 EXP 리스트</div>
       <textarea id="menuInput" style="height:170px;"></textarea>
-      <div class="form-hint">한 줄에 하나씩 <b>이름, 점수</b>로 적어요. 예) 숙제 완료, 30 / 수업 중 떠들기, -10<br>출석 EXP와 EXP 리스트 점수를 더한 <b>오늘 EXP가 마이너스</b>인 친구는 자동으로 '🧹 청소 당번'이 돼요. 플러스로 만회하면 명단에서 빠져요. 청소를 마치면 EXP 리스트 아래 이름을 눌러 체크하세요.</div>
+      <div class="form-hint">한 줄에 하나씩 <b>이름, 점수</b>로 적어요. 예) 숙제 완료, 30 / 수업 중 떠들기, -10<br>출석 EXP와 EXP 리스트 점수를 더한 <b>오늘 EXP가 마이너스</b>인 친구는 자동으로 '청소 당번'이 돼요. 플러스로 만회하면 명단에서 빠져요. 청소를 마치면 EXP 리스트 아래 이름을 눌러 체크하세요.</div>
     </div>
 
     <div class="section">
@@ -1555,11 +1556,11 @@ body.view-mode .mh-side.empty{display:none !important;}
         <button type="button" class="mini-btn" style="background:#FFC9D3;" id="syncOffBtn">연결 끊기</button>
       </div>
       <div class="row"><span>👑 선생님 계정 <small>(학생 페이지 'OO쌤' 로그인과 같아요)</small></span><span><input type="text" id="syncTName" placeholder="OO쌤" style="width:110px;" autocomplete="off"> <input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" id="syncTPin" placeholder="비밀번호" inputmode="numeric" style="width:100px;"></span></div>
-      <div class="form-hint" style="margin:-4px 0 6px;">새 기기는 <b>웹 앱 주소 + 선생님 계정</b>(또는 교사 열쇠)만 넣고 <b>🔗 연결하기</b>를 누르면, 시트에 있는 명단·출결·EXP·제목·꾸미기를 그대로 가져와요.</div>
+      <div class="form-hint" style="margin:-4px 0 6px;">새 기기는 <b>웹 앱 주소 + 선생님 계정</b>(또는 교사 열쇠)만 넣고 <b>연결하기</b>를 누르면, 시트에 있는 명단·출결·EXP·제목·꾸미기를 그대로 가져와요.</div>
       <div class="row"><span>🔐 교사 열쇠 <small>(선생님 기기에만 · 4글자 이상)</small></span><span><input autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore class="nopw" type="text" id="teacherKeyInput" style="width:150px;"> <button type="button" class="mini-btn" id="teacherKeyBtn">열쇠 저장</button></span></div>
       <div class="row"><span>🖥 다른 기기 출석부 <small>(교실 TV · 교무실 · 집)</small></span><button type="button" class="mini-btn" style="background:var(--mint);" id="tvLinkBtn">🔗 출석부 연결 링크 복사</button></div>
       <details class="move-box" style="margin:6px 0;"><summary style="cursor:pointer;font-weight:700;">🚚 서버 이사 (다른 구글 계정으로 옮기기)</summary>
-        <div class="form-hint" style="margin:6px 0;">새 계정의 시트 사본에서 <b>이사마무리</b> 실행 → <b>새 배포</b>까지 했다면, 새 웹 앱 주소를 넣고 이사하기를 눌러요. 이 기기·다른 출석부·학생 페이지가 모두 자동으로 새 주소로 옮겨 가요.</div>
+        <div class="form-hint" style="margin:6px 0;">새 계정의 시트 사본에서 <b>이사마무리</b>실행 → <b>새 배포</b>까지 했다면, 새 웹 앱 주소를 넣고 이사하기를 눌러요. 이 기기·다른 출석부·학생 페이지가 모두 자동으로 새 주소로 옮겨 가요.</div>
         <div class="row"><input type="text" id="moveUrlInput" placeholder="새 웹 앱 주소 https://script.google.com/macros/s/……/exec" style="flex:1;min-width:0;"> <button type="button" class="mini-btn" style="background:var(--y);" id="moveBtn">🚚 이사하기</button></div>
       </details>
       <div class="row"><span>👩‍🎓 학생 페이지 <small>(냥이 마을 · 꾸미기 · 알림)</small></span><button type="button" class="mini-btn" style="background:var(--y);" id="studentLinkBtn">🔗 학생용 링크 복사</button></div>
@@ -1571,7 +1572,7 @@ body.view-mode .mh-side.empty{display:none !important;}
         </div>
       </div>
       <div class="sound-status" id="syncStatusText">연결 안 됨 — 이 컴퓨터에만 저장 중</div>
-      <div class="form-hint">연결하면 출석·EXP·청소·설정·알림이 모든 컴퓨터에 공유돼요. 알림은 구글 시트 '알림' 탭(A2칸부터)에서 바로 써도 돼요.<br>알람 음원 파일은 용량이 커서 컴퓨터마다 따로 저장돼요. 연결 방법은 <a href="https://github.com/brookt7040/2-2attendence#readme" target="_blank" rel="noopener">설정 안내</a>를 보세요.</div>
+      <div class="form-hint">연결하면 출석·EXP·청소·설정·알림이 모든 컴퓨터에 공유돼요. 알림은 구글 시트 '알림'탭(A2칸부터)에서 바로 써도 돼요.<br>알람 음원 파일은 용량이 커서 컴퓨터마다 따로 저장돼요. 연결 방법은 <a href="https://github.com/brookt7040/2-2attendence#readme"target="_blank"rel="noopener">설정 안내</a>를 보세요.</div>
     </div>
 
     <div class="section">
@@ -1584,7 +1585,7 @@ body.view-mode .mh-side.empty{display:none !important;}
       <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap;margin-top:6px;">
         <button type="button" class="mini-btn" style="background:#FF9DAE;" id="gmResetBtn">🧨 출석·EXP 초기화 (명단·설정은 그대로)</button>
         <button type="button" class="mini-btn" style="background:#FFC9D3;" id="resetBtn">🧹 새 학년 초기화 (전부 지우기)</button></div>
-      <div class="form-hint">초기화 전에 꼭 백업부터! 학생 앱의 대화·상담 초기화와 🚫 긴급 잠금은 <b>아지트 → 👑 관리 → 🛟 안전</b>에 있어요.</div>
+      <div class="form-hint">초기화 전에 꼭 백업부터! 학생 앱의 대화·상담 초기화와 긴급 잠금은 <b>아지트 → 관리 → 안전</b>에 있어요.</div>
     </div>
     <div class="modal-btns">
       <button type="button" class="btn btn-gray" data-close="adminOverlay">취소</button>
@@ -1851,7 +1852,10 @@ function balancePatch11(e){
   (e.shop || []).forEach(x => { const b = BAL11_SHOP[x.id]; if (b && Number(x.price) === b[0]) x.price = b[1]; });
   if (e.engReward && Number(e.engReward.coins) === 25 && Number(e.engReward.exp) === 25) e.engReward = { coins: 20, exp: 20 };
   e.ver = 11;
+  balancePatch12(e);
 }
+/* v12: 🎯 오늘의 미션은 하루 3개까지 */
+function balancePatch12(e){ e.pickLimit = Object.assign({ daily: 3, weekly: 3 }, e.pickLimit || {}); if (Number(e.pickLimit.daily) === 2) e.pickLimit.daily = 3; e.ver = 12; }
 /* v9: 🐱 고양이 꾸미기는 색깔마다 따로 사요 (빨간 산타 모자 · 초록 산타 모자 … 모으는 재미) */
 const COLOR_ADJ9 = { 빨강:'빨간', 파랑:'파란', 까망:'까만', 하양:'하얀', 하늘:'하늘색', 분홍:'분홍', 초록:'초록', 보라:'보라', 갈색:'갈색', 금빛:'금빛', 기본:'', 민트:'민트', 초코:'초코' };
 function shopPatch9(e){
@@ -1905,7 +1909,8 @@ SPECIAL_ITEMS.forEach(it => { if (PRICE7[it.id] != null) it.price = PRICE7[it.id
 DEFAULT_ECONOMY.missions.forEach(m => { if (MISSION_EXP7[m.id] != null) m.exp = MISSION_EXP7[m.id]; if (MISSION_COINS7[m.id] != null) m.coins = MISSION_COINS7[m.id]; });
 function upgradeEconomy(){
   const e = db.economy || (db.economy = JSON.parse(JSON.stringify(DEFAULT_ECONOMY)));
-  if ((e.ver || 1) >= 11) return false;
+  if ((e.ver || 1) >= 12) return false;
+  if ((e.ver || 1) === 11){ balancePatch12(e); return true; }
   if ((e.ver || 1) === 10){ balancePatch11(e); return true; }
   if ((e.ver || 1) === 9){ shopPatch10(e); return true; }
   if ((e.ver || 1) === 8){ shopPatch9(e); return true; }
@@ -1916,7 +1921,7 @@ function upgradeEconomy(){
   const v4 = () => {
     // 🎯 미션은 학생이 직접 고르기 (매일 2개 · 매주 3개) · 특별 미션 없앰 · 미션도 EXP를 줘요 (코인의 절반)
     e.missions = (e.missions || []).filter(m => m.cat !== 'all').map(m => Object.assign({}, m, { exp: m.exp != null ? m.exp : Math.round(m.coins / 2) }));
-    e.pickLimit = e.pickLimit || { daily: 2, weekly: 3 };
+    e.pickLimit = e.pickLimit || { daily: 3, weekly: 3 };
     e.engReward = e.engReward || { coins: 20, exp: 20 };
     db.menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
     e.locked = { missions: true, shop: true };     // 처음엔 미션·상점을 잠가 둬요 (코인은 모여요)
@@ -2383,7 +2388,7 @@ function renderLadder(){
     ['burrito',t.l4Exp, `${hm(dl + t.l3*60)}~`]
   ];
   $('rpLadder').innerHTML = steps.map(([k, e, w]) =>
-    `<div class="rp-step" data-k="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon}<b>${fmtExp(e)}</b>${w}</div>`).join('');
+    `<div class="rp-step" data-k="${k}" style="background:${TIER_META[k].color}">${TIER_META[k].icon}<b>${fmtExp(e)}</b><span style="white-space:nowrap">${w}</span></div>`).join('');
   $('lateTimeDisplay').textContent = db.lateTimeSetting;
 }
 const TT_DEF = '1교시 09:00-09:45\n2교시 09:55-10:40\n3교시 10:50-11:35\n4교시 11:45-12:30\n점심 12:30-13:20\n5교시 13:20-14:05\n6교시 14:15-15:00\n7교시 15:10-15:55';
@@ -2434,7 +2439,7 @@ function applyStrikes(all, feed){
   if (feed && feed.length){ try { localStorage.setItem('nyangStrikeSeen', String(Math.max(seen, ...feed.map(f => f.ts)))); } catch(e){} }
   fresh.forEach((f, i) => setTimeout(() => {
     const STEP = ['', '경고', '1분 제한', '10분 제한 (공개)', '1시간 제한 (공개)', '10일 제한', '영구 정지 (공개)'][Math.min(f.k, 6)];
-    showToast(`🚫 ${f.n} 비속어 ${f.k}회 → ${STEP}`); try { sfx('late'); } catch(e){}
+    showToast(`${f.n} 비속어 ${f.k}회 → ${STEP}`); try { sfx('late'); } catch(e){}
   }, i * 2600));
   if (JSON.stringify(serverStrikes) !== before){ renderGrid(); if ($('notesOverlay').style.display === 'flex') renderNotes(); }
 }
@@ -2528,20 +2533,20 @@ async function remoteGo(){
     const j = await r.json();
     $('rOathOv').style.display = 'none'; kidAuth = null;
     if (!j.ok){ showToast(j.error === 'sleep' ? '💤 지금은 출석할 수 없는 시간이에요' : '다시 해 주세요'); return; }
-    if (j.error === 'already'){ showToast('이미 출석했어요 ✅'); return; }
-    if (!j.done && !j.error){ showToast('⚠️ 지금은 원격 출석을 쓸 수 없어요. 교실 TV에서 눌러 주세요'); return; }
+    if (j.error === 'already'){ showToast('이미 출석했어요 '); return; }
+    if (!j.done && !j.error){ showToast('지금은 원격 출석을 쓸 수 없어요. 교실 TV에서 눌러 주세요'); return; }
     showToast(j.error === 'pending' ? '이미 출석 신청했어요 ⏳' : `📱 출석 신청 완료! (${j.at || ''}) 교실 출석부에 곧 기록돼요`);
   } catch(e){ showToast('연결이 안 돼요. 다시 눌러 주세요'); }
   finally { b.textContent = '📱 맹세하고 출석하기'; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 55;
+const NEED_API = 57;
 let serverRev = 0;
 function checkServerRev(v){
   serverRev = Number(v) || 0;
   const bar = $('revBar'); if (!bar || VIEW) return;
   if (serverRev && serverRev < NEED_API){ bar.textContent = `🛠️ 서버 코드 업데이트 필요 (v${serverRev} → v${NEED_API})`; bar.style.display = 'block'; }
-  else { bar.style.display = 'none'; if ($('revOv').style.display === 'flex' && serverRev >= NEED_API){ $('revOv').style.display = 'none'; showToast('🎉 서버 코드가 최신이에요!'); } }
+  else { bar.style.display = 'none'; if ($('revOv').style.display === 'flex' && serverRev >= NEED_API){ $('revOv').style.display = 'none'; showToast('서버 코드가 최신이에요!'); } }
 }
 function openRev(){
   $('revInfo').innerHTML = `지금 서버는 <b>v${serverRev}</b>, 이 출석부에 맞는 버전은 <b>v${NEED_API}</b>예요. 아래를 하나씩 하고 체크해 주세요.`;
@@ -2651,25 +2656,25 @@ function renderMH(){
       $('mhBody').innerHTML = `<div class="meal-d today"><b>🇺🇸 오늘 급식을 영어로!</b><div class="mt">${esc(meal[today] || '(급식 관리자가 아직 안 올렸어요 · 그래도 번역할 수 있어요)')}</div></div>
         <textarea id="trText" rows="4" placeholder="예: Rice / Kimchi stew / Pork cutlet" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:1rem;border:2px solid #CDBBA8;border-radius:10px;padding:6px 8px;"></textarea>
         <div class="row" style="gap:6px;justify-content:flex-end;align-items:center;flex-wrap:wrap;margin-top:6px;"><select id="trName" style="font-family:inherit;font-size:1rem;padding:6px;border:2px solid #CDBBA8;border-radius:10px;">${kidsL.map(n => `<option>${esc(n)}</option>`).join('')}</select><input class="nopw" type="text" inputmode="numeric" id="trPin" maxlength="4" placeholder="내 비번" autocomplete="off" data-lpignore="true" data-1p-ignore style="width:90px;font-family:inherit;font-size:1rem;border:2px solid #CDBBA8;border-radius:10px;padding:6px 8px;"><button type="button" class="btn btn-y" id="trSend">🇺🇸 보내기</button></div>
-        <div id="trErr" class="form-hint" style="min-height:1.2em;text-align:right;"></div><div class="form-hint">급식 관리자가 확인하면 끝! 🎯 '급식 영어 번역' 미션을 골랐다면 한 주에 2일 승인되면 냥코인이 들어와요</div>`;
+        <div id="trErr" class="form-hint" style="min-height:1.2em;text-align:right;"></div><div class="form-hint">급식 관리자가 확인하면 끝! '급식 영어 번역'미션을 골랐다면 한 주에 2일 승인되면 냥코인이 들어와요</div>`;
       return;
     }
     const days = VIEW ? (meal[today] ? [today] : []) : [today];   // 🍱 오늘 것만
     $('mhBody').innerHTML = (days.length ? days.map(d => { const L = mhLabel(d); return `<div class="meal-d ${d === today ? 'today' : ''}"><b>${L.md}${L.diff === 0 ? ' · 오늘' : L.diff === 1 ? ' · 내일' : ''}</b>${VIEW ? `<div class="mt">${esc(meal[d] || '')}</div>` : `<textarea rows="4" data-meal="${d}" placeholder="메뉴를 한 줄에 하나씩 (비우면 안 보여요)">${esc(meal[d] || '')}</textarea>`}</div>`; }).join('') : '<div class="mh-empty">오늘 급식 메뉴가 아직 없어요 🍚</div>')
       + (db.mealEn ? `<div class="meal-d"><b>English <small style="color:var(--ink-soft);">by ${esc(db.mealEn.name)}</small></b><div class="mt">${esc(db.mealEn.text)}</div></div>` : '')
-      + (VIEW ? '<div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;">' + ((db.menuPick || []).length && meal[today] && !db.mealEn ? '<button type="button" class="mini-btn" id="trOpenBtn" style="background:#E8F4FF;">🇺🇸 영어로 번역하기</button>' : '') + '<button type="button" class="mini-btn" id="mealEditBtn" style="background:#FFFDF6;">✏️ 급식 관리자</button></div>' : '<div id="mhTrList"></div>' + '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 🍱 급식에도 나와요 · 🔒 관리자 · 🍱 급식 관리자만 저장할 수 있어요</div>');
+      + (VIEW ? '<div style="text-align:right;margin-top:4px;display:flex;gap:6px;justify-content:flex-end;">' + ((db.menuPick || []).length && meal[today] && !db.mealEn ? '<button type="button" class="mini-btn" id="trOpenBtn" style="background:#E8F4FF;">🇺🇸 영어로 번역하기</button>' : '') + '<button type="button" class="mini-btn" id="mealEditBtn" style="background:#FFFDF6;">✏️ 급식 관리자</button></div>' : '<div id="mhTrList"></div>' + '<div class="row" style="justify-content:flex-end;margin-top:6px;"><button type="button" class="btn btn-y" id="mealSave">💾 저장</button></div><div class="form-hint">저장하면 학생 공지사항 탭 급식에도 나와요 · 관리자 · 급식 관리자만 저장할 수 있어요</div>');
   } else {
     const list = VIEW ? hw : hw;
     $('mhBody').innerHTML = (list.length ? list.map(h => { const L = h.due ? mhLabel(h.due) : null, dd = !L ? '기한 없음' : L.diff < 0 ? '지남' : L.diff === 0 ? '오늘까지' : L.diff === 1 ? '내일까지' : `D-${L.diff} · ${L.md}`;
       return `<div class="hw-i"><span class="dd ${L && L.diff <= 1 ? 'hot' : ''}">${dd}</span><span class="tx">${h.subj ? `<span class="sj">${esc(h.subj)}</span>` : ''}${esc(h.text)}</span>${VIEW ? '' : `<button type="button" class="act-btn cancel" data-hwdel="${h.id}" title="지우기">🗑</button>`}</div>`; }).join('') : '<div class="mh-empty">숙제가 없어요! 🎉</div>')
-      + (VIEW ? '' : `<div class="hw-add"><input id="hwSubj" placeholder="과목" maxlength="12" style="width:80px;"><input id="hwText" placeholder="숙제 내용" maxlength="200" style="flex:1;min-width:140px;"><input type="date" id="hwDue" value="${getTodayStr(nextSchoolDay(nowD()))}"><button type="button" class="btn btn-y" id="hwAdd">＋ 추가</button></div><div class="form-hint">마감일이 지나면 학생 화면에서 저절로 사라져요 · 🔒 관리자 · 부관리자만 고칠 수 있어요</div>`);
+      + (VIEW ? '' : `<div class="hw-add"><input id="hwSubj" placeholder="과목" maxlength="12" style="width:80px;"><input id="hwText" placeholder="숙제 내용" maxlength="200" style="flex:1;min-width:140px;"><input type="date" id="hwDue" value="${getTodayStr(nextSchoolDay(nowD()))}"><button type="button" class="btn btn-y" id="hwAdd">＋ 추가</button></div><div class="form-hint">마감일이 지나면 학생 화면에서 저절로 사라져요 · 관리자 · 부관리자만 고칠 수 있어요</div>`);
   }
 }
 /* 🇺🇸 급식 영어 번역: 학생이 보내고, 급식 관리자 · 관리자가 승인 */
 function trListHTML(list, view){
   if (!list) return '';
   const pend = list.filter(x => x.status === '대기');
-  return `<div class="form-hint" style="margin:8px 0 4px;"><b>🇺🇸 영어 번역</b> · 확인 대기 ${pend.length}건</div>` + (list.length ? list.map(x => `<div class="hw-i"><span class="tx"><b>${esc(x.name)}</b> <small style="color:var(--ink-soft);">${esc(x.ds.slice(5))}</small><br>${esc(x.text)}</span>${x.status === '대기' ? `<button type="button" class="act-btn" style="background:var(--mint);" data-trok="${x.id}" data-ok="1">승인</button><button type="button" class="act-btn cancel" data-trok="${x.id}" data-ok="0">반려</button>` : `<small>${esc(x.status)}</small>`}</div>`).join('') : '<div class="mh-empty">번역이 아직 없어요</div>');
+  return `<div class="form-hint" style="margin:8px 0 4px;"><b>영어 번역</b>· 확인 대기 ${pend.length}건</div>` + (list.length ? list.map(x => `<div class="hw-i"><span class="tx"><b>${esc(x.name)}</b> <small style="color:var(--ink-soft);">${esc(x.ds.slice(5))}</small><br>${esc(x.text)}</span>${x.status === '대기' ? `<button type="button" class="act-btn" style="background:var(--mint);" data-trok="${x.id}" data-ok="1">승인</button><button type="button" class="act-btn cancel" data-trok="${x.id}" data-ok="0">반려</button>` : `<small>${esc(x.status)}</small>`}</div>`).join('') : '<div class="mh-empty">번역이 아직 없어요</div>');
 }
 async function loadTrAdmin(){ try { const j = await teacherCall({ action:'menuTr' }); trList = j.list || []; const el = $('mhTrList'); if (el) el.innerHTML = trListHTML(trList); } catch(e){} }
 async function trViewCall(body){
@@ -2688,7 +2693,7 @@ async function trSend(){
   try { const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'student', name, pin, op:'menuTr', text }) }), j = await r.json();
     if (!j.ok){ $('trErr').textContent = j.error === 'wrong' ? '❌ 비밀번호가 달라요' : j.error === 'sleep' ? '💤 지금은 쉬는 시간이에요' : '보내지 못했어요'; return; }
     if (j.error){ $('trErr').textContent = { short:'조금 더 적어 주세요', done:'오늘 번역은 이미 승인됐어요 🎉', nopick:'먼저 아지트에서 🎯 번역 미션을 골라요', closed:'오늘 번역은 다른 친구가 먼저 승인받았어요 🎉 내일 또 도전!', nomenu:'급식 관리자가 오늘 메뉴를 올린 뒤에 번역할 수 있어요 🍱' }[j.error] || '보내지 못했어요'; return; }
-    mhTr = false; renderMH(); showToast('🇺🇸 번역을 보냈어요! 급식 관리자가 확인해요');
+    mhTr = false; renderMH(); showToast('번역을 보냈어요! 급식 관리자가 확인해요');
   } catch(e){ $('trErr').textContent = '연결이 안 돼요'; }
 }
 function mealSave(){
@@ -2696,7 +2701,7 @@ function mealSave(){
   requirePin(() => {
     db.meal = Object.assign({}, db.meal || {});
     document.querySelectorAll('#mhBody [data-meal]').forEach(t => { const d = t.dataset.meal, v = t.value.trim(); if ((db.meal[d] || '') === v) return; if (v) db.meal[d] = v; else delete db.meal[d]; syncOp({ op:'meal', ds: d, text: v }); });
-    saveDB(); showToast('🍱 급식을 저장했어요'); renderMH(); renderMHSide();
+    saveDB(); showToast('급식을 저장했어요'); renderMH(); renderMHSide();
   }, ['meal']);
 }
 /* 학생용 출석부: 🍱 급식 관리자 비밀번호로 오늘 급식 쓰기 */
@@ -2707,7 +2712,7 @@ async function mealSaveView(){
   try {
     const r = await fetch(VIEW.api, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'mealSet', mpin: pin, text }) }), j = await r.json();
     if (!j.ok){ $('mealErr').textContent = j.error === 'wrong' ? '❌ 비밀번호가 달라요' : '저장하지 못했어요 (서버 업데이트가 필요할 수 있어요)'; return; }
-    db.meal = j.meal || {}; mhEdit = false; showToast('🍱 오늘 급식을 저장했어요'); renderMH(); renderMHSide();
+    db.meal = j.meal || {}; mhEdit = false; showToast('오늘 급식을 저장했어요'); renderMH(); renderMHSide();
   } catch(e){ $('mealErr').textContent = '연결이 안 돼요'; }
 }
 function hwChange(list){ requirePin(() => { db.hw = list; saveDB(); syncOp({ op:'hw', list }); renderMH(); renderMHSide(); }, ['sub']); }   // 📚 숙제: 관리자 · 부관리자만
@@ -2807,7 +2812,7 @@ function renderGrid(){
       card.className = 'card waiting';
       drawColors(cv, lookColors(name, li.lv));
       card.append(cv);
-      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${statusLine(name)}<div class="touch-text">${VIEW ? '📱 내 카드면 눌러서 원격 출석' : '▼ 터치해서 출석 ▼'}</div>`);
+      card.insertAdjacentHTML('beforeend', `<button type="button" class="absent-btn" title="결석 처리 (관리자)">결석</button><button type="button" class="time-add-btn" title="시간을 정해서 출석 처리 (관리자)">⏰</button><div class="student-name">${numTag(nums, name)}${esc(name)}</div>${statusLine(name)}<div class="touch-text">${VIEW ? '<span>내 카드면</span> <span>눌러서 출석</span>' : '▼ 터치해서 출석 ▼'}</div>`);
       card.addEventListener('click', () => { if (VIEW){ remoteStart(name); return; } if (revealing) return; card.classList.add('tapped'); handleTouch(name); });
       card.querySelector('.absent-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => sendToDungeon(name), isTeacherName(name) ? [] : ['late']); });
       card.querySelector('.time-add-btn').addEventListener('click', e => { e.stopPropagation(); requirePin(() => editTime(name), isTeacherName(name) ? [] : ['late']); });
@@ -2817,7 +2822,7 @@ function renderGrid(){
       const streak = tk === 'absent' ? 0 : streakOf(name);
       card.innerHTML =
         `<div class="card-tag" style="background:${meta.color}">${meta.icon} ${meta.short}${isCleaner(name) ? ' 🧹' : ''}</div>` +
-        (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><b>${streak}</b>일 연속</div>` : '') +
+        (streak >= 2 ? `<div class="card-streak ${stampClass(streak)}" title="${streak}일 연속 출석"><span><b>${streak}</b>일</span><span>연속</span></div>` : '') +
         (rec.rank ? `<div class="card-rank ${rec.rank <= 3 ? 'r' + rec.rank : ''}" title="오늘 ${rec.rank}번째 도착${rec.rankBonus ? ` · 보너스 +${rec.rankBonus}` : ''}">${rec.rank}</div>` : '') +
         (meta.sleepy ? `<div class="zzz">z<small>z</small></div>` : '');
       drawColors(cv, recColors(rec, name, ds, li.lv));
@@ -2953,7 +2958,7 @@ function addNote(who, kind, memo){
   saveDB(); syncOp({ op:'noteAdd', ds, entry });
   renderGrid(); renderMenuBoard(); renderNoteSide(); publishPub();
   if (kind === 'swear'){ const k = swearList(who).length; showToast(k % SWEAR_STEP === 0 ? `🤬 ${who} 욕설 ${k}번째! → 🧹 오늘 청소 당번` : `🤬 ${who} 욕설 ${k}번째 (청소 당번까지 ${SWEAR_STEP - k % SWEAR_STEP}번)`); }
-  else if (kind === 'praise') showToast(`💮 ${who} 칭찬 도장 꾹! (이번 달 ${Object.entries(db.notes).filter(([d]) => d.startsWith(ds.slice(0, 7))).reduce((a, [, l]) => a + l.filter(x => x.who === who && x.kind === 'praise').length, 0)}개)`);
+  else if (kind === 'praise') showToast(`${who} 칭찬 도장 꾹! (이번 달 ${Object.entries(db.notes).filter(([d]) =>d.startsWith(ds.slice(0, 7))).reduce((a, [, l]) =>a + l.filter(x =>x.who === who && x.kind === 'praise').length, 0)}개)`);
   else showToast(`${NOTE_KIND[kind].icon} ${who} ${NOTE_KIND[kind].name} 적었어요`);
 }
 function delNote(ds, id){
@@ -2991,10 +2996,10 @@ function renderNoteSide(){
 }
 function strikeBox(){
   const names = Object.keys(serverStrikes || {}).filter(n => (serverStrikes[n] || {}).n);
-  if (!names.length) return '<div class="stk-box"><div class="stk-h">🚫 비속어 자동 제한 <small>학생 페이지에서 비속어를 쓰면 자동으로 세요 · 1회 경고 → 2회 1분 → 3회 10분 → 4회 1시간 → 5회 10일 → 6회 영구</small></div><div class="hint">아직 없어요 ✨</div></div>';
+  if (!names.length) return '<div class="stk-box"><div class="stk-h">🚫 비속어 자동 제한 <small>학생 페이지에서 비속어를 쓰면 자동으로 세요 · 1회 경고 → 2회 1분 → 3회 10분 → 4회 1시간 → 5회 10일 → 6회 영구</small></div><div class="hint">아직 없어요 </div></div>';
   return `<div class="stk-box"><div class="stk-h">🚫 비속어 자동 제한 <small>1회 경고 → 2회 1분 → 3회 10분(공개) → 4회 1시간(공개) → 5회 10일 → 6회 영구(공개)</small></div>${names.map(n => { const s = serverStrikes[n], on = s.perm || Number(s.until) > Date.now();
     const st = s.perm ? '⛔ 영구 정지' : on ? `🔇 ${pad(new Date(+s.until).getHours())}:${pad(new Date(+s.until).getMinutes())}까지 제한` : '✅ 제한 없음';
-    return `<div class="stk-row"><b>${esc(n)}</b><span>비속어 ${s.n}회</span><span>${st}</span>${on ? `<button type="button" class="nb" data-stk="${esc(n)}">🔓 제한 풀기</button>` : ''}<button type="button" class="nb" data-stkr="${esc(n)}">🔄 횟수 0으로</button></div>`; }).join('')}<div class="hint">쓴 글은 구글 시트 '비속어' 탭에 남아요.</div></div>`;
+    return `<div class="stk-row"><b>${esc(n)}</b><span>비속어 ${s.n}회</span><span>${st}</span>${on ? `<button type="button" class="nb" data-stk="${esc(n)}">🔓 제한 풀기</button>` : ''}<button type="button" class="nb" data-stkr="${esc(n)}">🔄 횟수 0으로</button></div>`; }).join('')}<div class="hint">쓴 글은 구글 시트 '비속어'탭에 남아요.</div></div>`;
 }
 function openNotes(){ renderNotes(); $('notesOverlay').style.display = 'flex'; }
 function renderNotes(){
@@ -3010,7 +3015,7 @@ function renderNotes(){
   box.innerHTML = `<div class="np">${P.map(([k, l]) => `<button type="button" data-np="${k}" class="${notePeriod === k ? 'on' : ''}">${l}</button>`).join('')}</div>
     <div class="nt-wrap"><div class="nt-box"><table class="nt"><thead><tr><th>이름</th><th class="good">💮 칭찬 도장</th><th>🤬 욕설</th><th>⏰ 수업 지각</th><th>😴 수업태도</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="nlog"><div class="nlog-h">🕘 최근 기록</div>${log.map(x => `<div class="nl${NOTE_KIND[x.kind] && NOTE_KIND[x.kind].good ? ' good' : ''}"><span>${x.ds.slice(5).replace('-', '/')} ${esc(x.t)}</span><span>${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].icon : ''} ${esc(x.who)} ${NOTE_KIND[x.kind] ? NOTE_KIND[x.kind].name : ''}</span><button type="button" data-ndel="${esc(x.id)}" data-nds="${x.ds}" title="지우기">✕</button></div>`).join('') || '<div class="hint">기록이 없어요</div>'}</div></div>
-    <div class="form-hint">🤬 욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 지금까지 몇 번인지는 <b>전체</b>를 눌러 보세요.</div>
+    <div class="form-hint">욕설이 <b>누적 5번·10번·15번…</b>이 되는 날 그 친구는 <b>청소 당번</b>이 돼요 (EXP는 안 깎여요). 지금까지 몇 번인지는 <b>전체</b>를 눌러 보세요.</div>
     ${strikeBox()}`;
 }
 let attEditName = null;
@@ -3058,7 +3063,7 @@ function attEditSave(clear){
       $('attEditOv').style.display = 'none';
       handleTouch(name, { at: at.getTime(), remote: true, edited: true, tier });
       if (m === 'excused' && why){ day[name].why = why; syncOp({ op:'rec', ds, name, rec: day[name] }); saveDB(); renderGrid(); }
-      showToast(`✏️ ${name} ${pad(t[0])}:${pad(t[1])} ${TIER_META[tier.key].icon} ${TIER_META[tier.key].short}`); return;
+      showToast(`${name} ${pad(t[0])}:${pad(t[1])} ${TIER_META[tier.key].icon} ${TIER_META[tier.key].short}`); return;
     }
     const rec = Object.assign({}, keep, { time: `${pad(t[0])}:${pad(t[1])}`, sec: secOfDay(at), edited: true });
     if (m === 'excused' && why) rec.why = why; else delete rec.why;
@@ -3134,7 +3139,7 @@ function showReveal(name, rec, ds, done){
   const streak = demo ? 3 : streakOf(name);
   const st = $('revStamp'); st.className = 'rev-stamp'; st.innerHTML = '';
   if (streak >= 2){
-    st.innerHTML = `<b>${streak}</b>일 연속<br>출석!`;
+    st.innerHTML = `<span style="white-space:nowrap"><b>${streak}</b>일 연속</span><br>출석!`;
     st.classList.add(...stampClass(streak).split(' ').filter(Boolean));
   }
   const md = medalOf(rec);
@@ -3215,13 +3220,13 @@ function renderMenuBoard(){
   const cleaners = kids().filter(n => isCleaner(n) && !(/[?&]view=1/.test(location.search) && done[n]));   // 📺 학생용 출석부: ✔ 끝낸 친구는 빠져요
   html += `<div class="clean-row"><span>🧹 Cleaning Duty</span>${cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
-    : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 ✨</span>'}</div>`;
+    : '<span class="clean-empty">없어요! 모두 오늘 EXP 플러스다냥 </span>'}</div>`;
   box.innerHTML = html;
   const side = $('cleanSide');
   if (side) side.classList.toggle('empty', !cleaners.length);
   if (side) side.innerHTML = `<div class="t" style="display:flex;align-items:center;">🧹 Cleaning Duty<button type="button" class="clean-add edit-mini" data-cleanadd title="청소 당번 추가 · 빼기 (관리자)" style="margin-left:auto;">✏️</button></div>` + (cleaners.length
     ? cleaners.map(n => `<button type="button" class="clean-chip cw-${cleanWhy(n)} ${done[n] ? 'done' : ''}" data-clean="${esc(n)}">${done[n] ? '✔ ' : ''}${esc(n)}</button>`).join('')
-    : '<span class="clean-empty">없어요! ✨</span>');
+    : '<span class="clean-empty">없어요! </span>');
   renderNoteSide();
 }
 /* 🐾 냥코인 보기 (교실 화면 · 보기 전용) */
@@ -3236,7 +3241,7 @@ function renderCoinView(){
   const CAT = { coupon:'🎟 쿠폰', house:'🏠 집', decor:'🌷 정원', mega:'📢 확성기', song:'🎵 신청곡', banner:'🎊 배너', title:'🏷️ 칭호', butler:'🐱 하나 집사' };
   if (cvTab === 'shop'){
     const groups = {}; (eco.shop || []).filter(x => !x.off).forEach(x => (groups[x.cat] = groups[x.cat] || []).push(x));
-    box.innerHTML = Object.keys(groups).map(c => `<div class="section-title" style="margin-top:8px;">${CAT[c] || c}</div><div class="cv-grid">${groups[c].map(x => `<div class="cv-item"><span>${esc(x.name)}</span><b>${x.price}🐾</b></div>`).join('')}</div>`).join('') + '<div class="form-hint" style="margin-top:8px;">학생 페이지 🐾 냥코인 탭에서 살 수 있어요.</div>';
+    box.innerHTML = Object.keys(groups).map(c => `<div class="section-title" style="margin-top:8px;">${CAT[c] || c}</div><div class="cv-grid">${groups[c].map(x => `<div class="cv-item"><span>${esc(x.name)}</span><b>${x.price}🐾</b></div>`).join('')}</div>`).join('') + '<div class="form-hint" style="margin-top:8px;">학생 페이지 냥코인 탭에서 살 수 있어요.</div>';
   } else if (cvTab === 'rank'){
     const list = kids().map(n => [n, (d.balances || {})[n] || 0]).sort((a, b) => b[1] - a[1]);
     box.innerHTML = cvData ? list.map(([n, v], i) => `<div class="cv-row"><span>${i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1) + '.'} ${esc(n)}</span><b>${v}🐾</b></div>`).join('') : '<div class="clean-empty">불러오는 중… (동기화가 필요해요)</div>';
@@ -3290,7 +3295,7 @@ function giveBonus(){
   $('giveOverlay').style.display = 'none'; $('menuOverlay').style.display = 'none';
   renderGrid(); updateStatsBoard();
   const names = who.length > 3 ? `${who.slice(0, 3).join(', ')} 외 ${who.length - 3}명` : who.join(', ');
-  showToast(`${m.exp >= 0 ? '🎁' : '💦'} ${names} · ${m.name} ${fmtExp(m.exp)} EXP`);
+  showToast(`${m.exp >= 0 ? '': ''} ${names} · ${m.name} ${fmtExp(m.exp)} EXP`);
   unlockAudio(false);
   if (m.exp >= 0){ sfx('rare'); burst('rare', innerWidth/2, innerHeight*.35); setBubble(`${m.name}! 멋지다냥 ${fmtExp(m.exp)} ✨`, 3500); mascotJump(); }
   else { sfx('late'); setBubble(`앗… ${m.name} ${fmtExp(m.exp)}. 다음엔 조심하자냥`, 3500); }
@@ -3610,7 +3615,7 @@ function queueLevelUps(before, after, silent){
       db.looks[n] = look; equipped = true; syncLook(n);
     }
     if (!silent && now[n] >= 6) lvQueue.push({ name:n, lv:now[n], items });   // 🎺 레벨업 축하는 Lv.6부터 (렉 줄이기)
-    else if (!silent && items.length) showToast(`⬆️ ${n} Lv.${now[n]}! 새 꾸미기: ${items.map(i => i.icon).join(' ')}`);
+    else if (!silent && items.length) showToast(`${n} Lv.${now[n]}! 새 꾸미기: ${items.map(i =>i.icon).join('')}`);
   }
   if (equipped){ saveDB(); renderGrid(); }
   if (silent) return;
@@ -3649,7 +3654,7 @@ function renderLevelTab(box){
   const sm = seasonExpMap(), th = lvThresholds();
   const [y, m, d] = (db.level.start || '').split('-').map(Number);
   let html = `<div class="row" style="justify-content:flex-end;"><button type="button" class="act-btn cancel" style="font-size:1rem;padding:6px 14px;" data-act="resetlevel">🧹 레벨 전체 초기화</button></div><div class="dex-head">시즌 시작 ${m || '?'}월 ${d || '?'}일부터 · Lv.10 = ${db.level.max} EXP</div>`;
-  html += `<div class="form-hint" style="text-align:center;">${th.slice(1).map((v, i) => `Lv.${i+2} ${v}`).join(' · ')}</div>`;
+  html += `<div class="form-hint" style="text-align:center;">${th.slice(1).map((v, i) =>`Lv.${i+2} ${v}`).join('· ')}</div>`;
   html += '<table><thead><tr><th>이름</th><th>레벨</th><th>시즌 EXP</th><th>진행도</th><th>다음 레벨까지</th><th></th></tr></thead><tbody>';
   db.students.forEach(n => {
     const li = levelInfo(sm[n] || 0), L = LEVELS[li.lv - 1];
@@ -3871,7 +3876,7 @@ function addAdj(name, exp, reason){
 function gmAdjust(exp, reason, celebrate = true){
   const name = gmName, before = levelsNow();
   addAdj(name, exp, reason);
-  showToast(`👑 ${name} ${fmtExp(exp)} EXP${reason ? ' · ' + reason : ''}`);
+  showToast(`${name} ${fmtExp(exp)} EXP${reason ? '· '+ reason : ''}`);
   afterGmChange(before, celebrate);
 }
 function gmSetLevel(target){
@@ -3879,7 +3884,7 @@ function gmSetLevel(target){
   if (levelInfo(exp).lv === target) return;
   const delta = th[target - 1] - exp, before = levelsNow();
   addAdj(name, delta, `레벨 지정 → Lv.${target}`);
-  showToast(`👑 ${name} → Lv.${target} ${LEVELS[target-1].name}`);
+  showToast(`${name} → Lv.${target} ${LEVELS[target-1].name}`);
   afterGmChange(before, $('gmCelebrate') ? $('gmCelebrate').checked : true);
 }
 function afterGmChange(before, celebrate){
@@ -3905,7 +3910,7 @@ function gmSetToday(key){
     if (ch.sleepy) rec.fur = rand(SLEEPY_FURS);
     db.records[ds][name] = rec; syncOp({ op:'rec', ds, name, rec });
   }
-  recomputeRanks(ds); saveDB(); showToast(`👑 ${name} 오늘 출석 → ${key === 'cancel' ? '기록 취소' : TIER_META[key].icon + ' ' + TIER_META[key].short}`);
+  recomputeRanks(ds); saveDB(); showToast(`${name} 오늘 출석 → ${key === 'cancel'? '기록 취소': TIER_META[key].icon + ''+ TIER_META[key].short}`);
   afterGmChange(before, false);
 }
 function gmUndo(id){
@@ -3946,7 +3951,7 @@ function renderGm(){
         ${serverPinSet.includes(name) ? '<button type="button" class="mini-btn" style="background:#FFC9D3;" id="gmPinDelBtn">지우기</button>' : ''}</div>
       <div class="form-hint">학생 페이지(student.html)에서 이 비밀번호로 로그인해 자기 고양이를 꾸밀 수 있어요.</div>
     </div>
-    <div class="section"><div class="form-hint">✨ EXP · 레벨 · 냥코인은 <b>아지트 → 👑 관리 → 🐾 RPG</b>, 🎨 꾸미기는 마을 → 친구 카드 → 👑 마법에서 바꿔요.</div>    </div>`;
+    <div class="section"><div class="form-hint">EXP · 레벨 · 냥코인은 <b>아지트 → 관리 → RPG</b>, 꾸미기는 마을 → 친구 카드 → 마법에서 바꿔요.</div>    </div>`;
   drawColors($('gmCanvas'), lookColors(name, li.lv));
 }
 function onGmClick(e){
@@ -3964,7 +3969,7 @@ function onGmClick(e){
   if (t.closest('#gmPinBtn')){
     const pin = $('gmPin').value.trim();
     if (!/^\d{4}$/.test(pin)){ alert('비밀번호는 숫자 4자리로 적어 주세요.'); return; }
-    setStudentPins({ [gmName]: pin }); showToast(`🔑 ${gmName} 비밀번호를 저장했어요`); return;
+    setStudentPins({ [gmName]: pin }); showToast(`${gmName} 비밀번호를 저장했어요`); return;
   }
   if (t.closest('#gmPinDelBtn')){ if (confirm(`${gmName}의 비밀번호를 지울까요? 학생 페이지에 로그인할 수 없게 돼요.`)) setStudentPins({ [gmName]: '' }); return; }
   if (t.closest('#gmPinAllBtn')){ makeAllPins(); return; }
@@ -4812,7 +4817,7 @@ async function syncFetch(url, opts, ms){
     try { j = JSON.parse(txt); } catch(e){ throw new Error(/<html|<!DOCTYPE/i.test(txt) ? '구글이 권한 승인을 기다리고 있어요 (Apps Script에서 드라이브권한확인 실행)' : '서버 응답을 읽지 못했어요'); }
     if (!j.ok && j.error === 'moved' && j.movedTo && sync.url && url.startsWith(sync.url) && j.movedTo !== sync.url){
       sync.url = j.movedTo; sync.v = -1; saveSync(); setTimeout(() => { pullSync(true); updateSyncUI(); }, 300);
-      showToast('🚚 서버가 새 주소로 이사했어요 — 자동으로 옮겨 탔어요');
+      showToast('서버가 새 주소로 이사했어요 — 자동으로 옮겨 탔어요');
     }
     if (!j.ok) throw new Error(j.error === 'auth' ? '교사 열쇠가 맞지 않아요' : j.error === 'moved' ? '서버가 이사했어요' : (j.error === 'busy' || /잠금|Lock/i.test(j.error || '')) ? '서버가 잠깐 바빠요 · 학생들이 동시에 많이 쓰는 중' : (j.error || '서버 오류'));
     return j;
@@ -5003,7 +5008,7 @@ function handleExpQueue(list){
   if (!list.length) return;
   renderGrid(); updateStatsBoard(); publishPub();
   const names = [...new Set(list.map(x => x.n))];
-  showToast(`✨ ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` 외 ${names.length - 3}명` : ''} 미션 EXP 받았다냥!`);
+  showToast(`${names.slice(0, 3).join(', ')}${names.length >3 ? ` 외 ${names.length - 3}명` : ''} 미션 EXP 받았다냥!`);
   setTimeout(() => queueLevelUps(before), 600);
 }
 function handleRemote(list){
@@ -5055,7 +5060,7 @@ function updateGmDot(){
   const rc = $('gmReqCount'); if (rc) rc.textContent = serverReqOpen > 0 ? `(${serverReqOpen})` : '';
   const c = $('gmAskCount'); if (c) c.textContent = serverAsksOpen > 0 ? `(${serverAsksOpen})` : '';
   const ab = $('gmAskBtn'); if (ab) ab.classList.toggle('urgent', serverUrgent > 0);
-  if (serverUrgent > lastUrgentAlert){ showToast(`⭐ 중요 상담 ${serverUrgent}건이 왔어요!`); try { sfx('late'); } catch(e){} }
+  if (serverUrgent > lastUrgentAlert){ showToast(`중요 상담 ${serverUrgent}건이 왔어요!`); try { sfx('late'); } catch(e){} }
   lastUrgentAlert = serverUrgent;
 }
 function teacherName(){ return db.students.find(isTeacherName) || '선생님'; }
@@ -5078,7 +5083,7 @@ async function freeCall(set){
   try {
     const j = await teacherCall(set ? { action:'free', set } : { action:'free' });
     freeState = j.free; freeSkew = (j.now || Date.now()) - Date.now();
-    renderFree(); if (set) showToast('⏰ 저장했어요');
+    renderFree(); if (set) showToast('저장했어요');
   } catch(e){ $('freeBody').innerHTML = `<div class="clean-empty">불러오지 못했어요: ${esc(e.message)}</div>`; }
 }
 function freeLeft(k){ return freeState ? (freeState[k] || 0) - (Date.now() + freeSkew) : 0; }
@@ -5140,7 +5145,7 @@ async function saveChatCfg(){
   const muted = [...document.querySelectorAll('#caMute .mute-chip.on')].map(b => b.dataset.mute);
   const cfg = { on: $('caOn').checked, whisper: $('caWhisper').checked, start: $('caStart').value, end: $('caEnd').value,
     ban: $('caBan').value.split(',').map(x => x.trim()).filter(Boolean), muted };
-  try { await teacherCall({ ops:[{ op:'chatCfg', cfg }] }); showToast('💬 대화 설정을 저장했어요'); await loadChatAdmin(true); }
+  try { await teacherCall({ ops:[{ op:'chatCfg', cfg }] }); showToast('대화 설정을 저장했어요'); await loadChatAdmin(true); }
   catch(e){ alert('저장하지 못했어요: ' + e.message); }
 }
 async function onChatAdmClick(e){
@@ -5178,7 +5183,7 @@ async function loadAskAdmin(){
       ${a.reply ? `<div class="ask-reply">💬 ${esc(a.reply)} <small>(${esc(a.rt)})</small></div>` : ''}
       <div class="row" style="justify-content:flex-start;"><input type="text" placeholder="${a.reply ? '답변 고치기' : '답변 쓰기'}" data-ain="${a.id}" style="flex:1;min-width:180px;">
         <button type="button" class="mini-btn" data-areply="${a.id}">답변</button>${isOpen(a) ? `<button type="button" class="mini-btn" style="background:var(--mint);" data-adone="${a.id}">✔ 확인만</button>` : ''}<button type="button" class="mini-btn" style="background:#FFC9D3;" data-adel="${a.id}">삭제</button></div>
-    </div>`).join('') : `<div class="clean-empty">${askFilter === 'open' ? '답변을 기다리는 질문이 없어요 ✨' : '아직 받은 질문이 없어요'}</div>`;
+    </div>`).join('') : `<div class="clean-empty">${askFilter === 'open'? '답변을 기다리는 질문이 없어요 ': '아직 받은 질문이 없어요'}</div>`;
 }
 async function onAskAdmClick(e){
   const f = e.target.closest('[data-af]'); if (f){ askFilter = f.dataset.af; loadAskAdmin(); return; }
@@ -5186,7 +5191,7 @@ async function onAskAdmClick(e){
   if (r){
     const text = document.querySelector(`[data-ain="${r.dataset.areply}"]`).value.trim();
     if (!text){ alert('답변을 적어 주세요.'); return; }
-    await teacherCall({ ops:[{ op:'askReply', id:Number(r.dataset.areply), text }] }); showToast('📮 답변을 보냈어요'); loadAskAdmin(); return;
+    await teacherCall({ ops:[{ op:'askReply', id:Number(r.dataset.areply), text }] }); showToast('답변을 보냈어요'); loadAskAdmin(); return;
   }
   const dn = e.target.closest('[data-adone]');
   if (dn){ await teacherCall({ ops:[{ op:'askDone', id:Number(dn.dataset.adone) }] }); showToast('✔ 확인 표시했어요'); loadAskAdmin(); return; }
@@ -5222,7 +5227,7 @@ function autoMissions(ds, name){
   const present = kids().filter(n => day[n] && day[n].status === 'present');
   const m1 = ms.find(m => m.auto === 'allOnTime' || m.flow === 'allon'), m3 = ms.find(m => m.auto === 'streak5');
   if (m1 && dayAllOnTime(day)){   // 🎯 냥코인은 미션을 고른 학생에게 서버가 줘요 (축하만)
-    showToast(`🌅 반 전체 제시간 등교 성공! 모두 +${m1.coins} 🐾`); setBubble('우리 반 전원 제시간 등교다냥!! 🎉', 5000); burst('party', innerWidth / 2, innerHeight * .3);
+    showToast(`반 전체 제시간 등교 성공! 모두 +${m1.coins} `); setBubble('우리 반 전원 제시간 등교다냥!! 🎉', 5000); burst('party', innerWidth / 2, innerHeight * .3);
   }
   if (m3 && name && !isTeacherName(name) && day[name] && day[name].status === 'present'){
     const st = onTimeStreak(name);
@@ -5247,7 +5252,7 @@ function renderCoinAdmin(){
     box.innerHTML = `<div class="section"><div class="section-title">⏳ 확인 대기 (${pend.length})</div>${pend.length ? pend.map(r => `
         <div class="bonus-entry"><span>${r.type === '미션' ? '✅ 미션' : '🎟 쿠폰'} · <b>${esc(r.name)}</b> · ${esc(r.item)} · ${r.type === '미션' ? '+' : ''}${r.coins}🐾 <small>${esc(r.t)}</small></span>
         <span>${(d.sigs || []).includes(r.id) ? `<button type="button" class="act-btn" style="background:#FFF2BF;" data-sigview="${r.id}">✍️ 서명 보기</button>` : ''}<button type="button" class="act-btn" style="background:var(--mint);" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button>
-        <button type="button" class="act-btn cancel" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="clean-empty">확인할 게 없어요 ✨</div>'}</div>
+        <button type="button" class="act-btn cancel" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="clean-empty">확인할 게 없어요 </div>'}</div>
       <div class="section"><div class="section-title">🎯 미션 성공 보고 <small style="color:var(--ink-soft);">(잘못 준 건 ↩ 취소 · 코인과 EXP가 빠져요)</small></div>${(d.results || []).length ? d.results.slice(0, 30).map(x => `<div class="bonus-entry"><span>${x.undone ? '<s>' : ''}<b>${esc(x.name)}</b> · ${esc(String(x.why).replace(/^미션:\s*/, ''))} · +${x.amt}🐾 <small>${esc(x.kind)} ${esc(x.t.slice(5))}</small>${x.undone ? '</s> ↩ 취소됨' : ''}</span>${x.undone ? '' : `<button type="button" class="act-btn cancel" data-mundo="${x.id}">↩ 취소</button>`}</div>`).join('') : '<div class="clean-empty">아직 없어요</div>'}</div>
       <div class="section"><div class="section-title">💌 칭찬편지 결과 <small style="color:var(--ink-soft);">(내용은 안 보여요)</small></div>${(d.praise || []).length ? d.praise.slice(0, 20).map(x => `<div class="bonus-entry"><span><b>${esc(x.from)}</b> → ${esc(x.to)} ${x.mission ? '🎯' : ''}</span><span>${x.ok ? '✅ 받은 친구가 확인' : '⏳ 아직 확인 전'} <small>${esc(x.t.slice(5))}</small></span></div>`).join('') : '<div class="clean-empty">아직 없어요</div>'}</div>
       <div class="section"><div class="section-title">📜 최근 처리</div>${done.map(r => `<div class="bonus-entry"><span>${esc(r.type)} · ${esc(r.name)} · ${esc(r.item)} · ${esc(r.status)}</span><small>${esc(r.done)}</small></div>`).join('') || '<div class="clean-empty">-</div>'}</div>`;
@@ -5282,17 +5287,17 @@ function renderCoinAdmin(){
         <div class="form-hint">회장·부회장은 회의실 앞자리에 늘 앉아 있어요. 나머지는 1~6모둠 테이블(4·4·4 / 4·4·5)에 앉고, 같은 테이블끼리만 모둠 대화를 할 수 있어요.</div></div>
       <div class="section"><div class="section-title">📋 미션 (한 줄에 하나: 분류(매일/매주/특별), 이름, 코인, 학생 신청 O/X, 선착 성공 인원 'N명' (늦게 성공하면 ✨5 EXP))</div>
         <textarea id="coMissions" style="height:220px;">${esc(ml)}</textarea>
-        <div class="form-hint">🎯 학생이 먼저 골라야 해요 (반 전체 등교 · 바른 한 주 · 이번 주 좋았다 · 사물함은 안 골라도 돼요). '자동'이 붙은 미션은 조건을 채우면 저절로 지급돼요. 이름·코인·인원만 바꿔 주세요 (줄 순서는 그대로!).</div></div>
+        <div class="form-hint">학생이 먼저 골라야 해요 (반 전체 등교 · 바른 한 주 · 이번 주 좋았다 · 사물함은 안 골라도 돼요). '자동'이 붙은 미션은 조건을 채우면 저절로 지급돼요. 이름·코인·인원만 바꿔 주세요 (줄 순서는 그대로!).</div></div>
       <div class="section"><div class="section-title">📖 미션 안내 (학생이 🎯 고르기를 누르면 보여요)</div>
         ${eco.missions.map(m => `<div class="form-group"><label>${esc(m.name)} <small style="color:var(--ink-soft);">${m.flow === 'teacher' ? '👑 선생님이 줘요' : m.req || m.flow === 'sign' ? '✋ 수동 지급' : FL[m.flow] || m.auto ? '⚡ 자동' : ''}</small></label><textarea data-mhow="${m.id}" rows="2" style="width:100%;font-family:inherit;font-size:.95rem;">${esc(m.how || missionHowDef(m))}</textarea></div>`).join('')}
-        <div class="form-hint">✋ 수동 지급 · ⚡ 자동 지급 안내는 앱이 알아서 붙여요. 비우면 기본 글로 돌아가요.</div></div>
+        <div class="form-hint">수동 지급 · 자동 지급 안내는 앱이 알아서 붙여요. 비우면 기본 글로 돌아가요.</div></div>
       <div class="section"><div class="section-title">🎟 쿠폰 · 🎁 실물 아이템 (이름, 가격, 수량, 실물 · 수량을 비우면 무제한 · 끝에 '실물'을 쓰면 🎁 아이템 칸에 나와요)</div>
         <textarea id="coCoupons" style="height:200px;">${esc(cl)}</textarea>
         <div class="form-hint">학생이 사면 '확인 대기'에 올라와요. 실물을 주고 '지급 완료'를 누르세요. (취소하면 코인이 돌아가요)</div></div>
       <div class="section"><div class="section-title">🏠 마을 아이템 가격</div><div class="dex-grid">${eco.shop.filter(x => x.cat !== 'coupon').map(x => `
         <div class="dex-item"><div class="dex-name">${esc(x.name)}</div><input type="number" min="0" style="width:80px;text-align:right;" data-vprice="${x.id}" value="${x.price}"><div class="dex-count"><label><input type="checkbox" data-voff="${x.id}" ${x.off ? '' : 'checked'}> 판매</label></div></div>`).join('')}</div></div>
       <div class="section"><div class="section-title">🎮 게임 광장</div>
-        <div class="row" style="justify-content:flex-start;gap:16px;"><span class="form-hint" style="margin:0;">🎮 게임 켜고 끄기는 👑 관리자 모드 → 🎛️ 기능 스위치에서 해요</span>
+        <div class="row" style="justify-content:flex-start;gap:16px;"><span class="form-hint" style="margin:0;">게임 켜고 끄기는 관리자 모드 → 기능 스위치에서 해요</span>
           <span>한 번에 최대 <input type="number" id="coMaxBet" value="${g.maxBet || 30}" style="width:70px;"> 🐾</span><span>하루 <input type="number" id="coDaily" value="${g.daily || 5}" style="width:60px;"> 판</span></div>
         <div class="row" style="justify-content:flex-start;gap:10px;">${[1,2,3,4,5].map(i => `<span>${days[i]} <input type="time" data-gh0="${i}" value="${((g.hours || {})[i] || [])[0] || ''}"> ~ <input type="time" data-gh1="${i}" value="${((g.hours || {})[i] || [])[1] || ''}"></span>`).join('')}</div>
         <div class="form-hint">주말에는 게임이 닫혀요. 시간을 비우면 그 요일은 닫혀요.</div></div>
@@ -5361,24 +5366,24 @@ function saveCoinSettings(){
     meeting: { pres: $('coPres') ? $('coPres').value : '', vice: $('coVice') ? $('coVice').value : '', agenda: $('coAgenda') ? $('coAgenda').value.trim() : '' },
     game: { on: eco.game ? eco.game.on !== false : true, maxBet: Math.max(1, parseInt($('coMaxBet').value, 10) || 30), daily: Math.max(1, parseInt($('coDaily').value, 10) || 5), hours } };
   saveDB(); syncOp({ op:'config', data: configOf() });
-  showToast('🐾 냥코인 설정을 저장했어요'); renderCoinAdmin();
+  showToast('냥코인 설정을 저장했어요'); renderCoinAdmin();
 }
 /* ✍️ 학습태도 서명 보기 */
 function showSigView(j){
   let ov = $('sigViewOv');
   if (!ov){ ov = document.createElement('div'); ov.className = 'overlay'; ov.id = 'sigViewOv'; ov.style.zIndex = 20200; ov.innerHTML = '<div class="modal" style="max-width:520px;text-align:center;"><button type="button" class="modal-x" data-close="sigViewOv">✕</button><h2>✍️ 학습태도 서명</h2><div id="sigViewBody"></div></div>'; document.body.appendChild(ov);
     ov.addEventListener('click', e => { if (e.target === ov || e.target.closest('[data-close]')) ov.style.display = 'none'; }); }
-  $('sigViewBody').innerHTML = j && j.sig ? `<div class="form-hint">📚 ${esc(j.subj || '')} 시간</div><img src="${j.sig}" alt="서명" style="width:100%;max-width:460px;background:#fff;border:2px solid #CDBBA8;border-radius:12px;">` : '<div class="clean-empty">서명이 없어요</div>';
+  $('sigViewBody').innerHTML = j && j.sig ? `<div class="form-hint">${esc(j.subj || '')} 시간</div><img src="${j.sig}" alt="서명" style="width:100%;max-width:460px;background:#fff;border:2px solid #CDBBA8;border-radius:12px;">` : '<div class="clean-empty">서명이 없어요</div>';
   ov.style.display = 'flex';
 }
 async function onCoinAdmClick(e){
   const t = e.target;
   const tb = t.closest('[data-co]'); if (tb){ coTab = tb.dataset.co; renderCoinAdmin(); return; }
-  if (t.closest('[data-tickerclear]')){ if (!confirm('마을 공지(확성기·새로 꾸몄어요)를 모두 지울까요?')) return; try { await teacherCall({ ops:[{ op:'tickerClear' }] }); megaNow = []; setMega([]); renderCoinAdmin(); showToast('🧹 마을 공지를 지웠어요'); } catch(e){ showToast('지우지 못했어요'); } return; }
-  const md = t.closest('[data-megadel]'); if (md){ await teacherCall({ ops:[{ op:'megaDel', ts: Number(md.dataset.megadel) }] }); megaNow = megaNow.filter(m => m.ts !== Number(md.dataset.megadel)); setMega(megaNow); renderCoinAdmin(); showToast('📢 확성기를 내렸어요'); return; }
-  const td = t.closest('[data-titledel]'); if (td){ if (!confirm(`${td.dataset.titledel}의 칭호를 지울까요?`)) return; await teacherCall({ ops:[{ op:'titleDel', name: td.dataset.titledel }] }); showToast('🏷️ 칭호를 지웠어요'); loadCoinAdmin(); return; }
+  if (t.closest('[data-tickerclear]')){ if (!confirm('마을 공지(확성기·새로 꾸몄어요)를 모두 지울까요?')) return; try { await teacherCall({ ops:[{ op:'tickerClear' }] }); megaNow = []; setMega([]); renderCoinAdmin(); showToast('마을 공지를 지웠어요'); } catch(e){ showToast('지우지 못했어요'); } return; }
+  const md = t.closest('[data-megadel]'); if (md){ await teacherCall({ ops:[{ op:'megaDel', ts: Number(md.dataset.megadel) }] }); megaNow = megaNow.filter(m => m.ts !== Number(md.dataset.megadel)); setMega(megaNow); renderCoinAdmin(); showToast('확성기를 내렸어요'); return; }
+  const td = t.closest('[data-titledel]'); if (td){ if (!confirm(`${td.dataset.titledel}의 칭호를 지울까요?`)) return; await teacherCall({ ops:[{ op:'titleDel', name: td.dataset.titledel }] }); showToast('칭호를 지웠어요'); loadCoinAdmin(); return; }
   if (t.closest('#butlerDelBtn')){ if (!confirm('오늘의 하나 집사를 취소할까요? (코인은 냥코인 관리에서 돌려주세요)')) return; await teacherCall({ ops:[{ op:'butlerDel' }] }); butlerNow = ''; setSpecials({ banners: bannersNow, songs: songsNow, butler: '' }); renderCoinAdmin(); return; }
-  if (t.closest('#hanaResetBtn')){ if (!confirm('하나 꾸미기를 모두 벗길까요?')) return; await teacherCall({ ops:[{ op:'hanaReset' }] }); setHanaLook({}); showToast('🐱 하나가 원래대로 돌아왔어요'); return; }
+  if (t.closest('#hanaResetBtn')){ if (!confirm('하나 꾸미기를 모두 벗길까요?')) return; await teacherCall({ ops:[{ op:'hanaReset' }] }); setHanaLook({}); showToast('하나가 원래대로 돌아왔어요'); return; }
   if (t.closest('#coXBtn')){ $('coinAdmOverlay').style.display = 'none'; return; }
   const mu = t.closest('[data-mundo]');
   if (mu){ if (!confirm('이 미션 성공을 취소할까요?\n받은 냥코인과 EXP가 빠지고, 같은 기간에는 다시 받을 수 없어요.')) return; try { await teacherCall({ ops:[{ op:'missionUndo', id: Number(mu.dataset.mundo) }] }); showToast('↩ 미션 성공을 취소했어요'); await loadCoinAdmin(); } catch(err){ alert('취소하지 못했어요'); } return; }
@@ -5395,7 +5400,7 @@ async function onCoinAdmClick(e){
     if (!confirm(`${who.length}명에게 ${v > 0 ? '+' : ''}${v}🐾 (${why}) 줄까요?`)) return;
     const tag = Date.now().toString(36);
     who.forEach(n => syncOp({ op:'coinAdd', name:n, amt:v, why, kind:'선생님', key:`bulk:${tag}:${n}` })); await flushSync();
-    showToast(`🐾 ${who.length}명 ${v > 0 ? '+' : ''}${v} · ${why}`); $('coBulkAmt').value = ''; loadCoinAdmin(); return;
+    showToast(`${who.length}명 ${v >0 ? '+': ''}${v} · ${why}`); $('coBulkAmt').value = ''; loadCoinAdmin(); return;
   }
   if (t.closest('#coBulkExpBtn')){   // ✨ 경험치 일괄 지급
     const v = parseInt($('coBulkExp').value, 10), why = ($('coBulkExpWhy').value || '').trim() || '선생님 지급', who = [...document.querySelectorAll('#coPick .pick.on')].map(b => b.dataset.pick);
@@ -5404,7 +5409,7 @@ async function onCoinAdmClick(e){
     const before = levelsNow();
     who.forEach(n => addAdj(n, v, '✨ ' + why)); await flushSync();
     renderGrid(); updateStatsBoard(); setTimeout(() => queueLevelUps(before), 600);
-    showToast(`✨ ${who.length}명 ${v > 0 ? '+' : ''}${v} EXP · ${why}`); $('coBulkExp').value = ''; return;
+    showToast(`${who.length}명 ${v >0 ? '+': ''}${v} EXP · ${why}`); $('coBulkExp').value = ''; return;
   }
   if (t.closest('#coPurge')){   // 🧪 이 시각 전의 냥코인 기록 · 보너스 EXP(미션 · 선생님 조정)를 지워요 (출석 EXP는 그대로)
     const before = (prompt('언제 전의 기록을 지울까요? (YYYY-MM-DD HH:MM)\n이 시각 전의 냥코인 기록과 보너스 EXP(미션 · 선생님 조정)가 지워져요.\n출석해서 받은 EXP는 그대로 남아요.', '2026-11-25 08:00') || '').trim();
@@ -5422,7 +5427,7 @@ async function onCoinAdmClick(e){
     let r; try { r = await teacherCall({ action:'coinPurge', before }); } catch(e){ r = null; }
     ex.forEach(({ ds, b }) => { db.bonus[ds] = (db.bonus[ds] || []).filter(x => x.id !== b.id); syncOp({ op:'bonusDel', ds, id: b.id }); });
     saveDB(); await flushSync(); renderGrid(); updateStatsBoard(); publishPub();
-    showToast(`🧪 냥코인 ${r && r.ok ? r.n : 0}줄 · EXP ${ex.length}개를 지웠어요`); loadCoinAdmin(); return;
+    showToast(`냥코인 ${r && r.ok ? r.n : 0}줄 · EXP ${ex.length}개를 지웠어요`); loadCoinAdmin(); return;
   }
   if (t.closest('#coResetAll')){   // 🧹 냥코인 전체 초기화 (기록은 남기고 잔액만 0으로)
     const bal = (coData && coData.balances) || {}, list = kids().filter(n => Number(bal[n]) || 0);
@@ -5431,19 +5436,19 @@ async function onCoinAdmClick(e){
     if ((ans || '').trim() !== '초기화'){ showToast('취소했어요'); return; }
     const tag = Date.now().toString(36);
     list.forEach(n => syncOp({ op:'coinAdd', name:n, amt: -Number(bal[n]), why:'🧹 냥코인 전체 초기화', kind:'초기화', key:`reset:${tag}:${n}` })); await flushSync();
-    showToast(`🧹 ${list.length}명의 냥코인을 0으로 만들었어요`); loadCoinAdmin(); return;
+    showToast(`${list.length}명의 냥코인을 0으로 만들었어요`); loadCoinAdmin(); return;
   }
   if (t.closest('#coGive')){
     const m = db.economy.missions.find(x => x.id === $('coMission').value), who = [...document.querySelectorAll('#coPick .pick.on')].map(b => b.dataset.pick);
     if (!m || !who.length){ alert('미션과 학생을 골라 주세요.'); return; }
     who.forEach(n => coinGrant(n, m, false)); await flushSync();
-    showToast(`🐾 ${who.length}명에게 ${m.name} +${m.coins}`); loadCoinAdmin(); return;
+    showToast(`${who.length}명에게 ${m.name} +${m.coins}`); loadCoinAdmin(); return;
   }
   const ab = t.closest('[data-cadjbtn]');
   if (ab){
     const n = ab.dataset.cadjbtn, v = parseInt(document.querySelector(`[data-cadj="${CSS.escape(n)}"]`).value, 10);
     if (!v){ alert('더하거나 뺄 코인을 적어 주세요. (예: -20)'); return; }
-    syncOp({ op:'coinAdd', name:n, amt:v, why:'선생님 조정', kind:'선생님', key:'' }); await flushSync(); showToast(`🐾 ${n} ${v > 0 ? '+' : ''}${v}`); loadCoinAdmin(); return;
+    syncOp({ op:'coinAdd', name:n, amt:v, why:'선생님 조정', kind:'선생님', key:'' }); await flushSync(); showToast(`${n} ${v >0 ? '+': ''}${v}`); loadCoinAdmin(); return;
   }
   if (t.closest('#coSave')){ saveCoinSettings(); }
 }
@@ -5516,7 +5521,7 @@ function rosterRecoverCheck(){
   db.students = list; saveDB();
   syncOp({ op:'config', data: configOf() }); publishPub();
   renderGrid(); updateStatsBoard(); applyTitle();
-  showToast(`🩹 친구 ${list.length}명 명단을 되살렸어요`);
+  showToast(`친구 ${list.length}명 명단을 되살렸어요`);
 }
 function refreshAfterRemote(){
   setTimeout(rosterRecoverCheck, 300);
@@ -5538,7 +5543,7 @@ function updateSyncUI(){
     pill.className = 'warn';
     pill.textContent = `⚠️ 연결 안 됨${sync.queue.length ? ` · 대기 ${sync.queue.length}개` : ''}`;
     pill.title = `이유: ${sync.err || '알 수 없음'} (눌러서 다시 연결)`;
-    pill.onclick = () => { showToast('🔄 다시 연결해 볼게요'); pullSync(true); };
+    pill.onclick = () => { showToast('다시 연결해 볼게요'); pullSync(true); };
     st.innerHTML = `⚠️ 시트에 연결하지 못했어요 (${esc(sync.err)}). 이 컴퓨터에 먼저 저장해 두고, 연결되면 자동으로 올려요.`;
   } else {
     pill.className = '';
@@ -5687,8 +5692,17 @@ const V_SIGNS = {
   south: [{ to:'out', x:800, y:345, label:'⬆ 마을' }]
 };
 /* 🏗️ 집 부지: 처음엔 모두 🐾 길냥이집, 레벨이 오르면 시티 · 해변 · 숲 · 상점가 · ☁️ 하늘 정원으로 이사 (다음 날 완공) */
-const PLOTS = Array.from({ length: 12 }, (_, i) => ({ id: 'P' + (i + 1), map: 'south', lv: 7, x: 250 + (i % 4) * 370, y: 520 + Math.floor(i / 4) * 160 }));
-const VPLOTS = PLOTS.concat(
+const PLOTS = [[220, 520], [230, 800], [520, 965], [1380, 520], [1370, 800], [1080, 965]].map(([x, y], i) => ({ id: 'P' + (i + 1), map: 'south', lv: 7, x, y }));
+const T_PLOT = { id: 'S0', map: 'south', lv: 99, x: 800, y: 700, teacher: true };   // 👑 시내쌤 전용 특별 부지 (하늘 궁전)
+/* 🏗️ 부지 값 [사는 값, 하루 일세] — Code.gs 의 PLOT_PRICE_ 와 같아야 해요 (좋은 자리일수록 비싸요) */
+const PLOT_PRICE = {
+  C1: [90, 2], C2: [110, 2], C3: [150, 3], C4: [110, 2], C5: [90, 2],
+  M1: [70, 1], M2: [90, 1], M3: [110, 2], M4: [90, 1], M5: [70, 1],
+  B1: [200, 4], B2: [230, 4], B3: [170, 3], B4: [150, 3],
+  F1: [160, 3], F2: [130, 2], F3: [180, 3], F4: [120, 2],
+  P1: [380, 6], P2: [450, 8], P3: [400, 7], P4: [380, 6], P5: [450, 8], P6: [400, 7], S0: [0, 0]
+};
+const VPLOTS = PLOTS.concat([T_PLOT],
   [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'C' + (i + 1), map: 'out', lv: 3, x, y: 280 })),
   [[900, 250], [1240, 250], [1180, 700], [640, 690]].map(([x, y], i) => ({ id: 'B' + (i + 1), map: 'west', lv: 4, x, y })),
   [[310, 640], [1460, 280], [1150, 720], [220, 950]].map(([x, y], i) => ({ id: 'F' + (i + 1), map: 'east', lv: 4, x, y })),
@@ -5747,8 +5761,8 @@ const V_OBJS = [
   { id:'swing2',map:'east', kind:'treeswing',x:1420, y:760, r:50, act:'swing',   label:'🌳 나무 그네',    emo:'🎉', seats:[[0, 0]] },
   { id:'stump', map:'east', kind:'stump',    x:1150, y:900, r:35, act:'sit',     label:'🪵 그루터기',     emo:'😺', seats:[[0, -8]] },
   // ☁️ 하늘 정원
-  { id:'park',  map:'south', kind:'longbench', x:1400, y:372, r:80, act:'sit',   label:'☁️ 구름 벤치',    emo:'😺', seats:[[-54, 0], [0, 0], [54, 0]] },
-  { id:'sandbox',map:'south', kind:'sandbox', x:1060, y:365, r:60, act:'build',   label:'🏖️ 모래놀이',     emo:'🏰', seats:[[-30, 0], [30, 0]] }
+  { id:'park',  map:'south', kind:'longbench', x:1160, y:385, r:80, act:'sit',   label:'☁️ 구름 벤치',    emo:'😺', seats:[[-54, 0], [0, 0], [54, 0]] },
+  { id:'sandbox',map:'south', kind:'sandbox', x:450, y:385, r:60, act:'build',   label:'🏖️ 모래놀이',     emo:'🏰', seats:[[-30, 0], [30, 0]] }
 ];
 const objsOf = sc => V_OBJS.filter(o => (o.map || 'out') === sc);
 /* 🏛️ 시청 회의실 테이블 (4 4 4 / 4 4 5) — Code.gs의 SEAT_CAP.hall 과 같아야 해요 */
@@ -6463,6 +6477,7 @@ function openVillage(opts){
   }
   function drawPlots(map, t){
     VPLOTS.filter(pl => pl.map === map).forEach(pl => {
+      if (pl.teacher){ drawPalace(pl, t); return; }
       const ow = plotOwner(pl.id), inv = ow && state.inv[ow.name], sky = map === 'south';
       if (sky){ ctx.fillStyle = '#9BD98A'; ctx.beginPath(); ctx.ellipse(pl.x, pl.y - 6, 150, 26, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#B58B65'; ctx.beginPath(); ctx.moveTo(pl.x - 130, pl.y); ctx.lineTo(pl.x, pl.y + 70 + Math.sin(t / 900 + pl.x) * 4); ctx.lineTo(pl.x + 130, pl.y); ctx.closePath(); ctx.fill(); }
       else if (!pl.back){ ctx.fillStyle = map === 'out' ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.4)'; ctx.fillRect(pl.x - 120, pl.y - 110, 240, 120); }
@@ -6477,7 +6492,7 @@ function openVillage(opts){
         label(`공사중 · ${ow.name}`, pl.x, pl.back ? pl.y - 116 : pl.y + 14, 12, '#FFF2BF');
       } else {
         if (!sky && !pl.back){ ctx.strokeStyle = '#C9A06A'; ctx.lineWidth = 3; ctx.setLineDash([8, 6]); ctx.strokeRect(pl.x - 120, pl.y - 110, 240, 120); ctx.setLineDash([]); }
-        emoji('🪧', pl.x, pl.y - 50, 30); label(`분양 중 · Lv.${pl.lv}부터`, pl.x, pl.back ? pl.y - 116 : pl.y + 14, 12, '#FFFFFF');
+        emoji('🪧', pl.x, pl.y - 50, 30); label(`분양 중 · Lv.${pl.lv} · ${(PLOT_PRICE[pl.id] || [0])[0]}코인`, pl.x, pl.back ? pl.y - 116 : pl.y + 14, 12, '#FFFFFF');
       }
     });
   }
@@ -6546,25 +6561,82 @@ function openVillage(opts){
     const inside = Object.values(cats).filter(c => c.sc === b.id).length;
     label(b.name + (inside ? ` 👥${inside}` : ''), x + w / 2, y + h + 18, 14, '#FFFFFF');
   }
-  const plotOwner = id => kidList().find(s => { const pl = state && state.inv && state.inv[s.name] && state.inv[s.name].plot; return pl && pl.id === id; });
+  const isTch = n => /(쌤|샘|선생님|교감|교장)$/.test(n || '');
+  const invPlot = n => state && state.inv && state.inv[n] && state.inv[n].plot;
+  const tchHome = () => kidList().find(s => isTch(s.name) && (!invPlot(s.name) || invPlot(s.name).id === 'S0' || !plotReady(invPlot(s.name))));   // 👑 다른 데로 이사 안 했으면 하늘 궁전
+  const plotOwner = id => id === 'S0' ? tchHome() : kidList().find(s => { const pl = invPlot(s.name); return pl && pl.id === id; });
   const todayLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const plotReady = pl => pl && todayLocal() >= pl.ready;
-  const movedAway = name => { const pl = state && state.inv && state.inv[name] && state.inv[name].plot; return plotReady(pl); };
-  const plotOfName = name => { const pl = state && state.inv && state.inv[name] && state.inv[name].plot; return pl && plotReady(pl) ? VPLOTS.find(q => q.id === pl.id) : null; };
+  const tchIsHome = name => { const h = isTch(name) && tchHome(); return !!h && h.name === name; };
+  const movedAway = name => plotReady(invPlot(name)) || tchIsHome(name);
+  const plotOfName = name => { const pl = invPlot(name); if (pl && plotReady(pl) && pl.id !== 'S0') return VPLOTS.find(q => q.id === pl.id) || null; return tchIsHome(name) ? T_PLOT : null; };
   const houseMapOf = name => { const q = plotOfName(name); return q ? q.map : 'alley'; };
   const alleyOf = name => alleyPos(kidList().map(s => s.name), name);
+  /* 👑 시내쌤 하늘 궁전 (상점에서 살 수 없는 단 하나뿐인 집) */
+  function drawPalace(pl, t){
+    const x = pl.x, y = pl.y, ow = plotOwner('S0');
+    // 떠 있는 큰 섬
+    ctx.fillStyle = 'rgba(255,240,170,.35)'; ctx.beginPath(); ctx.ellipse(x, y - 120, 330 + Math.sin(t / 600) * 8, 190, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#B58B65'; ctx.beginPath(); ctx.moveTo(x - 290, y + 6); ctx.lineTo(x - 120, y + 120); ctx.lineTo(x, y + 170 + Math.sin(t / 900) * 5); ctx.lineTo(x + 120, y + 120); ctx.lineTo(x + 290, y + 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#8E6A4C'; ctx.beginPath(); ctx.moveTo(x - 160, y + 60); ctx.lineTo(x, y + 150); ctx.lineTo(x + 160, y + 60); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#A8E59A'; ctx.beginPath(); ctx.ellipse(x, y, 300, 44, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8CD47E'; ctx.beginPath(); ctx.ellipse(x, y - 4, 270, 32, 0, 0, Math.PI * 2); ctx.fill();
+    // 금빛 계단 · 레드카펫
+    ctx.fillStyle = '#D8343F'; ctx.beginPath(); ctx.moveTo(x - 26, y - 40); ctx.lineTo(x + 26, y - 40); ctx.lineTo(x + 46, y + 34); ctx.lineTo(x - 46, y + 34); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#FFD84D'; [-40, -20, 0, 20].forEach(k => ctx.fillRect(x - 40 - k * .1, y + k * .9, 80 + k * .2, 3));
+    // 본관
+    const W = 300, H = 170, bx = x - W / 2, by = y - 40 - H;
+    ctx.fillStyle = '#FFFDF6'; ctx.fillRect(bx, by, W, H); ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 4; ctx.strokeRect(bx, by, W, H);
+    ctx.fillStyle = '#FFE8A3'; ctx.fillRect(bx, by + H - 14, W, 14); ctx.fillRect(bx, by, W, 10);
+    for (let i = 0; i < 6; i++){ ctx.fillStyle = '#F3E9D8'; ctx.fillRect(bx + 18 + i * 50, by + 18, 12, H - 34); }   // 기둥
+    for (let i = 0; i < 5; i++){ const wx = bx + 38 + i * 50; ctx.fillStyle = (Math.floor(t / 700 + i) % 4) ? '#BFE3FF' : '#FFF3B0'; ctx.beginPath(); ctx.arc(wx + 6, by + 62, 13, Math.PI, 0); ctx.fill(); ctx.fillRect(wx - 7, by + 62, 26, 34); }
+    ctx.fillStyle = '#8B5A3C'; ctx.beginPath(); ctx.arc(x, by + H - 40, 26, Math.PI, 0); ctx.fill(); ctx.fillRect(x - 26, by + H - 40, 52, 40); ctx.fillStyle = '#FFD84D'; ctx.beginPath(); ctx.arc(x + 14, by + H - 20, 4, 0, Math.PI * 2); ctx.fill();
+    // 지붕 · 돔
+    ctx.fillStyle = '#FF8FB8'; ctx.beginPath(); ctx.moveTo(bx - 16, by + 4); ctx.lineTo(x, by - 70); ctx.lineTo(bx + W + 16, by + 4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#FFD84D'; ctx.beginPath(); ctx.arc(x, by - 76, 34, Math.PI, 0); ctx.fill(); ctx.stroke();
+    // 양쪽 탑
+    [bx - 46, bx + W + 6].forEach((tx, k) => {
+      ctx.fillStyle = '#FFFDF6'; ctx.fillRect(tx, by - 40, 40, H + 40); ctx.strokeRect(tx, by - 40, 40, H + 40);
+      ctx.fillStyle = '#C9A6FF'; ctx.beginPath(); ctx.moveTo(tx - 8, by - 40); ctx.lineTo(tx + 20, by - 110); ctx.lineTo(tx + 48, by - 40); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#5B4636'; ctx.fillRect(tx + 19, by - 140, 3, 32);
+      ctx.fillStyle = k ? '#8CC8FF' : '#FFD84D'; const fw = Math.sin(t / 250 + k) * 4; ctx.beginPath(); ctx.moveTo(tx + 22, by - 140); ctx.lineTo(tx + 48, by - 132 + fw); ctx.lineTo(tx + 22, by - 122); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#BFE3FF'; ctx.fillRect(tx + 12, by, 16, 22); ctx.fillRect(tx + 12, by + 60, 16, 22);
+    });
+    // 꼭대기 왕관 · 반짝이
+    emoji('👑', x, by - 124 + Math.sin(t / 500) * 4, 46);
+    for (let i = 0; i < 8; i++){ const a = t / 1400 + i * Math.PI / 4; ctx.globalAlpha = .5 + .5 * Math.sin(t / 300 + i); emoji('✨', x + Math.cos(a) * 250, by + 40 + Math.sin(a) * 110, 18); } ctx.globalAlpha = 1;
+    // 정원: 분수 · 장미 아치 · 동상 · 무지개 화단
+    box(x - 262, y - 72, 64, 64, '#DFF3FF', 30); emoji('⛲', x - 230, y - 44, 50); ctx.fillStyle = 'rgba(140,200,255,.6)'; for (let i = 0; i < 3; i++){ ctx.beginPath(); ctx.arc(x - 230 + (i - 1) * 14, y - 82 - ((t / 6 + i * 20) % 30), 3, 0, Math.PI * 2); ctx.fill(); }
+    emoji('🦢', x + 236, y - 26 + Math.sin(t / 800) * 2, 40); emoji('🌹', x - 180, y + 12, 24); emoji('🌷', x + 170, y + 14, 24); emoji('🌸', x - 120, y + 26, 22); emoji('🌼', x + 110, y + 26, 22);
+    ['#FF8FB8', '#FFB86B', '#FFE066', '#9BE39B', '#8CC8FF', '#C9A6FF'].forEach((c, k) => { ctx.strokeStyle = c; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(x + 236, y - 10, 46 - k * 4, Math.PI, 0); ctx.stroke(); });
+    const nm = ow ? ow.name : '시내쌤', guests = ow ? Object.values(cats).filter(c => c.sc === 'house:' + ow.name).length : 0;
+    label(`👑 ${nm}의 하늘 궁전` + (guests ? ` 👥${guests}` : ''), x, y + 56, 16, '#FFE58A');
+  }
   function drawSouth(t){
-    // ☁️ 구름 위 하늘 정원: 떠 있는 섬 · 무지개다리 · 소원 별
-    const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#9CCBFF'); g.addColorStop(.6, '#CFE6FF'); g.addColorStop(1, '#F6E8FF'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
-    ctx.fillStyle = 'rgba(255,255,255,.85)'; [[120, 120, 90], [520, 70, 70], [1000, 110, 100], [1420, 80, 80], [300, 980, 160], [1300, 990, 180], [800, 1000, 140]].forEach(([x, y, r]) => { const dx = Math.sin(t / 4000 + x) * 20; ctx.beginPath(); ctx.ellipse(x + dx, y, r, r * .32, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(x + dx + r * .4, y - r * .15, r * .55, r * .3, 0, 0, Math.PI * 2); ctx.fill(); });
+    // ☁️ 구름 위 하늘 정원: 가운데 하늘 궁전 · 무지개다리 · 열기구 · 하늘고래 · 소원 별
+    const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, '#8EC2FF'); g.addColorStop(.55, '#CFE6FF'); g.addColorStop(1, '#F8E6FF'); ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+    // 큰 무지개 (배경)
+    ['#FF8FB8', '#FFB86B', '#FFE066', '#9BE39B', '#8CC8FF', '#C9A6FF'].forEach((c, k) => { ctx.strokeStyle = c; ctx.globalAlpha = .28; ctx.lineWidth = 18; ctx.beginPath(); ctx.arc(800, 760, 720 - k * 18, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); }); ctx.globalAlpha = 1;
+    // 먼 구름 성
+    ctx.fillStyle = 'rgba(255,255,255,.7)'; [[1380, 210], [220, 240]].forEach(([cx, cy], k) => { ctx.fillRect(cx - 40, cy - 60, 80, 60); ctx.fillRect(cx - 60, cy - 90, 24, 90); ctx.fillRect(cx + 36, cy - 90, 24, 90); ctx.beginPath(); ctx.moveTo(cx - 64, cy - 90); ctx.lineTo(cx - 48, cy - 120); ctx.lineTo(cx - 32, cy - 90); ctx.fill(); ctx.beginPath(); ctx.moveTo(cx + 32, cy - 90); ctx.lineTo(cx + 48, cy - 120); ctx.lineTo(cx + 64, cy - 90); ctx.fill(); });
+    ctx.fillStyle = 'rgba(255,255,255,.88)'; [[120, 120, 90], [520, 70, 70], [1000, 110, 100], [1440, 80, 80], [300, 1000, 160], [1300, 1000, 180], [800, 1010, 140]].forEach(([x, y, r]) => { const dx = Math.sin(t / 4000 + x) * 20; ctx.beginPath(); ctx.ellipse(x + dx, y, r, r * .32, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(x + dx + r * .4, y - r * .15, r * .55, r * .3, 0, 0, Math.PI * 2); ctx.fill(); });
+    // 🐋 하늘고래
+    { const wx = (t / 40) % (VW + 400) - 200, wy = 150 + Math.sin(t / 1500) * 14; ctx.fillStyle = '#7FA8E8'; ctx.beginPath(); ctx.ellipse(wx, wy, 70, 26, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(wx - 64, wy); ctx.lineTo(wx - 100, wy - 22); ctx.lineTo(wx - 96, wy + 18); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#DCEBFF'; ctx.beginPath(); ctx.ellipse(wx + 6, wy + 10, 52, 10, 0, 0, Math.PI); ctx.fill(); ctx.fillStyle = '#2C3E66'; ctx.beginPath(); ctx.arc(wx + 44, wy - 6, 3, 0, Math.PI * 2); ctx.fill(); if (Math.floor(t / 900) % 3 === 0){ ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.arc(wx + 20, wy - 40, 6, 0, Math.PI * 2); ctx.arc(wx + 30, wy - 52, 5, 0, Math.PI * 2); ctx.fill(); } }
+    // 🎈 열기구
+    [[340, 300, '#FF8FB8', 0], [1260, 280, '#FFE066', 2], [620, 120, '#8CC8FF', 4]].forEach(([bx0, by0, c, k]) => { const bx = bx0 + Math.sin(t / 2600 + k) * 30, by = by0 + Math.sin(t / 1700 + k) * 12; ctx.fillStyle = c; ctx.beginPath(); ctx.arc(bx, by, 30, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(bx - 4, by - 30, 8, 58); ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(bx - 20, by + 22); ctx.lineTo(bx - 9, by + 46); ctx.moveTo(bx + 20, by + 22); ctx.lineTo(bx + 9, by + 46); ctx.stroke(); ctx.fillStyle = '#B5876A'; ctx.fillRect(bx - 10, by + 44, 20, 12); });
+    // ✨ 소원 별
     const sx = 800, sy = 200 + Math.sin(t / 700) * 6; ctx.fillStyle = '#FFE066'; ctx.beginPath(); for (let i = 0; i < 10; i++){ const a2 = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? 14 : 34; ctx.lineTo(sx + Math.cos(a2) * rr, sy + Math.sin(a2) * rr); } ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#E0A800'; ctx.lineWidth = 3; ctx.stroke();
-    label('✨ 소원 별', sx, sy + 48, 12, '#FFF8D6');
+    label('소원 별', sx, sy + 48, 12, '#FFF8D6');
+    // 🌈 무지개다리: 각 부지 → 궁전 섬
     const RB = ['#FF8FB8', '#FFB86B', '#FFE066', '#9BE39B', '#8CC8FF', '#C9A6FF'];
-    PLOTS.forEach((pl, i) => { if (i % 4 === 3) return; const q = PLOTS[i + 1]; RB.forEach((c, k) => { ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(pl.x + 130, pl.y - 6 + k * 3); ctx.quadraticCurveTo((pl.x + q.x) / 2, pl.y - 50 + k * 3, q.x - 130, q.y - 6 + k * 3); ctx.stroke(); }); });
+    PLOTS.forEach(pl => { const tx = pl.x < 800 ? T_PLOT.x - 280 : T_PLOT.x + 280, ty = T_PLOT.y - 4, fx = pl.x + (pl.x < 800 ? 130 : -130); RB.forEach((c, k) => { ctx.strokeStyle = c; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(fx, pl.y - 6 + k * 3); ctx.quadraticCurveTo((fx + tx) / 2, Math.min(pl.y, ty) - 60 + k * 3, tx, ty + k * 3); ctx.stroke(); }); });
+    // 떠다니는 작은 꽃섬 · 하늘 등불
+    [[110, 660], [1500, 660], [800, 420]].forEach(([fx, fy], k) => { const yy = fy + Math.sin(t / 1100 + k) * 8; ctx.fillStyle = '#B58B65'; ctx.beginPath(); ctx.moveTo(fx - 40, yy); ctx.lineTo(fx, yy + 30); ctx.lineTo(fx + 40, yy); ctx.fill(); ctx.fillStyle = '#9BD98A'; ctx.beginPath(); ctx.ellipse(fx, yy, 44, 10, 0, 0, Math.PI * 2); ctx.fill(); emoji(['🌻', '🍄', '🌷'][k], fx, yy - 16, 24); });
+    for (let i = 0; i < 7; i++){ const lx = 120 + i * 230, ly = VH - ((t / 25 + i * 160) % (VH - 300)); ctx.globalAlpha = .75; ctx.fillStyle = '#FFB86B'; roundRect(lx - 8, ly - 12, 16, 22, 5); ctx.fill(); ctx.fillStyle = '#FFF3B0'; ctx.fillRect(lx - 3, ly - 4, 6, 8); ctx.globalAlpha = 1; }
     drawPlots('south', t);
     for (let i = 0; i < 14; i++){ const x = (i * 271 + t / 30) % VW, y = 200 + (i * 137) % 700; ctx.fillStyle = '#FFFFFF'; ctx.globalAlpha = .5 + .5 * Math.sin(t / 300 + i); ctx.fillRect(x, y, 3, 3); ctx.globalAlpha = 1; }
     objsOf('south').forEach(o => drawObj(o, t)); drawSigns('south');
-    label('☁️ 구름 위 하늘 정원 · Lv.7부터 이사할 수 있어요', 800, 130, 16, '#FFFFFF');
+    label('구름 위 하늘 정원 · Lv.7부터 이사할 수 있어요', 800, 130, 16, '#FFFFFF');
   }
   /* ---------- 🛍️ 상점가 ---------- */
   function drawShopFront(b, t){
@@ -6609,7 +6681,7 @@ function openVillage(opts){
     emoji('🪴', 200, 290, 60); emoji('🪴', 1400, 290, 60); emoji('🕯️', 300, 120, 34); emoji('📚', 1300, 120, 44);
     const taken = new Set(Object.values(cats).filter(c => c.sc === 'cafe' && c.sit).map(c => c.sit.s));
     CAFE_DESKS.forEach((d, i) => { box(d.x - 80, d.y - 34, 160, 56, taken.has(d.id) ? '#FFD8A8' : '#A9744F', 8); emoji('💡', d.x - 50, d.y - 48, 22); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(d.x - 18, d.y - 26, 40, 28); emoji('☕', d.x + 50, d.y - 12, 18); label(String(i + 1), d.x, d.y + 36, 12, '#FFFFFF'); });
-    drawHanaAt(1470, 920, 64, -1, t, false); bubble('조용히 집중하자냥 🤫', 1470, 846, false);
+    drawHanaAt(1470, 930, 100, -1, t, false); bubble('조용히 집중하자냥 🤫', 1470, 810, false);
     box(740, 940, 120, 60, '#2F8F6B', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
   }
   /* ---------- 📚 냥글리시 아카데미 (교실) ---------- */
@@ -6623,7 +6695,7 @@ function openVillage(opts){
     emoji('🌍', 200, 160, 70); emoji('🔤', 1400, 160, 60);
     const taken = new Set(Object.values(cats).filter(c => c.sc === 'eng' && c.sit).map(c => c.sit.s));
     ENG_DESKS.forEach((d, i) => { box(d.x - 70, d.y - 30, 140, 50, taken.has(d.id) ? '#D9CCFF' : '#C98B5A', 8); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(d.x - 30, d.y - 22, 34, 26); emoji('✏️', d.x + 30, d.y - 8, 18); label(String(i + 1), d.x - 52, d.y - 8, 11, '#FFF6DA'); });
-    drawHanaAt(1450, 900, 70, -1, t, false); bubble('Hello! 영어 하자냥 🐾', 1450, 820, false);
+    drawHanaAt(1450, 920, 100, -1, t, false); bubble('Hello! 영어 하자냥 🐾', 1450, 800, false);
     box(740, 940, 120, 60, '#5B6BD6', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
   }
   /* ---------- 🏛️ 시청 회의실 ---------- */
@@ -6672,23 +6744,59 @@ function openVillage(opts){
   }
   /* ---------- 🏰 하나네 집 ---------- */
   function drawHanaHome(t){
-    ctx.fillStyle = '#FFE3EE'; ctx.fillRect(0, 0, VW, 360);
-    for (let i = 0; i < VW; i += 60) for (let j = 0; j < 360; j += 60) if (((i + j) / 60) % 2 === 0){ ctx.fillStyle = '#FFD3E4'; ctx.beginPath(); ctx.arc(i + 30, j + 30, 6, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = '#F6D7B0'; ctx.fillRect(0, 360, VW, VH - 360);
-    for (let i = 0; i < VW; i += 120) { ctx.fillStyle = '#EAC79C'; ctx.fillRect(i, 360, 4, VH - 360); }
-    box(120, 90, 200, 150, '#BFE3FF', 10); ctx.fillStyle = '#fff'; ctx.fillRect(216, 92, 8, 146); ctx.fillRect(122, 160, 196, 8); emoji('☁️', 170, 130, 30); emoji('🌙', 280, 200, 24);
-    box(1280, 70, 200, 170, '#FFFFFF', 10); emoji('🖼️', 1380, 155, 70); label('하나 데뷔 사진', 1380, 260, 12, '#FFF2BF');
-    // 캣타워 · 침대 · 밥그릇 · 화장실 · 장난감
-    ctx.fillStyle = '#C9B8A6'; ctx.fillRect(1380, 380, 16, 300); [[1388, 680, 120], [1360, 560, 100], [1410, 440, 90]].forEach(([x, y, w]) => box(x - w / 2, y - 8, w, 18, '#FFB3CF', 8));
-    box(220, 640, 260, 120, '#FF9EC4', 40); box(240, 620, 220, 60, '#FFD3E4', 30); emoji('👑', 350, 600, 30);
-    box(600, 820, 90, 40, '#FFFFFF', 18); emoji('🍚', 645, 830, 26); box(720, 820, 90, 40, '#BFE3FF', 18); emoji('💧', 765, 830, 22);
-    box(1050, 820, 140, 80, '#D9CCFF', 12); emoji('🧻', 1120, 850, 26); emoji('🧶', 900, 700 + Math.sin(t / 500) * 4, 30); emoji('🐭', 980, 760, 24); emoji('🛁', 1200, 600, 46);
+    // 🎀 하나네 집: 파스텔 벽 · 아치 창 · 전구 줄 · 캐노피 침대 · 캣타워 · 러그
+    const wg = ctx.createLinearGradient(0, 0, 0, 380); wg.addColorStop(0, '#FFE9F1'); wg.addColorStop(1, '#FFDCE8'); ctx.fillStyle = wg; ctx.fillRect(0, 0, VW, 380);
+    ctx.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < VW; i += 80) ctx.fillRect(i, 0, 30, 380);
+    ctx.fillStyle = '#F3C9D8'; ctx.fillRect(0, 300, VW, 80); ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 296, VW, 8); ctx.fillRect(0, 372, VW, 10);
+    // 바닥: 헤링본 원목
+    ctx.fillStyle = '#EFCFA6'; ctx.fillRect(0, 380, VW, VH - 380);
+    for (let y = 380; y < VH; y += 40) for (let x = ((y / 40) % 2) * 60; x < VW; x += 120){ ctx.fillStyle = '#E4BE90'; ctx.fillRect(x, y, 60, 38); }
+    // 아치 창 (밖에 구름이 흘러가요)
+    const ax = 560, aw = 480, ay = 60, ah = 220;
+    ctx.save(); ctx.beginPath(); ctx.moveTo(ax, ay + ah); ctx.lineTo(ax, ay + aw / 2); ctx.arc(ax + aw / 2, ay + aw / 2, aw / 2, Math.PI, 0); ctx.lineTo(ax + aw, ay + ah); ctx.closePath(); ctx.clip();
+    const sk = ctx.createLinearGradient(0, ay, 0, ay + ah); sk.addColorStop(0, '#9CCBFF'); sk.addColorStop(1, '#FFE3C2'); ctx.fillStyle = sk; ctx.fillRect(ax, ay - 40, aw, ah + 60);
+    ctx.fillStyle = '#FFFFFF'; for (let i = 0; i < 4; i++){ const cx = ax + ((t / 50 + i * 150) % (aw + 120)) - 60, cy = ay + 90 + (i % 2) * 60; ctx.beginPath(); ctx.ellipse(cx, cy, 46, 14, 0, 0, Math.PI * 2); ctx.ellipse(cx + 18, cy - 10, 24, 12, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = '#B9E3A8'; ctx.beginPath(); ctx.ellipse(ax + 120, ay + ah, 200, 50, 0, 0, Math.PI * 2); ctx.ellipse(ax + 380, ay + ah + 10, 220, 60, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(ax, ay + ah); ctx.lineTo(ax, ay + aw / 2); ctx.arc(ax + aw / 2, ay + aw / 2, aw / 2, Math.PI, 0); ctx.lineTo(ax + aw, ay + ah); ctx.stroke();
+    ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(ax + aw / 2, ay + 10); ctx.lineTo(ax + aw / 2, ay + ah); ctx.moveTo(ax, ay + 170); ctx.lineTo(ax + aw, ay + 170); ctx.stroke();
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(ax - 20, ay + ah, aw + 40, 16);
+    // 커튼
+    [[ax - 70, 1], [ax + aw + 70, -1]].forEach(([cx, d]) => { ctx.fillStyle = '#FF9EC4'; ctx.beginPath(); ctx.moveTo(cx - 40 * d, 30); ctx.quadraticCurveTo(cx + 30 * d + Math.sin(t / 900) * 4, 160, cx - 10 * d, 300); ctx.lineTo(cx + 40 * d, 300); ctx.lineTo(cx + 40 * d, 30); ctx.closePath(); ctx.fill(); });
+    ctx.fillStyle = '#C9A06A'; ctx.fillRect(ax - 130, 22, aw + 260, 10);
+    // 전구 줄
+    ctx.strokeStyle = '#6B5546'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 30); for (let x = 0; x <= VW; x += 160) ctx.quadraticCurveTo(x + 80, 70, x + 160, 30); ctx.stroke();
+    for (let x = 40; x < VW; x += 80){ const yy = 30 + 30 * Math.sin(((x % 160) / 160) * Math.PI) ; ctx.globalAlpha = (Math.sin(t / 400 + x) + 1.8) / 2.8; ctx.fillStyle = ['#FFE066', '#FFB8CB', '#BFE3FF', '#C9F2C0'][(x / 80 | 0) % 4]; ctx.beginPath(); ctx.arc(x, yy + 8, 7, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; }
+    // 벽 선반 · 액자 갤러리
+    box(120, 110, 150, 110, '#FFFFFF', 6); ctx.fillStyle = '#FFE3EE'; ctx.fillRect(132, 122, 126, 86); drawHanaAt(195, 205, 70, 1, 0, false); label('하나 데뷔 사진', 195, 238, 11, '#FFF2BF');
+    box(300, 140, 80, 64, '#FFFFFF', 6); ctx.fillStyle = '#BFE3FF'; ctx.fillRect(310, 150, 60, 44); ctx.fillStyle = '#FFE066'; ctx.beginPath(); ctx.arc(352, 162, 7, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#9BD98A'; ctx.beginPath(); ctx.moveTo(310, 194); ctx.lineTo(332, 168); ctx.lineTo(354, 194); ctx.fill();
+    box(1180, 200, 300, 16, '#C9A06A', 4); box(1180, 120, 300, 16, '#C9A06A', 4);
+    emoji('🪴', 1220, 100, 34); emoji('📚', 1310, 104, 30); emoji('🕯️', 1440, 104, 26); emoji('🧸', 1240, 184, 34); emoji('🏆', 1340, 184, 28); emoji('🌵', 1440, 186, 28);
+    // 플로어 램프
+    ctx.fillStyle = '#5B4636'; ctx.fillRect(98, 420, 6, 300); ctx.fillRect(70, 716, 62, 10); ctx.fillStyle = '#FFE8A3'; ctx.beginPath(); ctx.moveTo(60, 430); ctx.lineTo(142, 430); ctx.lineTo(124, 380); ctx.lineTo(78, 380); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,232,163,.25)'; ctx.beginPath(); ctx.moveTo(70, 430); ctx.lineTo(132, 430); ctx.lineTo(190, 720); ctx.lineTo(10, 720); ctx.closePath(); ctx.fill();
+    // 둥근 러그
+    ctx.fillStyle = '#FFF3D6'; ctx.beginPath(); ctx.ellipse(800, 600, 330, 120, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#FFB8CB'; ctx.lineWidth = 8; ctx.beginPath(); ctx.ellipse(800, 600, 300, 104, 0, 0, Math.PI * 2); ctx.stroke(); ctx.strokeStyle = '#BFE3FF'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(800, 600, 260, 86, 0, 0, Math.PI * 2); ctx.stroke();
+    // 캐노피 침대
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.moveTo(350, 430); ctx.quadraticCurveTo(250, 560, 200, 700); ctx.lineTo(500, 700); ctx.quadraticCurveTo(450, 560, 350, 430); ctx.fill();
+    emoji('👑', 350, 418, 30);
+    box(220, 640, 260, 110, '#FF9EC4', 40); box(240, 618, 220, 56, '#FFD3E4', 28); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.ellipse(300, 640, 34, 14, 0, 0, Math.PI * 2); ctx.fill();
+    // 캣타워 (기둥에 밧줄, 해먹, 장난감)
+    [[1360, 380, 330], [1470, 470, 240]].forEach(([px, py, ph]) => { ctx.fillStyle = '#D9C2A3'; ctx.fillRect(px, py, 22, ph); ctx.strokeStyle = '#B39673'; ctx.lineWidth = 2; for (let y = py + 6; y < py + ph; y += 10){ ctx.beginPath(); ctx.moveTo(px, y); ctx.lineTo(px + 22, y + 4); ctx.stroke(); } });
+    [[1410, 710, 200], [1370, 590, 150], [1440, 470, 120], [1375, 380, 100]].forEach(([x, y, w]) => box(x - w / 2, y - 10, w, 20, '#FFB3CF', 9));
+    ctx.fillStyle = '#C9A6FF'; ctx.beginPath(); ctx.moveTo(1380, 520); ctx.quadraticCurveTo(1430, 560, 1480, 520); ctx.fill();
+    ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(1440, 460); ctx.lineTo(1440 + Math.sin(t / 400) * 10, 500); ctx.stroke(); ctx.fillStyle = '#FFE066'; ctx.beginPath(); ctx.arc(1440 + Math.sin(t / 400) * 10, 506, 8, 0, Math.PI * 2); ctx.fill();
+    // 밥그릇 · 물그릇 · 화장실 · 장난감
+    box(600, 830, 90, 36, '#FFFFFF', 18); ctx.fillStyle = '#C98B5A'; ctx.beginPath(); ctx.ellipse(645, 834, 30, 8, 0, 0, Math.PI * 2); ctx.fill();
+    box(720, 830, 90, 36, '#BFE3FF', 18); ctx.fillStyle = '#8CC8FF'; ctx.beginPath(); ctx.ellipse(765, 834, 30, 8, 0, 0, Math.PI * 2); ctx.fill();
+    box(1060, 820, 150, 80, '#D9CCFF', 14); ctx.fillStyle = '#F6E3B4'; ctx.fillRect(1074, 830, 122, 18);
+    emoji('🧶', 960, 720 + Math.sin(t / 500) * 4, 30); emoji('🐭', 1010, 780, 22); emoji('🐟', 560, 740, 24);
     const h = new Date().getHours(), sleep = h >= 21 || h < 7 || (h >= 13 && h < 14);
     hana.homeX = 800; hana.homeY = 560;
-    drawHanaAt(800, 560 + Math.sin(t / 700) * 2, 120, 1, t, sleep);
-    if (hana.bubble && hana.bubble.until > Date.now()) bubble(hana.bubble.text, 800, 420, false);
-    label('👆 하나를 눌러서 같이 놀아요', 800, 610, 14, '#FFF2BF');
-    box(740, 940, 120, 60, '#FF8FB8', 8); label('🚪 출입구', 800, 930, 13, '#FFFFFF');
+    drawHanaAt(800, 560 + Math.sin(t / 700) * 2, 160, 1, t, sleep);
+    if (hana.bubble && hana.bubble.until > Date.now()) bubble(hana.bubble.text, 800, 380, false);
+    label('하나를 눌러서 같이 놀아요', 800, 610, 14, '#FFF2BF');
   }
   /* ---------- 🏠 각자 집 ---------- */
   function roomGeom(){
@@ -6717,6 +6825,7 @@ function openVillage(opts){
     }
     ctx.strokeRect(g.x0, g.y0, g.w, g.h);
     if (editing){ ctx.strokeStyle = 'rgba(91,70,54,.25)'; ctx.lineWidth = 1; for (let i = 1; i < g.size[0]; i++){ ctx.beginPath(); ctx.moveTo(g.x0 + i * g.tile, g.y0); ctx.lineTo(g.x0 + i * g.tile, g.y0 + g.h); ctx.stroke(); } for (let j = 1; j < g.size[1]; j++){ ctx.beginPath(); ctx.moveTo(g.x0, g.y0 + j * g.tile); ctx.lineTo(g.x0 + g.w, g.y0 + j * g.tile); ctx.stroke(); } }
+    if (room && isTch(room.owner)) drawPalaceRoom(g, wy, wh, t);
     // 가구 (뒤쪽부터)
     const items = (r.items || []).slice().sort((a, b) => a[2] - b[2]);
     items.forEach(([fid, x, y]) => {
@@ -6728,18 +6837,54 @@ function openVillage(opts){
       if (f.gold && Math.floor(t / 400) % 2) emoji('✨', cx + sz * .4, cy - sz * .4, sz * .35);
     });
     const owner = room && room.owner;
-    label(`🏠 ${owner}네 ${HOUSE_INFO[room && room.house] ? HOUSE_INFO[room.house].name : '집'}`, VW / 2, 60, 20, '#FFE58A');
+    label(isTch(owner) ? `👑 ${owner}의 하늘 궁전` : `🏠 ${owner}네 ${HOUSE_INFO[room && room.house] ? HOUSE_INFO[room.house].name : '집'}`, VW / 2, 60, 20, '#FFE58A');
     box(g.x0 + g.w / 2 - 50, g.y0 + g.h, 100, 30, '#8B5A3C', 6);
     if (!(r.items || []).length) label(owner === meName ? '🛠 꾸미기를 눌러 가구를 놓아 보세요!' : '아직 텅 빈 집이에요', VW / 2, g.y0 + g.h / 2, 16, '#FFFFFF');
   }
 
+  /* 👑 시내쌤 하늘 궁전 안: 금테 벽 · 아치 창(하늘 정원 풍경) · 샹들리에 · 레드카펫 · 기둥 */
+  function drawPalaceRoom(g, wy, wh, t){
+    const x0 = g.x0, x1 = g.x0 + g.w;
+    // 방 밖 배경: 대리석
+    ctx.fillStyle = '#F4EEF8'; ctx.fillRect(0, 0, x0 - 2, VH); ctx.fillRect(x1 + 2, 0, VW - x1, VH);
+    // 기둥
+    [x0 - 70, x1 + 20].forEach(cx => { ctx.fillStyle = '#FFFDF6'; ctx.fillRect(cx, wy - 20, 50, g.y0 + g.h - wy + 20); ctx.strokeStyle = '#D6B24A'; ctx.lineWidth = 3; ctx.strokeRect(cx, wy - 20, 50, g.y0 + g.h - wy + 20); ctx.fillStyle = '#FFD84D'; ctx.fillRect(cx - 8, wy - 30, 66, 14); ctx.fillRect(cx - 8, g.y0 + g.h - 6, 66, 14); for (let k = 1; k < 4; k++){ ctx.fillStyle = 'rgba(214,178,74,.35)'; ctx.fillRect(cx + k * 12, wy, 3, g.y0 + g.h - wy - 10); } });
+    // 벽: 은은한 금빛 다마스크 + 아래 판넬
+    ctx.fillStyle = '#FFF4E0'; ctx.fillRect(x0, wy, g.w, wh);
+    ctx.fillStyle = 'rgba(214,178,74,.18)'; for (let x = x0 + 30; x < x1; x += 60) for (let y = wy + 24; y < g.y0 - 20; y += 60){ ctx.beginPath(); ctx.moveTo(x, y - 12); ctx.lineTo(x + 10, y); ctx.lineTo(x, y + 12); ctx.lineTo(x - 10, y); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle = '#F1DDB8'; ctx.fillRect(x0, g.y0 - 50, g.w, 50); ctx.strokeStyle = '#D6B24A'; ctx.lineWidth = 2; for (let x = x0 + 10; x < x1 - 60; x += 90) ctx.strokeRect(x, g.y0 - 42, 74, 34);
+    // 아치 창 2개 (밖은 하늘 정원)
+    [x0 + g.w * .22, x0 + g.w * .78].forEach((cx, k) => {
+      const w = Math.min(150, g.w * .16), top = wy + 30, bot = g.y0 - 70;
+      ctx.save(); ctx.beginPath(); ctx.moveTo(cx - w / 2, bot); ctx.lineTo(cx - w / 2, top + w / 2); ctx.arc(cx, top + w / 2, w / 2, Math.PI, 0); ctx.lineTo(cx + w / 2, bot); ctx.closePath(); ctx.clip();
+      const sk = ctx.createLinearGradient(0, top, 0, bot); sk.addColorStop(0, '#8EC2FF'); sk.addColorStop(1, '#F8E6FF'); ctx.fillStyle = sk; ctx.fillRect(cx - w, top, w * 2, bot - top);
+      ['#FF8FB8', '#FFE066', '#8CC8FF'].forEach((c, i) => { ctx.strokeStyle = c; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(cx, bot + 20, w * .6 - i * 6, Math.PI, 0); ctx.stroke(); });
+      ctx.fillStyle = '#FFFFFF'; const cx2 = cx - w / 2 + ((t / 60 + k * 70) % (w + 60)) - 30; ctx.beginPath(); ctx.ellipse(cx2, top + w * .7, 26, 9, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#D6B24A'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(cx - w / 2, bot); ctx.lineTo(cx - w / 2, top + w / 2); ctx.arc(cx, top + w / 2, w / 2, Math.PI, 0); ctx.lineTo(cx + w / 2, bot); ctx.stroke();
+      ctx.fillStyle = '#D8343F'; [-1, 1].forEach(d => { ctx.beginPath(); ctx.moveTo(cx + d * (w / 2 + 6), top - 6); ctx.quadraticCurveTo(cx + d * (w / 2 - 14), (top + bot) / 2, cx + d * (w / 2 + 12), bot + 4); ctx.lineTo(cx + d * (w / 2 + 26), bot + 4); ctx.lineTo(cx + d * (w / 2 + 26), top - 6); ctx.closePath(); ctx.fill(); });
+    });
+    // 가운데 초상화
+    { const pw = Math.min(150, g.w * .14), ph = pw * 1.15, px = (x0 + x1) / 2 - pw / 2, py = wy + 26; ctx.fillStyle = '#D6B24A'; ctx.fillRect(px - 10, py - 10, pw + 20, ph + 20); ctx.fillStyle = '#FFE3EE'; ctx.fillRect(px, py, pw, ph); ctx.imageSmoothingEnabled = false; const me0 = cats[room.owner]; if (me0 && me0.img) ctx.drawImage(me0.img, px + pw * .1, py + ph * .14, pw * .8, pw * .8); emoji('👑', px + pw / 2, py + 14, 22); }
+    // 샹들리에
+    { const cx = (x0 + x1) / 2, cy = wy - 10, sw = Math.sin(t / 1200) * 2; ctx.strokeStyle = '#D6B24A'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx + sw, cy); ctx.stroke();
+      ctx.fillStyle = '#FFD84D'; ctx.beginPath(); ctx.ellipse(cx + sw, cy, 90, 16, 0, 0, Math.PI * 2); ctx.fill();
+      for (let i = -3; i <= 3; i++){ const lx = cx + sw + i * 26, ly = cy + 18 + Math.abs(i) * -2; ctx.fillStyle = '#FFFFFF'; ctx.fillRect(lx - 3, cy + 4, 6, 16); ctx.globalAlpha = .6 + .4 * Math.sin(t / 250 + i); ctx.fillStyle = '#FFF3B0'; ctx.beginPath(); ctx.arc(lx, ly - 2, 6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; ctx.fillStyle = '#BFE3FF'; ctx.beginPath(); ctx.moveTo(lx, ly + 6); ctx.lineTo(lx - 4, ly + 14); ctx.lineTo(lx, ly + 22); ctx.lineTo(lx + 4, ly + 14); ctx.closePath(); ctx.fill(); } }
+    // 바닥: 대리석 체크 위 레드카펫
+    for (let i = 0; i < g.size[0]; i++) for (let j = 0; j < g.size[1]; j++){ ctx.fillStyle = (i + j) % 2 ? '#F2ECE4' : '#FFFFFF'; ctx.fillRect(x0 + i * g.tile, g.y0 + j * g.tile, g.tile, g.tile); }
+    const cw = Math.max(g.tile * 1.2, 90); ctx.fillStyle = '#D8343F'; ctx.fillRect((x0 + x1) / 2 - cw / 2, g.y0, cw, g.h); ctx.fillStyle = '#FFD84D'; ctx.fillRect((x0 + x1) / 2 - cw / 2, g.y0, 6, g.h); ctx.fillRect((x0 + x1) / 2 + cw / 2 - 6, g.y0, 6, g.h);
+    ctx.strokeStyle = '#5B4636'; ctx.lineWidth = 4; ctx.strokeRect(x0, g.y0, g.w, g.h);
+    // 반짝이
+    for (let i = 0; i < 6; i++){ ctx.globalAlpha = .5 + .5 * Math.sin(t / 300 + i * 1.7); emoji('✨', x0 + (i * 211) % g.w, wy + 30 + (i * 97) % (wh - 60), 16); } ctx.globalAlpha = 1;
+  }
   /* ---------- 고양이 그리기 ---------- */
   function poseOf(c){ return c.sit ? (V_OBJS.find(o => o.id === c.sit.s) || {}).act || (c.sc === 'hall' ? 'sit' : '') : ''; }
   function openShopB(b){ if (opts.onShop) opts.onShop(b.shop, b.name); else say(`${b.name} · 학생 앱(아지트 → 커뮤니티 → 마을)에서 살 수 있어요 🐾`, 3500); }
-  const CAT_K = 1.35;   // 🐱 지도에서는 고양이를 크게 (마을이 덜 넓어 보이게)
+  // 🐱 고양이 크기: 지도 1.7배, 건물 안 2배, 집 안은 방 크기에 맞춰
+  const catK = sc => { sc = sc || 'out'; if (isMap(sc)) return 1.7; if (sc.startsWith('house:')) return Math.max(1.5, Math.min(2.2, roomGeom().tile / 52)); return 2; };
   function drawCat(c, t, now){
-    if (!isMap(c.sc || 'out')) return drawCat0(c, t, now);
-    ctx.save(); ctx.translate(c.x, c.y); ctx.scale(CAT_K, CAT_K); ctx.translate(-c.x, -c.y);
+    const K = catK(c.sc);
+    ctx.save(); ctx.translate(c.x, c.y); ctx.scale(K, K); ctx.translate(-c.x, -c.y);
     try { drawCat0(c, t, now); } finally { ctx.restore(); }
   }
   function drawCat0(c, t, now){
@@ -6803,8 +6948,8 @@ function openVillage(opts){
       else { hana.x += dx / d * sp; hana.y += dy / d * sp; hana.walking = true; if (Math.abs(dx) > 1) hana.face = dx > 0 ? 1 : -1; }
     }
     const h = new Date().getHours(), sleep = h >= 21 || h < 7;
-    drawHanaAt(hana.x, hana.y - (hana.walking ? Math.abs(Math.sin(t / 110)) * 4 : 0), 54, hana.face, t, sleep);
-    if (hana.bubble && hana.bubble.until > now) bubble(hana.bubble.text, hana.x, hana.y - 62, false);
+    drawHanaAt(hana.x, hana.y - (hana.walking ? Math.abs(Math.sin(t / 110)) * 4 : 0), 88, hana.face, t, sleep);
+    if (hana.bubble && hana.bubble.until > now) bubble(hana.bubble.text, hana.x, hana.y - 96, false);
   }
 
   /* ---------- 매 프레임 ---------- */
@@ -6835,6 +6980,7 @@ function openVillage(opts){
       if (h >= 18 || h < 6){ ctx.fillStyle = 'rgba(40,40,100,.28)'; ctx.fillRect(0, 0, VW, VH); }
       else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
     }
+    if (!isMap(scene)) drawExit(t);
     drawPaws(t);
     if (state && !state.open && !meT && !opts.viewOnly) label('🌙 지금은 마을 쉬는 시간이에요 — 구경만 할 수 있어요', VW / 2, VH - 30, 18, '#FFF2BF');
     if (scene === 'hall') renderGroup();
@@ -6843,6 +6989,20 @@ function openVillage(opts){
 
   /* ---------- 🐾 눌러서 상호작용할 수 있는 곳 표시 ---------- */
   // 각 발바닥은 { x, y: 표시 위치, tx, ty: 누르면 대신 누르는 곳 }
+  /* 🚪 건물·집 안의 출구 매트 (걸어가거나 Esc 로 나가요) */
+  function exitPos(){
+    if (isMap(scene)) return null;
+    if (scene.startsWith('house:')){ const g = roomGeom(); return { x: g.x0 + g.w / 2, y: g.y0 + g.h + 6 }; }
+    if (scene === 'hana') return { x: 800, y: VH - 48 };
+    return { x: 110, y: VH - 52 };
+  }
+  function drawExit(t){
+    const e = exitPos(); if (!e) return;
+    ctx.fillStyle = '#8B5A3C'; ctx.beginPath(); ctx.ellipse(e.x, e.y, 62, 16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#E6B980'; ctx.beginPath(); ctx.ellipse(e.x, e.y - 2, 54, 12, 0, 0, Math.PI * 2); ctx.fill();
+    label('나가기 (Esc)', e.x, e.y + 30, 15, '#FFFFFF');
+  }
+  function goExit(){ const b = $q('.vg-out'); if (b) b.click(); }
   function pawSpots(){
     const out = [], add = (x, y, tx, ty) => out.push({ x, y, tx: tx == null ? x : tx, ty: ty == null ? y : ty });
     if (isMap(scene)){
@@ -6859,6 +7019,7 @@ function openVillage(opts){
     else if (scene === 'hana') add(860, 410, 800, 500);
     else if (scene === 'eng') ENG_DESKS.forEach(d => add(d.x + 62, d.y - 34, d.x, d.y));
     else if (scene === 'cafe') CAFE_DESKS.forEach(d => add(d.x + 70, d.y - 40, d.x, d.y));
+    { const e = exitPos(); if (e) out.push({ x: e.x + 50, y: e.y - 40, tx: e.x, ty: e.y, exit: true }); }
     return out;
   }
   function drawPaws(t){
@@ -6898,6 +7059,7 @@ function openVillage(opts){
     }
     if (g && g.type === 'door'){ const sb = V_BUILDINGS.find(b => b.id === g.id); if (sb && sb.shop){ openShopB(sb); return; } enter(g.id); return; }
     if (g && g.type === 'sign'){ enter(g.to); return; }
+    if (g && g.type === 'exit'){ goExit(); return; }
     if (g && g.type === 'machine'){ opts.onGame && opts.onGame(g.g); return; }
     if (g && g.type === 'hana'){ openHanaPanel(); return; }
     // 그냥 걷기 → 위치만 알려요
@@ -6974,7 +7136,7 @@ function openVillage(opts){
     else if (isMap(scene)) t.textContent = V_MAPS[scene];
     else if (scene === 'eng') t.textContent = '📚 냥글리시 아카데미';
     else if (scene === 'cafe') t.textContent = '☕ 냥냥 스터디카페';
-    else if (scene.startsWith('house:')) t.textContent = `🏠 ${scene.slice(6)}네 집${room && room.owner === meName ? ' (우리 집)' : ''}`;
+    else if (scene.startsWith('house:')) t.textContent = isTch(scene.slice(6)) ? `👑 ${scene.slice(6)}의 하늘 궁전` : `🏠 ${scene.slice(6)}네 집${room && room.owner === meName ? ' (우리 집)' : ''}`;
     else t.textContent = SCENE_NAME[scene];
     $q('.vg-out').style.display = scene === 'out' ? 'none' : 'block';
     $q('.vg-out').textContent = isMap(scene) ? '🏘️ 마을로' : '🚪 건물 나가기';
@@ -7043,10 +7205,11 @@ function openVillage(opts){
     let p = toWorld(e); const c = me();
     if (editing){ editTap(p); return; }
     const paw = pawSpots().find(q => Math.hypot(q.x - p.x, q.y - p.y) < 22);
+    if (paw && paw.exit){ if (opts.viewOnly || !c) return goExit(); walkTo(paw.tx, paw.ty, { type: 'exit' }); return; }
     if (paw) p = { x: paw.tx, y: paw.ty };
     const viaPaw = !!paw;
     // 🪪 친구 고양이를 누르면 ID 카드
-    const hitCat = Object.values(cats).filter(q => q.sc === scene || (scene === 'out' && !q.sc)).find(q => Math.abs(q.x - p.x) < 26 && p.y < q.y + 8 && p.y > q.y - 52);
+    const hitCat = Object.values(cats).filter(q => q.sc === scene || (scene === 'out' && !q.sc)).find(q => { const K = catK(scene); return Math.abs(q.x - p.x) < 26 * K && p.y < q.y + 8 * K && p.y > q.y - 52 * K; });
     if (hitCat && !viaPaw){ openCard(hitCat.name); return; }
     // 🪧 표지판 → 옆 지도
     const sg = isMap(scene) && (V_SIGNS[scene] || []).find(g => Math.abs(p.x - g.x) < 64 && p.y > g.y - 80 && p.y < g.y + 10);
@@ -7054,7 +7217,7 @@ function openVillage(opts){
     if (isMap(scene) && scene !== 'out'){
       const b = V_BUILDINGS.find(b => b.map === scene && p.x > b.x && p.x < b.x + b.w && p.y > b.y - 20 && p.y < b.y + b.h + 30);
       if (b){ if (b.shop && (opts.viewOnly || !c)){ openShopB(b); return; } if (opts.viewOnly || !c){ enter(b.id); return; } walkTo(b.door[0], b.door[1] + 10, { type: 'door', id: b.id }); return; }
-      { const pl = VPLOTS.find(q => q.map === scene && Math.abs(q.x - p.x) < 120 && p.y > q.y - 110 && p.y < q.y + 20); if (pl){ plotTap(pl); return; } }
+      { const pl = VPLOTS.find(q => q.map === scene && Math.abs(q.x - p.x) < (q.teacher ? 200 : 120) && p.y > q.y - (q.teacher ? 330 : 110) && p.y < q.y + 20); if (pl){ plotTap(pl); return; } }
       if (scene === 'alley'){ const names = kidList().map(s2 => s2.name), hs = kidList().find(s2 => { const q = alleyPos(names, s2.name); return !movedAway(s2.name) && Math.abs(q.x - p.x) < 60 && p.y > q.y - 80 && p.y < q.y + 20; }); if (hs){ enter('house:' + hs.name); return; } }
       if (opts.viewOnly || !c) return;
       if (!isOpen()){ say('🌙 지금은 마을 쉬는 시간이에요'); return; }
@@ -7142,14 +7305,16 @@ function openVillage(opts){
   async function plotTap(pl){
     const ow = plotOwner(pl.id);
     if (ow && plotReady(state.inv[ow.name].plot)){ enter('house:' + ow.name); return; }
+    if (pl.teacher){ if (ow) enter('house:' + ow.name); else say('시내쌤만을 위한 특별 부지예요', 2500); return; }
     if (ow){ say(ow.name === meName ? '🚧 우리 집 공사 중이에요! 내일 완공돼요' : `🚧 ${ow.name}네 집 공사 중이에요`, 3000); return; }
     if (opts.viewOnly || !opts.me){ say('빈 부지예요'); return; }
     const T = /(쌤|샘|선생님)$/.test(meName || '');
+    const [price, tax] = PLOT_PRICE[pl.id] || [0, 0];
     if ((opts.me.lv || 1) < pl.lv && !T){ say(`🔒 ${PLOT_MAPNAME[pl.map]} 부지는 Lv.${pl.lv}부터 이사할 수 있어요 (지금 Lv.${opts.me.lv || 1})`, 3000); return; }
-    if (!confirm(`🏗️ ${PLOT_MAPNAME[pl.map]} ${pl.id.slice(1)}번 부지로 집을 옮길까요?\n오늘은 공사 중이고, 내일 완공돼요!\n(꾸민 집 안은 그대로 이사해요)`)) return;
+    if (!confirm(`${PLOT_MAPNAME[pl.map].replace(/^\S+\s/, '')} ${pl.id.slice(1)}번 부지로 집을 옮길까요?\n\n부지 값: ${T ? 0 : price}코인 (한 번)\n일세: 하루 ${T ? 0 : tax}코인 (완공 다음 날부터, 코인을 쓸 때 한꺼번에 내요)\n일세가 5일 넘게 밀리면 길냥이집으로 돌아가요.\n\n오늘은 공사 중이고 내일 완공돼요. 꾸민 집 안은 그대로 이사해요.\n먼저 살던 부지 값은 돌려받지 못해요.`)) return;
     try {
       const j = await opts.call('relocate', { plot: pl.id });
-      if (j && j.error) say({ lv:`Lv.${pl.lv}부터 이사할 수 있어요`, taken:'이미 누가 찜한 부지예요', bad:'서버 코드를 새로 배포해야 해요' }[j.error] || '이사하지 못했어요');
+      if (j && j.error) say({ lv:`Lv.${pl.lv}부터 이사할 수 있어요`, taken:'이미 누가 찜한 부지예요', poor:`코인이 모자라요 (${price}코인 필요)`, owned:'이미 우리 집 부지예요', bad:'서버 코드를 새로 배포해야 해요' }[j.error] || '이사하지 못했어요');
       else { say('🚧 공사 시작! 내일이면 새 집이 완성돼요', 3500); emote('🎉'); pull(); }
     } catch(e){ say('연결이 안 돼요'); }
   }
@@ -7159,7 +7324,7 @@ function openVillage(opts){
     panel.style.display = 'block';
     panel.innerHTML = `<button type="button" class="px">✕</button><h3>${pd.tag}에 오르기</h3>
       <div style="line-height:1.6;">🤔 <b>진짜 ${role}인가요?</b><br>아니라면, <b>오늘 회의를 진행하는 대리인</b>인가요?</div>
-      <div class="hint" style="margin-top:6px;">단상에 오르면 내 말풍선이 크고 노랗게 보이고, 떠드는 친구를 30분 동안 🔇 조용히 시킬 수 있어요.</div>
+      <div class="hint" style="margin-top:6px;">단상에 오르면 내 말풍선이 크고 노랗게 보이고, 떠드는 친구를 30분 동안 조용히 시킬 수 있어요.</div>
       <label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;padding:8px 10px;border:2px dashed #E0A040;border-radius:12px;background:#FFF8D6;cursor:pointer;"><input type="checkbox" id="vgOath" style="width:20px;height:20px;margin-top:2px;flex:none;">
         <span>✋ 저는 ${role}(또는 회의 진행 대리인)이 맞아요. 회의를 공정하게 진행하고, 🔇 조용히 시키기는 장난으로 쓰지 않을게요.</span></label>
       <div style="text-align:center;margin-top:10px;"><button type="button" class="vg-cardgo" id="vgOathGo" data-pd="${pd.id}" disabled>📜 서약하고 오르기</button></div>`;
@@ -7273,7 +7438,7 @@ function openVillage(opts){
   async function loadEngSet(){ try { const j = opts.call && opts.me ? await opts.call('engMine', {}) : null; if (j && j.ok){ engSetNow = j.set; engRes = j.result; } else { const r = await fetch(`${opts.api}?eng=1&t=${Date.now()}`, { redirect:'follow' }); engSetNow = await r.json(); } } catch(e){} }
   function openEngPanel(){
     panel.style.display = 'block';
-    if (!engSetNow || engSetNow.none){ panel.innerHTML = '<button type="button" class="px">✕</button><h3>📚 오늘의 영어</h3><div class="hint" style="text-align:center;">아직 오늘 문제가 없어요. 선생님이 올리면 풀 수 있어요! 😺</div>'; return; }
+    if (!engSetNow || engSetNow.none){ panel.innerHTML = '<button type="button" class="px">✕</button><h3>📚 오늘의 영어</h3><div class="hint" style="text-align:center;">아직 오늘 문제가 없어요. 선생님이 올리면 풀 수 있어요! </div>'; return; }
     if (engRes) return engResult();
     const draft = (openEngPanel.draft = openEngPanel.draft || []);
     panel.innerHTML = `<button type="button" class="px">✕</button><h3>📚 ${escV(engSetNow.title)}${engPractice ? ' · ✏️ 연습' : ''}</h3>${engPractice ? '<div class="hint" style="text-align:center;color:#C0365C;">이미 통과했어요! 연습으로 다시 풀어요 (EXP·냥코인은 없어요)</div>' : ''}
@@ -7287,10 +7452,10 @@ function openVillage(opts){
     panel.innerHTML = `<button type="button" class="px">✕</button><h3>📝 ${r.practice ? '연습 결과지' : '결과지'}</h3>
       <div class="eng-score ${r.pass ? 'pass' : ''}">${r.score}점 ${r.pass ? (r.byTeacher ? '· 👩‍🏫 선생님 통과! 🎉' : '· 통과! 🎉') : '· 아직 통과 전'}</div>
       <div class="eng-marks">${r.marks.map((m, i) => `<span class="${m === 1 ? 'ok' : m === 0 ? 'no' : 'q'}">${i + 1}. ${escV(r.ans[i] || '-')} ${m === 1 ? '⭕' : m === 0 ? '❌' : '❓'}</span>`).join('')}</div>
-      ${subj ? `<div class="hint">❓ 주관식 ${subj}개는 선생님이 확인해요.</div>` : ''}
-      ${r.practice ? `<div class="hint" style="text-align:center;">✏️ 연습 결과예요 (EXP·냥코인 없음)</div><div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engMine" style="background:#C9F0D8;">📝 내 통과 결과</button></div>`
-        : r.pass ? `<div class="hint" style="text-align:center;">✨ 통과 보상 (EXP · 냥코인)을 받았어요!</div><div style="text-align:center;margin-top:8px;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기 (연습 · 보상 없음)</button></div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
-        <div class="hint" style="text-align:center;">주관식 답이 맞는 것 같은데 ❌가 나왔나요? 선생님을 불러 결과지를 보여 드려요. 선생님이 비밀번호를 넣으면 통과돼요.</div>`}`;
+      ${subj ? `<div class="hint">주관식 ${subj}개는 선생님이 확인해요.</div>` : ''}
+      ${r.practice ? `<div class="hint" style="text-align:center;">연습 결과예요 (EXP·냥코인 없음)</div><div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engMine" style="background:#C9F0D8;">📝 내 통과 결과</button></div>`
+        : r.pass ? `<div class="hint" style="text-align:center;">통과 보상 (EXP · 냥코인)을 받았어요!</div><div style="text-align:center;margin-top:8px;"><button type="button" class="vg-cardgo" id="engPractice">✏️ 다시 풀기 (연습 · 보상 없음)</button></div>` : `<div style="display:flex;gap:8px;justify-content:center;margin-top:8px;flex-wrap:wrap;"><button type="button" class="vg-cardgo" id="engRetry">✏️ 다시 풀기</button><button type="button" class="vg-cardgo" id="engTeacher" style="background:#FFB3CF;">👩‍🏫 선생님 확인</button></div>
+        <div class="hint" style="text-align:center;">주관식 답이 맞는 것 같은데 가 나왔나요? 선생님을 불러 결과지를 보여 드려요. 선생님이 비밀번호를 넣으면 통과돼요.</div>`}`;
   }
   panel.addEventListener('click', async e => {
     if (e.target.closest('#engSubmit')){
@@ -7329,21 +7494,21 @@ function openVillage(opts){
     if (!opts.me || opts.viewOnly) body = `<div class="hint" style="text-align:center;">학생 페이지에서 로그인하면 하나와 놀 수 있어요</div>`;
     else if (hanaTab === 'play'){
       const TT0 = /(쌤|샘|선생님)$/.test(meName || ''), dayUsed = Object.values(H.counts || {}).reduce((n, v) => n + (v || 0), 0), dayMax = H.dayMax || 5, dayFull = dayUsed >= dayMax && !TT0;
-      body = `<div class="hint" style="text-align:center;margin-bottom:4px;">🐾 오늘 하나랑 논 횟수 <b>${Math.min(dayUsed, dayMax)}/${dayMax}</b>${TT0 ? ' (선생님은 무제한)' : dayFull ? ' · 내일 또 놀아요!' : ''}</div>
+      body = `<div class="hint" style="text-align:center;margin-bottom:4px;">오늘 하나랑 논 횟수 <b>${Math.min(dayUsed, dayMax)}/${dayMax}</b>${TT0 ? '(선생님은 무제한)': dayFull ? '· 내일 또 놀아요!': ''}</div>
         ${isGod() ? `<div style="text-align:center;margin:4px 0;"><button type="button" class="vg-cardgo" data-godme="1" style="background:#E3D9FF;font-size:.95rem;padding:4px 12px;">👑 친밀도·집 마법 (아무 친구나: 친구 카드에서)</button></div>` : ''}
         <div>💛 친밀도 <b>${H.aff || 0}</b> · <b>${hanaLvName(lv)}</b>${nx ? ` <span class="hint">(다음 단계까지 ${nx - (H.aff || 0)})</span>` : ' 🏆'}</div><div class="bar"><i style="width:${pct}%"></i></div>
         <div class="grid">${(HANA.acts || []).map(a => { const TT = /(쌤|샘|선생님)$/.test(meName || ''), used = (H.counts || {})[a.id] || 0, lock = lv < (a.need || 0) && !TT, done = (used >= (a.day || 1) || dayFull) && !TT;
           const neg = a.aff < 0, flip = neg && a.flip != null && lv >= a.flip, gain = flip ? `+${-a.aff + 1}💛 좋아해요` : neg ? `${a.aff}💔` : `+${a.aff}💛`;
           return `<button type="button" data-hact="${a.id}" class="${lock || done ? 'lock' : ''} ${neg && !flip ? 'neg' : ''}">${lock ? '🔒 ' : ''}${escV(a.name)}<br><small>${lock ? `${hanaLvName(a.need)}부터` : `${gain} · 오늘 ${used}/${a.day || 1}`}</small>${neg && !flip && a.flip != null ? `<small class="flip">${hanaLvName(a.flip)}부터는 💛</small>` : ''}</button>`; }).join('')}</div>
-        <div class="hint">📊 하나 집사 랭킹: ${rank}</div>`;
+        <div class="hint">하나 집사 랭킹: ${rank}</div>`;
     } else {
       const look = hana.look || {}, by = look.by ? `마지막으로 ${escV(look.by)}이(가) 꾸몄어요` : '';
       const bt = state && state.butler, TT = /(쌤|샘|선생님)$/.test(meName || '');
-      if (bt && bt !== meName && !TT) body = `<div class="hint" style="text-align:center;">🐱 오늘은 <b>${escV(bt)}</b>이(가) 하나 집사예요!<br>오늘 하나 꾸미기는 집사만 할 수 있어요.</div>`;
+      if (bt && bt !== meName && !TT) body = `<div class="hint" style="text-align:center;">오늘은 <b>${escV(bt)}</b>이(가) 하나 집사예요!<br>오늘 하나 꾸미기는 집사만 할 수 있어요.</div>`;
       else body = (canDress || bt === meName) ? `<div class="hint">Lv.5 이상만 하나를 꾸밀 수 있어요. 모두가 같은 하나를 봐요! ${by}</div>` +
         ['head', 'face', 'mouth', 'body'].map(sl => `<div style="margin-top:6px;"><b>${{ head:'🎩 머리', face:'😎 얼굴', mouth:'👄 입', body:'👕 몸' }[sl]}</b><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(64px,1fr));">
           <button type="button" data-hdress="${sl}:" class="${!look[sl] ? 'on' : ''}">없음</button>${(HANA.items || []).filter(i => i.slot === sl).map(i => `<button type="button" data-hdress="${sl}:${i.id}" class="${look[sl] === i.id ? 'on' : ''}" title="${escV(i.name)}" style="font-size:1.5rem;">${i.icon}</button>`).join('')}</div></div>`).join('')
-        : `<div class="hint" style="text-align:center;">🔒 Lv.5가 되면 하나를 꾸밀 수 있어요!<br>(지금 Lv.${myLv})</div>`;
+        : `<div class="hint" style="text-align:center;">Lv.5가 되면 하나를 꾸밀 수 있어요!<br>(지금 Lv.${myLv})</div>`;
     }
     panel.innerHTML = `<button type="button" class="px">✕</button><h3>🐱 하나랑 놀기</h3>
       <div class="tabs"><button type="button" data-htab="play" class="${hanaTab === 'play' ? 'on' : ''}">💛 놀아 주기</button><button type="button" data-htab="dress" class="${hanaTab === 'dress' ? 'on' : ''}">👒 하나 꾸미기</button></div>${body}`;
@@ -7572,6 +7737,7 @@ function openVillage(opts){
   function kbMove(){
     if (!kbKeys.size || editing) return;
     const c = me(); if (!c) return;
+    { const e = exitPos(); if (e && Math.hypot(c.x - e.x, c.y - e.y) < 34 && (kbKeys.has('KeyS') || kbKeys.has('ArrowDown'))){ kbKeys.clear(); goExit(); return; } }
     let dx = 0, dy = 0; kbKeys.forEach(k => { dx += KB[k][0]; dy += KB[k][1]; });
     if (!dx && !dy) return;
     if (c.sit){ c.sit = null; showActs(null); if (scene === 'hall'){ toGroup = false; updateTo(); } }
@@ -7582,6 +7748,7 @@ function openVillage(opts){
   function kbDown(e){
     if (!alive || opts.viewOnly || !opts.me || kbTyping() || panel.style.display === 'block') return;
     if (KB[e.code]){ kbKeys.add(e.code); e.preventDefault(); return; }
+    if ((e.code === 'Escape' || e.code === 'KeyQ') && scene !== 'out' && !editing){ e.preventDefault(); goExit(); return; }
     if (e.code === 'Space' || e.code === 'Enter'){
       const c = me(); if (!c) return; e.preventDefault();
       const q = pawSpots().map(p => ({ p, d: Math.hypot(p.tx - c.x, p.ty - c.y) })).sort((a, b) => a.d - b.d)[0];
@@ -7591,7 +7758,7 @@ function openVillage(opts){
   function kbUp(e){ kbKeys.delete(e.code); }
   function kbClear(){ kbKeys.clear(); }
   window.addEventListener('keydown', kbDown); window.addEventListener('keyup', kbUp); window.addEventListener('blur', kbClear);
-  if (!opts.viewOnly && opts.me && window.matchMedia && matchMedia('(pointer:fine)').matches) setTimeout(() => say('⌨️ WASD·방향키로 걷고, 스페이스로 가까운 🐾 를 눌러요', 3500), 2500);
+  if (!opts.viewOnly && opts.me && window.matchMedia && matchMedia('(pointer:fine)').matches) setTimeout(() => say('⌨️ WASD·방향키로 걷고, 스페이스로 가까운 🐾 를 눌러요 · Esc로 나가요', 3500), 2500);
   const tapAt = (wx, wy) => { const r = cv.getBoundingClientRect(), dpr = cv.width / r.width; cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: r.left + (wx * scale + ox) / dpr, clientY: r.top + (wy * scale + oy) / dpr, bubbles: true })); };
   return (openVillage.last = { close, say, enter, tapAt, openCard, info: () => ({ scene, me: me() && { x: me().x, y: me().y, sit: me().sit }, cats: Object.keys(cats).length }) });
 }
@@ -7610,7 +7777,7 @@ function bindEvents(){
   $('gmResetBtn').addEventListener('click', () => { $('resetOverlay').style.display = 'flex'; });   // 🧨 출석·EXP 초기화 (설정 → ☁️ 서버·백업)
   $('serverBackupBtn').addEventListener('click', async () => {   // ⬇ 서버 전체 백업 (아지트에 있던 걸 여기로)
     if (!sync.url){ alert('구글 시트에 연결해야 받을 수 있어요.'); return; }
-    try { const j = await teacherCall({ action:'backup' }); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 1)], { type:'application/json' })); a.download = `냥냥_서버백업_${getTodayStr()}.json`; a.click(); showToast('💾 서버 전체 백업을 받았어요'); }
+    try { const j = await teacherCall({ action:'backup' }); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j, null, 1)], { type:'application/json' })); a.download = `냥냥_서버백업_${getTodayStr()}.json`; a.click(); showToast('서버 전체 백업을 받았어요'); }
     catch(e){ alert('백업하지 못했어요: ' + e.message); } });
   $('pinOkBtn').addEventListener('click', checkPin);
   $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
@@ -7718,16 +7885,16 @@ function bindEvents(){
     if (!sync.url){ showToast('먼저 구글 시트와 연결해 주세요'); return; }
     if (sync.api < 35){ alert('서버 코드를 v35 이상으로 업데이트해야 쓸 수 있어요.'); return; }
     if (!confirm('🔄 모든 기기(교실 TV · 학생 디벗 · 앱)에 알림을 띄우고\n1분 뒤 한꺼번에 새로고침할까요?\n(이 기기도 함께 새로고침돼요)')) return;
-    try { await teacherCall({ ops:[{ op:'reloadAll' }] }); showToast('🔄 1분 뒤 모든 기기가 새로고침돼요'); pullSync && pullSync(true); } catch(e){ alert('보내지 못했어요: ' + e.message); }
+    try { await teacherCall({ ops:[{ op:'reloadAll' }] }); showToast('1분 뒤 모든 기기가 새로고침돼요'); pullSync && pullSync(true); } catch(e){ alert('보내지 못했어요: ' + e.message); }
   });
   $('reloadCancelBtn').addEventListener('click', async () => {
-    try { await teacherCall({ ops:[{ op:'reloadCancel' }] }); reloadNow = null; if (window.NyLock) NyLock.reload(null); renderReloadBtns(); showToast('✋ 새로고침을 취소했어요 (다른 기기는 20초 안에 알림이 사라져요)'); } catch(e){ alert('보내지 못했어요: ' + e.message); }
+    try { await teacherCall({ ops:[{ op:'reloadCancel' }] }); reloadNow = null; if (window.NyLock) NyLock.reload(null); renderReloadBtns(); showToast('새로고침을 취소했어요 (다른 기기는 20초 안에 알림이 사라져요)'); } catch(e){ alert('보내지 못했어요: ' + e.message); }
   });
   $('gateResetBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
     if (!confirm('🔒 지금 출석부를 보고 있는 모든 기기(교실 TV·학생 디벗)가\n시간과 상관없이 입장 코드를 다시 넣어야 해요.\n(코드는 그대로예요 · 이 기기는 바로 통과)\n\n할까요?')) return;
     db.accessEpoch = Date.now(); saveDB(); syncOp(sync.api >= 34 ? { op:'epoch', v: db.accessEpoch } : { op:'config', data: configOf() }); gatePass(db.accessCode);   // v34부터는 '다시 입력' 표시만 보내요 (다른 설정을 덮지 않게)
-    showToast('🔒 모두 다시 입력하게 했어요 (다른 기기는 1분 안에 바뀌어요)');
+    showToast('모두 다시 입력하게 했어요 (다른 기기는 1분 안에 바뀌어요)');
   });
   $('gateTestBtn').addEventListener('click', () => {
     if (!db.accessCode){ showToast('먼저 입장 코드를 정하고 저장해 주세요'); return; }
