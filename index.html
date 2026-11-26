@@ -421,8 +421,8 @@ body.view-mode .tt-all-btn{pointer-events:auto;}
 @keyframes glowPulse{0%,100%{box-shadow:0 0 10px 2px rgba(169,150,255,.5)}50%{box-shadow:0 0 22px 7px rgba(169,150,255,.95)}}
 @keyframes hueSpin{to{filter:hue-rotate(360deg)}}
 .level-box{background:radial-gradient(circle at 50% 40%,#FFFBE6 0%,#FFF0B8 60%,#FFD6E4 100%);}
-.lvup-title{font-size:3.8rem;color:var(--y);letter-spacing:3px;text-shadow:3px 0 var(--ink),-3px 0 var(--ink),0 3px var(--ink),0 -3px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 7px var(--ink);animation:bob 1.2s ease-in-out infinite;}
-#lvCanvas{width:190px;height:190px;margin:6px auto;display:block;animation:jump .7s ease-out infinite;}
+.lvup-title{font-size:3.8rem;color:var(--y);letter-spacing:3px;text-shadow:3px 0 var(--ink),-3px 0 var(--ink),0 3px var(--ink),0 -3px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 7px var(--ink);}
+#lvCanvas{width:160px;height:160px;margin:6px auto;display:block;animation:jump .7s ease-out 2;}
 .lvup-name{font-size:2.2rem;}
 .lvup-gift{font-size:1.3rem;margin-top:8px;color:#C0506F;}
 .lvup-sub{font-size:1.25rem;margin-top:6px;color:var(--ink-soft);}
@@ -3543,11 +3543,11 @@ function showNextLevelUp(){
   $('lvClosetBtn').style.display = items.length ? 'inline-block' : 'none';
   const ov = $('levelOverlay'); ov.style.display = 'flex';
   unlockAudio(false); sfx('levelup');
-  [0, 300, 650].forEach((t, i) => setTimeout(() => burst('party', innerWidth * (0.3 + 0.2*i), innerHeight * 0.35), t));
+  burst('partyLite', innerWidth / 2, innerHeight * 0.35);   // 🎺 가볍게 한 번만 (TV 렉 방지)
   setBubble(items.length ? `${it.name} 레벨 업! 새 꾸미기 [${items[items.length-1].name}] 열렸다냥 🎉` : `${it.name} 레벨 업! Lv.${it.lv}이다냥 🎉`, 4500); mascotJump();
   let closed = false;
   const close = () => { if (closed) return; closed = true; clearTimeout(tm); ov.style.display = 'none'; ov.onclick = null; lvShowing = false; showNextLevelUp(); };
-  const tm = setTimeout(close, items.length ? 8000 : 4500);
+  const tm = setTimeout(close, items.length ? 6000 : 3000);
   setTimeout(() => { ov.onclick = e => { if (e.target.closest('#lvClosetBtn')) return; close(); }; }, 400);
   $('lvClosetBtn').onclick = () => {
     if (closed) return; closed = true; clearTimeout(tm); ov.style.display = 'none'; ov.onclick = null;
