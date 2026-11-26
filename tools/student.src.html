@@ -1409,10 +1409,17 @@ function applyChat(j){
   const fresh = (j.msgs || []).filter(m => m.id > chat.last);
   if (fresh.length){
     chat.msgs = chat.msgs.concat(fresh).slice(-200); chat.last = fresh[fresh.length - 1].id;
-    if (current !== 'chat' && fresh.some(m => m.from !== me.name)) $('dotChat').classList.add('on');
-    if (C_ONLY && !chatPopOpen) chatUnread += fresh.filter(m => m.from !== me.name).length;
   }
+  chatReadSync(); if (current !== 'chat') $('dotChat').classList.toggle('on', chatUnread > 0);
   renderChat(); if (C_ONLY) chatTell();
+}
+/* 🔴 안 읽은 수: 이 기기에 '어디까지 읽었는지' 저장 → 새로고침해도 읽은 건 다시 안 떠요 */
+function chatReadKey(){ return 'nyangChatRead:' + (me && me.name || ''); }
+function chatReadSync(){
+  if (!me) return; let r = 0; try { r = Number(localStorage.getItem(chatReadKey())); } catch(e){}
+  const seeing = !document.hidden && (C_ONLY ? chatPopOpen : current === 'chat');
+  if (seeing || !r){ r = Math.max(r || 0, chat.last); try { localStorage.setItem(chatReadKey(), String(r)); } catch(e){} }   // 처음 쓰는 기기는 지금까지 대화를 읽은 걸로
+  chatUnread = chat.msgs.filter(m => m.id > r && m.from !== me.name).length;
 }
 /* 💬 앱 위쪽 칩에 안 읽은 수 · 최근 친구 얼굴 알려 주기 */
 const C_ONLY = document.documentElement.classList.contains('only-chat');
@@ -1424,7 +1431,7 @@ function chatTell(){
   seen.forEach(n => { const s = studentOf(n); if (!s) return; try { const c = document.createElement('canvas'); c.width = 16; c.height = 16; drawColors(c, lookColorsRaw(lookFor(s), s.lv)); faces.push(c.toDataURL()); } catch(e){} });
   try { window.parent.postMessage({ nyang:'chat', unread: chatUnread, faces, login: !!me }, location.origin); } catch(e){}
 }
-addEventListener('message', e => { if (e.origin !== location.origin || !C_ONLY) return; const d = e.data || {}; if (d.nyang === 'chatOpen'){ chatPopOpen = !!d.open; if (chatPopOpen){ chatUnread = 0; chatTell(); if (me) chatPull(); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 50); } } });
+addEventListener('message', e => { if (e.origin !== location.origin || !C_ONLY) return; const d = e.data || {}; if (d.nyang === 'chatOpen'){ chatPopOpen = !!d.open; if (chatPopOpen){ chatReadSync(); chatTell(); if (me) chatPull(); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 50); } } });
 /* 💬 대화 탭: 방(📢 전체 · 🤫 친구와 귓속말 · 👥 우리 모둠)을 골라 보고 보내요 */
 const QUICK = ['👋 안녕!', '😂', '👍', '🙏 고마워', '🎉 축하해!', '😺 냥!'];
 function chatRoomOf(m){ if (!m.to) return ''; if (m.to.charAt(0) === '#') return m.to; return m.from === me.name ? m.to : (m.to === me.name ? m.from : '~' + m.from + '>' + m.to); }
