@@ -2567,7 +2567,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; b.disabled = !$('rOathChk').checked; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 61;
+const NEED_API = 62;
 /* 🐾 로딩 화면 조각: LD('🐾', '접속 중', '우리 반 정보를 불러오고 있어요') */
 function LD(icon, title, sub, cls){ return `<div class="${cls || 'ldBox'}"><div class="bp">${icon}</div><div>${title}<span class="bd"><span>.</span><span>.</span><span>.</span></span></div>${sub ? `<small>${sub}</small>` : ''}</div>`; }
 window.LD = LD;
