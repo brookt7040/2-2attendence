@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 64;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 65;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -767,7 +767,28 @@ function featGate_(name, op) {
   for (let i = 0; i < keys.length; i++) if (featOff_(keys[i], f)) return keys[i];
   return '';
 }
+/* 🔧 v64 패치 한 번: 부지 규칙이 바뀌어서 학생 부지를 모두 길냥이집으로 (낸 부지 값은 돌려줘요) · 집 값 조금 올리기 */
+const HOUSE_PRICE_V64_ = { h_tent: 80, h_cabin: 200, h_cottage: 400, h_castle: 800 };
+function migrateV64_() {
+  if (props_().getProperty('mig:v64') === '1') return;
+  let lock; try { lock = LockService.getScriptLock(); lock.waitLock(15000); } catch (e) { return; }
+  try {
+    if (props_().getProperty('mig:v64') === '1') return;
+    const db = readRows_(), map = db.map, inv = map.inv || {}, rows = readCoins_(), ds = todayStr_();
+    Object.keys(inv).forEach(function (n) {
+      const pl = inv[n] && inv[n].plot; if (!pl || isTeacherName_(n)) return;
+      let paid = 0; rows.forEach(function (r) { if (r.name === n && r.kind === '구매' && String(r.why).indexOf('부지 구입: ' + pl.id) === 0 && r.amt < 0) paid = -r.amt; });
+      inv[n].plot = null; inv[n].evicted = { id: pl.id, ds: ds, patch: 1, refund: paid };
+      if (paid) addCoin_(n, paid, '🔧 부지 값 돌려받기 (패치)', '환불', 'mig64:' + n, rows);
+    });
+    const eco = (map.config || {}).economy;
+    if (eco && Array.isArray(eco.shop)) { eco.shop.forEach(function (it) { if (HOUSE_PRICE_V64_[it.id]) it.price = HOUSE_PRICE_V64_[it.id]; }); eco.rev = (Number(eco.rev) || 0) + 1; }
+    writeRows_(db, ['inv', 'config']); cacheDrop_(['v:inv', 'v:pub']);
+    props_().setProperty('mig:v64', '1');
+  } catch (e) {} finally { lock.releaseLock(); }
+}
 function handleStudentCore_(body) {
+  migrateV64_();
   const name = String(body.name || '');
   const chk = checkStudent_(name, body.pin);
   if (!chk.ok) return chk;
@@ -2336,12 +2357,12 @@ function firstTouch_(map, ds) {
   return best;
 }
 /* 🏗️ 부지 값 [사는 값, 하루 일세] — index.html 의 PLOT_PRICE 와 같아야 해요 (좋은 자리일수록 비싸요) */
-const PLOT_PRICE_ = {
-  C1: [150, 3], C2: [190, 3], C3: [230, 4], C4: [190, 3], C5: [150, 3],
-  M1: [120, 2], M2: [150, 2], M3: [180, 3], M4: [150, 2], M5: [120, 2],
-  B1: [110, 2], B2: [150, 3], B3: [110, 2], B4: [90, 2],
-  F1: [90, 1], F2: [70, 1], F3: [110, 2], F4: [70, 1],
-  P1: [380, 6], P2: [450, 8], P3: [400, 7], P4: [380, 6], P5: [450, 8], P6: [400, 7],
+const PLOT_PRICE_ = {   // v64: 부지 값 2배 · 일세 2배
+  C1: [300, 6], C2: [380, 6], C3: [460, 8], C4: [380, 6], C5: [300, 6],
+  M1: [240, 4], M2: [300, 4], M3: [360, 6], M4: [300, 4], M5: [240, 4],
+  B1: [220, 4], B2: [300, 6], B3: [220, 4], B4: [180, 4],
+  F1: [180, 2], F2: [140, 2], F3: [220, 4], F4: [140, 2],
+  P1: [760, 12], P2: [900, 16], P3: [800, 14], P4: [760, 12], P5: [900, 16], P6: [800, 14],
   S0: [0, 0]
 };
 /* 🧾 일세: 완공 다음 날부터 하루마다 내요. 코인이 모자라면 기다려 주고, 5일 넘게 밀리면 길냥이집으로 돌아가요 */
@@ -2798,7 +2819,7 @@ function studentCoins_(name, body) {
       if (r.error) error = r.error; else { inv.room = r.room; writeRows_(db, ['inv']); cacheDrop_(['room:' + name]); result = 'ok'; }
     } else if (body.op === 'relocate') {         // 🏗️ Lv.7부터 집 옮기기 (다음 날 완공)
       const lv = (((map.pub || {}).priv || {})[name] || {}).lv || 1, plot = String(body.plot || '');
-      const PLV = { C: 3, B: 4, F: 4, M: 5, P: 7, S: 0 }, okId = !!PLOT_PRICE_[plot];   // 🏙️ 시티 · 🌊 해변 · 🌲 숲 · 🛍️ 상점가 · ☁️ 하늘 정원 · 👑 선생님 특별 부지
+      const PLV = { F: 4, B: 5, M: 6, C: 8, P: 10, S: 0 }, okId = !!PLOT_PRICE_[plot];   // 🏙️ 시티 · 🌊 해변 · 🌲 숲 · 🛍️ 상점가 · ☁️ 하늘 정원 · 👑 선생님 특별 부지
       const pp = PLOT_PRICE_[plot] || [0, 0];
       if (plot && !okId) error = 'bad';
       else if (plot === 'S0' && !T) error = 'bad';

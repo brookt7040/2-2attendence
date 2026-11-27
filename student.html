@@ -1073,21 +1073,21 @@ const V_SIGNS = {
   south: [{ to:'out', x:800, y:985, label:'⬇ 시티로 내려가기' }]
 };
 /* 🏗️ 집 부지: 처음엔 모두 🐾 길냥이집, 레벨이 오르면 시티 · 해변 · 숲 · 상점가 · ☁️ 하늘 정원으로 이사 (다음 날 완공) */
-const PLOTS = [[220, 520], [230, 800], [520, 965], [1380, 520], [1370, 800], [1080, 965]].map(([x, y], i) => ({ id: 'P' + (i + 1), map: 'south', lv: 7, x, y }));
+const PLOTS = [[220, 520], [230, 800], [520, 965], [1380, 520], [1370, 800], [1080, 965]].map(([x, y], i) => ({ id: 'P' + (i + 1), map: 'south', lv: 10, x, y }));
 const T_PLOT = { id: 'S0', map: 'south', lv: 99, x: 800, y: 700, teacher: true };   // 👑 시내쌤 전용 특별 부지 (하늘 궁전)
 /* 🏗️ 부지 값 [사는 값, 하루 일세] — Code.gs 의 PLOT_PRICE_ 와 같아야 해요 (좋은 자리일수록 비싸요) */
 const PLOT_PRICE = {
-  C1: [150, 3], C2: [190, 3], C3: [230, 4], C4: [190, 3], C5: [150, 3],
-  M1: [120, 2], M2: [150, 2], M3: [180, 3], M4: [150, 2], M5: [120, 2],
-  B1: [110, 2], B2: [150, 3], B3: [110, 2], B4: [90, 2],
-  F1: [90, 1], F2: [70, 1], F3: [110, 2], F4: [70, 1],
-  P1: [380, 6], P2: [450, 8], P3: [400, 7], P4: [380, 6], P5: [450, 8], P6: [400, 7], S0: [0, 0]
+  C1: [300, 6], C2: [380, 6], C3: [460, 8], C4: [380, 6], C5: [300, 6],
+  M1: [240, 4], M2: [300, 4], M3: [360, 6], M4: [300, 4], M5: [240, 4],
+  B1: [220, 4], B2: [300, 6], B3: [220, 4], B4: [180, 4],
+  F1: [180, 2], F2: [140, 2], F3: [220, 4], F4: [140, 2],
+  P1: [760, 12], P2: [900, 16], P3: [800, 14], P4: [760, 12], P5: [900, 16], P6: [800, 14], S0: [0, 0]
 };
 const VPLOTS = PLOTS.concat([T_PLOT],
-  [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'C' + (i + 1), map: 'out', lv: 3, x, y: 280 })),
-  [[900, 250], [1240, 250], [1180, 700], [640, 690]].map(([x, y], i) => ({ id: 'B' + (i + 1), map: 'west', lv: 4, x, y })),
+  [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'C' + (i + 1), map: 'out', lv: 8, x, y: 280 })),
+  [[900, 250], [1240, 250], [1180, 700], [640, 690]].map(([x, y], i) => ({ id: 'B' + (i + 1), map: 'west', lv: 5, x, y })),
   [[310, 640], [1460, 280], [1150, 720], [220, 950]].map(([x, y], i) => ({ id: 'F' + (i + 1), map: 'east', lv: 4, x, y })),
-  [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'M' + (i + 1), map: 'mall', lv: 5, x, y: 995, back: true })));
+  [160, 480, 800, 1120, 1440].map((x, i) => ({ id: 'M' + (i + 1), map: 'mall', lv: 6, x, y: 995, back: true })));
 const PLOT_MAPNAME = { out:'🏙️ 시티', west:'🌊 해변', east:'🌲 숲', mall:'🛍️ 상점가', south:'☁️ 하늘 정원' };
 const alleyPos = (list, name) => { const i = Math.max(0, list.indexOf(name)), col = i % 10, row = Math.floor(i / 10); return { x: 100 + col * 155, y: 300 + row * 260, w: 150 }; };
 /* 🏢 건물 (문 앞에 가면 들어갈 수 있어요) */
@@ -2088,7 +2088,7 @@ function openVillage(opts){
     drawPlots('south', t);
     for (let i = 0; i < 14; i++){ const x = (i * 271 + t / 30) % VW, y = 200 + (i * 137) % 700; ctx.fillStyle = '#FFFFFF'; ctx.globalAlpha = .5 + .5 * Math.sin(t / 300 + i); ctx.fillRect(x, y, 3, 3); ctx.globalAlpha = 1; }
     objsOf('south').forEach(o => drawObj(o, t)); drawSigns('south');
-    label('구름 위 하늘 정원 · Lv.7부터 이사할 수 있어요', 800, 130, 16, '#FFFFFF');
+    label('구름 위 하늘 정원 · Lv.10부터 이사할 수 있어요', 800, 130, 16, '#FFFFFF');
   }
   /* ---------- 🛍️ 상점가 ---------- */
   function drawShopFront(b, t){
@@ -3194,9 +3194,19 @@ function openVillage(opts){
     const h = opts.hud && opts.hud();
     if (!h){ el.style.display = 'none'; return; }
     el.style.display = 'flex';
-    el.innerHTML = `<span>Lv.${h.lv} ${escV(h.lvName || '')}</span><span>✨ ${h.exp} EXP</span><span>🐾 ${h.coins}</span>${(h.lv >= 7 || /(쌤|샘|선생님)$/.test(meName || '')) && scene !== 'south' ? '<button type="button" class="vg-move">🏗️ 집 옮기기</button>' : ''}${opts.call && !opts.viewOnly ? '<button type="button" class="vg-move vg-bagb">🎒 가방</button>' : ''}`;
+    el.innerHTML = `<span>Lv.${h.lv} ${escV(h.lvName || '')}</span><span>✨ ${h.exp} EXP</span><span>🐾 ${h.coins}</span>${(h.lv >= 4 || /(쌤|샘|선생님)$/.test(meName || '')) ? '<button type="button" class="vg-move">🏗️ 집 옮기기</button>' : ''}${opts.call && !opts.viewOnly ? '<button type="button" class="vg-move vg-bagb">🎒 가방</button>' : ''}`;
   }
-  root.addEventListener('click', e => { if (e.target.closest('.vg-bagb')){ openBagPanel(); return; } if (e.target.closest('.vg-move')) enter('south'); });
+  /* 🏗️ 집 옮기기: 지역마다 필요한 레벨 · 부지 값 · 일세 */
+  const MOVE_MAPS = [['east', '🌲 숲', 4], ['west', '🌊 해변', 5], ['mall', '🛍️ 상점가 뒤', 6], ['out', '🏙️ 시티', 8], ['south', '☁️ 하늘 정원', 10]];
+  function openMovePanel(){
+    const h = (opts.hud && opts.hud()) || { lv: 0 }, T = /(쌤|샘|선생님)$/.test(meName || '');
+    panel.style.display = 'block'; panel.dataset.p = 'move';
+    panel.innerHTML = `<button type="button" class="px">✕</button><h3>🏗️ 집 옮기기</h3><div class="hint" style="text-align:center;">지역을 고르면 그 지도로 가요. 빈 부지(🪧)를 누르면 이사할 수 있어요.</div>
+      ${MOVE_MAPS.map(([id, nm, lv]) => { const ps = VPLOTS.filter(p => p.map === id && !p.teacher).map(p => PLOT_PRICE[p.id] || [0, 0]), lo = Math.min(...ps.map(x => x[0])), hi = Math.max(...ps.map(x => x[0])), tlo = Math.min(...ps.map(x => x[1])), thi = Math.max(...ps.map(x => x[1])), ok = T || h.lv >= lv;
+        return `<div class="mk-row ${ok ? '' : 'no'}"><span><b>${nm}</b> <small>Lv.${lv}부터 · 부지 ${lo}~${hi}🐾 · 일세 ${tlo}~${thi}🐾</small></span>${ok ? `<button type="button" class="vg-cardgo" data-movemap="${id}">가 보기</button>` : `<small>🔒 Lv.${lv}</small>`}</div>`; }).join('')}`;
+  }
+  panel.addEventListener('click', e => { const m = e.target.closest('[data-movemap]'); if (m){ closePanel(); enter(m.dataset.movemap); } });
+  root.addEventListener('click', e => { if (e.target.closest('.vg-bagb')){ openBagPanel(); return; } if (e.target.closest('.vg-move')) openMovePanel(); });
   /* 📚 영어 문제 */
   let engSetNow = null, engRes = null, engPassed = null, engPractice = false;
   async function loadEngSet(){ try { const j = opts.call && opts.me ? await opts.call('engMine', {}) : null; if (j && j.ok){ engSetNow = j.set; engRes = j.result; } else { const r = await fetch(`${opts.api}?eng=1&t=${Date.now()}`, { redirect:'follow' }); engSetNow = await r.json(); } } catch(e){} }
@@ -4397,6 +4407,12 @@ function showBanNotice(b){
   try { if (localStorage.getItem(key) === id) return; localStorage.setItem(key, id); } catch(e){}
   setTimeout(() => bOpen('msOv', `<h2>🚨 압수됐어요</h2><div style="text-align:center;font-size:1.15rem;line-height:1.8;word-break:keep-all;">수업 시간에 채집 · 판매해서 압수됐어요${b.at ? ` <small>(${esc(b.at)})</small>` : ''}<br><b>코인 -${b.coins || 0} · EXP -${b.exp || 0} · 가방 ${b.items || 0}개</b><br>오늘은 채집이 금지예요</div><div style="text-align:center;margin-top:14px;"><button type="button" class="btn btn-y" data-bclose="msOv">알겠어요</button></div>`), 600);
 }
+/* 🔧 패치 알림: 부지 규칙이 바뀌어서 길냥이집으로 돌아왔어요 (한 번만) */
+function showEvictNotice(ev){
+  const key = 'nyangEvictSeen', id = (ev.ds || '') + ':' + (ev.id || '');
+  try { if (localStorage.getItem(key) === id) return; localStorage.setItem(key, id); } catch(e){}
+  setTimeout(() => bOpen('msOv', `<h2>🔧 부지 패치 안내</h2><div style="text-align:center;font-size:1.1rem;line-height:1.8;word-break:keep-all;">버그로 인해 부지 규칙이 패치돼서,<br>내 집이 <b>길냥이집</b>으로 돌아왔어요.${ev.refund ? `<br>낸 부지 값 <b>${ev.refund}🐾</b>은 돌려받았어요.` : ''}<br><small>바뀐 규칙: 숲 Lv.4 · 해변 Lv.5 · 상점가 Lv.6 · 시티 Lv.8 · 하늘 정원 Lv.10부터 이사할 수 있어요.</small></div><div style="text-align:center;margin-top:14px;"><button type="button" class="btn btn-y" data-bclose="msOv">알겠어요</button></div>`), 900);
+}
 function toast(t){ if (Date.now() < (toast.muteUntil || 0)) return; const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
 function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
 function lookFor(s){ const r = (me && s.name === me.name && me.look) ? me.look : s.look; return /(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, r || defaultLook(s.lv), { _free: true }) : r; }
@@ -4928,7 +4944,7 @@ async function askSend(){
 let coin = null, shopTab = 'mega', shopSub = 'house', betAmt = 10;
 async function coinCall(op, extra){
   if (!me) return null;
-  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); if ((j.paid || []).length) setTimeout(() => toast(`미션 달성! ${j.paid.map(x =>x.name.replace(/^\S+\s/, '') + '+'+ x.coins + '').join('· ')}`), 300); if (j.ban) showBanNotice(j.ban); if (j.tax && j.tax.paidNow) setTimeout(() => toast(`집 부지 일세 ${j.tax.paidNow}코인을 냈어요`), 900); else if (j.tax && j.tax.evicted) setTimeout(() => toast('일세가 5일 넘게 밀려서 집이 길냥이집으로 돌아갔어요'), 900); else if (j.tax && j.tax.owe) setTimeout(() => toast(`일세가 ${j.tax.owe}일 밀렸어요 (5일 넘으면 길냥이집으로 돌아가요)`), 900); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
+  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); if ((j.paid || []).length) setTimeout(() => toast(`미션 달성! ${j.paid.map(x =>x.name.replace(/^\S+\s/, '') + '+'+ x.coins + '').join('· ')}`), 300); if (j.ban) showBanNotice(j.ban); if (j.inv && j.inv.evicted && j.inv.evicted.patch) showEvictNotice(j.inv.evicted); if (j.tax && j.tax.paidNow) setTimeout(() => toast(`집 부지 일세 ${j.tax.paidNow}코인을 냈어요`), 900); else if (j.tax && j.tax.evicted) setTimeout(() => toast('일세가 5일 넘게 밀려서 집이 길냥이집으로 돌아갔어요'), 900); else if (j.tax && j.tax.owe) setTimeout(() => toast(`일세가 ${j.tax.owe}일 밀렸어요 (5일 넘으면 길냥이집으로 돌아가요)`), 900); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
 /* 🎛️ 기능 스위치: 선생님이 끈 기능은 '쉬는 중' (선생님 계정은 그대로) */
 let FEAT = {};
