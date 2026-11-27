@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 60;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 61;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -127,7 +127,9 @@ function doPost(e) {
     if (body.action === 'engResults') return out_(engResults_());
     if (body.action === 'backup') return out_(backupAll_());
     if (body.action === 'ecoGet') { const mp = readRows_().map; return out_({ ok: true, economy: (mp.config && mp.config.economy) || null, feat: feat_() }); }
-    if (body.action === 'limits') { const mp = readRows_().map; return out_({ ok: true, limits: limitsRaw_(), def: LIMIT_DEF_, game: (economy_(mp).game) || {}, stats: gatherStats_(mp), today: todayStr_() }); }
+    if (body.action === 'limits') { const mp = readRows_().map; let bl = []; try { bl = JSON.parse(props_().getProperty('banlog:' + todayStr_()) || '[]'); } catch (e) {} return out_({ ok: true, limits: limitsRaw_(), def: LIMIT_DEF_, game: (economy_(mp).game) || {}, stats: gatherStats_(mp), today: todayStr_(), banlog: bl, periods: classPeriods_(mp) }); }
+    if (body.action === 'classSweep') return out_(classSweep_(!!body.dry));
+    if (body.action === 'unban') return out_(unban_(String(body.name || ''), body.code, readRows_().map));
     if (body.action === 'expInfo') { const mp = readRows_().map, pub = mp.pub || {}; return out_({ ok: true, priv: pub.priv || {}, th: pub.lvTh || [], names: pub.lvNames || [], bonus: expAdjList_(mp) }); }
     if (body.action === 'coinPurge') return out_(coinPurge_(String(body.before || ''), !!body.dry));
     if (body.action === 'today') {           // 📱 선생님 모드(학생 페이지): 오늘 출석 현황
@@ -1477,6 +1479,11 @@ function gsOf_(name) { try { return JSON.parse(props_().getProperty('gs:' + name
 function studentGather_(name, body) {
   const cfg = chatCfg_(), T = isTeacherName_(name), op = body.op, ds = todayStr_();
   if (!T && !chatOpen_(cfg)) return { ok: true, error: 'closed' };
+  if (!T && CLASS_OPS_.indexOf(op) >= 0) {        // 🚨 수업 시간 · 압수된 날
+    if (banOf_(name)) return { ok: true, error: 'banned' };
+    const map0 = readRows_().map;
+    if (inClass_(map0)) { const lk = lightLock_(10000); let cut; try { cut = confiscate_(name, map0, false); } finally { lk.releaseLock(); } return { ok: true, error: 'confiscated', cut: cut }; }
+  }
   const lock = lightLock_(10000);
   try {
     let error = '', res = {};
@@ -1585,12 +1592,59 @@ function studentGather_(name, body) {
     }
     const b = bagOf_(name), bk = bankOf_(name);
     return Object.assign({ ok: true, error: error, bag: b.items, dex: b.dex, market: marketView_(name), bank: { a: bk.a, gain: bk.gain, rate: BANK_RATE_ }, wished: props_().getProperty('wish:' + name + ':' + ds) != null,
-      gathered: dayCount_('gc:' + name), gatherLeft: (function () { const l = lim_('gather', name); return l < 0 ? 0 : l === 0 ? -1 : Math.max(0, l - dayCount_('gc:' + name)); })(), gap: lim_('gatherGap', name) || 30, finds: findsNow_() }, res);
+      banned: banOf_(name), gathered: dayCount_('gc:' + name), gatherLeft: (function () { const l = lim_('gather', name); return l < 0 ? 0 : l === 0 ? -1 : Math.max(0, l - dayCount_('gc:' + name)); })(), gap: lim_('gatherGap', name) || 30, finds: findsNow_() }, res);
   } finally { lock.releaseLock(); }
+}
+/* 🚨 수업 시간 압수: 시간표의 'N교시' 시간(점심 제외)에 채집 · 팔기 등을 하면 경고 없이
+ *   ① 가방 전부 압수 ② 오늘 수업 시간에 얻은 코인 · EXP 되돌리기 ③ 오늘 채집 · 낚시 · 팔기 금지
+ *   풀려면 관리자(마스터) 또는 부관리자 비밀번호가 필요해요 */
+const CLASS_OPS_ = ['gather', 'gqueue', 'sell', 'sellFurn', 'find', 'wish'];
+function classPeriods_(map) {
+  const tt = ((map || readRows_().map).config || {}).timetable || {}, times = Array.isArray(tt.times) ? tt.times : [], subj = tt.subj || {};
+  const dow = Number(Utilities.formatDate(new Date(), 'Asia/Seoul', 'u')); if (dow > 5) return [];
+  const sj = subj[dow] || []; let pi = -1; const out = [];
+  times.forEach(function (x) { if (/점심|lunch/i.test(x.name || '')) return; pi++; if (sj.length && pi >= sj.length) return; out.push([hmMin_(x.start), hmMin_(x.end)]); });
+  return out;
+}
+function inClass_(map, hm) { const m = hmMin_(hm || Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm')); return classPeriods_(map).some(function (p) { return m >= p[0] && m < p[1]; }); }
+function banOf_(name) { return props_().getProperty('ban:' + name + ':' + todayStr_()) === '1'; }
+/* 오늘 수업 시간에 얻은 것 되돌리기 (dry = 미리 세기만) */
+function confiscate_(name, map, dry) {
+  const ds = todayStr_(), rows = readCoins_(), cut = { coins: 0, exp: 0, items: 0 };
+  rows.forEach(function (r) { if (r.name !== name || String(r.t).slice(0, 10) !== ds || ['채집', '판매', '우연'].indexOf(r.kind) < 0 || r.amt <= 0) return; if (inClass_(map, String(r.t).slice(11, 16))) cut.coins += r.amt; });
+  (((map['day:' + ds] || {}).bonus) || []).forEach(function (b) { if (b.who === name && /^채집/.test(b.item || '') && b.t && inClass_(map, b.t)) cut.exp += Number(b.exp) || 0; });
+  let q = []; try { q = JSON.parse(props_().getProperty('expq') || '[]'); } catch (e) {}
+  const keep = q.filter(function (x) { const hm = Utilities.formatDate(new Date(x.ts), 'Asia/Seoul', 'HH:mm'); const hit = x.n === name && /^채집/.test(x.why || '') && Utilities.formatDate(new Date(x.ts), 'Asia/Seoul', 'yyyy-MM-dd') === ds && inClass_(map, hm) && !x.lease; if (hit) cut.expq = (cut.expq || 0) + (Number(x.exp) || 0); return !hit; });
+  const b = bagOf_(name); cut.items = Object.keys(b.items).reduce(function (a, k) { return a + b.items[k]; }, 0);
+  if (dry) return cut;
+  if (q.length !== keep.length) props_().setProperty('expq', JSON.stringify(keep));
+  if (cut.coins) addCoin_(name, -cut.coins, '🚨 압수: 수업 시간에 얻은 코인', '압수', 'cf:' + name + ':' + ds + ':' + Date.now(), rows);
+  if (cut.exp) expQueue_(name, -cut.exp, '🚨 압수: 수업 시간 채집 EXP');
+  b.items = {}; props_().setProperty('bag:' + name, JSON.stringify(b));
+  props_().setProperty('ban:' + name + ':' + ds, '1');
+  let log = []; try { log = JSON.parse(props_().getProperty('banlog:' + ds) || '[]'); } catch (e) {}
+  log.push({ n: name, at: Utilities.formatDate(new Date(), 'Asia/Seoul', 'HH:mm'), coins: cut.coins, exp: cut.exp + (cut.expq || 0), items: cut.items }); props_().setProperty('banlog:' + ds, JSON.stringify(log.slice(-100)));
+  return cut;
+}
+/* 👑 오늘 수업 시간에 채집 · 팔기 한 학생 전부 찾아서 압수 (dry = 미리 보기) */
+function classSweep_(dry) {
+  const map = readRows_().map, ds = todayStr_(), rows = readCoins_(), who = {};
+  rows.forEach(function (r) { if (String(r.t).slice(0, 10) === ds && ['채집', '판매', '우연'].indexOf(r.kind) >= 0 && r.amt > 0 && inClass_(map, String(r.t).slice(11, 16))) who[r.name] = 1; });
+  (((map['day:' + ds] || {}).bonus) || []).forEach(function (b) { if (/^채집/.test(b.item || '') && b.t && inClass_(map, b.t)) who[b.who] = 1; });
+  let q = []; try { q = JSON.parse(props_().getProperty('expq') || '[]'); } catch (e) {}
+  q.forEach(function (x) { if (/^채집/.test(x.why || '') && Utilities.formatDate(new Date(x.ts), 'Asia/Seoul', 'yyyy-MM-dd') === ds && inClass_(map, Utilities.formatDate(new Date(x.ts), 'Asia/Seoul', 'HH:mm'))) who[x.n] = 1; });
+  const out = Object.keys(who).filter(function (n) { return !isTeacherName_(n); }).map(function (n) { return Object.assign({ name: n }, confiscate_(n, map, dry)); });
+  return { ok: true, dry: dry, list: out, periods: classPeriods_(map) };
+}
+function unban_(name, code, map) {
+  const cf = (map.config || {}), c = String(code || '');
+  if (!c || !((cf.adminPin && c === String(cf.adminPin)) || (cf.subPin && c === String(cf.subPin)))) return { ok: true, error: 'wrong' };
+  props_().deleteProperty('ban:' + name + ':' + todayStr_());
+  return { ok: true };
 }
 /* 👑 선생님: 오늘 채집 · 판매 현황 */
 function gatherStats_(map) {
-  return kidNames_(map).map(function (n) { const b = bagOf_(n), bk = bankOf_(n); return { name: n, gc: dayCount_('gc:' + n), ge: dayCount_('ge:' + n), sc: dayCount_('sc:' + n), fc: dayCount_('fc:' + n), items: Object.keys(b.items).reduce(function (s, k) { return s + b.items[k]; }, 0), dex: Object.keys(b.dex).length, bank: bk.a }; });
+  return kidNames_(map).map(function (n) { const b = bagOf_(n), bk = bankOf_(n); return { name: n, ban: banOf_(n), gc: dayCount_('gc:' + n), ge: dayCount_('ge:' + n), sc: dayCount_('sc:' + n), fc: dayCount_('fc:' + n), items: Object.keys(b.items).reduce(function (s, k) { return s + b.items[k]; }, 0), dex: Object.keys(b.dex).length, bank: bk.a }; });
 }
 function villageExp_(name) {
   if (isTeacherName_(name)) return 0;

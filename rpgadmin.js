@@ -37,7 +37,13 @@ function limHtml(){
   const L = d.limits || {}, def = d.def || {}, g = d.game || {}, ev = L.event === d.today, per = L.per || {};
   const dv = k => k === 'game' ? (g.daily || 5) : k === 'bet' ? (g.maxBet || 30) : def[k];
   const st = {}; (d.stats || []).forEach(x => st[x.name] = x);
-  return `<div class="box ra"><div class="box-head">🎉 오늘 하루 이벤트</div>
+  const pr = (d.periods || []).map(p => `${String(Math.floor(p[0] / 60)).padStart(2, '0')}:${String(p[0] % 60).padStart(2, '0')}~${String(Math.floor(p[1] / 60)).padStart(2, '0')}:${String(p[1] % 60).padStart(2, '0')}`).join(' · ');
+  const banned = (d.stats || []).filter(x => x.ban);
+  return `<div class="box ra"><div class="box-head">🚨 수업 시간 압수</div>
+      <div class="hint">수업 시간(${pr || '오늘은 수업 없음'})에 채집 · 낚시 · 팔기 · 줍기 · 소원을 하면 경고 없이 가방 전부 압수 + 오늘 수업 시간에 얻은 코인 · EXP 되돌리기 + 오늘 채집 금지. 시간은 출석부 시간표를 따라요.</div>
+      ${banned.length ? banned.map(x => `<div class="ra-row"><span>🚫 <b>${esc(x.name)}</b> <small>${esc(((d.banlog || []).filter(l => l.n === x.name).slice(-1)[0] || {}).at || '')} 압수 · ${(() => { const l = (d.banlog || []).filter(l => l.n === x.name).slice(-1)[0] || {}; return `코인 -${l.coins || 0} · EXP -${l.exp || 0} · 아이템 ${l.items || 0}개`; })()}</small></span><button type="button" class="np-btn" data-unban="${esc(x.name)}">🔓 풀기</button></div>`).join('') : '<div class="empty">오늘 압수된 친구가 없어요</div>'}
+      <div style="text-align:right;margin-top:8px;"><button type="button" class="np-btn no" id="limSweep">🔍 오늘 수업 시간 기록 찾아서 압수</button></div></div>
+    <div class="box ra"><div class="box-head">🎉 오늘 하루 이벤트</div>
       <label class="ra-pause"><input type="checkbox" id="limEvent" ${ev ? 'checked' : ''}> <span><b>오늘은 전부 무제한!</b><br><small>${esc(d.today || '')} 하루만 · 내일 아침이면 저절로 원래대로 (막아 둔 학생은 계속 막혀요)</small></span></label></div>
     <div class="box ra"><div class="box-head">⏱ 반 전체 한도 <small>0 = 무제한 · 빈칸 = 기본값</small></div>
       ${LIM_ROWS.map(([k, n, u]) => `<div class="ra-row"><span>${n}</span><span><input type="number" min="0" data-lim="${k}" value="${L[k] != null && L[k] !== '' ? esc(String(L[k])) : ''}" placeholder="${dv(k) === 0 ? '무제한' : dv(k)}" style="width:80px;"> <small>${u}</small> <button type="button" class="np-btn" data-limun="${k}">무제한</button></span></div>`).join('')}
@@ -174,6 +180,13 @@ document.addEventListener('change', e => { if (e.target && e.target.id === 'limE
 document.addEventListener('click', async e => {
   if (e.target.closest('#limSave, #limSave2')){ limSave(); return; }
   if (e.target.closest('#featSave')){ featSave(); return; }
+  if (e.target.closest('#limSweep')){
+    const dry = await tCall({ action:'classSweep', dry: true }); if (!dry || !dry.ok){ alert('서버 코드를 최신(v61)으로 배포해야 해요'); return; }
+    if (!dry.list.length){ alert('오늘 수업 시간에 채집 · 팔기를 한 친구가 없어요'); return; }
+    if (!confirm('오늘 수업 시간에 채집 · 팔기를 한 친구예요. 압수할까요?\n\n' + dry.list.map(x => `${x.name}: 코인 -${x.coins} · EXP -${(x.exp || 0) + (x.expq || 0)} · 가방 아이템 ${x.items}개 압수 · 오늘 채집 금지`).join('\n'))) return;
+    const r = await tCall({ action:'classSweep' }); if (r && r.ok){ toast(`🚨 ${r.list.length}명 압수했어요`); rer('limit', true); } return;
+  }
+  { const ub = e.target.closest('[data-unban]'); if (ub){ const code = prompt(`${ub.dataset.unban} 압수를 풀려면 관리자 또는 부관리자 비밀번호를 넣어 주세요`); if (!code) return; const r = await tCall({ action:'unban', name: ub.dataset.unban, code }); if (r && r.ok && !r.error){ toast('🔓 풀었어요'); rer('limit', true); } else alert(r && r.error === 'wrong' ? '비밀번호가 맞지 않아요' : '풀지 못했어요'); return; } }
   { const u = e.target.closest('[data-limun]'); if (u){ const i = document.querySelector(`.ra [data-lim="${u.dataset.limun}"]`); if (i) i.value = '0'; return; } }
   const t = e.target; if (!t.closest || !t.closest('#tBox')) return;
   const tab = typeof tTab !== 'undefined' ? tTab : '', kids = tKids();

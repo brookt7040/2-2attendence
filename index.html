@@ -2567,7 +2567,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; b.disabled = !$('rOathChk').checked; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 60;
+const NEED_API = 61;
 /* 🐾 로딩 화면 조각: LD('🐾', '접속 중', '우리 반 정보를 불러오고 있어요') */
 function LD(icon, title, sub, cls){ return `<div class="${cls || 'ldBox'}"><div class="bp">${icon}</div><div>${title}<span class="bd"><span>.</span><span>.</span><span>.</span></span></div>${sub ? `<small>${sub}</small>` : ''}</div>`; }
 window.LD = LD;
@@ -7214,6 +7214,7 @@ function openVillage(opts){
     if (gq && gq.o === o.id){ say(`⏳ 줄 서서 기다리는 중이에요 (${gq.pos || 1}번째)`, 2500); return; }
     leaveQueue(true);
     const j = await opts.call('gqueue', { o: o.id }).catch(() => null);
+    if (j && (j.error === 'confiscated' || j.error === 'banned')){ say('🚨 수업 시간이라 압수됐어요. 오늘은 채집을 할 수 없어요', 6000); return; }
     if (!j || !j.ok || j.error){ say('자리가 꽉 찼어요', 2500); return; }
     gq = { o: o.id, sc: scene, pos: j.queue || 1, t0: Date.now(), last: Date.now() };
     say(`⏳ 자리가 꽉 찼어요! 줄을 섰어요 (${gq.pos}번째). 자리가 나면 자동으로 앉아요`, 4000);
@@ -7245,6 +7246,11 @@ function openVillage(opts){
     if (j.error){
       if (j.error === 'slow'){ gat.t0 = Date.now() - (gat.gap - 5) * 1000; return; }
       if (j.error === 'seat'){ gat.t0 = Date.now() - (gat.gap - 3) * 1000; sendMove(c, c.sit ? { s: c.sit.s, t: c.sit.t, a: c.sit.a } : undefined); return; }
+      if (j.error === 'confiscated' || j.error === 'banned'){
+        c.sit = null; showActs(null); gatherStop(); sendMove(c);
+        say(j.error === 'confiscated' ? '🚨 수업 시간에 채집해서 가방이 압수됐어요. 오늘은 채집 · 낚시 · 팔기를 할 수 없어요' : '🚨 오늘은 압수돼서 채집 · 낚시 · 팔기를 할 수 없어요', 6000); emote('🚨', true);
+        if (opts.refresh) opts.refresh(); return;
+      }
       if (j.error === 'yield' || j.error === 'rest'){
         c.sit = null; showActs(null); gatherStop(); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 50); sendMove(Object.assign({}, c, { y: c.ty }));
         if (j.error === 'yield') say('👋 기다리던 친구에게 자리를 양보했어요! 고마워요', 4000);
@@ -7337,6 +7343,7 @@ function openVillage(opts){
       else { const amt = Math.floor(Number(($q('#vgBankAmt') || {}).value) || 0); if (!(amt > 0)){ say('얼마를 할지 적어 주세요'); return; } j = await opts.call('bank', { amt, dep: bk.dataset.bank === 'dep' }); }
       if (!j || !j.ok){ say('연결이 안 돼요'); return; }
       bagInfo = Object.assign(bagInfo || {}, j);
+      if (j.error === 'confiscated' || j.error === 'banned'){ say(j.error === 'confiscated' ? '🚨 수업 시간이라 가방이 압수됐어요. 오늘은 채집 · 팔기를 할 수 없어요' : '🚨 오늘은 압수돼서 팔 수 없어요', 6000); closePanel(); if (opts.refresh) opts.refresh(); return; }
       if (j.error) say({ noitem:'가방에 없어요', poor:'코인이 모자라요', limit:'오늘은 더 팔 수 없어요', blocked:'지금은 팔 수 없어요', placed:'집에 놓은 가구는 못 팔아요', bad:'서버 코드를 새로 배포해야 해요', closed:'지금은 마을 쉬는 시간이에요' }[j.error] || '하지 못했어요', 2800);
       else if (j.sold){ const ea = j.sold.eaten || 0; if (ea && !j.sold.coins){ say(`🐱 하나가 ${j.sold.name} ${ea}개를 냠냠 맛있게 먹었어요! (오늘 6번째부터는 하나 간식)`, 3500); emote('😋', true); } else { say(`💰 ${j.sold.name} ×${j.sold.n - ea} → +${j.sold.coins}🐾${ea ? ` · 🐱 ${ea}개는 하나가 냠냠` : ''}`, 3200); emote('💰', true); } }
       else if (bk) say(bk.dataset.bank === 'dep' ? '🏦 맡겼어요!' : '🏦 찾았어요!', 2000);
@@ -7359,6 +7366,7 @@ function openVillage(opts){
     const j = await opts.call('find', { id: f.id }).catch(() => null);
     state.finds = (state.finds || []).filter(q => q.id !== f.id);
     if (j && j.ok && j.found){ say(f.kind === 'chest' ? `🎁 숲속 보물상자를 열었어요! +${j.found.coins}🐾` : `✨ 길에서 동전을 주웠어요! +${j.found.coins}🐾`, 3500); emote(f.kind === 'chest' ? '🎉' : '🪙', true); if (opts.refresh) opts.refresh(); }
+    else if (j && (j.error === 'confiscated' || j.error === 'banned')){ say(j.error === 'confiscated' ? '🚨 수업 시간이라 압수됐어요. 오늘은 채집 · 줍기를 할 수 없어요' : '🚨 오늘은 압수돼서 주울 수 없어요', 6000); if (opts.refresh) opts.refresh(); }
     else say(j && j.error === 'gone' ? '앗, 누가 먼저 주워 갔어요!' : j && j.error === 'limit' ? '오늘은 더 못 주워요' : '줍지 못했어요', 2500);
     return true;
   }
@@ -7367,6 +7375,7 @@ function openVillage(opts){
     const j = await opts.call('wish', {}).catch(() => null);
     if (!j || !j.ok) return say('연결이 안 돼요');
     if (j.error === 'done') return say('오늘은 이미 소원을 빌었어요. 내일 또 빌어요 🌙', 2800);
+    if (j.error === 'confiscated' || j.error === 'banned') return say('🚨 수업 시간이라 압수됐어요. 오늘은 채집 · 소원 빌기를 할 수 없어요', 6000);
     if (j.error) return say('지금은 소원을 빌 수 없어요');
     say(j.wish ? `🌟 소원이 이루어졌어요! +${j.wish}🐾` : '🌟 소원을 빌었어요… 이번엔 별이 조용하네요', 3500); emote('🌟', true); if (j.wish && opts.refresh) opts.refresh();
   }
