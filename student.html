@@ -2560,14 +2560,14 @@ function openVillage(opts){
       if (j.error === 'seat'){ gat.t0 = Date.now() - (gat.gap - 3) * 1000; sendMove(c, c.sit ? { s: c.sit.s, t: c.sit.t, a: c.sit.a } : undefined); return; }
       if (j.error === 'yield' || j.error === 'rest'){
         c.sit = null; showActs(null); gatherStop(); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 50); sendMove(Object.assign({}, c, { y: c.ty }));
-        if (j.error === 'yield') say('👋 기다리던 친구에게 자리를 양보했어요! 다음 채집은 희귀 확률 2배 🍀', 4500);
+        if (j.error === 'yield') say('👋 기다리던 친구에게 자리를 양보했어요! 고마워요', 4000);
         else { const L = j.restLeft || 0; say(`😪 지쳐서 쉬어야 해요 (${Math.floor(L / 60)}분 ${L % 60}초). 다른 지도 채집터는 바로 할 수 있어요!`, 4500); }
         return;
       }
       say({ limit:'오늘 채집은 여기까지! 내일 또 와요', blocked:'지금은 채집을 할 수 없어요', closed:'지금은 마을 쉬는 시간이에요', off:'지금은 쉬는 중이에요', bad:'서버 코드를 새로 배포해야 해요' }[j.error] || '채집하지 못했어요', 3200);
       if (j.error !== 'off') gatherStop(); return;
     }
-    if (j.warn) setTimeout(() => say('👋 친구가 기다리고 있어요! 30초 뒤에 자리를 양보해요 (양보하면 다음 채집 희귀 2배 🍀)', 4500), 2800);
+    if (j.warn) setTimeout(() => say('👋 친구가 기다리고 있어요! 30초 뒤에 자리를 양보해요', 4000), 2800);
     if (j.tired){ setTimeout(() => { const c2 = me(); if (c2 && c2.sit && c2.sit.s === o0){ c2.sit = null; showActs(null); c2.ty = Math.min((MAP_WALK[scene] || WALK).y1, c2.y + 50); sendMove(Object.assign({}, c2, { y: c2.ty })); } gatherStop(); say(`😪 ${(j.run || {}).max || 20}번 연속 했더니 지쳤어요! ${j.tired}분 쉬거나 다른 지도 채집터로 가요`, 4500); }, 2800); }
     const it = j.item || {}, msg = `${j.lucky ? '🍀 ' : ''}${it.ic} ${it.name}${j.coins ? '' : '을(를)'} ${spot.verb}! ${RAR_NM[it.rar] || ''} +${j.exp} EXP${j.coins ? ` +${j.coins}🐾` : ''}`;
     c.bubble = { text: `${it.ic} ${it.name}${it.rar ? ' ' + RAR_NM[it.rar] : ''}`, until: Date.now() + 4000 };
@@ -2632,9 +2632,10 @@ function openVillage(opts){
       furn = `<div class="god-sec"><b>🛋 안 쓰는 가구 되팔기</b> <small>산 값의 반만 줘요 · 집에 놓은 건 못 팔아요</small>${list.map(([id, n, f]) => `<div class="mk-row"><span>${f.icon} ${escV(f.name)} ×${n}</span><button type="button" class="vg-cardgo" data-sellf="${escV(id)}">${Math.floor(f.price / 2)}🐾에 팔기</button></div>`).join('') || '<div class="hint">팔 수 있는 가구가 없어요</div>'}</div>`;
     }
     panel.innerHTML = `<button type="button" class="px">✕</button><h3>${M.nm}</h3>
-      <div class="hint" style="text-align:center;">오늘의 시세 · 날마다 바뀌고, 많이 팔린 건 값이 내려가요</div>
+      <div class="hint" style="text-align:center;">오늘의 시세 · 같은 물건을 팔수록 값이 내려가요 (100→80→60→40→20%)<br>6번째부터는 0원! 하나가 간식으로 먹어요 🐱</div>
       <div class="god-sec">${rows.map(([id, m]) => { const n = items[id] || 0, up = m.p > m.base ? '🔺' : m.p < m.base ? '🔻' : '➖';
-        return `<div class="mk-row ${n ? '' : 'no'}"><span>${m.ic} ${escV(m.name)} <small>${up} ${m.p}🐾</small></span><span>${n ? `×${n} <button type="button" class="vg-cardgo" data-sell="${id}" data-n="1">1개</button>${n > 1 ? ` <button type="button" class="vg-cardgo" data-sell="${id}" data-n="${n}">전부 ${m.p * n}🐾</button>` : ''}` : '<small>없어요</small>'}</span></div>`; }).join('')}</div>
+        const mine = m.mine || 0, all = Array.from({ length: n }, (_, i) => [1, .8, .6, .4, .2][mine + i] != null ? Math.max(1, Math.round((m.full || m.p) * [1, .8, .6, .4, .2][mine + i])) : 0).reduce((a, b) => a + b, 0);
+        return `<div class="mk-row ${n ? '' : 'no'}"><span>${m.ic} ${escV(m.name)} <small>${m.p ? `${up} ${m.p}🐾` : '🐱 하나 간식'}${mine ? ` · 오늘 ${mine}번 팔았어요` : ''}</small></span><span>${n ? `×${n} <button type="button" class="vg-cardgo" data-sell="${id}" data-n="1">${m.p ? '1개' : '하나 주기'}</button>${n > 1 ? ` <button type="button" class="vg-cardgo" data-sell="${id}" data-n="${n}">전부 ${all}🐾</button>` : ''}` : '<small>없어요</small>'}</span></div>`; }).join('')}</div>
       ${have.length ? '' : `<div class="hint" style="text-align:center;">팔 게 없어요. ${shop === 'junk' ? '길냥이집 쓰레기통' : shop === 'fish' ? '해변 바위' : shop === 'fruit' ? '숲 덤불' : '하늘 정원 별 그물'}에서 모아 와요!</div>`}${furn}`;
   }
   panel.addEventListener('click', async e => {
@@ -2650,7 +2651,7 @@ function openVillage(opts){
       if (!j || !j.ok){ say('연결이 안 돼요'); return; }
       bagInfo = Object.assign(bagInfo || {}, j);
       if (j.error) say({ noitem:'가방에 없어요', poor:'코인이 모자라요', limit:'오늘은 더 팔 수 없어요', blocked:'지금은 팔 수 없어요', placed:'집에 놓은 가구는 못 팔아요', bad:'서버 코드를 새로 배포해야 해요', closed:'지금은 마을 쉬는 시간이에요' }[j.error] || '하지 못했어요', 2800);
-      else if (j.sold){ say(`💰 ${j.sold.name} ×${j.sold.n} → +${j.sold.coins}🐾`, 2600); emote('💰', true); }
+      else if (j.sold){ const ea = j.sold.eaten || 0; if (ea && !j.sold.coins){ say(`🐱 하나가 ${j.sold.name} ${ea}개를 냠냠 맛있게 먹었어요! (오늘 6번째부터는 하나 간식)`, 3500); emote('😋', true); } else { say(`💰 ${j.sold.name} ×${j.sold.n - ea} → +${j.sold.coins}🐾${ea ? ` · 🐱 ${ea}개는 하나가 냠냠` : ''}`, 3200); emote('💰', true); } }
       else if (bk) say(bk.dataset.bank === 'dep' ? '🏦 맡겼어요!' : '🏦 찾았어요!', 2000);
       if (opts.refresh) opts.refresh();
       renderMarket(shop);

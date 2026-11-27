@@ -29,7 +29,7 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 59;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 60;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
@@ -1431,14 +1431,17 @@ function bagOf_(name) { try { const b = JSON.parse(props_().getProperty('bag:' +
 function hashF_(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return (h % 100000) / 100000; }
 /* 💹 오늘의 시세: 날마다 0.8~1.25배 · 오늘 반 전체가 많이 판 물건은 값이 내려가요 (최대 절반까지) */
 function mktSold_() { try { return JSON.parse(props_().getProperty('mkt:' + todayStr_()) || '{}') || {}; } catch (e) { return {}; } }
-function priceOf_(id, sold) {
+/* 💹 개인별로 같은 물건을 팔수록 값이 내려가요: 100% → 80% → 60% → 40% → 20% → 6번째부터 0원 (하나가 먹어요) */
+const SELL_STEPS_ = [1, 0.8, 0.6, 0.4, 0.2];
+function priceOf_(id, k) {
   const it = gatherItem_(id); if (!it || !it.base) return 0;
-  const day = 0.8 + hashF_(todayStr_() + id) * 0.45, sup = Math.max(0.5, 1 - 0.02 * ((sold || {})[id] || 0));
-  return Math.max(1, Math.round(it.base * day * sup));
+  const step = SELL_STEPS_[k || 0]; if (step == null) return 0;
+  const day = 0.8 + hashF_(todayStr_() + id) * 0.45;
+  return Math.max(1, Math.round(it.base * day * step));
 }
-function marketView_() {
-  const sold = mktSold_(), out = {};
-  Object.keys(GATHER_).forEach(function (g) { if (!GATHER_[g].shop) return; GATHER_[g].items.forEach(function (it) { out[it[0]] = { p: priceOf_(it[0], sold), base: it[4], name: it[1], ic: it[2], rar: it[3], g: g, sold: sold[it[0]] || 0 }; }); });
+function marketView_(name) {
+  const out = {};
+  Object.keys(GATHER_).forEach(function (g) { if (!GATHER_[g].shop) return; GATHER_[g].items.forEach(function (it) { const k = name ? dayCount_('ps:' + name + ':' + it[0]) : 0; out[it[0]] = { p: priceOf_(it[0], k), base: it[4], full: priceOf_(it[0], 0), name: it[1], ic: it[2], rar: it[3], g: g, mine: k }; }); });
   return out;
 }
 /* 🏦 냥냥 은행: 하루 1% 이자 (100코인부터 1코인씩) · 한 번에 최대 30일치 */
@@ -1466,7 +1469,7 @@ function findsNow_() {
   if (!props_().getProperty('found:' + cid)) { const pts = [[1500, 960], [120, 980], [980, 300], [1560, 520]], pt = pts[Math.floor(hashF_(cid) * pts.length)]; out.push({ id: cid, map: 'east', x: pt[0], y: pt[1], kind: 'chest' }); }
   return out;
 }
-/* ⏳ 채집터 줄 서기 · 양보: 줄이 생기면 5분 넘게 앉은 친구 중 오늘 많이 한 친구부터 30초 뒤 양보 (양보하면 다음 채집 희귀 2배) */
+/* ⏳ 채집터 줄 서기 · 양보: 줄이 생기면 5분 넘게 앉은 친구 중 오늘 많이 한 친구부터 30초 뒤 양보 */
 const GQ_FRESH_ = 90000, GQ_SIT_ = 300000, GQ_WARN_ = 30000;
 function gqOf_(o) { const now = Date.now(); return (cacheGet_('gq:' + o, []) || []).filter(function (x) { return now - x.ts < GQ_FRESH_; }); }
 function gqSet_(o, list) { cachePut_('gq:' + o, list); }
@@ -1497,7 +1500,7 @@ function studentGather_(name, body) {
       }
       if (!g) error = 'bad';
       else if (!T && (!here || here.s !== String(body.o))) error = 'seat';   // 그 자리에 앉아 있어야 해요
-      else if (yieldNow) { error = 'yield'; props_().deleteProperty('gw:' + name); props_().deleteProperty('gs:' + name); props_().setProperty('gb:' + name, '1'); }
+      else if (yieldNow) { error = 'yield'; props_().deleteProperty('gw:' + name); props_().deleteProperty('gs:' + name); }
       else if (rest && rest.o === o && now < rest.until) { error = 'rest'; res.restLeft = Math.ceil((rest.until - now) / 1000); }
       else if (lm < 0) error = 'blocked';
       else if (lm > 0 && cnt >= lm) error = 'limit';
@@ -1536,13 +1539,13 @@ function studentGather_(name, body) {
       else if (lm > 0 && cnt >= lm) error = 'limit';
       else if ((b.items[id] || 0) < n) error = 'noitem';
       else {
-        const sold = mktSold_(); let total = 0;
-        for (let i = 0; i < n; i++) { total += priceOf_(id, sold); sold[id] = (sold[id] || 0) + 1; }
-        props_().setProperty('mkt:' + ds, JSON.stringify(sold));
+        const k0 = dayCount_('ps:' + name + ':' + id); let total = 0, eaten = 0;
+        for (let i = 0; i < n; i++) { const p0 = priceOf_(id, k0 + i); total += p0; if (!p0) eaten++; }
+        dayCount_('ps:' + name + ':' + id, n);
         b.items[id] -= n; if (!b.items[id]) delete b.items[id]; props_().setProperty('bag:' + name, JSON.stringify(b));
         dayCount_('sc:' + name, 1);
-        if (!T) addCoin_(name, total, '판매: ' + it.name + ' ×' + n, '판매', '', []);
-        res = { sold: { name: it.name, n: n, coins: total } };
+        if (!T && total) addCoin_(name, total, '판매: ' + it.name + ' ×' + (n - eaten), '판매', '', []);
+        res = { sold: { name: it.name, n: n, coins: total, eaten: eaten } };
       }
     } else if (op === 'sellFurn') {                // 🔁 중고 장터: 안 쓰는 가구를 반값에
       const map = readRows_().map, eco = economy_(map), inv = (map.inv || {})[name] || {}, f = findFurn_(eco, String(body.item || ''));
@@ -1581,7 +1584,7 @@ function studentGather_(name, body) {
       }
     }
     const b = bagOf_(name), bk = bankOf_(name);
-    return Object.assign({ ok: true, error: error, bag: b.items, dex: b.dex, market: marketView_(), bank: { a: bk.a, gain: bk.gain, rate: BANK_RATE_ }, wished: props_().getProperty('wish:' + name + ':' + ds) != null,
+    return Object.assign({ ok: true, error: error, bag: b.items, dex: b.dex, market: marketView_(name), bank: { a: bk.a, gain: bk.gain, rate: BANK_RATE_ }, wished: props_().getProperty('wish:' + name + ':' + ds) != null,
       gathered: dayCount_('gc:' + name), gatherLeft: (function () { const l = lim_('gather', name); return l < 0 ? 0 : l === 0 ? -1 : Math.max(0, l - dayCount_('gc:' + name)); })(), gap: lim_('gatherGap', name) || 30, finds: findsNow_() }, res);
   } finally { lock.releaseLock(); }
 }
