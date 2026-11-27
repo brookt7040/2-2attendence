@@ -139,10 +139,19 @@ RA.html = function(tab){
       <div class="ra-g">🏆 레벨 바로 맞추기</div><div class="ra-btns">${th.map((t, i) => `<button type="button" class="np-btn ${me.lv === i + 1 ? 'ok' : ''}" data-rxlv="${i + 1}">Lv.${i + 1}</button>`).join('')}</div>
       <div class="hint">EXP는 출석부(TV)가 받아서 더해요 (TV가 켜져 있으면 1분 안). 레벨을 맞추면 그 레벨 시작 EXP가 되도록 더하거나 빼요.</div>
       <div class="ra-g">📜 이번 시즌 보너스 내역</div>${adj.length ? adj.map(b => `<div class="ra-row"><span>${esc(b.ds.slice(5).replace('-', '/'))} ${esc(b.t)} · ${esc(b.item || '')}</span><b style="color:${b.exp >= 0 ? '#1F8A5F' : '#D6456E'}">${sgn(Number(b.exp) || 0)}</b></div>`).join('') : '<div class="empty">아직 없어요</div>'}
-      <div class="hint">꾸미기 · 집 · 하나 친밀도는 마을에서 친구 카드 → 마법으로 바꿔요.</div></div>` : ''}`;
+      <div class="hint">꾸미기 · 집 · 하나 친밀도는 마을에서 친구 카드 → 마법으로 바꿔요.</div></div>` : ''}${xpToday(x)}`;
   }
   return '';
 };
+/* 📜 오늘 반 전체 EXP: 학생별 · 이유별로 묶어서 (교실 화면 알림 대신 여기서 봐요) */
+function xpToday(x){
+  const now = new Date(), ds = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const list = (x.bonus || []).filter(b => b.ds === ds), by = {};
+  list.forEach(b => { const why = String(b.item || '기타').replace(/:.*$/, '').trim() || '기타'; const k = b.who; (by[k] = by[k] || { sum: 0, w: {} }); by[k].sum += Number(b.exp) || 0; const w = by[k].w[why] = by[k].w[why] || { n: 0, e: 0 }; w.n++; w.e += Number(b.exp) || 0; });
+  const rows = Object.entries(by).sort((a, b) => b[1].sum - a[1].sum);
+  return `<div class="box ra"><div class="box-head">📜 오늘 반 전체 EXP <small>학생별 · 이유별</small></div>${rows.length ? rows.map(([n, v]) => `<div class="ra-row"><span><b>${esc(n)}</b> <small>${Object.entries(v.w).map(([w, o]) => `${esc(w)} ${o.n > 1 ? `×${o.n} ` : ''}${sgn(o.e)}`).join(' · ')}</small></span><b style="color:${v.sum >= 0 ? '#1F8A5F' : '#D6456E'}">${sgn(v.sum)}</b></div>`).join('') : '<div class="empty">오늘 받은 EXP가 아직 없어요</div>'}
+    <div class="hint">출석부(TV)가 받아서 더한 것까지 보여요. 새로 받은 EXP는 TV가 켜져 있으면 1분 안에 들어와요.</div></div>`;
+}
 function old(){ return '<div class="empty">서버 코드를 최신(v54)으로 배포하면 보여요</div>'; }
 const rer = async (tab, reload) => { if (reload) { try { await RA.load(tab); } catch(e){} } const b = $('tBox'); if (b) b.innerHTML = RA.html(tab); };
 RA.isTab = k => RA.TABS.some(x => x[0] === k);

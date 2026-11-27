@@ -5074,8 +5074,7 @@ function handleExpQueue(list){
   syncOp({ op:'expAck', ids: list.map(x => String(x.id)) });
   if (!list.length) return;
   renderGrid(); updateStatsBoard(); publishPub();
-  const names = [...new Set(list.map(x => x.n))];
-  showToast(`${names.slice(0, 3).join(', ')}${names.length >3 ? ` 외 ${names.length - 3}명` : ''} 미션 EXP 받았다냥!`);
+  // 📜 누가 무슨 EXP를 받았는지는 교실 화면 알림 대신 학생 앱 👑 관리 → RPG → ✨ 학생 EXP 에서 봐요
   setTimeout(() => queueLevelUps(before), 600);
 }
 function handleRemote(list){
