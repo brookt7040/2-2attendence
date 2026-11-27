@@ -2610,7 +2610,8 @@ function teacherCoins_() {
   const reqs = readReqs_(function () { return true; }).slice(-300).reverse();
   const map = readRows_().map, sold = {};
   (economy_(map).shop || []).forEach(function (it) { sold[it.id] = soldCount_(it.id); });
-  return { ok: true, results: missionResults_(rows), balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [], praise: praiseResults_(), sigs: sheet_(SIG_SHEET, SIG_HEADER).getLastRow() > 1 ? sheet_(SIG_SHEET, SIG_HEADER).getRange(2, 1, sheet_(SIG_SHEET, SIG_HEADER).getLastRow() - 1, 1).getValues().map(function (r) { return Number(r[0]); }) : [] };
+  const picks = {}; kidNames_(map).forEach(function (n) { const p = picksOf_(n); if (p.d.ids.length || p.w.ids.length) picks[n] = { d: p.d.ids, w: p.w.ids }; });   // 🎯 학생들이 고른 미션
+  return { ok: true, picks: picks, results: missionResults_(rows), balances: bal, ledger: rows.slice(-300).reverse(), reqs: reqs, sold: sold, inv: map.inv || {}, missions: economy_(map).missions || [], praise: praiseResults_(), sigs: sheet_(SIG_SHEET, SIG_HEADER).getLastRow() > 1 ? sheet_(SIG_SHEET, SIG_HEADER).getRange(2, 1, sheet_(SIG_SHEET, SIG_HEADER).getLastRow() - 1, 1).getValues().map(function (r) { return Number(r[0]); }) : [] };
 }
 function studentCoins_(name, body) {
   const lock = lockFor_(body.op !== 'coins', 20000);

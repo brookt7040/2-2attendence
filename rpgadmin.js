@@ -68,12 +68,15 @@ RA.html = function(tab){
     return `<div class="box ra"><div class="box-head">🎛️ 기능 스위치</div>
       <label class="ra-pause"><input type="checkbox" data-feat="pause" ${f.pause ? 'checked' : ''}> <span>⏸ <b>전체 멈춤</b><br><small>출석 · 공지 · 로그인만 남기고 학생 앱 기능을 한 번에 꺼요</small></span></label>
       ${FEATS.map(([g, list]) => `<div class="ra-g">${g}</div><div class="ra-grid">${list.map(([k, n, d]) => `<label class="ra-ft ${f[k] === false || f.pause ? 'off' : ''}"><input type="checkbox" data-feat="${k}" ${f[k] !== false ? 'checked' : ''}><span>${n}${d ? `<small>${d}</small>` : ''}</span></label>`).join('')}</div>`).join('')}
-      <div class="hint" style="margin-top:10px;">끄면 학생 화면에 "지금은 쉬는 중이에요"가 떠요. 선생님 계정은 다 쓸 수 있어요. 바꾸면 바로 저장돼요.</div></div>`;
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:10px;"><small id="featDirty" class="hint" style="color:#C0365C;display:none;">저장 안 한 변경이 있어요</small><button type="button" class="np-btn ok" id="featSave">💾 저장</button></div>
+      <div class="hint" style="margin-top:6px;">끄면 학생 화면에 "지금은 쉬는 중이에요"가 떠요. 선생님 계정은 다 쓸 수 있어요. 바꾼 뒤 <b>저장</b>을 눌러야 적용돼요.</div></div>`;
   }
   if (tab === 'creq'){
     const d = D.coins || {}; if (!d.reqs) return old();
     const pend = d.reqs.filter(r => r.status === '대기'), done = d.reqs.filter(r => r.status !== '대기').slice(0, 30);
-    return `<div class="box ra"><div class="box-head">⏳ 확인 대기 (${pend.length})</div>${pend.length ? pend.map(r => `<div class="ra-row"><span>${r.type === '미션' ? '✅ 미션' : '🎟 쿠폰'} · <b>${esc(r.name)}</b> · ${esc(r.item)} · ${r.type === '미션' ? '+' : ''}${r.coins}🐾 <small>${esc(r.t)}</small></span>
+    const mName = id => { const m = (d.missions || []).find(x => x.id === id); return m ? m.name : id; }, pk = d.picks || {};
+    const pickBox = `<div class="box ra"><div class="box-head">🎯 학생들이 고른 미션 <small>오늘 · 이번 주</small></div>${d.picks ? (tKids().filter(n => pk[n]).map(n => `<div class="ra-row"><span><b>${esc(n)}</b></span><span style="text-align:right;">${(pk[n].d || []).map(id => `<span class="ra-chip">${esc(mName(id))}</span>`).join(' ')}${(pk[n].w || []).length ? ` <small>주간</small> ${pk[n].w.map(id => `<span class="ra-chip">${esc(mName(id))}</span>`).join(' ')}` : ''}</span></div>`).join('') || '<div class="empty">아직 고른 친구가 없어요</div>') + `<div class="hint">안 고른 친구: ${tKids().filter(n => !pk[n]).map(esc).join(', ') || '없음'}</div>` : '<div class="empty">서버 코드를 최신으로 배포하면 보여요</div>'}</div>`;
+    return pickBox + `<div class="box ra"><div class="box-head">⏳ 확인 대기 (${pend.length})</div>${pend.length ? pend.map(r => `<div class="ra-row"><span>${r.type === '미션' ? '✅ 미션' : '🎟 쿠폰'} · <b>${esc(r.name)}</b> · ${esc(r.item)} · ${r.type === '미션' ? '+' : ''}${r.coins}🐾 <small>${esc(r.t)}</small></span>
         <span>${(d.sigs || []).includes(r.id) ? `<button type="button" class="np-btn" data-rsig="${r.id}">✍️ 서명</button>` : ''}<button type="button" class="np-btn ok" data-rq="${r.id}" data-ok="1">${r.type === '미션' ? '승인' : '지급 완료'}</button><button type="button" class="np-btn no" data-rq="${r.id}" data-ok="0">${r.type === '미션' ? '반려' : '취소·환불'}</button></span></div>`).join('') : '<div class="empty">확인할 게 없어요 </div>'}</div>
       <div class="box ra"><div class="box-head">🎯 미션 성공 보고 <small>(잘못 준 건 ↩ 취소 · 코인과 EXP가 빠져요)</small></div>${(d.results || []).length ? d.results.slice(0, 30).map(x => `<div class="ra-row"><span>${x.undone ? '<s>' : ''}<b>${esc(x.name)}</b> · ${esc(String(x.why || '').replace(/^미션:\s*/, ''))} · +${x.amt}🐾 <small>${esc(x.kind || '')} ${esc(String(x.t || '').slice(5))}</small>${x.undone ? '</s>' : ''}</span>${x.undone ? '<small>취소됨</small>' : `<button type="button" class="np-btn no" data-mundo="${x.id}">↩ 취소</button>`}</div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
       <div class="box ra"><div class="box-head">💌 칭찬편지 결과 <small>(내용은 안 보여요)</small></div>${(d.praise || []).length ? d.praise.slice(0, 20).map(x => `<div class="ra-row"><span><b>${esc(x.from)}</b> → ${esc(x.to)} ${x.mission ? '🎯' : ''}</span><small>${x.ok ? '✔ 확인' : '⏳'}</small></div>`).join('') : '<div class="empty">아직 없어요</div>'}</div>
@@ -145,14 +148,23 @@ const rer = async (tab, reload) => { if (reload) { try { await RA.load(tab); } c
 RA.isTab = k => RA.TABS.some(x => x[0] === k);
 
 /* 👆 누르기 */
-document.addEventListener('change', async e => {
+/* 🎛️ 기능 스위치: 바꾸고 💾 저장을 눌러야 서버에 저장돼요 (저장 뒤 서버에서 다시 읽어 확인) */
+document.addEventListener('change', e => {
   const i = e.target; if (!i.dataset || !i.dataset.feat || !i.closest('.ra')) return;
-  const f = {}; document.querySelectorAll('.ra [data-feat]').forEach(c => { if (c.dataset.feat === 'pause'){ if (c.checked) f.pause = true; } else if (!c.checked) f[c.dataset.feat] = false; });
-  RA.data.feat = f; if (await ops([{ op:'featSet', features: f }], f.pause ? '⏸ 학생 앱을 전체 멈췄어요' : '🎛️ 저장했어요')) rer('feat');
+  const lb = i.closest('.ra-ft'); if (lb) lb.classList.toggle('off', !i.checked);
+  const d = document.getElementById('featDirty'); if (d) d.style.display = '';
 });
+async function featSave(){
+  const f = {}; document.querySelectorAll('.ra [data-feat]').forEach(c => { if (c.dataset.feat === 'pause'){ if (c.checked) f.pause = true; } else if (!c.checked) f[c.dataset.feat] = false; });
+  const b = document.getElementById('featSave'); if (b){ b.disabled = true; b.textContent = '저장하는 중…'; }
+  const ok = await ops([{ op:'featSet', features: f }], f.pause ? '⏸ 학생 앱을 전체 멈췄어요' : '🎛️ 저장했어요');
+  if (!ok){ if (b){ b.disabled = false; b.textContent = '💾 저장'; } alert('저장하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.'); return; }
+  rer('feat', true);
+}
 document.addEventListener('change', e => { if (e.target && e.target.id === 'limEvent') limSave(e.target.checked ? '🎉 오늘은 전부 무제한!' : '이벤트를 껐어요'); });
 document.addEventListener('click', async e => {
   if (e.target.closest('#limSave, #limSave2')){ limSave(); return; }
+  if (e.target.closest('#featSave')){ featSave(); return; }
   { const u = e.target.closest('[data-limun]'); if (u){ const i = document.querySelector(`.ra [data-lim="${u.dataset.limun}"]`); if (i) i.value = '0'; return; } }
   const t = e.target; if (!t.closest || !t.closest('#tBox')) return;
   const tab = typeof tTab !== 'undefined' ? tTab : '', kids = tKids();
