@@ -29,13 +29,13 @@ const CLOSING_SHEET = '종례';
 const MEETING_SHEET = '학급회의';
 const URGENT_SHEET = '중요공지', URGENT_HEADER = '📌 중요 공지 (A2칸부터 한 줄에 하나 · 비우면 내려가요)';
 const CLOSING_HEADER = '📋 종례 — A2칸부터 한 줄에 하나씩 적으세요 (종례하기 화면에 자동 반영)';
-const API_VERSION = 62;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
+const API_VERSION = 63;   // ⬆️ 서버 코드를 고칠 때마다 올려요 (출석부가 '업데이트 필요'를 알려 줘요)
 const COIN_SHEET = '냥코인', COIN_HEADER = ['번호', '시간', '이름', '코인', '내용', '구분', '중복키'];
 const REQ_SHEET = '신청', REQ_HEADER = ['번호', '시간', '이름', '종류', '항목', '코인', '상태', '처리 시간', '항목ID'];
 const EMOTES = ['👋', '💛', '😂', '😮', '🎉', '😭', '👍', '🐾', '💤', '🎣', '💧', '😺', '📸', '🙋', '✋'];
 // 🪑 앉을 수 있는 자리 수 — 마을 화면(index.html의 V_OBJS · HALL_TABLES)과 같아야 해요
 const SEAT_CAP = {
-  out: { fountain: 4, bench1: 2, bench2: 2, longbench: 4, tower: 3, scratch: 1, hammock: 1, box1: 1, box2: 1, sun: 3, pond: 2, churu: 1, swing: 2, cushions: 3, yarn: 1, photo: 6, slide: 1 },
+  out: { fountain: 4, bench1: 2, bench2: 2, longbench: 4, tower: 3, scratch: 1, hammock: 1, box1: 1, box2: 1, sun: 3, pond: 4, churu: 1, swing: 2, cushions: 3, yarn: 1, photo: 6, slide: 1 },
   hall: { T1: 4, T2: 4, T3: 4, T4: 4, T5: 4, T6: 5, PRES: 1, VICE: 1 },
   west: { umb1: 2, umb2: 2, umb3: 2, boat: 3, rock: 4, castle: 2, surf: 1 },
   east: { camp: 5, logs: 3, mush: 3, swing2: 1, stump: 1, berry: 4 },
@@ -1397,7 +1397,7 @@ function villageState_() {
 const VEXP_EVERY_ = 3, VEXP_GAIN_ = 2, VEXP_MAX_ = 10;
 /* ---------------- ⏱ 횟수 제한 (학생 앱 👑 관리 → RPG → 횟수 제한) ----------------
  * 0 = 무제한 · 학생별로 따로 정하거나(per) 막을 수 있어요(block) · event 날짜는 그날 하루 전부 무제한 */
-const LIMIT_DEF_ = { hana: HANA_DAILY, act: VILLAGE_ACT_DAILY, game: null, bet: null, vexp: VEXP_MAX_, gather: 0, gatherExp: 0, gatherGap: 30, gatherRun: 20, gatherRest: 3, sell: 0, find: 0 };
+const LIMIT_DEF_ = { hana: HANA_DAILY, act: VILLAGE_ACT_DAILY, game: null, bet: null, vexp: VEXP_MAX_, gather: 0, gatherExp: 0, gatherGap: 3, gatherRun: 20, gatherRest: 3, sell: 0, find: 0 };
 function limitsRaw_() { try { return JSON.parse(props_().getProperty('limits') || '{}') || {}; } catch (e) { return {}; } }
 function limits_() {
   const L = limitsRaw_(), out = {};
@@ -1419,7 +1419,7 @@ function dayCount_(k, add) { const key = k + ':' + todayStr_(); let n = Number(p
 /* ---------------- 🎣 채집 (1맵 1채집) · 🏪 시장 · 🏦 은행 · 🍀 우연 ---------------- */
 // 아이템: [id, 이름, 아이콘, 희귀도(0 보통 · 1 희귀 · 2 아주 희귀 · 3 전설), 기본 값]
 const GATHER_ = {
-  fish:  { spot: 'rock', verb: '낚았어요', shop: 'fish', items: [['f_anchovy', '멸치', '🐟', 0, 3], ['f_mackerel', '고등어', '🐟', 0, 4], ['f_squid', '오징어', '🦑', 0, 5], ['f_bream', '도미', '🐠', 1, 12], ['f_puffer', '복어', '🐡', 1, 14], ['f_tuna', '참치', '🐟', 2, 40], ['f_gold', '황금 물고기', '🌟', 3, 120]] },
+  fish:  { spot: 'rock', spots: ['rock', 'pond'], verb: '낚았어요', shop: 'fish', items: [['f_anchovy', '멸치', '🐟', 0, 3], ['f_mackerel', '고등어', '🐟', 0, 4], ['f_squid', '오징어', '🦑', 0, 5], ['f_bream', '도미', '🐠', 1, 12], ['f_puffer', '복어', '🐡', 1, 14], ['f_tuna', '참치', '🐟', 2, 40], ['f_gold', '황금 물고기', '🌟', 3, 120]] },
   fruit: { spot: 'berry', verb: '주웠어요', shop: 'fruit', items: [['r_acorn', '도토리', '🌰', 0, 2], ['r_berry', '산딸기', '🍓', 0, 3], ['r_apple', '사과', '🍎', 0, 4], ['r_mush', '버섯', '🍄', 1, 10], ['r_grape', '머루', '🍇', 1, 12], ['r_pine', '송이버섯', '🍄', 2, 35], ['r_gold', '황금 사과', '🍏', 3, 90]] },
   star:  { spot: 'starnet', verb: '모았어요', shop: 'star', items: [['s_dust', '별가루', '✨', 0, 3], ['s_small', '작은 별', '⭐', 0, 4], ['s_moon', '초승달 조각', '🌙', 0, 5], ['s_shine', '반짝 별', '🌟', 1, 12], ['s_meteor', '유성 조각', '☄️', 1, 15], ['s_rainbow', '무지개 별', '🌈', 2, 45], ['s_wish', '소원 별 조각', '💫', 3, 100]] },
   trash: { spot: 'trash', verb: '찾았어요', shop: 'junk', items: [['t_can', '빈 캔', '🥫', 0, 1], ['t_bone', '생선뼈', '🦴', 0, 2], ['t_sock', '낡은 양말', '🧦', 0, 1], ['t_toy', '고양이 장난감', '🪀', 1, 8], ['t_marble', '반짝이 구슬', '🔮', 1, 10], ['t_map', '보물 지도 조각', '🗺️', 2, 50], ['t_crown', '낡은 왕관', '👑', 3, 110]] },
@@ -1488,7 +1488,7 @@ function studentGather_(name, body) {
   try {
     let error = '', res = {};
     if (op === 'gather') {
-      const g = Object.keys(GATHER_).filter(function (k) { return GATHER_[k].spot === String(body.o || ''); })[0], lm = lim_('gather', name), gap = lim_('gatherGap', name) || 30;
+      const g = Object.keys(GATHER_).filter(function (k) { return (GATHER_[k].spots || [GATHER_[k].spot]).indexOf(String(body.o || '')) >= 0; })[0], lm = lim_('gather', name), gap = lim_('gatherGap', name) || 3;
       const last = Number(props_().getProperty('gl:' + name) || 0), cnt = dayCount_('gc:' + name);
       const ecap = lim_('gatherExp', name), eGot = dayCount_('ge:' + name);
       const here = (cacheGet_('v:pos', {}) || {})[name];
@@ -1536,7 +1536,7 @@ function studentGather_(name, body) {
       }
     } else if (op === 'gqueue') {                  // ⏳ 줄 서기 (90초마다 다시 서야 해요) · leave: 그만 기다리기
       const o = String(body.o || ''); let q = gqOf_(o).filter(function (x) { return x.n !== name; });
-      if (!body.leave && Object.keys(GATHER_).some(function (k) { return GATHER_[k].spot === o; })) { const old = gqOf_(o).filter(function (x) { return x.n === name; })[0]; q.push({ n: name, ts: Date.now(), at: old ? old.at : Date.now() }); q.sort(function (a, b) { return a.at - b.at; }); }
+      if (!body.leave && Object.keys(GATHER_).some(function (k) { return (GATHER_[k].spots || [GATHER_[k].spot]).indexOf(o) >= 0; })) { const old = gqOf_(o).filter(function (x) { return x.n === name; })[0]; q.push({ n: name, ts: Date.now(), at: old ? old.at : Date.now() }); q.sort(function (a, b) { return a.at - b.at; }); }
       gqSet_(o, q); res = { queue: q.map(function (x) { return x.n; }).indexOf(name) + 1 };
     } else if (op === 'sell') {                    // 🏪 시장에 팔기 (그 가게가 사는 것만)
       const shop = String(body.shop || ''), id = String(body.item || ''), n = Math.max(1, Math.min(99, Math.floor(Number(body.n) || 1)));
@@ -1592,7 +1592,7 @@ function studentGather_(name, body) {
     }
     const b = bagOf_(name), bk = bankOf_(name);
     return Object.assign({ ok: true, error: error, bag: b.items, dex: b.dex, market: marketView_(name), bank: { a: bk.a, gain: bk.gain, rate: BANK_RATE_ }, wished: props_().getProperty('wish:' + name + ':' + ds) != null,
-      banned: banOf_(name), gathered: dayCount_('gc:' + name), gatherLeft: (function () { const l = lim_('gather', name); return l < 0 ? 0 : l === 0 ? -1 : Math.max(0, l - dayCount_('gc:' + name)); })(), gap: lim_('gatherGap', name) || 30, finds: findsNow_() }, res);
+      banned: banOf_(name), gathered: dayCount_('gc:' + name), gatherLeft: (function () { const l = lim_('gather', name); return l < 0 ? 0 : l === 0 ? -1 : Math.max(0, l - dayCount_('gc:' + name)); })(), gap: lim_('gatherGap', name) || 3, finds: findsNow_() }, res);
   } finally { lock.releaseLock(); }
 }
 /* 🚨 수업 시간 압수: 시간표의 'N교시' 시간(점심 제외)에 채집 · 팔기 등을 하면 경고 없이

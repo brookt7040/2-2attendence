@@ -2567,7 +2567,7 @@ async function remoteGo(){
   finally { b.textContent = '📱 맹세하고 출석하기'; b.disabled = !$('rOathChk').checked; }
 }
 /* 🛠️ 서버(Code.gs)가 이 출석부보다 옛날 버전이면 알려 줘요 */
-const NEED_API = 62;
+const NEED_API = 63;
 /* 🐾 로딩 화면 조각: LD('🐾', '접속 중', '우리 반 정보를 불러오고 있어요') */
 function LD(icon, title, sub, cls){ return `<div class="${cls || 'ldBox'}"><div class="bp">${icon}</div><div>${title}<span class="bd"><span>.</span><span>.</span><span>.</span></span></div>${sub ? `<small>${sub}</small>` : ''}</div>`; }
 window.LD = LD;
@@ -5810,7 +5810,7 @@ const V_OBJS = [
   { id:'box1',     kind:'box',      x:600,  y:900, r:30, act:'hide',    label:'📦 상자에 쏙',    emo:'📦', seats:[[0, 0]] },
   { id:'box2',     kind:'box',      x:660,  y:930, r:30, act:'hide',    label:'📦 상자에 쏙',    emo:'📦', seats:[[0, 0]] },
   { id:'sun',      kind:'sunspot',  x:400,  y:690, r:60, act:'sunbath', label:'☀️ 햇볕 쬐기',   emo:'☀️', seats:[[-35, 0], [0, 12], [35, 0]] },
-  { id:'pond',     kind:'pond',     x:1400, y:880, r:75, act:'fish',    label:'🎣 낚시하기',     emo:'🎣', seats:[[-80, -10], [80, -10]] },
+  { id:'pond',     kind:'pond',     x:1400, y:880, r:75, act:'fish',    label:'🎣 낚시하기',     emo:'🎣', seats:[[-80, -10], [80, -10], [-40, 50], [40, 50]] },
   { id:'churu',    kind:'vending',  x:1120, y:640, r:35, act:'churu',   label:'🍡 츄르 뽑기',    emo:'🍡', seats:[[0, 20]] },
   { id:'swing',    kind:'swing',    x:1520, y:700, r:55, act:'swing',   label:'🎠 그네 타기',    emo:'🎉', seats:[[-22, 0], [22, 0]] },
   { id:'cushions', kind:'cushion',  x:640,  y:620, r:50, act:'sit',     label:'🟣 방석에 앉기',  emo:'😽', seats:[[-34, 0], [0, 6], [34, 0]] },
@@ -6222,6 +6222,7 @@ function openVillage(opts){
       .vg canvas.vg-mini{flex:none;min-height:0;position:absolute;right:10px;bottom:calc(var(--vgb,12px) + 8px);width:165px;height:114px;border:3px solid #5B4636;border-radius:14px;background:#6FC0EE;box-shadow:0 3px 0 rgba(91,70,54,.35);z-index:2;cursor:pointer;image-rendering:auto;}
       .vg.has-mega canvas.vg-mini{bottom:calc(var(--vgb,12px) + 52px);}
       @media (max-width:560px){ .vg canvas.vg-mini{width:135px;height:94px;} }
+      .vg-acts .g-act{font-size:1.25rem;padding:10px 22px;background:#FFE066;animation:gpulse 1.2s ease-in-out infinite;} @keyframes gpulse{50%{transform:scale(1.06)}}
       .bag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px;margin-top:6px;} .bag-it{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border:2px solid #5B4636;border-radius:12px;background:var(--rc,#fff);font-size:.85rem;word-break:keep-all;text-align:center;} .bag-it .bi{font-size:1.6rem;} .bag-it.no{opacity:.45;background:#EEE;}
       .mk-row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 2px;border-bottom:2px dashed #F0E2BC;word-break:keep-all;} .mk-row.no{opacity:.55;} .mk-row .vg-cardgo{font-size:.9rem;padding:3px 10px;}
       .vg-mega{position:absolute;left:10px;right:10px;bottom:var(--vgb,12px);overflow:hidden;white-space:nowrap;background:#FFF2BF;border:3px solid #5B4636;border-radius:14px;font-size:1.05rem;padding:4px 0;display:none;pointer-events:none;}
@@ -7103,7 +7104,7 @@ function openVillage(opts){
       else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
     }
     if (isMap(scene)) drawFinds(t);
-    drawGains(); drawGather(t); if (gat && t - (frame.gT || 0) > 500){ frame.gT = t; gatherTick(); }
+    drawGains(); if (gat) gatherLoop(); drawGather(t);
     if (!isMap(scene)) drawExit(t);
     if (t - (frame.miniT || 0) > 150){ frame.miniT = t; drawMini(); }
     drawPaws(t);
@@ -7203,22 +7204,24 @@ function openVillage(opts){
       ctx.font = 'bold 26px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = '#5B4636'; ctx.strokeText(g.text, c.x, y); ctx.fillStyle = g.color; ctx.fillText(g.text, c.x, y); ctx.globalAlpha = 1; }
   }
   /* ---------- 🎣 채집 (자리에 앉아 있으면 시간마다 하나씩) ---------- */
+  // mode: timing = 신호가 오면 제때 한 번 누르기 · mash = 신호가 오면 정해진 시간 안에 여러 번 누르기
   const GATHER_SPOT = {
-    rock:     { g:'fish',  ic:'🎣', doing:'낚시하는 중',        verb:'낚았어요' },
-    fountain: { g:'coin',  ic:'🪙', doing:'동전 건지는 중',     verb:'건졌어요' },
-    berry:    { g:'fruit', ic:'🧺', doing:'열매 줍는 중',       verb:'주웠어요' },
-    starnet:  { g:'star',  ic:'⭐', doing:'별 모으는 중',       verb:'모았어요' },
-    trash:    { g:'trash', ic:'🗑️', doing:'쓰레기통 뒤지는 중', verb:'찾았어요' }
+    rock:     { g:'fish',  ic:'🎣', doing:'낚시하는 중',        verb:'낚았어요', mode:'timing', win:1100, wait:[2500, 10000], cue:'❗ 찌가 흔들려요! 지금 당겨요!', btn:'🎣 당기기', early:'앗, 너무 일찍 당겼어요! 물고기가 도망갔어요 🐟💨' },
+    pond:     { g:'fish',  ic:'🎣', doing:'낚시하는 중',        verb:'낚았어요', mode:'timing', win:1100, wait:[2500, 10000], cue:'❗ 찌가 흔들려요! 지금 당겨요!', btn:'🎣 당기기', early:'앗, 너무 일찍 당겼어요! 물고기가 도망갔어요 🐟💨' },
+    fountain: { g:'coin',  ic:'🪙', doing:'동전 찾는 중',       verb:'건졌어요', mode:'timing', win:900,  wait:[2500, 8000],  cue:'✨ 동전이 반짝! 지금 건져요!', btn:'🪙 건지기', early:'아직 안 보여요! 반짝일 때 눌러요' },
+    starnet:  { g:'star',  ic:'⭐', doing:'별 기다리는 중',     verb:'모았어요', mode:'timing', win:900,  wait:[2500, 8000],  cue:'🌠 별똥별이다! 지금 잡아요!', btn:'⭐ 잡기', early:'아직 별이 안 떨어졌어요! 반짝일 때 눌러요' },
+    berry:    { g:'fruit', ic:'🧺', doing:'열매 찾는 중',       verb:'주웠어요', mode:'mash', need:6, win:3000, wait:[2000, 7000], cue:'🍓 열매가 달랑달랑! 빠르게 흔들어요!', btn:'🧺 흔들기' },
+    trash:    { g:'trash', ic:'🗑️', doing:'쓰레기통 살피는 중', verb:'찾았어요', mode:'mash', need:8, win:3000, wait:[2000, 7000], cue:'👀 뭔가 반짝! 빠르게 뒤져요!', btn:'🗑️ 뒤지기' }
   };
   const RAR_NM = ['', '희귀!', '아주 희귀!!', '전설!!!'], RAR_C = ['#FFFFFF', '#BFE3FF', '#FFE066', '#FF9EC4'];
   let gat = null, bagInfo = null;
   function gatherStart(o){
     if (gat && gat.o === o.id) return;
-    gat = { o: o.id, t0: Date.now(), gap: (bagInfo && bagInfo.gap) || 30, busy: false, n: 0 };
+    gat = { o: o.id, busy: false, n: 0 }; gatherWait();
     if (bagInfo && bagInfo.banned){ gatherBanned(); return; }
-    say(`${GATHER_SPOT[o.id].ic} ${GATHER_SPOT[o.id].doing}이에요. 앉아 있으면 ${gat.gap}초마다 하나씩!`, 3000);
+    { const S = GATHER_SPOT[o.id]; say(S.mode === 'mash' ? `${S.ic} ${S.doing}… 신호가 오면 [${S.btn}]를 빠르게 ${S.need}번! (Space도 돼요)` : `${S.ic} ${S.doing}… 신호가 오면 바로 [${S.btn}]! (Space도 돼요)`, 4000); }
     const o0 = o.id;   // 🚨 앉자마자 서버에 확인 (압수된 날이면 바로 일어나요)
-    opts.call('bag', {}).then(j => { if (!j || !j.ok || !gat || gat.o !== o0) return; bagInfo = Object.assign(bagInfo || {}, j); if (j.gap) gat.gap = j.gap; if (j.banned) gatherBanned(); }).catch(() => {});
+    opts.call('bag', {}).then(j => { if (!j || !j.ok || !gat || gat.o !== o0) return; bagInfo = Object.assign(bagInfo || {}, j); if (j.banned) gatherBanned(); }).catch(() => {});
   }
   function gatherBanned(){
     const c = me(); gatherStop(); if (c){ c.sit = null; showActs(null); sendMove(c); }
@@ -7250,19 +7253,33 @@ function openVillage(opts){
     if (o.seats.some((s0, i) => !taken.has(i))){ const oo = o; leaveQueue(true); say('🙌 자리가 났어요! 앉으러 가요', 2500); seatAt(oo, { x: oo.x, y: oo.y }); return; }
     if (Date.now() - gq.last > 45000){ gq.last = Date.now(); const j = await opts.call('gqueue', { o: o.id }).catch(() => null); if (j && j.ok && gq) gq.pos = j.queue || gq.pos; }
   }
-  async function gatherTick(){
+  /* 🎣 미니게임: 기다리기 → 신호(❗) → 제때 누르기(timing) 또는 빠르게 여러 번(mash) → 성공하면 서버에 */
+  function gatherWait(){ if (!gat) return; const S = GATHER_SPOT[gat.o]; gat.phase = 'wait'; gat.cnt = 0; gat.biteAt = Date.now() + S.wait[0] + Math.random() * (S.wait[1] - S.wait[0]); }
+  function gatherLoop(){
+    if (!gat) return; const c = me(); if (!c || !c.sit || c.sit.s !== gat.o || c.sc !== scene){ gatherStop(); return; }
+    const S = GATHER_SPOT[gat.o], now = Date.now();
+    if (gat.phase === 'wait' && now >= gat.biteAt){ gat.phase = 'bite'; gat.winEnd = now + S.win; gat.cnt = 0; say(S.cue, Math.min(2500, S.win + 600)); emote('❗', true); try { sfx('pop'); } catch(e){} }
+    else if (gat.phase === 'bite' && now > gat.winEnd){ say(S.mode === 'mash' ? `놓쳤어요… 😿 ${S.need}번을 더 빠르게!` : '놓쳤어요… 😿 다시 기다려요', 1800); gatherWait(); }
+  }
+  function gatherAction(){
+    if (!gat || gat.busy) return; const S = GATHER_SPOT[gat.o];
+    if (gat.phase === 'wait'){ if (S.mode === 'timing'){ say(S.early, 1800); if (gat.o === 'rock' || gat.o === 'pond') gatherWait(); } return; }
+    if (gat.phase !== 'bite') return;
+    if (S.mode === 'mash'){ gat.cnt++; emote(S.ic, true); if (gat.cnt < S.need) return; }
+    gatherSend();
+  }
+  async function gatherSend(){
     if (!gat || gat.busy) return;
-    const c = me(); if (!c || !c.sit || c.sit.s !== gat.o || c.sc !== scene){ gatherStop(); return; }
-    if (Date.now() - gat.t0 < gat.gap * 1000) return;
-    gat.busy = true; const spot = GATHER_SPOT[gat.o], o0 = gat.o;
+    const c = me(); if (!c || !c.sit || c.sit.s !== gat.o){ gatherStop(); return; }
+    gat.busy = true; gat.phase = 'send'; const spot = GATHER_SPOT[gat.o], o0 = gat.o;
     let j = null; try { j = await opts.call('gather', { o: o0 }); } catch(e){}
     if (!gat || gat.o !== o0) return;
-    gat.busy = false; gat.t0 = Date.now();
+    gat.busy = false; gatherWait();
     if (!j || !j.ok){ say('연결이 안 돼서 다시 해 볼게요'); return; }
-    if (j.gap) gat.gap = j.gap; bagInfo = Object.assign(bagInfo || {}, j);
+    bagInfo = Object.assign(bagInfo || {}, j);
     if (j.error){
-      if (j.error === 'slow'){ gat.t0 = Date.now() - (gat.gap - 5) * 1000; return; }
-      if (j.error === 'seat'){ gat.t0 = Date.now() - (gat.gap - 3) * 1000; sendMove(c, c.sit ? { s: c.sit.s, t: c.sit.t, a: c.sit.a } : undefined); return; }
+      if (j.error === 'slow'){ say('조금만 천천히! 다시 기다려요', 1500); return; }
+      if (j.error === 'seat'){ sendMove(c, c.sit ? { s: c.sit.s, t: c.sit.t, a: c.sit.a } : undefined); say('자리를 다시 잡는 중이에요. 한 번 더!', 1800); return; }
       if (j.error === 'confiscated' || j.error === 'banned'){
         c.sit = null; showActs(null); gatherStop(); sendMove(c);
         say(j.error === 'confiscated' ? '🚨 수업 시간에 채집해서 가방이 압수됐어요. 오늘은 채집 · 낚시 · 팔기를 할 수 없어요' : '🚨 오늘은 압수돼서 채집 · 낚시 · 팔기를 할 수 없어요', 6000); emote('🚨', true);
@@ -7289,10 +7306,15 @@ function openVillage(opts){
   }
   function drawGather(t){
     if (!gat) return; const c = me(); if (!c || c.sc !== scene) return;
-    const K = catK(scene), x = c.x, y = c.y - 48 * K - 34, p = Math.min(1, (Date.now() - gat.t0) / (gat.gap * 1000));
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(x, y, 17, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#FF8FB8'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(x, y, 14, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * p); ctx.stroke();
-    emoji(GATHER_SPOT[gat.o].ic, x, y + 1, 16);
+    const S = GATHER_SPOT[gat.o], K = catK(scene), x = c.x, y = c.y - 48 * K - 40, now = Date.now();
+    if (gat.phase === 'bite'){
+      const left = Math.max(0, (gat.winEnd - now) / S.win), sh = Math.sin(now / 40) * 4;
+      ctx.fillStyle = '#FF3D66'; ctx.beginPath(); ctx.arc(x + sh, y, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(x + sh, y, 32, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left); ctx.stroke();
+      ctx.font = 'bold 34px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#FFFFFF'; ctx.fillText(S.mode === 'mash' ? `${gat.cnt}/${S.need}` : '!', x + sh, y + 2);
+      if (S.mode === 'mash'){ ctx.font = 'bold 18px NeoDunggeunmo, sans-serif'; ctx.lineWidth = 5; ctx.strokeStyle = '#5B4636'; ctx.strokeText(S.btn + '!!', x, y - 46); ctx.fillStyle = '#FFE066'; ctx.fillText(S.btn + '!!', x, y - 46); }
+    } else if (gat.phase === 'send'){ emoji(S.ic, x, y, 26); }
+    else { ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#5B4636'; for (let i = 0; i < 3; i++){ ctx.globalAlpha = .3 + .7 * ((Math.floor(now / 300) % 3) === i ? 1 : 0); ctx.beginPath(); ctx.arc(x - 8 + i * 8, y, 3, 0, Math.PI * 2); ctx.fill(); } ctx.globalAlpha = 1; }
   }
   /* 🎒 가방 · 도감 */
   const G_NAME = { fish:'🐟 물고기', fruit:'🍎 열매', star:'⭐ 별', trash:'🗑️ 잡동사니' }, SHOP_OF = { fish:'수산시장', fruit:'청과물 가게', star:'별빛 기념품점', trash:'중고 장터' };
@@ -7483,7 +7505,7 @@ function openVillage(opts){
     else if (o.hall){ btns.push(`<button type="button" data-act="stand" class="alt">🙋 일어나기</button>`); }
     else {
       if (o.act === 'photo') btns.push(`<button type="button" data-act="photo">📸 찰칵! 사진 찍기</button>`);
-      else if (GATHER_SPOT[o.id]) btns.push(`<button type="button" data-act="gstat" class="g-stat">${GATHER_SPOT[o.id].ic} ${GATHER_SPOT[o.id].doing}…</button>`, `<button type="button" data-act="bag">🎒 가방</button>`);
+      else if (GATHER_SPOT[o.id]) btns.push(`<button type="button" data-act="gact" class="g-act">${GATHER_SPOT[o.id].btn}</button>`, `<button type="button" data-act="bag">🎒 가방</button>`);
       else if (o.act === 'fish') btns.push(`<button type="button" data-act="fish">🎣 낚싯대 던지기</button>`);
       else if (o.act === 'churu') btns.push(`<button type="button" data-act="churu">🍡 츄르 뽑기</button>`);
       else if (o.act === 'study') btns.push(`<button type="button" data-act="study">📚 문제 풀기</button>`);
@@ -7504,7 +7526,7 @@ function openVillage(opts){
     if (a === 'stand'){ c.sit = null; showActs(null); gatherStop(); c.ty = Math.min((MAP_WALK[scene] || WALK).y1, c.y + 40); if (scene === 'hall'){ c.ty = c.y + 60; toGroup = false; updateTo(); } sendMove(Object.assign({}, c, { y: c.ty })); return; }
     if (a === 'chair'){ openChairPanel(); return; }
     if (a === 'bag'){ openBagPanel(); return; }
-    if (a === 'gstat') return;
+    if (a === 'gact'){ gatherAction(); return; }
     if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) floatGain(`+${j.vexp} EXP`); if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {}); takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
     if (a === 'cafe'){ opts.onCafe && opts.onCafe(); return; }
@@ -8166,6 +8188,7 @@ function openVillage(opts){
     if (opts.viewOnly || !opts.me || kbTyping() || panel.style.display === 'block') return;
     if (KB[e.code]){ kbKeys.add(e.code); e.preventDefault(); return; }
     if ((e.code === 'Escape' || e.code === 'KeyQ') && !isMap(scene) && !editing){ e.preventDefault(); goExit(); return; }   // 건물·집 안에서만 나가기 (지도에서는 다른 지도로 안 가요)
+    if (gat && (e.code === 'Space' || e.code === 'Enter')){ e.preventDefault(); if (!e.repeat) gatherAction(); return; }
     if (e.code === 'Space' || e.code === 'Enter'){
       const c = me(); if (!c) return; e.preventDefault();
       const q = pawSpots().map(p => ({ p, d: Math.hypot(p.tx - c.x, p.ty - c.y) })).sort((a, b) => a.d - b.d)[0];
