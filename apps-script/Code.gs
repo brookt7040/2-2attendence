@@ -1841,7 +1841,7 @@ function studentHana_(name, body) {
   try {
     const map = readRows_().map, eco = economy_(map), hana = eco.hana || {};
     const st = hanaOf_(name); st.p = st.p || 0; if (st.d !== ds) { st.d = ds; st.c = {}; }
-    let error = '', gained = 0, line = '', gift = 0;
+    let error = '', gained = 0, line = '', gift = 0, vexpGot = 0;
     if (body.op === 'hana' && body.act) {
       const a = (hana.acts || []).filter(function (x) { return x.id === body.act; })[0];
       if (!a) error = 'bad';
@@ -1858,7 +1858,7 @@ function studentHana_(name, body) {
           st.c[a.id] = (st.c[a.id] || 0) + 1; gained = a.aff || 1;
           if (gained < 0 && a.flip != null && hanaLvOf_(st.p) >= Number(a.flip)) gained = -gained + 1;   // 😽 친해지면 오히려 좋아해요
           st.p = Math.max(0, st.p + gained); if (gained > 0) addNews_(name, 'hana');
-          villageExp_(name);
+          vexpGot = villageExp_(name);
           props_().setProperty('hana:' + name, JSON.stringify(st));
           cachePush_('v:emo', { n: '하나', e: gained > 0 ? '💛' : '💢', ts: Date.now() }, 40);
           if (gained > 0 && !T) {                // 🎁 하나의 선물: 친할수록 자주 · 많이 물어 와요
@@ -1883,7 +1883,7 @@ function studentHana_(name, body) {
         bump_();
       }
     }
-    return { ok: true, error: error, gained: gained, gift: gift, aff: st.p, lv: hanaLvOf_(st.p), counts: st.c || {}, rank: hanaRank_(), look: hanaLook_(), hanaLeft: (function () { const lm = lim_('hana', name, HANA_DAILY); return lm < 0 ? 0 : lm === 0 ? -1 : Math.max(0, lm - Object.keys(st.c).reduce(function (n, k) { return n + (st.c[k] || 0); }, 0)); })() };
+    return { ok: true, error: error, gained: gained, gift: gift, vexp: vexpGot, aff: st.p, lv: hanaLvOf_(st.p), counts: st.c || {}, rank: hanaRank_(), look: hanaLook_(), hanaLeft: (function () { const lm = lim_('hana', name, HANA_DAILY); return lm < 0 ? 0 : lm === 0 ? -1 : Math.max(0, lm - Object.keys(st.c).reduce(function (n, k) { return n + (st.c[k] || 0); }, 0)); })() };
   } finally { lock.releaseLock(); }
 }
 

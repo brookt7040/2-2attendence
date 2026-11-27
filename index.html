@@ -7103,7 +7103,7 @@ function openVillage(opts){
       else if (h >= 17){ ctx.fillStyle = 'rgba(255,150,100,.12)'; ctx.fillRect(0, 0, VW, VH); }
     }
     if (isMap(scene)) drawFinds(t);
-    drawGather(t); if (gat && t - (frame.gT || 0) > 500){ frame.gT = t; gatherTick(); }
+    drawGains(); drawGather(t); if (gat && t - (frame.gT || 0) > 500){ frame.gT = t; gatherTick(); }
     if (!isMap(scene)) drawExit(t);
     if (t - (frame.miniT || 0) > 150){ frame.miniT = t; drawMini(); }
     drawPaws(t);
@@ -7192,6 +7192,16 @@ function openVillage(opts){
     const wait = 1200 - (Date.now() - lastMoveSent);
     clearTimeout(arrived.tm); arrived.tm = setTimeout(() => sendMove(c), Math.max(0, wait));
   }
+  /* ✨ 내 화면에만: 받은 EXP · 코인이 내 고양이 머리 위로 떠올라요 */
+  const gains = [];
+  function floatGain(text, color){ const c = me(); if (!c || opts.viewOnly) return; gains.push({ text, color: color || '#FFE066', t0: Date.now(), n: gains.length }); }
+  function drawGains(){
+    const c = me(); if (!c || c.sc !== scene){ gains.length = 0; return; }
+    const now = Date.now(), K = catK(scene);
+    for (let i = gains.length - 1; i >= 0; i--){ const g = gains[i], a = (now - g.t0) / 1800; if (a >= 1){ gains.splice(i, 1); continue; }
+      const y = c.y - 48 * K - 120 - a * 50 - (g.n % 3) * 26; ctx.globalAlpha = a < .7 ? 1 : (1 - a) / .3;
+      ctx.font = 'bold 26px NeoDunggeunmo, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 6; ctx.strokeStyle = '#5B4636'; ctx.strokeText(g.text, c.x, y); ctx.fillStyle = g.color; ctx.fillText(g.text, c.x, y); ctx.globalAlpha = 1; }
+  }
   /* ---------- 🎣 채집 (자리에 앉아 있으면 시간마다 하나씩) ---------- */
   const GATHER_SPOT = {
     rock:     { g:'fish',  ic:'🎣', doing:'낚시하는 중',        verb:'낚았어요' },
@@ -7264,6 +7274,7 @@ function openVillage(opts){
     if (j.tired){ setTimeout(() => { const c2 = me(); if (c2 && c2.sit && c2.sit.s === o0){ c2.sit = null; showActs(null); c2.ty = Math.min((MAP_WALK[scene] || WALK).y1, c2.y + 50); sendMove(Object.assign({}, c2, { y: c2.ty })); } gatherStop(); say(`😪 ${(j.run || {}).max || 20}번 연속 했더니 지쳤어요! ${j.tired}분 쉬거나 다른 지도 채집터로 가요`, 4500); }, 2800); }
     const it = j.item || {}, msg = `${j.lucky ? '🍀 ' : ''}${it.ic} ${it.name}${j.coins ? '' : '을(를)'} ${spot.verb}! ${RAR_NM[it.rar] || ''} +${j.exp} EXP${j.coins ? ` +${j.coins}🐾` : ''}`;
     c.bubble = { text: `${it.ic} ${it.name}${it.rar ? ' ' + RAR_NM[it.rar] : ''}`, until: Date.now() + 4000 };
+    if (j.exp) floatGain(`+${j.exp} EXP`); if (j.coins) setTimeout(() => floatGain(`+${j.coins}🐾`, '#FFFFFF'), 300);
     say(msg, it.rar >= 2 ? 4500 : 2600); emote(it.rar >= 2 ? '🎉' : it.ic, true);
     if (it.rar >= 2) for (let i = 0; i < 10; i++) setTimeout(() => emote(['✨', '🎉', it.ic][i % 3], true), i * 180);
     if (j.coins && opts.refresh) opts.refresh();
@@ -7345,7 +7356,7 @@ function openVillage(opts){
       bagInfo = Object.assign(bagInfo || {}, j);
       if (j.error === 'confiscated' || j.error === 'banned'){ say(j.error === 'confiscated' ? '🚨 수업 시간이라 가방이 압수됐어요. 오늘은 채집 · 팔기를 할 수 없어요' : '🚨 오늘은 압수돼서 팔 수 없어요', 6000); closePanel(); if (opts.refresh) opts.refresh(); return; }
       if (j.error) say({ noitem:'가방에 없어요', poor:'코인이 모자라요', limit:'오늘은 더 팔 수 없어요', blocked:'지금은 팔 수 없어요', placed:'집에 놓은 가구는 못 팔아요', bad:'서버 코드를 새로 배포해야 해요', closed:'지금은 마을 쉬는 시간이에요' }[j.error] || '하지 못했어요', 2800);
-      else if (j.sold){ const ea = j.sold.eaten || 0; if (ea && !j.sold.coins){ say(`🐱 하나가 ${j.sold.name} ${ea}개를 냠냠 맛있게 먹었어요! (오늘 6번째부터는 하나 간식)`, 3500); emote('😋', true); } else { say(`💰 ${j.sold.name} ×${j.sold.n - ea} → +${j.sold.coins}🐾${ea ? ` · 🐱 ${ea}개는 하나가 냠냠` : ''}`, 3200); emote('💰', true); } }
+      else if (j.sold){ if (j.sold.coins) floatGain(`+${j.sold.coins}🐾`, '#FFFFFF'); const ea = j.sold.eaten || 0; if (ea && !j.sold.coins){ say(`🐱 하나가 ${j.sold.name} ${ea}개를 냠냠 맛있게 먹었어요! (오늘 6번째부터는 하나 간식)`, 3500); emote('😋', true); } else { say(`💰 ${j.sold.name} ×${j.sold.n - ea} → +${j.sold.coins}🐾${ea ? ` · 🐱 ${ea}개는 하나가 냠냠` : ''}`, 3200); emote('💰', true); } }
       else if (bk) say(bk.dataset.bank === 'dep' ? '🏦 맡겼어요!' : '🏦 찾았어요!', 2000);
       if (opts.refresh) opts.refresh();
       renderMarket(shop);
@@ -7365,7 +7376,7 @@ function openVillage(opts){
     if (opts.viewOnly || !opts.call){ say(f.kind === 'chest' ? '🎁 보물상자가 있어요! 학생 앱에서 열 수 있어요' : '✨ 반짝이는 동전이 떨어져 있어요!'); return true; }
     const j = await opts.call('find', { id: f.id }).catch(() => null);
     state.finds = (state.finds || []).filter(q => q.id !== f.id);
-    if (j && j.ok && j.found){ say(f.kind === 'chest' ? `🎁 숲속 보물상자를 열었어요! +${j.found.coins}🐾` : `✨ 길에서 동전을 주웠어요! +${j.found.coins}🐾`, 3500); emote(f.kind === 'chest' ? '🎉' : '🪙', true); if (opts.refresh) opts.refresh(); }
+    if (j && j.ok && j.found){ floatGain(`+${j.found.coins}🐾`, '#FFFFFF'); say(f.kind === 'chest' ? `🎁 숲속 보물상자를 열었어요! +${j.found.coins}🐾` : `✨ 길에서 동전을 주웠어요! +${j.found.coins}🐾`, 3500); emote(f.kind === 'chest' ? '🎉' : '🪙', true); if (opts.refresh) opts.refresh(); }
     else if (j && (j.error === 'confiscated' || j.error === 'banned')){ say(j.error === 'confiscated' ? '🚨 수업 시간이라 압수됐어요. 오늘은 채집 · 줍기를 할 수 없어요' : '🚨 오늘은 압수돼서 주울 수 없어요', 6000); if (opts.refresh) opts.refresh(); }
     else say(j && j.error === 'gone' ? '앗, 누가 먼저 주워 갔어요!' : j && j.error === 'limit' ? '오늘은 더 못 주워요' : '줍지 못했어요', 2500);
     return true;
@@ -7377,6 +7388,7 @@ function openVillage(opts){
     if (j.error === 'done') return say('오늘은 이미 소원을 빌었어요. 내일 또 빌어요 🌙', 2800);
     if (j.error === 'confiscated' || j.error === 'banned') return say('🚨 수업 시간이라 압수됐어요. 오늘은 채집 · 소원 빌기를 할 수 없어요', 6000);
     if (j.error) return say('지금은 소원을 빌 수 없어요');
+    if (j.wish) floatGain(`+${j.wish}🐾`, '#FFFFFF');
     say(j.wish ? `🌟 소원이 이루어졌어요! +${j.wish}🐾` : '🌟 소원을 빌었어요… 이번엔 별이 조용하네요', 3500); emote('🌟', true); if (j.wish && opts.refresh) opts.refresh();
   }
   /* 🗺️ 미니맵 (오른쪽 아래): 동글 섬 지도 — 지역마다 색이 달라요 · 내 위치(빨간 점) · 우리 집(🏠) · 누르면 그 지도로 */
@@ -7486,12 +7498,12 @@ function openVillage(opts){
     if (a === 'chair'){ openChairPanel(); return; }
     if (a === 'bag'){ openBagPanel(); return; }
     if (a === 'gstat') return;
-    if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {}); takePhoto(); return; }
+    if (a === 'photo'){ if (opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) floatGain(`+${j.vexp} EXP`); if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {}); takePhoto(); return; }
     if (a === 'study'){ openEngPanel(); return; }
     if (a === 'cafe'){ opts.onCafe && opts.onCafe(); return; }
     if (['camp', 'fish', 'churu', 'again'].includes(a) && opts.call && !opts.viewOnly){
       if (actsEl.dataset.busy) return; actsEl.dataset.busy = '1';
-      if (a !== 'again') opts.call('vnews', { a }).then(j => { if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {});
+      if (a !== 'again') opts.call('vnews', { a }).then(j => { if (j && j.vexp) floatGain(`+${j.vexp} EXP`); if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {});
       opts.call('act', { a }).then(j => {
         delete actsEl.dataset.busy;
         if (j && j.error === 'actlimit'){ say('🐾 오늘 마을 놀이 20번을 다 했어요! 내일 또 놀아요', 3500); return; }
@@ -7499,7 +7511,7 @@ function openVillage(opts){
       }).catch(() => { delete actsEl.dataset.busy; doAct(a, c, null); });
       return;
     }
-    if (['drink', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide'].includes(a) && opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {});
+    if (['drink', 'swing', 'slide', 'nap', 'boat', 'surf', 'climb', 'yarn', 'scratch', 'sunbath', 'build', 'hide'].includes(a) && opts.call && !opts.viewOnly) opts.call('vnews', { a }).then(j => { if (j && j.vexp) floatGain(`+${j.vexp} EXP`); if (j && j.vexp) setTimeout(() => say(`✨ 마을에서 신나게 놀았어요! +${j.vexp} EXP`, 2600), 1500); }).catch(() => {});
     doAct(a, c, null);
   });
   function doAct(a, c, left){
@@ -7925,7 +7937,8 @@ function openVillage(opts){
             hana.bubble = { text: line, until: Date.now() + 4500 }; say(`하나: ${line}  ${j.gained > 0 ? '+' + j.gained + '💛' : j.gained + '💔'}`, 3200);
             if (j.lv > before) setTimeout(() => say(`🎉 하나와 '${hanaLvName(j.lv)}' 사이가 됐어요!`, 4000), 1200);
             if (a.id === 'selfie') setTimeout(() => takePhoto(true), 300);
-            if (j.gift){ setTimeout(() => { say(`🎁 하나가 ${j.gift}코인을 물어다 줬어요!`, 3500); emote('🎁', true); hana.bubble = { text: '🪙 선물이다냥!', until: Date.now() + 3500 }; if (opts.refresh) opts.refresh(); }, 1600); }
+            if (j.vexp) floatGain(`+${j.vexp} EXP`);
+            if (j.gift){ setTimeout(() => { floatGain(`+${j.gift}🐾`, '#FFFFFF'); say(`🎁 하나가 ${j.gift}코인을 물어다 줬어요!`, 3500); emote('🎁', true); hana.bubble = { text: '🪙 선물이다냥!', until: Date.now() + 3500 }; if (opts.refresh) opts.refresh(); }, 1600); }
           }
           renderHana();
         }
