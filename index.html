@@ -816,7 +816,7 @@ body.view-mode #urgentBox.empty,body.view-mode #cleanSide.empty,body.view-mode .
 .gate-box{text-align:center;max-width:380px;}
 .gate-box h2{margin:6px 0;}
 .gate-box .pin-input{margin:10px auto 4px;display:block;}
-body.view-mode #openGmBtn,body.view-mode #gmCoinBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode #presBtn,body.view-mode .closing-reset,
+body.view-mode #openGmBtn,body.view-mode #gmCoinBtn,body.view-mode #openAdminBtn,body.view-mode #openStatsBtn,body.view-mode #openVillageBtn,body.view-mode #miniMenuBtn,body.view-mode #noteSide,body.view-mode #rpgSide,body.view-mode #presBtn,body.view-mode .closing-reset,
 body.view-mode .time-add-btn,body.view-mode .absent-btn,body.view-mode .edit-mini,body.view-mode #syncPill{display:none !important;}
 body.view-mode .touch-text{font-size:.72rem;opacity:.75;}
 body.view-mode .time-btn{pointer-events:none;} body.view-mode .time-btn i{display:none;}
@@ -976,7 +976,7 @@ body.view-mode .mh-side.empty{display:none !important;}
         </div>
       </div>
       <div class="side-btns">
-        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
+        <div class="mini-menu"><button type="button" class="mini-menu-btn icon" id="miniMenuBtn" title="EXP 리스트 · 냥코인">🐾</button><button type="button" class="mini-menu-btn icon" id="noteSide" title="우리반 관리 수첩">📓</button><button type="button" class="mini-menu-btn icon" id="rpgSide" title="RPG 관리 (압수 풀기 · 채집 현황)">🎮</button><a class="mini-menu-btn my-go" id="myPageBtn" href="#" target="_blank" rel="noopener" title="학생 개인 화면 (내 고양이 · 마을)">🐱 내 화면 보러가기</a>
           <div class="mini-menu-pop" id="miniMenuPop">
             <button type="button" id="openMenuBtn">📋 EXP 리스트<small>눌러서 EXP 주기</small></button>
             <button type="button" id="openCoinViewBtn">🐾 냥코인<small>상품 · 내역 · 순위</small></button>
@@ -1333,6 +1333,15 @@ body.view-mode .mh-side.empty{display:none !important;}
       <button type="button" class="tab" data-co="set">⚙️ 미션 · 상점 · 게임 설정</button>
     </div>
     <div id="coBody"></div>
+  </div>
+</div>
+
+<!-- 🎮 RPG 관리 (관리자 · 부관리자) -->
+<div class="overlay" id="rpgAdmOverlay" style="z-index:10003;">
+  <div class="modal modal-large">
+    <button type="button" class="modal-x" id="rpgXBtn" title="닫기">✕</button>
+    <h2>🎮 RPG 관리</h2>
+    <div id="rpgBody"></div>
   </div>
 </div>
 
@@ -5130,6 +5139,49 @@ function updateGmDot(){
   lastUrgentAlert = serverUrgent;
 }
 function teacherName(){ return db.students.find(isTeacherName) || '선생님'; }
+/* 🎮 RPG 관리: 수업 시간 압수 풀기 · 오늘 채집 현황 (관리자 · 부관리자) */
+let rpgData = null;
+function rpgCode(){ return (db.adminPin && Date.now() < pinUntil) ? db.adminPin : (db.subPin && Date.now() < pinRoleUntil.sub) ? db.subPin : (db.adminPin || ''); }
+async function openRpgAdm(){
+  if (!sync.url){ alert('서버 연결이 있어야 쓸 수 있어요'); return; }
+  $('rpgAdmOverlay').style.display = 'flex'; $('rpgBody').innerHTML = LD('🎮', 'RPG 정보 불러오는 중', '우리 반 정보를 모으고 있어요');
+  try { rpgData = await teacherCall({ action:'limits' }); if (!rpgData || rpgData.ok === false) throw new Error((rpgData && rpgData.error) || '실패'); }
+  catch(e){ $('rpgBody').innerHTML = `<div class="clean-empty">불러오지 못했어요: ${esc(e.message)}</div>`; return; }
+  renderRpgAdm();
+}
+function renderRpgAdm(){
+  const d = rpgData || {}, st = d.stats || [], bl = d.banlog || [];
+  const hm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+  const pr = (d.periods || []).map(p => hm(p[0]) + '~' + hm(p[1])).join(' · ');
+  const banned = st.filter(x => x.ban);
+  const last = n => bl.filter(l => l.n === n).slice(-1)[0] || {};
+  $('rpgBody').innerHTML = `<div class="section-title">🚨 수업 시간 압수 <small style="font-weight:400;">${esc(d.today || '')}</small></div>
+    <div class="form-hint">수업 시간(${esc(pr || '오늘은 수업 없음')})에 채집하면 가방 압수 + 오늘 채집 금지. 🔓 풀기를 누르면 오늘 다시 채집할 수 있어요 (압수한 건 돌려주지 않아요).</div>
+    ${banned.length ? banned.map(x => { const l = last(x.name); return `<div class="cv-row"><span>🚫 <b>${esc(x.name)}</b> <small>${esc(l.at || '')} · 코인 -${l.coins || 0} · EXP -${l.exp || 0} · 아이템 ${l.items || 0}개</small></span><button type="button" class="btn btn-y" data-rpgunban="${esc(x.name)}">🔓 풀기</button></div>`; }).join('') : '<div class="clean-empty">오늘 압수된 친구가 없어요 😺</div>'}
+    <div style="text-align:right;margin:8px 0 14px;"><button type="button" class="btn" id="rpgSweep">🔍 오늘 수업 시간 기록 찾아서 압수</button> <button type="button" class="btn" id="rpgReload">🔄 새로고침</button></div>
+    <div class="section-title">🎣 오늘 채집 현황</div>
+    ${st.length ? `<div class="cv-row" style="font-weight:700;"><span>이름</span><span>채집 · 팔기 · 줍기 · 가방 · 도감</span></div>` + st.map(x => `<div class="cv-row"><span>${x.ban ? '🚫 ' : ''}${esc(x.name)}</span><span>${x.gc || 0} · ${x.sc || 0} · ${x.fc || 0} · ${x.items || 0}개 · ${x.dex || 0}종</span></div>`).join('') : '<div class="clean-empty">기록이 없어요</div>'}
+    <div class="form-hint" style="margin-top:10px;">기능 스위치 · 횟수 제한 · 미션 승인 같은 나머지 RPG 설정은 학생 앱에 쌤 계정으로 로그인 → 👑 관리 → 🐾 RPG 에 있어요.</div>`;
+}
+async function onRpgAdmClick(e){
+  const t = e.target;
+  if (t.closest('#rpgXBtn') || t === $('rpgAdmOverlay')){ $('rpgAdmOverlay').style.display = 'none'; return; }
+  if (t.closest('#rpgReload')) return openRpgAdm();
+  const ub = t.closest('[data-rpgunban]');
+  if (ub){
+    const n = ub.dataset.rpgunban; if (!confirm(`${n} 압수를 풀까요?\n(오늘 다시 채집할 수 있어요)`)) return;
+    let code = rpgCode(); if (!code){ code = prompt('관리자 또는 부관리자 비밀번호를 넣어 주세요'); if (!code) return; }
+    ub.disabled = true;
+    try { const r = await teacherCall({ action:'unban', name: n, code }); if (r && r.ok && !r.error){ setBubble(`🔓 ${n} 압수를 풀었다냥!`, 3000); return openRpgAdm(); } alert(r && r.error === 'wrong' ? '비밀번호가 맞지 않아요' : '풀지 못했어요'); }
+    catch(err){ alert('연결이 안 돼요: ' + err.message); }
+    ub.disabled = false; return;
+  }
+  if (t.closest('#rpgSweep')){
+    if (!confirm('오늘 수업 시간에 채집·판매한 기록을 찾아서 압수할까요?')) return;
+    try { const r = await teacherCall({ action:'classSweep' }); alert(r && r.ok ? `압수 ${(r.list || []).length}명` : '하지 못했어요'); } catch(err){ alert('연결이 안 돼요'); }
+    return openRpgAdm();
+  }
+}
 async function teacherCall(body){
   return syncFetch(sync.url, { method:'POST', body: JSON.stringify(Object.assign(authOf(), body)) }, body && body.action === 'engUpload' ? 180000 : 25000);
 }
@@ -8375,6 +8427,8 @@ function bindEvents(){
   $('bbAlarm').addEventListener('click', () => { $('bbColor').value = '#FFFFFF'; $('bbBg').value = '#E8473A'; $('bbSize').value = 10; $('bbText').value = '🚨 '; bubbleEditPreview(); $('bbText').focus(); });
   $('attNotes').addEventListener('click', e => { const b = e.target.closest('[data-attnote]'); if (!b || !attEditName) return; addNote(attEditName, b.dataset.attnote); $('attEditOv').style.display = 'none'; });
   $('noteSide').addEventListener('click', () => requirePin(openNotes, ['sub', 'late']));
+  $('rpgSide').addEventListener('click', () => requirePin(openRpgAdm, ['sub']));
+  $('rpgAdmOverlay').addEventListener('click', onRpgAdmClick);
   $('mealSide').addEventListener('click', () => openMH('meal'));
   $('hwSide').addEventListener('click', () => openMH('hw'));
   $('mhOv').addEventListener('click', e => {
