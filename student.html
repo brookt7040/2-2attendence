@@ -4261,6 +4261,12 @@ function showTab(t){
   if (t === 'chat'){ $('dotChat').classList.remove('on'); setTimeout(() => { const l = $('chatLog'); if (l) l.scrollTop = l.scrollHeight; }, 30); }
 }
 function coinText(){ return coin ? (coin.unlimited ? '∞' : coin.balance) : 0; }
+/* 🚨 압수 알림: 압수된 날 앱에 들어오면 한 번 크게 떠요 */
+function showBanNotice(b){
+  const key = 'nyangBanSeen', id = todayStr() + ':' + (b.at || '');
+  try { if (localStorage.getItem(key) === id) return; localStorage.setItem(key, id); } catch(e){}
+  setTimeout(() => bOpen('msOv', `<h2>🚨 압수됐어요</h2><div style="text-align:center;font-size:1.15rem;line-height:1.8;word-break:keep-all;">수업 시간에 채집 · 판매해서 압수됐어요${b.at ? ` <small>(${esc(b.at)})</small>` : ''}<br><b>코인 -${b.coins || 0} · EXP -${b.exp || 0} · 가방 ${b.items || 0}개</b><br>오늘은 채집이 금지예요</div><div style="text-align:center;margin-top:14px;"><button type="button" class="btn btn-y" data-bclose="msOv">알겠어요</button></div>`), 600);
+}
 function toast(t){ if (Date.now() < (toast.muteUntil || 0)) return; const el = $('toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toast.tm); toast.tm = setTimeout(() => el.classList.remove('show'), 2400); }
 function studentOf(name){ return (st.pub && st.pub.students || []).find(s => s.name === name); }
 function lookFor(s){ const r = (me && s.name === me.name && me.look) ? me.look : s.look; return /(쌤|샘|선생님|교감|교장)$/.test(s.name) ? Object.assign({}, r || defaultLook(s.lv), { _free: true }) : r; }
@@ -4792,7 +4798,7 @@ async function askSend(){
 let coin = null, shopTab = 'mega', shopSub = 'house', betAmt = 10;
 async function coinCall(op, extra){
   if (!me) return null;
-  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); if ((j.paid || []).length) setTimeout(() => toast(`미션 달성! ${j.paid.map(x =>x.name.replace(/^\S+\s/, '') + '+'+ x.coins + '').join('· ')}`), 300); if (j.tax && j.tax.paidNow) setTimeout(() => toast(`집 부지 일세 ${j.tax.paidNow}코인을 냈어요`), 900); else if (j.tax && j.tax.evicted) setTimeout(() => toast('일세가 5일 넘게 밀려서 집이 길냥이집으로 돌아갔어요'), 900); else if (j.tax && j.tax.owe) setTimeout(() => toast(`일세가 ${j.tax.owe}일 밀렸어요 (5일 넘으면 길냥이집으로 돌아가요)`), 900); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
+  try { const j = await studentCall(op, extra); if (j && j.ok){ coin = j; renderCoin(); render(); if ((j.paid || []).length) setTimeout(() => toast(`미션 달성! ${j.paid.map(x =>x.name.replace(/^\S+\s/, '') + '+'+ x.coins + '').join('· ')}`), 300); if (j.ban) showBanNotice(j.ban); if (j.tax && j.tax.paidNow) setTimeout(() => toast(`집 부지 일세 ${j.tax.paidNow}코인을 냈어요`), 900); else if (j.tax && j.tax.evicted) setTimeout(() => toast('일세가 5일 넘게 밀려서 집이 길냥이집으로 돌아갔어요'), 900); else if (j.tax && j.tax.owe) setTimeout(() => toast(`일세가 ${j.tax.owe}일 밀렸어요 (5일 넘으면 길냥이집으로 돌아가요)`), 900); } return j; } catch(e){ toast('연결이 안 돼요'); return null; }
 }
 /* 🎛️ 기능 스위치: 선생님이 끈 기능은 '쉬는 중' (선생님 계정은 그대로) */
 let FEAT = {};

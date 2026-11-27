@@ -2860,7 +2860,7 @@ function studentCoins_(name, body) {
       playsLeft: T ? 99 : (function () { const lm = lim_('game', name, g.daily || 5); return lm < 0 ? 0 : lm === 0 ? 99 : Math.max(0, lm - Number(props_().getProperty('plays:' + name + ':' + ds) || 0)); })(),
       claimed: rows.filter(function (r) { return r.name === name && r.key; }).map(function (r) { return r.key; }),
       undone: (function () { const u = {}; rows.forEach(function (r) { if (r.name === name && /^undo:/.test(r.key)) u[r.key.slice(5)] = 1; }); return rows.filter(function (r) { return u[r.id]; }).map(function (r) { return r.key; }); })(),
-      picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }, paid: paid, tax: tax,
+      picks: picksOf_(name), periods: { day: missionDay_(), week: missionWeek_() }, paid: paid, tax: tax, ban: T || !banOf_(name) ? null : (function () { let l = []; try { l = JSON.parse(props_().getProperty('banlog:' + todayStr_()) || '[]'); } catch (e) {} return l.filter(function (x) { return x.n === name; }).slice(-1)[0] || { at: '' }; })(),
       capUsed: capUsed_(eco), locker: lockerView_(name), tt: (map.config && map.config.timetable) || null, kids: kidNames_(map)
     };
   } finally { lock.releaseLock(); }
