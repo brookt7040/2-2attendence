@@ -2530,7 +2530,14 @@ function openVillage(opts){
   function gatherStart(o){
     if (gat && gat.o === o.id) return;
     gat = { o: o.id, t0: Date.now(), gap: (bagInfo && bagInfo.gap) || 30, busy: false, n: 0 };
+    if (bagInfo && bagInfo.banned){ gatherBanned(); return; }
     say(`${GATHER_SPOT[o.id].ic} ${GATHER_SPOT[o.id].doing}이에요. 앉아 있으면 ${gat.gap}초마다 하나씩!`, 3000);
+    const o0 = o.id;   // 🚨 앉자마자 서버에 확인 (압수된 날이면 바로 일어나요)
+    opts.call('bag', {}).then(j => { if (!j || !j.ok || !gat || gat.o !== o0) return; bagInfo = Object.assign(bagInfo || {}, j); if (j.gap) gat.gap = j.gap; if (j.banned) gatherBanned(); }).catch(() => {});
+  }
+  function gatherBanned(){
+    const c = me(); gatherStop(); if (c){ c.sit = null; showActs(null); sendMove(c); }
+    say('🚨 오늘은 압수돼서 채집 · 낚시 · 팔기를 할 수 없어요', 6000); emote('🚨', true);
   }
   function gatherStop(){ gat = null; }
   /* ⏳ 꽉 찬 채집터: 줄 서기 → 자리가 나면 자동으로 앉아요 */
