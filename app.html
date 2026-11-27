@@ -72,7 +72,10 @@ let API = q.get('api') || 'https://script.google.com/macros/s/AKfycbz9ZcvHtg8iI1
 try { const moved = localStorage.getItem('nyangApi'); if (!q.get('api') && moved && /^https:\/\/script\.google\.com\//.test(moved)) API = moved; } catch(e){}
 /* 🔄 늘 최신 화면: 주소 끝에 시각을 붙여서 예전 화면(캐시)이 안 나오게 해요 */
 const fresh = u => u + (u.includes('?') ? '&' : '?') + '_=' + Date.now();
-const SRC = { notice: 'student.html?only=notice&api=' + encodeURIComponent(API), me: 'student.html?api=' + encodeURIComponent(API), board: 'index.html?view=1&api=' + encodeURIComponent(API), guide: 'guide.html?inapp=1', ask: 'student.html?only=ask&api=' + encodeURIComponent(API), comm: 'student.html?only=comm&api=' + encodeURIComponent(API) };
+/* 👑 선생님 계정으로 로그인했으면 출석부 칸은 관리자 출석부 (안에서 👀 학생용 출석부 보기로 바꿀 수 있어요) */
+function isTLogin(){ try { const c = JSON.parse(localStorage.getItem('nyangStudent_v1') || sessionStorage.getItem('nyangStudent_v1') || 'null'); return !!(c && /(쌤|샘|선생님|교감|교장)$/.test(c.name || '')); } catch(e){ return false; } }
+function boardSrc(){ return isTLogin() ? 'index.html?tboard=1&api=' + encodeURIComponent(API) : 'index.html?view=1&api=' + encodeURIComponent(API); }
+const SRC = { notice: 'student.html?only=notice&api=' + encodeURIComponent(API), me: 'student.html?api=' + encodeURIComponent(API), board: boardSrc(), guide: 'guide.html?inapp=1', ask: 'student.html?only=ask&api=' + encodeURIComponent(API), comm: 'student.html?only=comm&api=' + encodeURIComponent(API) };
 const frames = {};
 /* 🐾 탭 로딩 화면 (접속 중 화면과 같은 모양) */
 const TAB_LD = { notice:['📢', '공지 가져오는 중', '오늘 알림과 급식을 모으고 있어요'], board:['🐾', '출석부 펼치는 중', '우리 반 정보를 불러오고 있어요'], me:['🏠', '아지트 문 여는 중', '내 고양이를 깨우고 있어요'], comm:['🎪', '커뮤니티 가는 중', '친구들이 모이고 있어요'], ask:['💌', '편지함 여는 중', '우리 반 정보를 불러오고 있어요'], guide:['📖', '안내서 펴는 중', '한 장씩 넘기고 있어요'] };
@@ -81,7 +84,8 @@ function tabLoadDone(t){ const d = document.querySelector(`.tabLd[data-ld="${t}"
 function show(t){
   if (!SRC[t]) t = 'board';
   curTab = t;
-  if (!frames[t]){ const f = document.createElement('iframe'); f.src = fresh(SRC[t]); f.title = t; tabLoad(t); f.addEventListener('load', () => tabLoadDone(t), { once: true }); f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
+  if (t === 'board'){ SRC.board = boardSrc(); const mode = isTLogin() ? 't' : 'v'; if (frames.board && frames.board.dataset.mode !== mode){ frames.board.dataset.mode = mode; tabLoad('board'); frames.board.addEventListener('load', () => tabLoadDone('board'), { once: true }); frames.board.src = fresh(SRC.board); } }
+  if (!frames[t]){ const f = document.createElement('iframe'); f.src = fresh(SRC[t]); f.title = t; if (t === 'board') f.dataset.mode = isTLogin() ? 't' : 'v'; tabLoad(t); f.addEventListener('load', () => tabLoadDone(t), { once: true }); f.onload = () => { try { if (f.classList.contains('on')) f.contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){} }; document.getElementById('frames').appendChild(f); frames[t] = f; }
   document.querySelectorAll('.tabLd').forEach(d => { d.style.display = d.dataset.ld === t ? 'flex' : 'none'; });
   Object.entries(frames).forEach(([k, f]) => { f.classList.toggle('on', k === t); if (k !== t) try { f.contentWindow.postMessage({ nyang:'hidden' }, location.origin); } catch(e){} });
   try { frames[t].contentWindow.postMessage({ nyang:'shown' }, location.origin); } catch(e){}   // 아지트: 로그인 안 했으면 로그인 창

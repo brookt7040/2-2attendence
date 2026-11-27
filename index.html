@@ -927,6 +927,7 @@ body.view-mode .mh-side.empty{display:none !important;}
 <style>
 #bootOv{position:fixed;inset:0;z-index:30000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(160deg,#FFF5D1,#FFE3EE);color:#5B4636;font-size:1.4rem;text-align:center;transition:opacity .35s;}
 #bootOv.hide{opacity:0;pointer-events:none;}
+#tbSwitch{position:fixed;right:10px;bottom:10px;z-index:19980;padding:6px 12px;border:2.5px solid #5B4636;border-radius:14px;background:#FFF8EC;color:#5B4636;font-size:.95rem;text-decoration:none;box-shadow:0 3px 0 rgba(91,70,54,.35);}
 #rcodeBar{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:19990;display:flex;align-items:center;gap:14px;padding:6px 22px;border:3px solid #2B1B4F;border-top:0;border-radius:0 0 20px 20px;background:linear-gradient(90deg,#B388FF,#7CF2C9);color:#2B1B4F;box-shadow:0 5px 0 rgba(43,27,79,.35);white-space:nowrap;}
 #rcodeBar .rc-t{font-size:1.05rem;font-weight:bold;} #rcodeBar .rc-n{font-size:.85rem;opacity:.8;}
 #rcodeBar .rc-c{display:flex;gap:5px;} #rcodeBar .rc-c i{font-style:normal;font-size:2rem;line-height:1;background:#FFFFFF;border:3px solid #2B1B4F;border-radius:10px;padding:2px 8px;box-shadow:0 3px 0 #2B1B4F;}
@@ -948,6 +949,7 @@ body.view-mode .mh-side.empty{display:none !important;}
 @keyframes bootDot{0%,60%,100%{opacity:.2}30%{opacity:1}}
 </style>
 <div id="rcodeBar" style="display:none;"></div>
+<a id="tbSwitch" style="display:none;"></a>
 <div id="bootOv" style="display:none;"><div class="bp">🐾</div><div>접속 중<span class="bd"><span>.</span><span>.</span><span>.</span></span></div><small>우리 반 정보를 불러오고 있어요</small></div>
 <script>if (/[?&]view=1/.test(location.search)) document.getElementById('bootOv').style.display = 'flex';</script>
 
@@ -2584,6 +2586,14 @@ function rcodeTick(){
   bar.innerHTML = `<span class="rc-t">📱 원격 출석 코드</span><b class="rc-c">${code.split('').map(d => `<i>${d}</i>`).join('')}</b><span class="rc-n">${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} 뒤 바뀌어요</span>`;
 }
 setInterval(rcodeTick, 1000);
+/* 👑 ↔ 👀 앱 안에서 관리자 출석부 · 학생용 출석부 오가기 */
+(function(){ try {
+  const q = new URLSearchParams(location.search), api = q.get('api'); if (!api || !(q.get('tboard') === '1' || q.get('tback') === '1')) return;
+  const a = document.getElementById('tbSwitch'); if (!a) return;
+  if (q.get('view') === '1'){ a.href = 'index.html?tboard=1&api=' + encodeURIComponent(api); a.textContent = '👑 관리자 출석부로'; }
+  else { a.href = 'index.html?view=1&tback=1&api=' + encodeURIComponent(api); a.textContent = '👀 학생용 출석부 보기'; }
+  a.style.display = 'block';
+} catch(e){} })();
 let serverRev = 0;
 function renderSrvVer(){
   const sv = $('srvVer'); if (!sv) return;
@@ -4738,7 +4748,9 @@ function previewAlarm(idx){
   $('adminOverlay').style.display = 'none';
   fireAlarm(idx, time, text);
 }
+const TB_QUIET = (() => { try { return new URLSearchParams(location.search).get('tboard') === '1'; } catch(e){ return false; } })();   // 📱 앱 안 관리자 출석부: 알람 · 배경음은 교실 TV에서만
 function fireAlarm(idx, timeStr, textOverride){
+  if (TB_QUIET) return;
   const cfg = db.alarmConfig;
   alarmOverlayOpen = idx;
   const text = (typeof textOverride === 'string' ? textOverride : (idx === 1 ? cfg.alarm1Text : cfg.alarm2Text)) || '';
@@ -4988,6 +5000,7 @@ function bgmSaveCfg(){
   $('bgmVolT').textContent = db.bgm.vol; saveDB(); if (BGM.ready) try { BGM.yt.setVolume(db.bgm.vol); } catch(e){} bgmEnsure(); bgmShow();
 }
 function bgmInit(){
+  if (typeof TB_QUIET !== 'undefined' && TB_QUIET) return;
   const c = bgmCfg(); $('bgmOn').checked = c.on; $('bgmUrl').value = c.url; $('bgmVol').value = c.vol; $('bgmVolT').textContent = c.vol; $('bgmBreak').checked = c.brk;
   ['bgmOn', 'bgmBreak'].forEach(id => $(id).addEventListener('change', bgmSaveCfg)); $('bgmUrl').addEventListener('change', bgmSaveCfg); $('bgmVol').addEventListener('input', bgmSaveCfg);
   $('bgmFold').onclick = () => { BGM.folded = !BGM.folded; BGM.auto = false; if (BGM.ready && BGM.folded) try { BGM.yt.pauseVideo(); } catch(e){} bgmShow(); };
@@ -8398,7 +8411,11 @@ function init(){
     if (sync.apin) $('backView').style.display = 'block';
     if (db.accessCode && !gateOk(db.accessCode) && !(window.NyLock && NyLock.isTeacher())) setTimeout(() => showGate(async v => { if (v === db.accessCode){ gatePass(v); return true; } return '❌ 코드가 달라요'; }), 50);
     gateCheckTimer();
-    try { const qa = new URLSearchParams(location.search).get('api'); if (qa && !sync.url && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)) setTimeout(() => { openAdminUI(); $('syncUrlInput').value = qa; $('syncTName').focus(); $('syncStatusText').innerHTML = '🖥 이 기기를 연결해요: <b>선생님 계정(OO쌤 + 비밀번호)</b>을 넣고 <b>🔗 연결하기</b>를 눌러 주세요.'; }, 600); } catch(e){}
+    /* 👑 앱에서 선생님 계정으로 로그인한 채 출석부를 열면: 그 계정으로 관리자 출석부를 바로 연결해요 */
+    try { const q0 = new URLSearchParams(location.search), qa = q0.get('api'); if (q0.get('tboard') === '1' && qa && !sync.url && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)){
+      const cr = JSON.parse(localStorage.getItem('nyangStudent_v1') || sessionStorage.getItem('nyangStudent_v1') || 'null');
+      if (cr && /(쌤|샘|선생님|교감|교장)$/.test(cr.name || '') && cr.pin){ setTimeout(() => { openAdminUI(); showStTab('sync'); $('syncUrlInput').value = qa; $('syncTName').value = cr.name; $('syncTPin').value = cr.pin; connectSync().then(() => { try { $('adminOverlay').style.display = 'none'; } catch(e){} }); }, 400); throw 0; } } } catch(e){}
+    try { const qa = new URLSearchParams(location.search).get('api'); if (qa && !sync.url && new URLSearchParams(location.search).get('tboard') !== '1' && /^https:\/\/script\.google(usercontent)?\.com\/|^http:\/\/localhost/.test(qa)) setTimeout(() => { openAdminUI(); $('syncUrlInput').value = qa; $('syncTName').focus(); $('syncStatusText').innerHTML = '🖥 이 기기를 연결해요: <b>선생님 계정(OO쌤 + 비밀번호)</b>을 넣고 <b>🔗 연결하기</b>를 눌러 주세요.'; }, 600); } catch(e){}
     if (upgradeEconomy()){ saveDB(); if (sync.url) syncOp({ op:'config', data: configOf() }); }
     if (!db.featMoved && sync.url){ const L = (db.economy && db.economy.locked) || {}, f = Object.assign({}, db.features || {}); if (L.missions) f.missions = false; if (L.shop) f.shop = false; if (db.economy && db.economy.game && db.economy.game.on === false) f.game = false; if (Object.keys(f).length) syncOp({ op:'featSet', features: f }); db.featMoved = true; saveDB(); }   // 🎛️ 예전 잠금 → 학생 앱 관리의 기능 스위치로 (한 번만)
     try { bgmInit(); } catch(e){}
